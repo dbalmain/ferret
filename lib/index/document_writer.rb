@@ -261,7 +261,6 @@ module Ferret::Index
         @field_infos.each_with_index do |fi, i|
           if fi.indexed?
             norm = @field_boosts[i] * @similarity.length_norm(fi.name, @field_lengths[i])
-            puts "norm for #{segment}:#{fi.name} = #{norm}, field_lengths = #{@field_lengths[i]}"
             norms = @directory.create_output(segment + ".f" + i.to_s)
             begin 
               norms.write_byte(Similarity.encode_norm(norm))
