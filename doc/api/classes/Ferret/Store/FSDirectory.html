@@ -1,0 +1,743 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Class: Ferret::Store::FSDirectory</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href="../../.././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Class</strong></td>
+          <td class="class-name-in-header">Ferret::Store::FSDirectory</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../../../files/lib/store/fs_store_rb.html">
+                lib/store/fs_store.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        <tr class="top-aligned-row">
+            <td><strong>Parent:</strong></td>
+            <td>
+                <a href="Directory.html">
+                Directory
+               </a>
+            </td>
+        </tr>
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <p>
+This is a filesystem implementation of <a
+href="Directory.html">Directory</a> and will be the one usually used for
+storing the index. This implementation stores each separate file as a
+separate file on the operating system. This works fine and is the most
+efficient solution for small to medium size indexes. For very large
+indexes, there may be a problem with the operating system not wanting to
+open to many files. One fix for this is to change the maximum open files
+setting in your operating system. Alternatively you could use a compound
+file instead.
+</p>
+<p>
+TODO:
+</p>
+<ul>
+<li>We want to better way of setting properties. Currently you have to change
+the constants to disable locking.
+
+</li>
+</ul>
+
+    </div>
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000054">close</a>&nbsp;&nbsp;
+      <a href="#M000051">create_output</a>&nbsp;&nbsp;
+      <a href="#M000048">delete</a>&nbsp;&nbsp;
+      <a href="#M000044">each</a>&nbsp;&nbsp;
+      <a href="#M000045">exists?</a>&nbsp;&nbsp;
+      <a href="#M000040">get_directory</a>&nbsp;&nbsp;
+      <a href="#M000050">length</a>&nbsp;&nbsp;
+      <a href="#M000042">lock_dir=</a>&nbsp;&nbsp;
+      <a href="#M000041">locks_disabled?</a>&nbsp;&nbsp;
+      <a href="#M000053">make_lock</a>&nbsp;&nbsp;
+      <a href="#M000046">modified</a>&nbsp;&nbsp;
+      <a href="#M000056">new</a>&nbsp;&nbsp;
+      <a href="#M000052">open_input</a>&nbsp;&nbsp;
+      <a href="#M000055">reference</a>&nbsp;&nbsp;
+      <a href="#M000043">refresh</a>&nbsp;&nbsp;
+      <a href="#M000049">rename</a>&nbsp;&nbsp;
+      <a href="#M000047">touch</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+    <div id="includes">
+      <h3 class="section-bar">Included Modules</h3>
+
+      <div id="includes-list">
+        <span class="include-name">MonitorMixin</span>
+      </div>
+    </div>
+
+    <div id="section">
+
+    <div id="class-list">
+      <h3 class="section-bar">Classes and Modules</h3>
+
+      Class <a href="FSDirectory/FSIndexInput.html" class="link">Ferret::Store::FSDirectory::FSIndexInput</a><br />
+Class <a href="FSDirectory/FSIndexOutput.html" class="link">Ferret::Store::FSDirectory::FSIndexOutput</a><br />
+Class <a href="FSDirectory/FSLock.html" class="link">Ferret::Store::FSDirectory::FSLock</a><br />
+
+    </div>
+
+    <div id="constants-list">
+      <h3 class="section-bar">Constants</h3>
+
+      <div class="name-list">
+        <table summary="Constants">
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">LOCKS_DISABLED</td>
+          <td>=</td>
+          <td class="context-item-value">false</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+Locks should be disabled it there is no need for them
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">LOCK_DIR</td>
+          <td>=</td>
+          <td class="context-item-value">nil</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+The lock dir is the directory where the file locks will be stored
+
+</td>
+        </tr>
+        </table>
+      </div>
+    </div>
+
+
+
+    <div id="attribute-list">
+      <h3 class="section-bar">Attributes</h3>
+
+      <div class="name-list">
+        <table>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">lock_dir</td>
+          <td class="context-item-value">&nbsp;[R]&nbsp;</td>
+          <td class="context-item-desc">
+Returns a Dir object of the directory where the lock is stored
+
+</td>
+        </tr>
+        </table>
+      </div>
+    </div>
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Class methods</h3>
+
+      <div id="method-M000040" class="method-detail">
+        <a name="M000040"></a>
+
+        <div class="method-heading">
+          <a href="#M000040" class="method-signature">
+          <span class="method-name">get_directory</span><span class="method-args">(path, create=false)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns the directory instance for the named location.
+</p>
+<p>
+Directories are cached, so that, for a given canonical path, the same <a
+href="FSDirectory.html">FSDirectory</a> instance will always be returned.
+This permits synchronization on directories.
+</p>
+<table>
+<tr><td valign="top">path:</td><td>the path to the directory.
+
+</td></tr>
+<tr><td valign="top">create:</td><td>if true, create, or erase any existing contents.
+
+</td></tr>
+</table>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000040-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000040-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 42</span>
+42:       <span class="ruby-keyword kw">def</span> <span class="ruby-constant">FSDirectory</span>.<span class="ruby-identifier">get_directory</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">create</span>=<span class="ruby-keyword kw">false</span>)
+43:         <span class="ruby-identifier">dir</span> = <span class="ruby-keyword kw">nil</span>
+44:         <span class="ruby-ivar">@@Directories</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword kw">do</span>
+45:           <span class="ruby-identifier">dir</span> = <span class="ruby-ivar">@@Directories</span>[<span class="ruby-identifier">path</span>]
+46:           <span class="ruby-keyword kw">if</span> <span class="ruby-keyword kw">not</span> <span class="ruby-identifier">dir</span> <span class="ruby-keyword kw">then</span>
+47:             <span class="ruby-identifier">dir</span> = <span class="ruby-constant">FSDirectory</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">create</span>)
+48:             <span class="ruby-ivar">@@Directories</span>[<span class="ruby-identifier">path</span>] = <span class="ruby-identifier">dir</span>
+49:           <span class="ruby-keyword kw">end</span>
+50:           <span class="ruby-identifier">dir</span>.<span class="ruby-identifier">refresh</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">create</span>
+51:         <span class="ruby-keyword kw">end</span>
+52:         <span class="ruby-identifier">dir</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword kw">do</span>
+53:           <span class="ruby-identifier">dir</span>.<span class="ruby-identifier">reference</span>()
+54:         <span class="ruby-keyword kw">end</span>
+55:         <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">dir</span>
+56:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000041" class="method-detail">
+        <a name="M000041"></a>
+
+        <div class="method-heading">
+          <a href="#M000041" class="method-signature">
+          <span class="method-name">locks_disabled?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns true if locks have been disabled
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000041-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000041-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 59</span>
+59:       <span class="ruby-keyword kw">def</span> <span class="ruby-constant">FSDirectory</span>.<span class="ruby-identifier">locks_disabled?</span>
+60:         <span class="ruby-constant">LOCKS_DISABLED</span>
+61:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000056" class="method-detail">
+        <a name="M000056"></a>
+
+        <div class="method-heading">
+          <a href="#M000056" class="method-signature">
+          <span class="method-name">new</span><span class="method-args">(path, create)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Create a new directory from the path.
+</p>
+<table>
+<tr><td valign="top">path:</td><td>the path to the directory.
+
+</td></tr>
+<tr><td valign="top">create:</td><td>if true, create, or erase any existing contents.
+
+</td></tr>
+</table>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000056-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000056-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 289</span>
+289:         <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">create</span>)
+290:           <span class="ruby-keyword kw">super</span>()
+291:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">create</span> <span class="ruby-keyword kw">then</span> <span class="ruby-constant">FileUtils</span>.<span class="ruby-identifier">mkdir_p</span>(<span class="ruby-identifier">path</span>) <span class="ruby-keyword kw">end</span>
+292:           <span class="ruby-keyword kw">if</span> <span class="ruby-keyword kw">not</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">directory?</span>(<span class="ruby-identifier">path</span>) <span class="ruby-keyword kw">then</span>
+293:             <span class="ruby-identifier">raise</span> <span class="ruby-node">&quot;There is no directory: #{path}. Use create = true to create one&quot;</span>
+294:           <span class="ruby-keyword kw">end</span>
+295:           <span class="ruby-ivar">@dir</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">path</span>)
+296:           <span class="ruby-comment cmt"># put the lock_dir here as well if no default exists.</span>
+297:           <span class="ruby-keyword kw">if</span> <span class="ruby-constant">LOCK_DIR</span> <span class="ruby-keyword kw">then</span>
+298:             <span class="ruby-ivar">@lock_dir</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">LOCK_DIR</span>) 
+299:           <span class="ruby-keyword kw">else</span>
+300:             <span class="ruby-ivar">@lock_dir</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">path</span>) 
+301:           <span class="ruby-keyword kw">end</span>
+302:           <span class="ruby-ivar">@ref_count</span> = <span class="ruby-value">0</span>
+303:         <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000054" class="method-detail">
+        <a name="M000054"></a>
+
+        <div class="method-heading">
+          <a href="#M000054" class="method-signature">
+          <span class="method-name">close</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Closes the store.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000054-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000054-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 158</span>
+158:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">close</span>()
+159:         <span class="ruby-ivar">@ref_count</span> <span class="ruby-operator">-=</span> <span class="ruby-value">1</span>
+160:         <span class="ruby-keyword kw">if</span> (<span class="ruby-ivar">@ref_count</span> <span class="ruby-operator">&lt;=</span><span class="ruby-value">0</span>) <span class="ruby-keyword kw">then</span>
+161:           <span class="ruby-ivar">@@Directories</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword kw">do</span>
+162:             <span class="ruby-ivar">@@Directories</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-ivar">@dir</span>.<span class="ruby-identifier">path</span>)
+163:           <span class="ruby-keyword kw">end</span>
+164:         <span class="ruby-keyword kw">end</span>
+165:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000051" class="method-detail">
+        <a name="M000051"></a>
+
+        <div class="method-heading">
+          <a href="#M000051" class="method-signature">
+          <span class="method-name">create_output</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Creates a new, empty file in the directory with the given name. Returns a
+stream writing this file.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000051-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000051-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 143</span>
+143:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">create_output</span>(<span class="ruby-identifier">name</span>) 
+144:         <span class="ruby-constant">FSIndexOutput</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+145:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000048" class="method-detail">
+        <a name="M000048"></a>
+
+        <div class="method-heading">
+          <a href="#M000048" class="method-signature">
+          <span class="method-name">delete</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Removes an existing file in the directory.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000048-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000048-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 124</span>
+124:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">delete</span>(<span class="ruby-identifier">name</span>)
+125:         <span class="ruby-constant">File</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+126:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000044" class="method-detail">
+        <a name="M000044"></a>
+
+        <div class="method-heading">
+          <a href="#M000044" class="method-signature">
+          <span class="method-name">each</span><span class="method-args">() {|file_name| ...}</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Iterates through the file listing, skipping lock files if they exist
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000044-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000044-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 96</span>
+ 96:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">each</span>()
+ 97:         <span class="ruby-identifier">refresh_dir</span>
+ 98:         <span class="ruby-ivar">@dir</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">file_name</span><span class="ruby-operator">|</span>
+ 99:           <span class="ruby-comment cmt"># return all files except for the current and parent directories</span>
+100:           <span class="ruby-comment cmt"># and any lock files that exist in this directory</span>
+101:           <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">if</span> [<span class="ruby-value str">'.'</span>, <span class="ruby-value str">'..'</span>].<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">file_name</span>)
+102:           <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">file_name</span> <span class="ruby-operator">=~</span> <span class="ruby-constant">Regexp</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'^'</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">lock_prefix</span>)
+103:           <span class="ruby-keyword kw">yield</span> <span class="ruby-identifier">file_name</span>
+104:         <span class="ruby-keyword kw">end</span>
+105:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000045" class="method-detail">
+        <a name="M000045"></a>
+
+        <div class="method-heading">
+          <a href="#M000045" class="method-signature">
+          <span class="method-name">exists?</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns true if a file with the given name exists.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000045-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000045-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 108</span>
+108:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">exists?</span>(<span class="ruby-identifier">name</span>)
+109:         <span class="ruby-constant">File</span>.<span class="ruby-identifier">exists?</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+110:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000050" class="method-detail">
+        <a name="M000050"></a>
+
+        <div class="method-heading">
+          <a href="#M000050" class="method-signature">
+          <span class="method-name">length</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns the length of a file in the directory.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000050-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000050-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 137</span>
+137:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">length</span>(<span class="ruby-identifier">name</span>)
+138:         <span class="ruby-constant">File</span>.<span class="ruby-identifier">size</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+139:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000042" class="method-detail">
+        <a name="M000042"></a>
+
+        <div class="method-heading">
+          <a href="#M000042" class="method-signature">
+          <span class="method-name">lock_dir=</span><span class="method-args">(path)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Set the directory where all of the locks will be stored.
+</p>
+<table>
+<tr><td valign="top">path:</td><td>the path to the directory where the locks will be stored. An exception will
+be raised if the directory does not exist
+
+</td></tr>
+</table>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000042-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000042-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 66</span>
+66:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">lock_dir=</span>(<span class="ruby-identifier">path</span>)
+67:         <span class="ruby-comment cmt"># close the old lock dir if it exists</span>
+68:         <span class="ruby-ivar">@lock_dir</span>.<span class="ruby-identifier">close</span>() <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@lock_dir</span>
+69:         <span class="ruby-ivar">@lock_dir</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">path</span>)
+70:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000053" class="method-detail">
+        <a name="M000053"></a>
+
+        <div class="method-heading">
+          <a href="#M000053" class="method-signature">
+          <span class="method-name">make_lock</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Construct a <a href="Lock.html">Lock</a>.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000053-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000053-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 153</span>
+153:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">make_lock</span>(<span class="ruby-identifier">name</span>) 
+154:         <span class="ruby-constant">FSLock</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@lock_dir</span>.<span class="ruby-identifier">path</span> <span class="ruby-operator">+</span> <span class="ruby-value str">&quot;/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">lock_prefix</span>() <span class="ruby-operator">+</span> <span class="ruby-identifier">name</span>)
+155:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000046" class="method-detail">
+        <a name="M000046"></a>
+
+        <div class="method-heading">
+          <a href="#M000046" class="method-signature">
+          <span class="method-name">modified</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns the time the named file was last modified.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000046-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000046-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 113</span>
+113:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">modified</span>(<span class="ruby-identifier">name</span>) 
+114:         <span class="ruby-constant">File</span>.<span class="ruby-identifier">mtime</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+115:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000052" class="method-detail">
+        <a name="M000052"></a>
+
+        <div class="method-heading">
+          <a href="#M000052" class="method-signature">
+          <span class="method-name">open_input</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns a stream reading an existing file.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000052-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000052-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 148</span>
+148:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">open_input</span>(<span class="ruby-identifier">name</span>)
+149:         <span class="ruby-constant">FSIndexInput</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+150:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000055" class="method-detail">
+        <a name="M000055"></a>
+
+        <div class="method-heading">
+          <a href="#M000055" class="method-signature">
+          <span class="method-name">reference</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000055-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000055-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 167</span>
+167:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">reference</span>()
+168:         <span class="ruby-ivar">@ref_count</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+169:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000043" class="method-detail">
+        <a name="M000043"></a>
+
+        <div class="method-heading">
+          <a href="#M000043" class="method-signature">
+          <span class="method-name">refresh</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Remove all files and locks from this directory so we have a clean instance
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000043-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000043-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 76</span>
+76:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">refresh</span>
+77:         <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword kw">do</span>
+78:           <span class="ruby-comment cmt"># delete all the files</span>
+79:           <span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">fname</span><span class="ruby-operator">|</span>
+80:             <span class="ruby-constant">File</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">fname</span>))
+81:           <span class="ruby-keyword kw">end</span>
+82:           <span class="ruby-comment cmt"># clear all the locks</span>
+83:           <span class="ruby-identifier">refresh_lock_dir</span>
+84:           <span class="ruby-ivar">@lock_dir</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">lock_fname</span><span class="ruby-operator">|</span>
+85:             <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">lock_fname</span> <span class="ruby-operator">==</span> <span class="ruby-value str">'.'</span> <span class="ruby-keyword kw">or</span> <span class="ruby-identifier">lock_fname</span> <span class="ruby-operator">==</span> <span class="ruby-value str">'..'</span>
+86:             <span class="ruby-constant">File</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-ivar">@lock_dir</span>.<span class="ruby-identifier">path</span> <span class="ruby-operator">+</span> <span class="ruby-value str">'/'</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">lock_fname</span>)
+87:           <span class="ruby-keyword kw">end</span>
+88:         <span class="ruby-keyword kw">end</span>
+89:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000049" class="method-detail">
+        <a name="M000049"></a>
+
+        <div class="method-heading">
+          <a href="#M000049" class="method-signature">
+          <span class="method-name">rename</span><span class="method-args">(from, to)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Renames an existing file in the directory. If a file already exists with
+the new name, then it is replaced. This replacement should be atomic.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000049-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000049-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 131</span>
+131:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">rename</span>(<span class="ruby-identifier">from</span>, <span class="ruby-identifier">to</span>)
+132:         <span class="ruby-constant">File</span>.<span class="ruby-identifier">rename</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">from</span>), <span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">to</span>))
+133:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000047" class="method-detail">
+        <a name="M000047"></a>
+
+        <div class="method-heading">
+          <a href="#M000047" class="method-signature">
+          <span class="method-name">touch</span><span class="method-args">(name)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Set the modified time of an existing file to now.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000047-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000047-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/store/fs_store.rb, line 118</span>
+118:       <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">touch</span>(<span class="ruby-identifier">name</span>) 
+119:         <span class="ruby-comment cmt"># just open the file and close it. No need to do anything with it.</span>
+120:         <span class="ruby-constant">FileUtils</span>.<span class="ruby-identifier">touch</span>(<span class="ruby-identifier">dir_path</span>(<span class="ruby-identifier">name</span>))
+121:       <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>

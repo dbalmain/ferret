@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Class: PerFieldAnalyzerWrapperTest</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Class</strong></td>
+          <td class="class-name-in-header">PerFieldAnalyzerWrapperTest</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../files/test/unit/analysis/tc_per_field_analyzer_wrapper_rb.html">
+                test/unit/analysis/tc_per_field_analyzer_wrapper.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        <tr class="top-aligned-row">
+            <td><strong>Parent:</strong></td>
+            <td>
+                Test::Unit::TestCase
+            </td>
+        </tr>
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000016">test_perfieldanalyzerwrapper</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000016" class="method-detail">
+        <a name="M000016"></a>
+
+        <div class="method-heading">
+          <a href="#M000016" class="method-signature">
+          <span class="method-name">test_perfieldanalyzerwrapper</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000016-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000016-source">
+<pre>
+    <span class="ruby-comment cmt"># File test/unit/analysis/tc_per_field_analyzer_wrapper.rb, line 5</span>
+ 5:   <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">test_perfieldanalyzerwrapper</span>()
+ 6:     <span class="ruby-identifier">aw</span> = <span class="ruby-constant">PerFieldAnalyzerWrapper</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">Analyzer</span>.<span class="ruby-identifier">new</span>())
+ 7:     <span class="ruby-identifier">aw</span>.<span class="ruby-identifier">add_analyzer</span>(<span class="ruby-value str">&quot;abstract&quot;</span>, <span class="ruby-constant">WhiteSpaceAnalyzer</span>.<span class="ruby-identifier">new</span>())
+ 8:     <span class="ruby-identifier">aw</span>.<span class="ruby-identifier">add_analyzer</span>(<span class="ruby-value str">&quot;body&quot;</span>, <span class="ruby-constant">StopAnalyzer</span>.<span class="ruby-identifier">new</span>([<span class="ruby-value str">'is'</span>, <span class="ruby-value str">'my'</span>, <span class="ruby-value str">'address'</span>]))
+ 9:     <span class="ruby-identifier">input</span> = <span class="ruby-constant">StringReader</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'DBalmain@gmail.com is My e-mail ADDRESS'</span>)
+10:     <span class="ruby-identifier">t</span> = <span class="ruby-identifier">aw</span>.<span class="ruby-identifier">token_stream</span>(<span class="ruby-value str">&quot;title&quot;</span>, <span class="ruby-identifier">input</span>)
+11:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;dbalmain&quot;</span>, <span class="ruby-value">0</span>, <span class="ruby-value">8</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+12:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;gmail&quot;</span>, <span class="ruby-value">9</span>, <span class="ruby-value">14</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+13:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;com&quot;</span>, <span class="ruby-value">15</span>, <span class="ruby-value">18</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+14:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;is&quot;</span>, <span class="ruby-value">19</span>, <span class="ruby-value">21</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+15:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;my&quot;</span>, <span class="ruby-value">22</span>, <span class="ruby-value">24</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+16:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;e&quot;</span>, <span class="ruby-value">25</span>, <span class="ruby-value">26</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+17:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;mail&quot;</span>, <span class="ruby-value">27</span>, <span class="ruby-value">31</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+18:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;address&quot;</span>, <span class="ruby-value">32</span>, <span class="ruby-value">39</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+19:     <span class="ruby-identifier">assert</span>(<span class="ruby-operator">!</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+20:     <span class="ruby-identifier">input</span>.<span class="ruby-identifier">reset</span>()
+21:     <span class="ruby-identifier">t</span> = <span class="ruby-identifier">aw</span>.<span class="ruby-identifier">token_stream</span>(<span class="ruby-value str">&quot;abstract&quot;</span>, <span class="ruby-identifier">input</span>)
+22:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'DBalmain@gmail.com'</span>, <span class="ruby-value">0</span>, <span class="ruby-value">18</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+23:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'is'</span>, <span class="ruby-value">19</span>, <span class="ruby-value">21</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+24:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'My'</span>, <span class="ruby-value">22</span>, <span class="ruby-value">24</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+25:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">'e-mail'</span>, <span class="ruby-value">25</span>, <span class="ruby-value">31</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+26:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;ADDRESS&quot;</span>, <span class="ruby-value">32</span>, <span class="ruby-value">39</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+27:     <span class="ruby-keyword kw">if</span> ( <span class="ruby-identifier">token</span> = <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())<span class="ruby-operator">:</span> <span class="ruby-identifier">puts</span> <span class="ruby-identifier">token</span>.<span class="ruby-identifier">term_text</span> <span class="ruby-keyword kw">end</span>
+28:     <span class="ruby-identifier">assert</span>(<span class="ruby-operator">!</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+29:     <span class="ruby-identifier">input</span>.<span class="ruby-identifier">reset</span>()
+30:     <span class="ruby-identifier">t</span> = <span class="ruby-identifier">aw</span>.<span class="ruby-identifier">token_stream</span>(<span class="ruby-value str">&quot;body&quot;</span>, <span class="ruby-identifier">input</span>)
+31:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;dbalmain&quot;</span>, <span class="ruby-value">0</span>, <span class="ruby-value">8</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+32:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;gmail&quot;</span>, <span class="ruby-value">9</span>, <span class="ruby-value">14</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+33:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;com&quot;</span>, <span class="ruby-value">15</span>, <span class="ruby-value">18</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+34:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;e&quot;</span>, <span class="ruby-value">25</span>, <span class="ruby-value">26</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+35:     <span class="ruby-identifier">assert_equal</span>(<span class="ruby-constant">Token</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;mail&quot;</span>, <span class="ruby-value">27</span>, <span class="ruby-value">31</span>), <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+36:     <span class="ruby-identifier">assert</span>(<span class="ruby-operator">!</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">next</span>())
+37:   <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>

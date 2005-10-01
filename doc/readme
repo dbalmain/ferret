@@ -1,0 +1,6 @@
+= Ferret Search Engine
+
+This search library is loosely based on Java's Lucene search library. There
+are a few differences however and this library will not be able to read
+indexes created by lucene. An effort has been made to keep the code as simple
+as possible and in the Ruby way.
