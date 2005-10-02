@@ -48,11 +48,11 @@ module Ferret
 
       def do_commit()
         if (@deleted_docs_dirty) # re-write deleted 
-          @deleted_docs.write(directory(), @segment + ".tmp")
-          directory().rename(@segment + ".tmp", @segment + ".del")
+          @deleted_docs.write(directory(), @segment + '.tmp')
+          directory().rename(@segment + '.tmp', @segment + '.del')
         end
-        if(@undelete_all and directory().exists?(@segment + ".del"))
-          directory().delete(@segment + ".del")
+        if(@undelete_all and directory().exists?(@segment + '.del'))
+          directory().delete(@segment + '.del')
         end
         if (@norms_dirty) # re-write norms 
           @norms.each_value do |norm|
@@ -160,11 +160,11 @@ module Ferret
       end
 
       def term_docs()
-        return SegmentTermDocs.new(self)
+        return SegmentTermDocEnum.new(self)
       end
 
       def term_positions()
-        return SegmentTermPositions.new(self)
+        return SegmentTermDocPosEnum.new(self)
       end
 
       def doc_freq(t)

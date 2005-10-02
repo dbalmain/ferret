@@ -90,7 +90,12 @@ module Ferret::Index
       end
 
       @prev_buffer.set!(@term_buffer)
+
+      puts "About to read from #{term_buffer}"
       @term_buffer.read(@input, @field_infos)
+      if (@is_index)
+        puts "after term buffer = #{@term_buffer}"
+      end
 
       @term_info.doc_freq = @input.read_vint()          # read doc freq
       @term_info.freq_pointer += @input.read_vlong()    # read freq pointer

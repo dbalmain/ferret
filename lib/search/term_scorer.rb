@@ -71,7 +71,7 @@ module Ferret::Search
 
     # Advances to the next document matching the query.
     # <br>The iterator over the matching documents is buffered using
-    # TermDocs#read(int[],int[]).
+    # TermDocEnum#read(int[],int[]).
     # returns:: true iff there is another document matching the query.
     def next?()
       @pointer += 1
@@ -104,7 +104,7 @@ module Ferret::Search
     # Skips to the first match beyond the current whose document number is
     # greater than or equal to a given target. 
     # 
-    # The implementation uses TermDocs#skip_to(int).
+    # The implementation uses TermDocEnum#skip_to(int).
     # target:: The target document number.
     # returns:: true iff there is such a match.
     def skip_to(target)
@@ -135,7 +135,7 @@ module Ferret::Search
     # should not be used.
     #
     # doc:: The document number for the explanation.
-    # TODO: Modify to make use of TermDocs#skip_to(int).
+    # TODO: Modify to make use of TermDocEnum#skip_to(int).
     def explain(doc)
       query = @weight.query()
       tf_explanation = Explanation.new()

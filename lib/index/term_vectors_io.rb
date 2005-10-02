@@ -137,27 +137,21 @@ module Ferret::Index
 
       if vectors != nil 
         vectors.each do |vector|
-          if vector.respond_to?(:positions)
-            store_position = (vector.size > 0 and vector.positions[0] != nil)
-            store_offset = (vector.size > 0 and vector.offsets[0] != nil)
-
-            create_field(@field_infos.field_number(vector.field),
-                         store_position, store_offset)
-
-            vector.size.times do |j|
-              add_term_internal(vector.terms[j],
-                                vector.term_frequencies[j],
-                                vector.positions[j],
-                                vector.offsets[j])
-            end
+          if (vector.instance_of? SegmentTermPositionVector)
+            store_positions = (vector.size > 0 and vector.positions != nil)
+            store_offsets = (vector.size > 0 and vector.offsets != nil)
           else
-            create_field(@field_infos.field_number(vector.field), false, false)
+            store_positions = store_offsets = false
+          end
 
-            vector.size.times do |j|
-              add_term_internal(vector.terms[j],
-                                vector.term_frequencies[j],
-                                nil, nil)
-            end
+          create_field(@field_infos.field_number(vector.field),
+                       store_positions, store_offsets)
+
+          vector.size.times do |j|
+            add_term_internal(vector.terms[j],
+                              vector.term_frequencies[j],
+                              store_positions ? vector.positions[j] : nil,
+                              store_offsets ? vector.offsets[j] : nil)
           end
           close_field()
         end

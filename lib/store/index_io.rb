@@ -24,11 +24,20 @@ module Ferret
         # This may be slow. I'm not sure if this is the best way to get
         # integers from files but this is the only way I could find to get
         # signed integers.
-        return ((((i=read_byte)&0x80)==0 ? 0 : -1) << 32) |
-               ((i) << 24) |
-               ((read_byte) << 16) |
-               ((read_byte) << 8) |
-               (read_byte)
+        #i = read_byte
+        #return (((i&0x80)==0 ? 0 : -1) << 32) |
+               #(i << 24) |
+               #((read_byte) << 16) |
+               #((read_byte) << 8) |
+               #(read_byte)
+        i1 = read_byte
+        i2 = read_byte
+        i3 = read_byte
+        i4 = read_byte
+        res =  (((i1&0x80) == 0 ? 0xffffffff : -0x100000000)) |
+               ((i1 << 24) | (i2 << 16) | (i3 << 8) | (i4))
+        puts "#{(((i1&0x80) == 0 ? 0 : -1) << 32).to_s(16)}:#{(i1 << 24).to_s(16)}:#{(i2 << 16).to_s(16)}:#{(i3 << 8).to_s(16)}:#{i4.to_s(16)} = #{res.to_s(16)}"
+        return res
       end
 
       # Reads eight bytes and returns a long.

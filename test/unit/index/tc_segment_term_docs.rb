@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + "/../../test_helper"
 include Ferret::Index
 include Ferret::Analysis
 
-class SegmentTermDocsTest < Test::Unit::TestCase
+class SegmentTermDocEnumTest < Test::Unit::TestCase
   def setup()
     @dir = RAMDirectory.new
     @doc = IndexTestHelper.prepare_document()

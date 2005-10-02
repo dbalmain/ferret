@@ -25,8 +25,8 @@ module Ferret::Index
     # searching slightly slower.  Searching is typically not dominated by
     # dictionary lookup, so tweaking this is rarely useful.
     #
-    # Expert: The fraction of TermDocs entries stored in skip
-    # tables, used to accellerate TermDocs#skipTo(int).  Larger
+    # Expert: The fraction of TermDocEnum entries stored in skip
+    # tables, used to accellerate TermDocEnum#skipTo(int).  Larger
     # values result in smaller indexes, greater acceleration, but fewer
     # accelerable cases, while smaller values result in bigger indexes, less
     # acceleration and more accelerable cases. More detailed experiments
@@ -162,6 +162,7 @@ module Ferret::Index
       seek_enum(get_index_offset(term))
       return scan_for_term_info(term)
     end
+    alias :[] :get_term_info
 
     # Returns the nth term in the set. 
     def get_term(position)

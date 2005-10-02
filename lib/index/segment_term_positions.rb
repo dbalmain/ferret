@@ -1,11 +1,11 @@
 module Ferret::Index
-  class SegmentTermPositions < SegmentTermDocs
+  class SegmentTermDocPosEnum < SegmentTermDocEnum
     def initialize(p) 
       super
       @prox_stream = p.prox_stream.clone()
     end
 
-    def seek(ti)
+    def do_seek(ti)
       super
       if (ti != nil)
         @prox_stream.seek(ti.prox_pointer)
@@ -39,7 +39,7 @@ module Ferret::Index
     end
 
     def read(docs, freqs) 
-      raise NotImplementedError, "TermPositions does not support processing multiple documents in one call. Use TermDocs instead."
+      raise NotImplementedError, "TermDocPosEnum does not support processing multiple documents in one call. Use TermDocEnum instead."
     end
 
     # Called by super.skipTo(). 

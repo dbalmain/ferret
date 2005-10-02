@@ -115,7 +115,7 @@ module Ferret::Index
     # vector contains terms and frequencies for all terms in a given vectorized
     # field.  If no such fields existed, the method returns nil. The term
     # vectors that are returned my either be of type TermFreqVector or of type
-    # TermPositionsVector if positions or offsets have been stored.
+    # TermDocPosEnumVector if positions or offsets have been stored.
     # 
     # doc_number:: document for which term frequency vectors are returned
     # returns:: array of term frequency vectors. May be nil if no term vectors
@@ -133,7 +133,7 @@ module Ferret::Index
     # returned vector contains terms and frequencies for the terms in the
     # specified field of this document, if the field had the storeTermVector
     # flag set. If termvectors had been stored with positions or offsets, a
-    # TermPositionsVector is returned.
+    # TermDocPosEnumVector is returned.
     # 
     # doc_number:: document for which the term frequency vector is returned
     # field:: field for which the term frequency vector is returned.
@@ -244,13 +244,13 @@ module Ferret::Index
     # 
     # The enumeration is ordered by document number.  Each document number is
     # greater than all that precede it in the enumeration.
-    def term_docs_from(term)
+    def term_docs_for(term)
       term_docs = term_docs()
       term_docs.seek(term)
       return term_docs
     end
 
-    # Returns an unpositioned TermDocs enumerator. 
+    # Returns an unpositioned TermDocEnum enumerator. 
     def term_docs()
       raise NotImplementedError
     end
@@ -267,13 +267,13 @@ module Ferret::Index
     # This positional information faciliates phrase and proximity searching.
     # The enumeration is ordered by document number.  Each document number is
     # greater than all that precede it in the enumeration.
-    def term_positions_from(term)
+    def term_positions_for(term)
       term_positions = term_positions()
       term_positions.seek(term)
       return term_positions
     end
 
-    # Returns an unpositioned @link TermPositionsendenumerator. 
+    # Returns an unpositioned @link TermDocPosEnumendenumerator. 
     def term_positions()
       raise NotImplementedError
     end
@@ -306,7 +306,7 @@ module Ferret::Index
     end
     
     # Deletes the document numbered +doc_num+.  Once a document is deleted it
-    # will not appear in TermDocs or TermPostitions enumerations.  Attempts to
+    # will not appear in TermDocEnum or TermPostitions enumerations.  Attempts to
     # read its field with the @link #documentend method will result in an error.
     # The presence of this document may still be reflected in the @link
     # #docFreqendstatistic, though this will be corrected eventually as the

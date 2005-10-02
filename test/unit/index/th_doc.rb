@@ -107,5 +107,81 @@ module IndexTestHelper
     end
     return docs
   end
+
+  IR_TEST_DOC_CNT = 64
+
+  def IndexTestHelper.prepare_ir_test_docs()
+    body = "body"
+    title = "title"
+    author = "author"
+    text = "text"
+    year = "year"
+    changing_field = "changing_field"
+
+    docs = Array.new(IR_TEST_DOC_CNT)
+    docs[0] = Document.new()
+    docs[0] << Field.new(body, "Where is Wally", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[0] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::NO)
+    docs[1] = Document.new()
+    docs[1] << Field.new(body, "Some Random Sentence read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[2] = Document.new()
+    docs[2] << Field.new(body, "Some read Random Sentence read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[3] = Document.new()
+    docs[3] << Field.new(title, "War And Peace", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_OFFSETS)
+    docs[3] << Field.new(body, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[3] << Field.new(author, "Leo Tolstoy", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS)
+    docs[3] << Field.new(year, "1865", Field::Store::YES, Field::Index::NO, Field::TermVector::NO)
+    docs[3] << Field.new(text, "more text which is not stored", Field::Store::NO, Field::Index::TOKENIZED, Field::TermVector::NO)
+    docs[4] = Document.new()
+    docs[4] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[5] = Document.new()
+    docs[5] << Field.new(body, "Here's Wally", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[6] = Document.new()
+    docs[6] << Field.new(body, "Some Random Sentence read read read read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[7] = Document.new()
+    docs[7] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[8] = Document.new()
+    docs[8] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[9] = Document.new()
+    docs[9] << Field.new(body, "read Some Random Sentence read this will be used after unfinished next position read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[10] = Document.new()
+    docs[10] << Field.new(body, "Some read Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[10] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::YES)
+    docs[11] = Document.new()
+    docs[11] << Field.new(body, "And here too. Well, maybe Not", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[12] = Document.new()
+    docs[12] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[13] = Document.new()
+    docs[13] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[14] = Document.new()
+    docs[14] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[15] = Document.new()
+    docs[15] << Field.new(body, "Some read Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[16] = Document.new()
+    docs[16] << Field.new(body, "Some Random read read Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[17] = Document.new()
+    docs[17] << Field.new(body, "Some Random read Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[17] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS)
+    docs[18] = Document.new()
+    docs[18] << Field.new(body, "Wally Wally Wally", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[19] = Document.new()
+    docs[19] << Field.new(body, "Some Random Sentence", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[19] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_OFFSETS)
+    docs[20] = Document.new()
+    docs[20] << Field.new(body, "Wally is where Wally usually likes to go. Wally Mart! Wally likes shopping there for Where's Wally books. Wally likes to read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[20] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[21] = Document.new()
+    docs[21] << Field.new(body, "Some Random Sentence read read read and more read read read", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    docs[21] << Field.new(changing_field, "word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::NO)
+
+    buf = ""
+    21.times { buf << "skip " }
+    22.upto(IR_TEST_DOC_CNT) do |i|
+      buf << "skip "
+      docs[i] = Document.new()
+      docs[i] << Field.new(text, buf.clone, Field::Store::NO, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    end
+    return docs
+  end
 end
 

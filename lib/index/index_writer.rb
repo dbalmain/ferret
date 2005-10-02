@@ -122,8 +122,8 @@ module Ferret
           @segment_infos << SegmentInfo.new(segment_name, 1, @ram_directory)
           maybe_merge_segments()
         end
-
       end
+      alias :<< :add_document
 
       def segments_counter()
         return segment_infos.counter

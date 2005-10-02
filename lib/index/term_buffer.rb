@@ -22,12 +22,14 @@ module Ferret::Index
     end
 
     def read(input, field_infos)
+      puts "fucker"
       @term = nil                           # invalidate cache
       start = input.read_vint()
       length = input.read_vint()
       total_length = start + length
       @text_length = total_length
       input.read_chars(@text, start, length)
+      puts "test = #{@text}"
       @field_name = field_infos[input.read_vint()].name
     end
 
@@ -65,7 +67,7 @@ module Ferret::Index
       end
 
       if @term.nil?
-        @term = Term.new(@field_name, @text[0,@text_length].to_s)#.pack("U*"))
+        @term = Term.new(@field_name, @text[0,@text_length].to_s)
       end
       return @term
     end
@@ -79,6 +81,10 @@ module Ferret::Index
     
     def text_str()
       @text[0,@text_length]
+    end
+
+    def to_s()
+      to_term.to_s
     end
   end
 end

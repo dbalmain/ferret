@@ -159,11 +159,11 @@ module Ferret
       end
 
       def term_docs()
-        return MultiTermDocs.new(@sub_readers, @starts)
+        return MultiTermDocEnum.new(@sub_readers, @starts)
       end
 
       def term_positions()
-        return MultiTermPositions.new(@sub_readers, @starts)
+        return MultiTermDocPosEnum.new(@sub_readers, @starts)
       end
 
       def do_commit()
@@ -242,7 +242,7 @@ module Ferret
       end
     end
 
-    class MultiTermDocs < TermDocs 
+    class MultiTermDocEnum < TermDocEnum 
       attr_accessor :readers, :starts, :term, :base, :pointer, :current
 
       def initialize(readers, starts) 
@@ -329,7 +329,7 @@ module Ferret
       end
     end
 
-    class MultiTermPositions < MultiTermDocs
+    class MultiTermDocPosEnum < MultiTermDocEnum
       def initialize(r, s) 
         super(r,s)
       end

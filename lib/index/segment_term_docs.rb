@@ -1,6 +1,6 @@
 module Ferret
   module Index
-    class SegmentTermDocs < TermDocs 
+    class SegmentTermDocEnum < TermDocEnum 
       attr_accessor :parent, :freq_stream, :count, :df, :deleted_docs, :doc, :freq
 
       def initialize(parent) 
@@ -20,7 +20,7 @@ module Ferret
           ti = parent.term_infos[t]
         elsif t.is_a?(TermEnum)
           # use comparison of fieldinfos to verify that term enum (t) belongs to the
-          # same segment as this SegmentTermDocs
+          # same segment as this SegmentTermDocEnum
           if (t.instance_of?(SegmentTermEnum) and t.field_infos == parent.field_infos)
             ti = t.term_info()
           else                                          # punt case
@@ -32,7 +32,10 @@ module Ferret
           raise ArgumentError, "Must pass a Term, TermEnum or TermInfo object, not a " +
             t.class.to_s
         end
+        do_seek(ti)
+      end
           
+      def do_seek(ti)
         @count = 0
         if (ti == nil) 
           @doc_freq = 0
@@ -107,13 +110,13 @@ module Ferret
         return i
       end
 
-      # Overridden by SegmentTermPositions to skip in prox stream. 
+      # Overridden by SegmentTermDocPosEnum to skip in prox stream. 
       def skip_prox(prox_pointer)
       end
 
       # Optimized implementation. 
       def skip_to(target)
-        if (@doc_freq >= skip_interval) # optimized case
+        if (@doc_freq >= @skip_interval) # optimized case
 
           if (@skip_stream == nil)
             @skip_stream = @freq_stream.clone() # lazily clone
@@ -128,7 +131,7 @@ module Ferret
           last_skip_doc = @skip_doc
           last_freq_pointer = @freq_stream.pos()
           last_prox_pointer = -1
-          num_skipped = -1 - (@count % skip_interval)
+          num_skipped = -1 - (@count % @skip_interval)
 
           while (target > @skip_doc) 
             last_skip_doc = @skip_doc
@@ -136,7 +139,7 @@ module Ferret
             last_prox_pointer = @prox_pointer
             
             if (@skip_doc != 0 and @skip_doc >= @doc)
-              num_skipped += skip_interval
+              num_skipped += @skip_interval
             end
             
             if(@skip_count >= @num_skips)

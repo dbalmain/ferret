@@ -1,10 +1,10 @@
 $:.unshift File.dirname(__FILE__)
 
-require 'index/th_doc.rb'
 require 'index/tc_compound_file_io.rb'
 require 'index/tc_field_infos.rb'
 require 'index/tc_fields_io.rb'
 require 'index/tc_index_writer.rb'
+require 'index/tc_index_reader.rb'
 require 'index/tc_segment_infos.rb'
 require 'index/tc_segment_term_docs.rb'
 require 'index/tc_segment_term_enum.rb'
