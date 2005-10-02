@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-require File.dirname(__FILE__) + "/th_doc"
 
 include Ferret::Index
 include Ferret::Document
@@ -137,13 +136,15 @@ class FieldsIOTest < Test::Unit::TestCase
   end
 
   def test_binary_field
+    bin = IndexTestHelper::BINARY_DATA
     field = @docres.field("binary_field")
-    check_field_values(field, "This is normal text but it is stored as a binary, ie. in bytes.".unpack("U*"), true, false, false, false, true)
+    check_field_values(field, bin, true, false, false, false, true)
   end
 
   def test_compressed_binary_field
+    cbin = IndexTestHelper::COMPRESSED_BINARY_DATA
     field = @docres.field("compressed_binary_field")
-    check_field_values(field, "compressed binary", true, false, false, false, true)
+    check_field_values(field, cbin, true, false, false, false, true)
   end
 
 

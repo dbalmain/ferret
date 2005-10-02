@@ -61,10 +61,12 @@ class FieldTest < Test::Unit::TestCase
   end
 
   def test_new_binary_field()
-    obj = "value".intern
-    f = Field.new_binary_field("name", "value".intern, Field::Store::YES)
+    tmp = []
+    256.times {|i| tmp[i] = i}
+    bin = tmp.pack("c*")
+    f = Field.new_binary_field("name", bin, Field::Store::YES)
     assert_equal("name", f.name)
-    assert_equal("value".intern, f.data)
+    assert_equal(bin, f.data)
     assert_equal(true, f.stored?)
     assert_equal(false, f.compressed?)
     assert_equal(false, f.indexed?)

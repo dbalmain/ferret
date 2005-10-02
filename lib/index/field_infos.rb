@@ -27,6 +27,12 @@ module Ferret
         end
       end
 
+      # Returns the number of fields that have been added to this field infos
+      # object.
+      def size
+        return @fi_array.size
+      end
+
       # Automatically adds all of the fields from the document if they haven't
       # been added already. Or it will update the values.
       def add_doc_fields(doc)
@@ -68,7 +74,7 @@ module Ferret
               store_offset = false)
         fi = @fi_hash[name]
         if (fi == nil)
-          add_internal(name, indexed, store_term_vector, store_position, store_offset)
+          fi = add_internal(name, indexed, store_term_vector, store_position, store_offset)
         else
           if (fi.indexed? != indexed)
             fi.indexed = true             # once indexed, always index
@@ -83,6 +89,7 @@ module Ferret
             fi.store_offset = true   # once vector, always vector
           end
         end
+        return fi
       end
 
       # Returns the number of the field that goes by the field name that is
@@ -188,6 +195,7 @@ module Ferret
                              store_offset)
           @fi_array << fi
           @fi_hash[name] = fi
+          return fi
         end
 
         def get_field_info_byte(fi)

@@ -25,11 +25,17 @@ class DocumentTest < Test::Unit::TestCase
   end
 
   def test_binary_string()
+    tmp = []
+    256.times {|i| tmp[i] = i}
+    bin1 = tmp.pack("c*")
+    tmp = []
+    56.times {|i| tmp[i] = i}
+    bin2 = tmp.pack("c*")
     doc = Document.new()
     fs1 = Field.new("field1", "value1", Field::Store::YES, Field::Index::NO)
     fs2 = Field.new("field1", "value2", Field::Store::YES, Field::Index::NO)
-    fb1 = Field.new_binary_field("field1", "value1".intern, Field::Store::YES)
-    fb2 = Field.new_binary_field("field1", "value2".intern, Field::Store::YES)
+    fb1 = Field.new_binary_field("field1", bin1, Field::Store::YES)
+    fb2 = Field.new_binary_field("field1", bin2, Field::Store::YES)
 
     doc.add_field(fs1)
     doc.add_field(fs2)
@@ -38,6 +44,6 @@ class DocumentTest < Test::Unit::TestCase
 
     assert_equal(4, doc.fields("field1").size)
     assert_equal(["value1", "value2"], doc.values("field1"))
-    assert_equal(["value1".intern, "value2".intern], doc.binaries("field1"))
+    assert_equal([bin1, bin2], doc.binaries("field1"))
   end
 end

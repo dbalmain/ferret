@@ -4,6 +4,15 @@ include Ferret::Document
 include Ferret::Index
 
 module IndexTestHelper
+  def IndexTestHelper.make_binary(size)
+    tmp = Array.new(size)
+    size.times {|i| tmp[i] = i%256 }
+    return tmp.pack("c*")
+  end
+
+  BINARY_DATA = IndexTestHelper.make_binary(256)
+  COMPRESSED_BINARY_DATA = IndexTestHelper.make_binary(56)
+
   def IndexTestHelper.prepare_document
     doc = Document::Document.new()
 
@@ -14,8 +23,8 @@ module IndexTestHelper
     doc << Field.new("unstored_field1", "unstored field text one", Field::Store::NO, Field::Index::TOKENIZED, Field::TermVector::NO)
     doc << Field.new("unstored_field2", "unstored field text two", Field::Store::NO, Field::Index::TOKENIZED, Field::TermVector::YES)
     doc << Field.new("compressed_field", "compressed text", Field::Store::COMPRESS, Field::Index::TOKENIZED, Field::TermVector::YES)
-    doc << Field.new_binary_field("binary_field", "This is normal text but it is stored as a binary, ie. in bytes.", Field::Store::YES)
-    doc << Field.new_binary_field("compressed_binary_field", "compressed binary", Field::Store::COMPRESS)
+    doc << Field.new_binary_field("binary_field", BINARY_DATA, Field::Store::YES)
+    doc << Field.new_binary_field("compressed_binary_field", COMPRESSED_BINARY_DATA, Field::Store::COMPRESS)
     return doc
   end
 

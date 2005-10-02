@@ -52,7 +52,7 @@ module Ferret
                                             uncompress(b),
                                             Field::Store::COMPRESS)
             else # No compression
-              doc << Field.new_binary_field(fi.name, b.unpack("C*"), Field::Store::YES)
+              doc << Field.new_binary_field(fi.name, b, Field::Store::YES)
             end
           else 
             store = Field::Store::YES
@@ -74,7 +74,15 @@ module Ferret
             end
             stv =  Field::TermVector::NO
             if fi.store_term_vector? 
-              stv =  Field::TermVector::YES 
+              if fi.store_position? and fi.store_offset?
+                stv =  Field::TermVector::WITH_POSITIONS_OFFSETS 
+              elsif fi.store_position?
+                stv =  Field::TermVector::WITH_POSITIONS
+              elsif fi.store_offset?
+                stv =  Field::TermVector::WITH_OFFSETS 
+              else
+                stv =  Field::TermVector::YES 
+              end
             end
             doc << Field.new(fi.name, data, store, index, stv)
           end
