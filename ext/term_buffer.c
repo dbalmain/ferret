@@ -35,7 +35,7 @@ frt_termbuffer_alloc(VALUE klass)
 static VALUE
 frt_termbuffer_init(VALUE self)
 {
-	//rb_iv_set(self, "@term", Qnil);
+	rb_iv_set(self, "@term", Qnil);
   return Qnil;
 }
 
@@ -204,20 +204,16 @@ frt_termbuffer_read(VALUE self, VALUE input, VALUE info)
 	}
 	
 	frt_read_chars(input, tb->text, start, length);
-	fnum = INT2FIX(frt_read_vint(input));
-	field = rb_funcall(info, field_name, 1, fnum);
-	flen = RSTRING(field)->len;
-	
-	if(tb->field == NULL){
-		tb->field = (char *)ALLOC_N(char, flen+1);
-	} else {
-		REALLOC_N(tb->field, char, flen+1);
-	}
-	
-	MEMCPY(tb->field, RSTRING(field)->ptr, char, flen);
-	tb->tlen = tlen;
-	tb->flen = flen;
+  fnum = INT2FIX(frt_read_vint(input));
+  field = rb_funcall(info, field_name, 1, fnum);
+  flen = RSTRING(field)->len;
+  
+  REALLOC_N(tb->field, char, flen+1);
+  
+  MEMCPY(tb->field, RSTRING(field)->ptr, char, flen);
 
+  tb->flen = flen;
+  tb->tlen = tlen;
 	return Qnil;
 }
 

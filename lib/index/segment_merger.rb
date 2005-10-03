@@ -138,7 +138,7 @@ module Ferret::Index
           max_doc.times do |doc_num|
             # skip deleted docs
             next if (reader.deleted?(doc_num)) 
-            term_vectors_writer.add_all_doc_vectors(reader.get_term_freq_vectors(doc_num))
+            term_vectors_writer.add_all_doc_vectors(reader.get_term_vectors(doc_num))
           end
         end
       ensure 

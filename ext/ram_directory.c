@@ -32,7 +32,7 @@ static VALUE
 frt_rf_alloc(VALUE klass)
 {
   RAMFile *rf;
-  char *buf;
+  byte_t *buf;
 
   rf = (RAMFile *)ALLOC(RAMFile);
   buf = (byte_t *)ALLOC_N(byte_t, BUFFER_SIZE);
@@ -49,7 +49,7 @@ frt_rf_alloc(VALUE klass)
 void
 frt_rf_extend(RAMFile *rf)
 {
-  char *buf = (byte_t *)ALLOC_N(byte_t, BUFFER_SIZE);
+  byte_t *buf = (byte_t *)ALLOC_N(byte_t, BUFFER_SIZE);
   rf->bufcnt++;
   REALLOC_N(rf->buffers, void *, rf->bufcnt);
   rf->buffers[rf->bufcnt - 1] = buf;
@@ -230,7 +230,7 @@ frt_rii_read_internal(VALUE self, VALUE rb, VALUE roffset, VALUE rlen)
   int pointer = FIX2INT(rb_iv_get(self, "pointer"));
   int start = pointer;
   byte_t *buffer;
-  byte_t *b = StringValuePtr(rb);
+  byte_t *b = (byte_t *)StringValuePtr(rb);
   
   while (remainder > 0) {
     buffer_number = (int)(start / BUFFER_SIZE);

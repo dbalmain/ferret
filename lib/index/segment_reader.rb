@@ -309,7 +309,7 @@ module Ferret
       # the specified field of this document, if the field had storeTermVector
       # flag set.  If the flag was not set, the method returns nil.
       # raises:: IOException
-      def get_term_freq_vector(doc_number, field)
+      def get_term_vector(doc_number, field)
         # Check if this field is invalid or has no stored term vector
         fi = @field_infos[field]
         if fi.nil? or not fi.store_term_vector? or @tv_reader_orig.nil?
@@ -330,7 +330,7 @@ module Ferret
       # in a given vectorized field.
       # If no such fields existed, the method returns nil.
       # raises:: IOException
-      def get_term_freq_vectors(doc_number)
+      def get_term_vectors(doc_number)
         if @tv_reader_orig.nil?
           return nil
         end

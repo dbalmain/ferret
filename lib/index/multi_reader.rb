@@ -42,14 +42,14 @@ module Ferret
       # vector vector contains term numbers and frequencies for all terms in a
       # given vectorized field.  If no such fields existed, the method returns
       # nil.
-      def get_term_freq_vectors(n)
+      def get_term_vectors(n)
         i = reader_index(n)        # find segment num
-        return @sub_readers[i].get_term_freq_vectors(n - @starts[i]); # dispatch to segment
+        return @sub_readers[i].get_term_vectors(n - @starts[i]); # dispatch to segment
       end
 
-      def get_term_freq_vector(n, field)
+      def get_term_vector(n, field)
          i = reader_index(n)        # find segment num
-        return @sub_readers[i].get_term_freq_vector(n - @starts[i], field)
+        return @sub_readers[i].get_term_vector(n - @starts[i], field)
       end
 
       def num_docs() 

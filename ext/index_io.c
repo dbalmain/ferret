@@ -77,7 +77,7 @@ frt_indexin_refill(VALUE self)
     rb_raise(rb_eEOFError, "IndexInput: Read past End of File");
   }
 
-  VALUE rStr = rb_str_new(my_buf->buffer, BUFFER_SIZE);
+  VALUE rStr = rb_str_new((char *)my_buf->buffer, BUFFER_SIZE);
   rb_funcall(self, frt_read_internal, 3,
       rStr, INT2FIX(0), INT2FIX(len_to_read));
 
@@ -298,7 +298,7 @@ frt_indexout_flush(VALUE self)
   Data_Get_Struct(self, IndexBuffer, my_buf);
 
   rb_funcall(self, frt_flush_buffer, 2,
-      rb_str_new(my_buf->buffer, BUFFER_SIZE), INT2FIX(my_buf->pos));
+      rb_str_new((char *)my_buf->buffer, BUFFER_SIZE), INT2FIX(my_buf->pos));
 
   my_buf->start += my_buf->pos;
   my_buf->pos = 0;

@@ -110,38 +110,38 @@ module Ferret::Index
       return SegmentInfos.read_current_version(directory)
     end
 
-    # Return an array of term frequency vectors for the specified document.  The
-    # array contains a vector for each vectorized field in the document.  Each
-    # vector contains terms and frequencies for all terms in a given vectorized
-    # field.  If no such fields existed, the method returns nil. The term
-    # vectors that are returned my either be of type TermFreqVector or of type
+    # Return an array of term vectors for the specified document.  The array
+    # contains a vector for each vectorized field in the document.  Each vector
+    # contains terms and frequencies for all terms in a given vectorized field.
+    # If no such fields existed, the method returns nil. The term vectors that
+    # are returned my either be of type TermFreqVector or of type
     # TermDocPosEnumVector if positions or offsets have been stored.
     # 
-    # doc_number:: document for which term frequency vectors are returned
-    # returns:: array of term frequency vectors. May be nil if no term vectors
-    #           have been stored for the specified document.
+    # doc_number:: document for which term vectors are returned
+    # returns:: array of term vectors. May be nil if no term vectors have been
+    #           stored for the specified document.
     # raises:: IOError if index cannot be accessed
     #
     # See Field.TermVector
-    def get_term_freq_vectors(doc_number)
+    def get_term_vectors(doc_number)
       raise NotImplementedError
     end
            
 
     
-    # Return a term frequency vector for the specified document and field. The
-    # returned vector contains terms and frequencies for the terms in the
-    # specified field of this document, if the field had the storeTermVector
-    # flag set. If termvectors had been stored with positions or offsets, a
+    # Return a term vector for the specified document and field. The returned
+    # vector contains terms and frequencies for the terms in the specified
+    # field of this document, if the field had the storeTermVector flag set. If
+    # termvectors had been stored with positions or offsets, a
     # TermDocPosEnumVector is returned.
     # 
-    # doc_number:: document for which the term frequency vector is returned
-    # field:: field for which the term frequency vector is returned.
-    # returns:: term frequency vector May be nil if field does not exist in the
-    #           specified document or term vector was not stored.
+    # doc_number:: document for which the term vector is returned
+    # field:: field for which the term vector is returned.
+    # returns:: term vector May be nil if field does not exist in the specified
+    #           document or term vector was not stored.
     # raises:: IOError if index cannot be accessed
     # See Field.TermVector
-    def get_term_freq_vector(doc_number, field)
+    def get_term_vector(doc_number, field)
       raise NotImplementedError
     end
            
