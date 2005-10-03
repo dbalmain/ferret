@@ -35,7 +35,7 @@ module Ferret::Search
         return nil if term_docs.nil?
 
         return TermScorer.new(self, term_docs, @similarity,
-                              reader.norms(@term.field_name))
+                              reader.get_norms(@term.field_name))
       end
 
       def query()
@@ -73,7 +73,7 @@ module Ferret::Search
         field_expl << (tf_expl)
         field_expl << (idf_expl)
 
-        field_norms = reader.norms(field)
+        field_norms = reader.get_norms(field)
         field_norm = field_norms!=nil ? Similarity.decode_norm(field_norms[doc]) : 0.0
         field_norm_expl = Explanation.new(field_norm,
                                           "field_norm(field=#{field}, doc=#{doc})")

@@ -319,7 +319,7 @@ module Ferret::Index
             @readers.each do |reader|
               max_doc = reader.max_doc()
               input = "0" * max_doc
-              reader.set_norms(fi.name, input, 0)
+              reader.get_norms_into(fi.name, input, 0)
               max_doc.times do |k|
                 if not reader.deleted?(k) 
                   output.write_byte(input[k])

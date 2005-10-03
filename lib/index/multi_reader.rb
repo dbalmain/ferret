@@ -85,6 +85,7 @@ module Ferret
       end
 
       def do_undelete_all()
+        @num_docs = -1                         # invalidate cache
         @sub_readers.each {|reader| reader.undelete_all() }
         @has_deletions = false
       end
@@ -110,23 +111,23 @@ module Ferret
         return hi
       end
 
-      def norms(field)
+      def get_norms(field)
         synchronize do
           bytes = @norms_cache[field]
           if (bytes != nil)
             return bytes    # cache hit
           end
 
-          bytes = Array.new(@max_doc)
+          bytes = " " * @max_doc
           @sub_readers.length.times do |i|
-            @sub_readers[i].set_norms(field, bytes, @starts[i])
+            @sub_readers[i].get_norms_into(field, bytes, @starts[i])
           end
           @norms_cache[field] = bytes      # update cache
           return bytes
         end
       end
 
-      def set_norms(field, buf, offset)
+      def get_norms_into(field, buf, offset)
         bytes = @norms_cache[field]
         if (bytes != nil)                            # cache hit
           buf[offset ,@max_doc] = bytes[0, @max_doc]
@@ -134,7 +135,7 @@ module Ferret
         end
 
         @sub_readers.length.times do |i|
-          @sub_readers[i].set_norms(field, buf, offset + @starts[i])
+          @sub_readers[i].get_norms_into(field, buf, offset + @starts[i])
         end
       end
 

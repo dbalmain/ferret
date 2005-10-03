@@ -262,8 +262,164 @@ module IndexReaderTest
 
 
     df = doc.field("text")
-    assert(df.nil?) # text is not stored
+    assert(df.nil?) # "text" is not stored
   end
+
+  def test_ir_norms()
+    @ir.set_norm(3, "title", 1)
+    @ir.set_norm(3, "body", 12)
+    @ir.set_norm(3, "author", 145)
+    @ir.set_norm(3, "year", 31)
+    @ir.set_norm(3, "text", 202)
+    @ir.set_norm(25, "text", 20)
+    @ir.set_norm(50, "text", 200)
+    @ir.set_norm(63, "text", 155)
+
+    norms = @ir.get_norms("text")
+
+    assert_equal(202, norms[3])
+    assert_equal(20, norms[25])
+    assert_equal(200, norms[50])
+    assert_equal(155, norms[63])
+
+    norms = @ir.get_norms("title")
+    assert_equal(1, norms[3])
+
+    norms = @ir.get_norms("body")
+    assert_equal(12, norms[3])
+
+    norms = @ir.get_norms("author")
+    assert_equal(145, norms[3])
+
+    norms = @ir.get_norms("year")
+    # TODO: this returns two possible results depending on whether it is 
+    # a multi reader or a segment reader. If it is a multi reader it will
+    # always return an empty set of norms, otherwise it will return nil. 
+    # I'm not sure what to do here just yet or if this is even an issue.
+    #assert(norms.nil?) 
+
+    norms = " " * 164
+    @ir.get_norms_into("text", norms, 100)
+    assert_equal(202, norms[103])
+    assert_equal(20, norms[125])
+    assert_equal(200, norms[150])
+    assert_equal(155, norms[163])
+
+    @ir.commit()
+
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw.optimize()
+    iw.close()
+
+    ir2 = IndexReader.open(@dir, false)
+
+    norms = " " * 164
+    ir2.get_norms_into("text", norms, 100)
+    assert_equal(202, norms[103])
+    assert_equal(20, norms[125])
+    assert_equal(200, norms[150])
+    assert_equal(155, norms[163])
+    ir2.close()
+  end
+
+  
+  def test_ir_delete()
+    doc_count = IndexTestHelper::IR_TEST_DOC_CNT
+    assert_equal(false, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count, @ir.num_docs())
+    assert_equal(false, @ir.deleted?(10))
+
+    @ir.delete(10)
+    assert_equal(true, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count - 1, @ir.num_docs())
+    assert_equal(true, @ir.deleted?(10))
+
+    @ir.delete(10)
+    assert_equal(true, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count - 1, @ir.num_docs())
+    assert_equal(true, @ir.deleted?(10))
+
+    @ir.delete(doc_count - 1)
+    assert_equal(true, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count - 2, @ir.num_docs())
+    assert_equal(true, @ir.deleted?(doc_count - 1))
+
+    @ir.delete(doc_count - 2)
+    assert_equal(true, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count - 3, @ir.num_docs())
+    assert_equal(true, @ir.deleted?(doc_count - 2))
+
+    @ir.undelete_all()
+    assert_equal(false, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count, @ir.num_docs())
+    assert_equal(false, @ir.deleted?(10))
+    assert_equal(false, @ir.deleted?(doc_count - 2))
+    assert_equal(false, @ir.deleted?(doc_count - 1))
+
+    @ir.delete(10)
+    @ir.delete(20)
+    @ir.delete(30)
+    @ir.delete(40)
+    @ir.delete(50)
+    @ir.delete(doc_count - 1)
+    assert_equal(true, @ir.has_deletions?())
+    assert_equal(doc_count, @ir.max_doc())
+    assert_equal(doc_count - 6, @ir.num_docs())
+
+    @ir.commit()
+
+    ir2 = IndexReader.open(@dir, false)
+
+    assert_equal(true, ir2.has_deletions?())
+    assert_equal(doc_count, ir2.max_doc())
+    assert_equal(doc_count - 6, ir2.num_docs())
+    assert_equal(true, ir2.deleted?(10))
+    assert_equal(true, ir2.deleted?(20))
+    assert_equal(true, ir2.deleted?(30))
+    assert_equal(true, ir2.deleted?(40))
+    assert_equal(true, ir2.deleted?(50))
+    assert_equal(true, ir2.deleted?(doc_count - 1))
+
+    ir2.undelete_all()
+    assert_equal(false, ir2.has_deletions?())
+    assert_equal(doc_count, ir2.max_doc())
+    assert_equal(doc_count, ir2.num_docs())
+    assert_equal(false, ir2.deleted?(10))
+    assert_equal(false, ir2.deleted?(20))
+    assert_equal(false, ir2.deleted?(30))
+    assert_equal(false, ir2.deleted?(40))
+    assert_equal(false, ir2.deleted?(50))
+    assert_equal(false, ir2.deleted?(doc_count - 1))
+
+    ir2.delete(10)
+    ir2.delete(20)
+    ir2.delete(30)
+    ir2.delete(40)
+    ir2.delete(50)
+    ir2.delete(doc_count - 1)
+
+    ir2.commit()
+
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw.optimize()
+    iw.close()
+
+    ir3 = IndexReader.open(@dir, false)
+
+    assert(!ir3.has_deletions?())
+    assert_equal(doc_count - 6, ir3.max_doc())
+    assert_equal(doc_count - 6, ir3.num_docs())
+
+    ir3.close()
+  end
+ 
+
 end
 
 class SegmentReaderTest < Test::Unit::TestCase

@@ -9,8 +9,8 @@ module Ferret
       attr_reader :freq_stream, :prox_stream, :deleted_docs,
         :term_infos, :field_infos, :segment
 
-      def SegmentReader.get(infos, info, close = false)
-        return SegmentReader.new(info.directory, info, infos, close, true)
+      def SegmentReader.get(info, infos = nil, close = false)
+        return SegmentReader.new(info.directory, info, infos, close, infos!=nil)
       end
       
       def initialize(dir, info, seg_infos, close, owner)
@@ -31,7 +31,7 @@ module Ferret
         @deleted_docs = nil
         @deleted_docs_dirty = false
         if SegmentReader.has_deletions?(info) then
-          @deleted_docs = BitVector.new(directory, @segment + '.del')
+          @deleted_docs = BitVector.read(directory, @segment + '.del')
         end
 
         @freq_stream = cfs.open_input(@segment + '.frq')
@@ -47,16 +47,16 @@ module Ferret
 
       def do_commit()
         if (@deleted_docs_dirty) # re-write deleted 
-          @deleted_docs.write(directory(), @segment + '.tmp')
-          directory().rename(@segment + '.tmp', @segment + '.del')
+          @deleted_docs.write(@directory, @segment + '.tmp')
+          @directory.rename(@segment + '.tmp', @segment + '.del')
         end
-        if(@undelete_all and directory().exists?(@segment + '.del'))
-          directory().delete(@segment + '.del')
+        if(@undelete_all and @directory.exists?(@segment + '.del'))
+          @directory.delete(@segment + '.del')
         end
         if (@norms_dirty) # re-write norms 
           @norms.each_value do |norm|
             if norm.dirty? 
-              norm.re_write()
+              norm.re_write(@directory, @segment, max_doc(), @cfs_reader)
             end
           end
         end
@@ -116,7 +116,7 @@ module Ferret
 
         IndexFileNames::INDEX_EXTENSIONS.each do |ext|
           name = @segment + "." + ext
-          if (directory().exists?(name))
+          if (@directory.exists?(name))
             file_names << name
           end
         end
@@ -128,7 +128,7 @@ module Ferret
             else
               name = @segment + ".s" + i.to_s
             end
-            if (directory().exists?(name))
+            if (@directory.exists?(name))
               file_names << name
             end
           end
@@ -223,7 +223,7 @@ module Ferret
         return field_set
       end
 
-      def norms(field)
+      def get_norms(field)
         synchronize do
           norm = @norms[field]
           if (norm == nil)               # not an indexed field
@@ -231,7 +231,7 @@ module Ferret
           end
           if (norm.bytes == nil)         # value not yet read
             bytes = " " * max_doc()
-            set_norms(field, bytes, 0)
+            get_norms_into(field, bytes, 0)
             norm.bytes = bytes           # cache it
           end
           return norm.bytes
@@ -246,11 +246,11 @@ module Ferret
         norm.dirty = true                            # mark it dirty
         @norms_dirty = true
 
-        norms(field)[doc] = value                    # set the value
+        get_norms(field)[doc] = value                # set the value
       end
 
       # Read norms into a pre-allocated array. 
-      def set_norms(field, bytes, offset)
+      def get_norms_into(field, bytes, offset)
         synchronize do
           norm = @norms[field]
           return if (norm == nil) # use zeros in array
@@ -275,7 +275,7 @@ module Ferret
           if (fi.indexed?) 
             # look first if there are separate norms in compound format
             file_name = @segment + ".s" + fi.number.to_s
-            d = directory()
+            d = @directory
             if not d.exists?(file_name)
               file_name = @segment + ".f" + fi.number.to_s
               d = cfs_dir
@@ -341,6 +341,10 @@ module Ferret
         return term_vectors_reader.get_tv(doc_number)
       end
 
+      def dir()
+        return @directory
+      end
+
       class Norm 
         attr_reader :is
         attr_writer :dirty
@@ -355,21 +359,21 @@ module Ferret
           @number = number
         end
 
-        def re_write()
+        def re_write(directory, segment, count, cfs_reader)
           # NOTE: norms are re-written in regular directory, not cfs
-          out = directory().create_output(@segment + ".tmp")
+          out = directory.create_output(segment + ".tmp")
           begin 
-            out.write_bytes(@bytes, max_doc())
+            out.write_bytes(@bytes, count)
           ensure 
             out.close()
           end
-          if(@cfs_reader == nil)
-              file_name = @segment + ".f" + number
+          if(cfs_reader == nil)
+              file_name = "#{segment}.f#{@number}"
           else
               # use a different file name if we have compound format
-              file_name = @segment + ".s" + number
+              file_name = "#{segment}.s#{@number}"
           end
-          directory().rename_file(@segment + ".tmp", file_name)
+          directory.rename(segment + ".tmp", file_name)
           @dirty = false
         end
       end

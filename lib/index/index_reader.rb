@@ -88,11 +88,11 @@ module Ferret::Index
           infos = SegmentInfos.new()
           infos.read(directory)
           if (infos.size() == 1) # index is optimized
-            return SegmentReader.get(infos, infos[0], close_directory)
+            return SegmentReader.get(infos[0], infos, close_directory)
           end
           readers = Array.new(infos.size)
           infos.size.times do |i|
-            readers[i] = SegmentReader.get(infos, infos[i], close_directory)
+            readers[i] = SegmentReader.get(infos[i])
           end
           return MultiReader.new(readers, directory, infos, close_directory)
         end
@@ -105,7 +105,7 @@ module Ferret::Index
     # directory:: where the index resides.
     # returns:: version number.
     # raises:: IOError if segments file cannot be read.
-    def get_current_version(directory)
+    def IndexReader.get_current_version(directory)
       return SegmentInfos.read_current_version(directory)
     end
 
@@ -151,7 +151,7 @@ module Ferret::Index
     # directory:: the directory to check for an index
     # returns:: +true+ if an index exists; +false+ otherwise
     # raises:: IOError if there is a problem with accessing the index
-    def index_exists?(directory)
+    def IndexReader.index_exists?(directory)
       return directory.exists?("segments")
     end
 
@@ -188,7 +188,7 @@ module Ferret::Index
     # every document.  This is used by the search code to score documents.
     # 
     # See Field#boost
-    def norms(field, bytes=nil, offset=nil)
+    def get_norms(field, bytes=nil, offset=nil)
       raise NotImplementedError
     end
 
@@ -198,13 +198,13 @@ module Ferret::Index
     # length normalization values when resetting this, one should base the new
     # value upon the old.
     # 
-    # See #norms
+    # See #get_norms
     # See Similarity#decode_norm
     def set_norm(doc, field, value)
       synchronize do
         value = Similarity.encode_norm(value) if value.is_a? Float
         if(@directory_owner)
-          aquire_write_lock()
+          acquire_write_lock()
         end
         do_set_norm(doc, field, value)
         @has_changes = true
@@ -282,20 +282,20 @@ module Ferret::Index
     # This method is only valid if this IndexReader is directory owner.
     # 
     # raises:: IOError If WriteLock cannot be acquired.
-    def aquire_write_lock()
+    def acquire_write_lock()
       if @stale
         raise IOError, "IndexReader out of date and no longer valid for delete, undelete, or set_norm operations"
       end
 
       if (@write_lock == nil) 
-        @write_lock = directory.make_lock(IndexWriter.WRITE_LOCK_NAME)
-        if not @write_lock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT) # obtain write lock
+        @write_lock = @directory.make_lock(IndexWriter::WRITE_LOCK_NAME)
+        if not @write_lock.obtain(IndexWriter::WRITE_LOCK_TIMEOUT) # obtain write lock
           raise IOError, "Index locked for write: " + @write_lock
         end
 
         # we have to check whether index has changed since this reader was opened.
         # if so, this reader is no longer valid for deletion
-        if (SegmentInfos.read_current_version(directory) > segment_infos.version()) 
+        if (SegmentInfos.read_current_version(@directory) > @segment_infos.version()) 
           @stale = true
           @write_lock.release()
           @write_lock = nil
@@ -312,7 +312,7 @@ module Ferret::Index
     # index is further modified.
     def delete(doc_num)
       synchronize do
-        aquire_write_lock() if @directory_owner
+        acquire_write_lock() if @directory_owner
         do_delete(doc_num)
         @has_changes = true
       end
@@ -348,30 +348,12 @@ module Ferret::Index
     # Undeletes all documents currently marked as deleted in this index.
     def undelete_all()
       synchronize do
-        aquire_write_lock() if @directory_owner
+        acquire_write_lock() if @directory_owner
         do_undelete_all()
         @has_changes = true
       end
     end
     
-    # Closes files associated with this index.
-    # Also saves any new deletions to disk.
-    # No other methods should be called after this has been called.
-    def close()
-      synchronize do
-        commit()
-        do_close()
-        directory.close() if @close_directory
-      end
-    end
-
-    protected 
-
-    # Implements actual undelete_all() in subclass. 
-    def do_undelete_all()
-      raise NotImplementedError
-    end
-
     # Commit changes resulting from delete, undelete_all, or set_norm operations
     # 
     # raises:: IOError
@@ -379,8 +361,8 @@ module Ferret::Index
       synchronize do
         if @has_changes
           if @directory_owner
-            directory.synchronize do # in- & inter-process sync
-              commit_lock = directory.make_lock(IndexWriter.COMMIT_LOCK_NAME)
+            @directory.synchronize do # in- & inter-process sync
+              commit_lock = @directory.make_lock(IndexWriter::COMMIT_LOCK_NAME)
               commit_lock.while_locked do
                 do_commit()
                 @segment_infos.write(@directory)
@@ -398,6 +380,24 @@ module Ferret::Index
       end
     end
     
+    # Closes files associated with this index.
+    # Also saves any new deletions to disk.
+    # No other methods should be called after this has been called.
+    def close()
+      synchronize do
+        commit()
+        do_close()
+        @directory.close() if @close_directory
+      end
+    end
+
+    protected 
+
+    # Implements actual undelete_all() in subclass. 
+    def do_undelete_all()
+      raise NotImplementedError
+    end
+
     # Implements commit. 
     def do_commit()
       raise NotImplementedError
@@ -423,9 +423,9 @@ module Ferret::Index
     # currently locked.
     # directory:: the directory to check for a lock
     # raises:: IOError if there is a problem with accessing the index
-    def locked?(directory)
-      return (directory.make_lock(IndexWriter.WRITE_LOCK_NAME).locked? or
-        directory.make_lock(IndexWriter.COMMIT_LOCK_NAME).locked?)
+    def IndexReader.locked?(directory)
+      return (directory.make_lock(IndexWriter::WRITE_LOCK_NAME).locked? or
+        directory.make_lock(IndexWriter::COMMIT_LOCK_NAME).locked?)
     end
 
     # Forcibly unlocks the index in the named directory.
@@ -433,9 +433,9 @@ module Ferret::Index
     # Caution: this should only be used by failure recovery code,
     # when it is known that no other process nor thread is in fact
     # currently accessing this index.
-    def unlock(directory)
-      directory.make_lock(IndexWriter.WRITE_LOCK_NAME).release
-      directory.make_lock(IndexWriter.COMMIT_LOCK_NAME).release
+    def IndexReader.unlock(directory)
+      directory.make_lock(IndexWriter::WRITE_LOCK_NAME).release
+      directory.make_lock(IndexWriter::COMMIT_LOCK_NAME).release
     end
   end
 end
