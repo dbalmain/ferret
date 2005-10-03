@@ -81,8 +81,8 @@ module Ferret::Index
     def open_field(field)
       field_info = @field_infos[field]
       create_field(field_info.number,
-                   field_info.store_position?,
-                   field_info.store_offset?)
+                   field_info.store_positions?,
+                   field_info.store_offsets?)
     end
     
     # Finished processing current field. This should be followed by a call

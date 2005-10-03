@@ -74,11 +74,11 @@ module Ferret
             end
             stv =  Field::TermVector::NO
             if fi.store_term_vector? 
-              if fi.store_position? and fi.store_offset?
+              if fi.store_positions? and fi.store_offsets?
                 stv =  Field::TermVector::WITH_POSITIONS_OFFSETS 
-              elsif fi.store_position?
+              elsif fi.store_positions?
                 stv =  Field::TermVector::WITH_POSITIONS
-              elsif fi.store_offset?
+              elsif fi.store_offsets?
                 stv =  Field::TermVector::WITH_OFFSETS 
               else
                 stv =  Field::TermVector::YES 

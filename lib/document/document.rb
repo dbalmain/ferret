@@ -46,6 +46,12 @@ module Ferret::Document
       @fields.values.flatten
     end
 
+    # Returns the number of distinct fields held within the document. This
+    # counts fields which have multiple entries as one.
+    def field_count()
+      return @fields.size
+    end
+
     # Adds a field to a document.  Several fields may be added with the same
     # name.  In this case, if the fields are indexed, their text is treated
     # as though appended for the purposes of search.

@@ -94,8 +94,7 @@ module Ferret::Index
           infos.size.times do |i|
             readers[i] = SegmentReader.get(infos, infos[i], close_directory)
           end
-
-          return MultiReader.new(directory, infos, close_directory, readers)
+          return MultiReader.new(readers, directory, infos, close_directory)
         end
       end
     end
@@ -171,7 +170,7 @@ module Ferret::Index
 
     # Returns the stored fields of the +n+<sup>th</sup>
     # +Document+ in this index. 
-    def document(n)
+    def get_document(n)
       raise NotImplementedError
     end
 

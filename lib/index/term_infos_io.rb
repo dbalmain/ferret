@@ -32,7 +32,6 @@ module Ferret::Index
     # acceleration and more accelerable cases. More detailed experiments
     # would be useful here. 
     def initialize(dir, segment, fis, interval, is_index = false)
-      Thread.current[:term_enum] = nil # clear this threads cache 
       @index_interval = interval
       @skip_interval = 16
       @last_index_pointer = 0
@@ -87,6 +86,9 @@ module Ferret::Index
 
     # Called to complete TermInfos creation. 
     def close()
+      # clear this threads cache 
+      Thread.current["#{self.object_id}-term_enum"] = nil
+
       @out.seek(4)          # write @size after format
       @out.write_long(@size)
       @out.close()
@@ -207,10 +209,10 @@ module Ferret::Index
     private
 
       def enum() 
-        term_enum = Thread.current[:term_enum]
+        term_enum = Thread.current["#{self.object_id}-term_enum"]
         if (term_enum == nil) 
           term_enum = terms()
-          Thread.current[:term_enum] = term_enum 
+          Thread.current["#{self.object_id}-term_enum"] = term_enum 
         end
         return term_enum
       end

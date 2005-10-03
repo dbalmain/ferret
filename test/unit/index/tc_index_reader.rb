@@ -5,17 +5,21 @@ include Ferret::Index
 include Ferret::Analysis
 
 module IndexReaderTest
-  @dir = nil
-  @ir = nil
 
   def test_index_reader
+
     do_test_term_doc_enum()
+    
     do_test_term_vectors()
+
     do_test_changing_field()
+
+    do_test_get_doc()
 
   end
 
   def do_test_term_doc_enum()
+
     assert_equal(IndexTestHelper::IR_TEST_DOC_CNT, @ir.num_docs())
     assert_equal(IndexTestHelper::IR_TEST_DOC_CNT, @ir.max_doc())
 
@@ -177,27 +181,88 @@ module IndexReaderTest
   end
    
   def do_test_changing_field()
-    tv = @ir.get_term_vector(0, "changing_field");
-    assert(tv.nil?);
+    tv = @ir.get_term_vector(0, "changing_field")
+    assert(tv.nil?)
 
-    tv = @ir.get_term_vector(10, "changing_field");
-    assert(tv.positions.nil?);
-    assert(tv.offsets.nil?);
+    tv = @ir.get_term_vector(10, "changing_field")
+    assert(tv.positions.nil?)
+    assert(tv.offsets.nil?)
 
-    tv = @ir.get_term_vector(17, "changing_field");
-    assert(tv.positions);
-    assert(tv.offsets.nil?);
+    tv = @ir.get_term_vector(17, "changing_field")
+    assert(tv.positions)
+    assert(tv.offsets.nil?)
 
-    tv = @ir.get_term_vector(19, "changing_field");
-    assert(tv.positions.nil?);
-    assert(tv.offsets);
+    tv = @ir.get_term_vector(19, "changing_field")
+    assert(tv.positions.nil?)
+    assert(tv.offsets)
 
-    tv = @ir.get_term_vector(20, "changing_field");
-    assert(tv.positions);
-    assert(tv.offsets);
+    tv = @ir.get_term_vector(20, "changing_field")
+    assert(tv.positions)
+    assert(tv.offsets)
 
-    tv = @ir.get_term_vector(21, "changing_field");
-    assert(tv.nil?);
+    tv = @ir.get_term_vector(21, "changing_field")
+    assert(tv.nil?)
+  end
+
+  def do_test_get_doc()
+    doc = @ir.get_document(3)
+    assert_equal(4, doc.field_count)
+
+    df = doc.field("author")
+    assert_equal("author", df.name)
+    assert_equal("Leo Tolstoy", df.data)
+    assert_equal(df.boost, 1.0)
+    assert_equal(true, df.stored?)
+    assert_equal(false, df.compressed?)
+    assert_equal(true, df.indexed?)
+    assert_equal(true, df.tokenized?)
+    assert_equal(true, df.store_term_vector?)
+    assert_equal(true, df.store_positions?)
+    assert_equal(false, df.store_offsets?)
+    assert_equal(false, df.binary?)
+    
+    df = doc.field("body")
+    assert_equal("body", df.name)
+    assert_equal("word3 word4 word1 word2 word1 word3 word4 word1 word3 word3", df.data)
+    assert_equal(df.boost, 1.0)
+    assert_equal(true, df.stored?)
+    assert_equal(false, df.compressed?)
+    assert_equal(true, df.indexed?)
+    assert_equal(true, df.tokenized?)
+    assert_equal(true, df.store_term_vector?)
+    assert_equal(true, df.store_positions?)
+    assert_equal(true, df.store_offsets?)
+    assert_equal(false, df.binary?)
+    
+    df = doc.field("title")
+    assert_equal("title", df.name)
+    assert_equal("War And Peace", df.data)
+    assert_equal(df.boost, 1.0)
+    assert_equal(true, df.stored?)
+    assert_equal(false, df.compressed?)
+    assert_equal(true, df.indexed?)
+    assert_equal(false, df.tokenized?)
+    assert_equal(true, df.store_term_vector?)
+    assert_equal(false, df.store_positions?)
+    assert_equal(true, df.store_offsets?)
+    assert_equal(false, df.binary?)
+
+    df = doc.field("year")
+    assert_equal("year", df.name)
+    assert_equal("1865", df.data)
+    assert_equal(df.boost, 1.0)
+    assert_equal(true, df.stored?)
+    assert_equal(false, df.compressed?)
+    assert_equal(false, df.indexed?)
+    assert_equal(false, df.tokenized?)
+    assert_equal(false, df.store_term_vector?)
+    assert_equal(false, df.store_positions?)
+    assert_equal(false, df.store_offsets?)
+    assert_equal(false, df.binary?)
+
+
+    df = doc.field("text")
+    assert(df.nil?) # text is not stored
   end
 end
 
@@ -212,7 +277,31 @@ class SegmentReaderTest < Test::Unit::TestCase
       iw << docs[i]
     end
 
+    # we must optimize here so that SegmentReader is used.
     iw.optimize()
+    iw.close()
+    @ir = IndexReader.open(@dir, false)
+  end
+
+  def tear_down()
+    @ir.close()
+    @dir.close()
+  end
+end
+
+class MultiReaderTest < Test::Unit::TestCase
+  include IndexReaderTest
+
+  def setup()
+    @dir = RAMDirectory.new()
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    docs = IndexTestHelper.prepare_ir_test_docs()
+    IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
+      iw << docs[i]
+    end
+
+    # we mustn't optimize here so that MultiReader is used.
+    # iw.optimize()
     iw.close()
     @ir = IndexReader.open(@dir, false)
   end

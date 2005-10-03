@@ -9,8 +9,8 @@ class FieldInfosTest < Test::Unit::TestCase
     assert_equal(fi.number, 1)
     assert(fi.indexed?)
     assert(fi.store_term_vector?)
-    assert(fi.store_offset?)
-    assert(fi.store_position?)
+    assert(fi.store_offsets?)
+    assert(fi.store_positions?)
 
     fi.name = "hello"
     fi.indexed = false
@@ -23,18 +23,18 @@ class FieldInfosTest < Test::Unit::TestCase
     assert_equal(fi.number, 2)
     assert(!fi.indexed?)
     assert(!fi.store_term_vector?)
-    assert(!fi.store_offset?)
-    assert(!fi.store_position?)
+    assert(!fi.store_offsets?)
+    assert(!fi.store_positions?)
 
     fi.set!(true, true, true, true)
     assert(fi.indexed?)
     assert(fi.store_term_vector?)
-    assert(fi.store_offset?)
-    assert(fi.store_position?)
+    assert(fi.store_offsets?)
+    assert(fi.store_positions?)
 
     fi = FieldInfo.new("name", true, 1, true)
-    assert(!fi.store_offset?)
-    assert(!fi.store_position?)
+    assert(!fi.store_offsets?)
+    assert(!fi.store_positions?)
   end
 
   def fi_test_attr(fi, name, number, indexed, store_tv, store_pos, store_off)
@@ -42,8 +42,8 @@ class FieldInfosTest < Test::Unit::TestCase
     assert_equal(number, fi.number)
     assert_equal(indexed, fi.indexed?)
     assert_equal(store_tv, fi.store_term_vector?)
-    assert_equal(store_pos, fi.store_position?)
-    assert_equal(store_off, fi.store_offset?)
+    assert_equal(store_pos, fi.store_positions?)
+    assert_equal(store_off, fi.store_offsets?)
   end
 
   def test_fis_add()

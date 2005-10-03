@@ -66,12 +66,12 @@ module Ferret
       def store_term_vector?() return @store_term_vector end
 
       # True if the positions of the indexed terms in this field are stored.
-      def store_position?() return @store_position end
+      def store_positions?() return @store_position end
 
       # True if the offsets of this field are stored. The offsets are the
       # positions of the start and end characters of the token in the whole
       # field string
-      def store_offset?() return @store_offset end
+      def store_offsets?() return @store_offset end
 
       class Store < Parameter
         # Store the original field value in the index in a compressed form.

@@ -95,7 +95,7 @@ module Ferret::Index
           if field.indexed? 
             if not field.tokenized? # un-tokenized field
               string_value = field.string_value
-              if field.store_offset?
+              if field.store_offsets?
                 add_position(field_name,
                              string_value,
                              position,
@@ -119,7 +119,7 @@ module Ferret::Index
                 while token = stream.next
                   position += (token.position_increment - 1)
                   
-                  if(field.store_offset?())
+                  if(field.store_offsets?())
                     add_position(field_name,
                                  token.term_text(),
                                  position,

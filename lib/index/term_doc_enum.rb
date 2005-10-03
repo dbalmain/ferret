@@ -141,10 +141,11 @@ module Ferret::Index
     end
 
     # Optimized implementation. 
-    def read(docs, freqs)
-      length = docs.length
-      i = 0
-      while (i < length and @count < @doc_freq) 
+    def read(docs, freqs, start = 0)
+      i = start
+      needed=docs.length
+
+      while (i < needed and @count < @doc_freq) 
 
         # manually inlined call to next() for speed
         doc_code = @freq_stream.read_vint()

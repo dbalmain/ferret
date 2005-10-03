@@ -7,7 +7,7 @@ module Ferret
     class SegmentReader < IndexReader 
 
       attr_reader :freq_stream, :prox_stream, :deleted_docs,
-        :term_infos, :field_infos
+        :term_infos, :field_infos, :segment
 
       def SegmentReader.get(infos, info, close = false)
         return SegmentReader.new(info.directory, info, infos, close, true)
@@ -15,7 +15,6 @@ module Ferret
       
       def initialize(dir, info, seg_infos, close, owner)
         super(dir, seg_infos, close, owner)
-        #Thread.current[:tv_reader] = nil # clear the cache
         @segment = info.name
 
         @cfs_reader = nil
@@ -67,6 +66,7 @@ module Ferret
       end
       
       def do_close()
+        Thread.current["#{self.object_id}-tv_reader"] = nil # clear the cache
         @fields_reader.close()
         @term_infos.close()
 
@@ -144,7 +144,7 @@ module Ferret
         return @term_infos.terms_from(t)
       end
 
-      def document(n)
+      def get_document(n)
         synchronize do
           if deleted?(n)
             raise ArgumentError, "attempt to access a deleted document"
@@ -202,20 +202,20 @@ module Ferret
                  field_option == IndexReader::FieldOption::INDEXED_NO_TERM_VECTOR) 
             field_set.add(fi.name)
           elsif (fi.store_term_vector? == true and
-                 fi.store_position? == false and
-                 fi.store_offset? == false and
+                 fi.store_positions? == false and
+                 fi.store_offsets? == false and
                  field_option == IndexReader::FieldOption::TERM_VECTOR) 
             field_set.add(fi.name)
           elsif (fi.indexed? and fi.store_term_vector? and
                  field_option == IndexReader::FieldOption::INDEXED_WITH_TERM_VECTOR) 
             field_set.add(fi.name)
-          elsif (fi.store_position? and fi.store_offset? == false and
+          elsif (fi.store_positions? and fi.store_offsets? == false and
                  field_option == IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION) 
             field_set.add(fi.name)
-          elsif (fi.store_offset? and fi.store_position? == false and
+          elsif (fi.store_offsets? and fi.store_positions? == false and
                  field_option == IndexReader::FieldOption::TERM_VECTOR_WITH_OFFSET) 
             field_set.add(fi.name)
-          elsif (fi.store_offset? and fi.store_position? and
+          elsif (fi.store_offsets? and fi.store_positions? and
                  field_option == IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION_OFFSET)
             field_set.add(fi.name)
           end
@@ -295,13 +295,13 @@ module Ferret
       # in the Thread
       # returns:: TermVectorsReader
       def get_term_vectors_reader() 
-        return @xtv_reader ||= @tv_reader_orig.clone()
-#        tv_reader = Thread.current[:tv_reader]
-#        if (tv_reader == nil) 
-#          tv_reader = @tv_reader_orig.clone()
-#          Thread.current[:tv_reader] = tv_reader
-#        end
-#        return tv_reader
+        #return @xtv_reader ||= @tv_reader_orig.clone()
+        tv_reader = Thread.current["#{self.object_id}-tv_reader"]
+        if (tv_reader == nil) 
+          tv_reader = @tv_reader_orig.clone()
+          Thread.current["#{self.object_id}-tv_reader"] = tv_reader
+        end
+        return tv_reader
       end
       
       # Return a term frequency vector for the specified document and field. The

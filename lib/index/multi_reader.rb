@@ -63,9 +63,9 @@ module Ferret
         end
       end
 
-      def document(n)
-        i = reader_index(n)                             # find segment num
-        return @sub_readers[i].document(n - @starts[i]) # dispatch to segment reader
+      def get_document(n)
+        i = reader_index(n)                                 # find segment num
+        return @sub_readers[i].get_document(n - @starts[i]) # dispatch to segment reader
       end
 
       def deleted?(n) 
@@ -250,14 +250,14 @@ module Ferret
         @starts = starts
         @base = 0
         @pointer = 0
-        @reader_term_docs = []
 
-        @reader_term_docs = Array.new[readers.length]
+        @reader_term_docs = Array.new(readers.length)
       end
 
       def doc
         return @base + @current.doc()
       end
+
       def freq
         return @current.freq()
       end
@@ -282,24 +282,34 @@ module Ferret
         end
       end
 
-      # Optimized implementation. 
+      # Optimized implementation. Unlike the Java version, this method
+      # always returns as many results as it can read.
       def read(docs, freqs)
+        got = 0
+        last_got = 0
+        needed = docs.length
+
         while (true) 
           while @current.nil?
             if @pointer < @readers.length # begin next segment
               @base = @starts[@pointer]
-              @current = term_docs(@pointer += 1)
+              @current = term_docs(@pointer)
+              @pointer += 1
             else 
-              return 0
+              return got
             end
           end
-          last = @current.read(docs, freqs)
-          if (last == 0) # none left in segment
+          got = @current.read(docs, freqs, got)
+          if (got == last_got) # none left in segment
             @current = nil
           else # got some
             b = @base        # adjust doc numbers
-            last.times {|i| docs[i] += b}
-            return last
+            (last_got...got).each {|i| docs[i] += b}
+            if got == needed
+              return got
+            else
+              last_got = got
+            end
           end
         end
       end
@@ -316,10 +326,14 @@ module Ferret
         return nil if (@term == nil)
         result = @reader_term_docs[i]
         if (result == nil)
-          result = @reader_term_docs[i] = term_docs(@readers[i])
+          result = @reader_term_docs[i] = term_docs_from_reader(@readers[i])
         end
         result.seek(@term)
         return result
+      end
+
+      def term_docs_from_reader(reader)
+        return reader.term_docs()
       end
 
       def close()
@@ -334,7 +348,7 @@ module Ferret
         super(r,s)
       end
 
-      def term_docs(reader)
+      def term_docs_from_reader(reader)
         return reader.term_positions()
       end
 

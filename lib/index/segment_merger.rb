@@ -116,7 +116,7 @@ module Ferret::Index
           max_doc = reader.max_doc()
           max_doc.times do |j|
             if not reader.deleted?(j) # skip deleted docs
-              fields_writer.add_document(reader.document(j))
+              fields_writer.add_document(reader.get_document(j))
               doc_count += 1
             end
           end

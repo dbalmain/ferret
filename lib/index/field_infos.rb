@@ -40,8 +40,8 @@ module Ferret
           add(field.name,
               field.indexed?,
               field.store_term_vector?,
-              field.store_position?,
-              field.store_offset?)
+              field.store_positions?,
+              field.store_offsets?)
         end
       end
       alias :<< :add_doc_fields
@@ -82,10 +82,10 @@ module Ferret
           if (fi.store_term_vector? != store_term_vector)
             fi.store_term_vector = true   # once vector, always vector
           end
-          if (fi.store_position? != store_position)
+          if (fi.store_positions? != store_position)
             fi.store_position = true # once vector, always vector
           end
-          if (fi.store_offset? != store_offset)
+          if (fi.store_offsets? != store_offset)
             fi.store_offset = true   # once vector, always vector
           end
         end
@@ -211,10 +211,10 @@ module Ferret
           if (fi.store_term_vector?)
             bits |= STORE_TERM_VECTOR
           end
-          if (fi.store_position?)
+          if (fi.store_positions?)
             bits |= STORE_POSITION
           end
-          if (fi.store_offset?)
+          if (fi.store_offsets?)
             bits |= STORE_OFFSET
           end
           return bits
@@ -233,10 +233,10 @@ module Ferret
         return @store_term_vector
       end
 
-      def store_offset?()
+      def store_offsets?()
         return @store_offset
       end
-      def store_position?()
+      def store_positions?()
         return @store_position
       end
 
