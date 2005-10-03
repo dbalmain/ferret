@@ -6,20 +6,20 @@ module Ferret::Search
     attr_reader :term
 
     class TermWeight < Weight 
-      attr_reader :value
+      attr_reader :value, :query
 
-      def initialize(parent, searcher)
-        @similarity = parent.get_similarity(searcher)
-        @idf = @similarity.idf(searcher.doc_freq(parent.term),
+      def initialize(query, searcher)
+        @similarity = query.get_similarity(searcher)
+        @idf = @similarity.idf(searcher.doc_freq(query.term),
                                searcher.max_doc) # compute idf
-        @parent = parent
+        @query = query
         @value = 0
       end
 
       def to_s() return "weight(" + @value + ")"; end
 
       def sum_of_squared_weights() 
-        @query_weight = @idf * boost()       # compute query weight
+        @query_weight = @idf * @query.boost()       # compute query weight
         return @query_weight * @query_weight # square it
       end
 
@@ -30,29 +30,25 @@ module Ferret::Search
       end
 
       def scorer(reader)
-        term_docs = reader.term_docs(@term)
+        term_docs = reader.term_docs_for(@query.term)
 
         return nil if term_docs.nil?
 
         return TermScorer.new(self, term_docs, @similarity,
-                              reader.get_norms(@term.field_name))
-      end
-
-      def query()
-        return @parent
+                              reader.get_norms(@query.term.field_name))
       end
 
       def explain(reader, doc)
         explanation = Explanation.new()
-        explanation.description = "weight(#{@parent} in #{doc}), product of:"
+        explanation.description = "weight(#{@query} in #{doc}), product of:"
 
-        idf_expl = Explanation.new(@idf, "idf(doc_freq=#{reader.doc_freq(@term)})")
+        idf_expl = Explanation.new(@idf, "idf(doc_freq=#{reader.doc_freq(@query.term)})")
 
         # explain query weight
-        query_expl = Explanation.new(nil, "query_weight(#{@parent}), product of:")
+        query_expl = Explanation.new(nil, "query_weight(#{@query}), product of:")
 
-        if (boost() != 1.0)
-          boost_expl = Explanation.new(@parent.boost(), "boost")
+        if (@query.boost() != 1.0)
+          boost_expl = Explanation.new(@query.boost(), "boost")
           query_expl << boost_expl
         end
         query_expl << idf_expl
@@ -65,9 +61,9 @@ module Ferret::Search
         explanation << query_expl
 
         # explain field weight
-        field_name = @term.field_name
+        field_name = @query.term.field_name
         field_expl = Explanation.new()
-        field_expl.description = "field_weight(#{@term} in #{doc}), product of:"
+        field_expl.description = "field_weight(#{@query.term} in #{doc}), product of:"
 
         tf_expl = scorer(reader).explain(doc)
         field_expl << (tf_expl)
@@ -93,8 +89,9 @@ module Ferret::Search
       end
     end
 
-    # Constructs a query for the @term +t+. 
+    # Constructs a query for the @query.term +t+. 
     def initialize(t) 
+      super()
       @term = t
     end
 
@@ -113,7 +110,7 @@ module Ferret::Search
         buffer << @term.field_name + ":"
       end
       buffer << @term.text
-      if boost() != 1.0
+      if @boost != 1.0
         buffer << "^ #{boost()}"
       end
       return buffer
@@ -122,13 +119,13 @@ module Ferret::Search
     # Returns true iff +o+ is equal to this. 
     def eql?(other) 
       return false if not other.instance_of?(TermQuery)
-      return (boost() == other.boost() and @term == other.term)
+      return (@boost == other.boost and @term == other.term)
     end
     alias :== :eql?
 
     # Returns a hash code value for this object.
     def hash() 
-      return boost().hash ^ @term.hash
+      return @boost.hash ^ @term.hash
     end
 
   end

@@ -238,7 +238,7 @@ module Ferret::Index
             end
           end
           
-          if(store_offsets)
+          if (store_offsets)
             if(term.offsets == nil)
               raise IllegalStateError, "Trying to write offsets that are nil!"
             end

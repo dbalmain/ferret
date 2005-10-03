@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-require File.dirname(__FILE__) + "/th_doc"
 
 include Ferret::Index
 include Ferret::Analysis

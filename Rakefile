@@ -44,7 +44,6 @@ task :stats do
                       ["Utils", "lib/utils"],
                       ["Search", "lib/search"],
                       ["Document", "lib/document"],
-                      ["Total", "lib"],
                       ["Units", "test/unit"],
                       ["Units-extended", "test/longrunning"]
                     ).to_s

@@ -4,7 +4,7 @@ module Ferret::Search
   class TopDocs
     # Expert: The total number of hits for the query.
     # See Hits#length()
-    attr_accessor :score_docs
+    attr_accessor :score_docs, :total_hits
 
     # Expert: Constructs a TopDocs.
     def initialize(total_hits, score_docs) 

@@ -86,16 +86,17 @@ module Ferret::Index
         fields = doc.all_fields
         fields.each do |field|
           field_name = field.name
-          field_number = @field_infos.field_number(field_name)
+          field_info = @field_infos[field_name]
+          field_number = field_info.number
 
           length = @field_lengths[field_number]     # length of field
           position = @field_positions[field_number] # position in field
           offset = @field_offsets[field_number]     # offset field
 
-          if field.indexed? 
+          if field_info.indexed? 
             if not field.tokenized? # un-tokenized field
               string_value = field.string_value
-              if field.store_offsets?
+              if field_info.store_offsets?
                 add_position(field_name,
                              string_value,
                              position,
@@ -119,7 +120,7 @@ module Ferret::Index
                 while token = stream.next
                   position += (token.position_increment - 1)
                   
-                  if(field.store_offsets?())
+                  if(field_info.store_offsets?())
                     add_position(field_name,
                                  token.term_text(),
                                  position,

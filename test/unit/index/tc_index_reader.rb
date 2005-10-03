@@ -1,10 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-require File.dirname(__FILE__) + "/th_doc"
 
 include Ferret::Index
 include Ferret::Analysis
 
-module IndexReaderTest
+module IndexReaderCommon
 
   def test_index_reader
 
@@ -322,7 +321,6 @@ module IndexReaderTest
     ir2.close()
   end
 
-  
   def test_ir_delete()
     doc_count = IndexTestHelper::IR_TEST_DOC_CNT
     assert_equal(false, @ir.has_deletions?())
@@ -423,7 +421,7 @@ module IndexReaderTest
 end
 
 class SegmentReaderTest < Test::Unit::TestCase
-  include IndexReaderTest
+  include IndexReaderCommon
 
   def setup()
     @dir = RAMDirectory.new()
@@ -446,7 +444,7 @@ class SegmentReaderTest < Test::Unit::TestCase
 end
 
 class MultiReaderTest < Test::Unit::TestCase
-  include IndexReaderTest
+  include IndexReaderCommon
 
   def setup()
     @dir = RAMDirectory.new()
@@ -465,6 +463,156 @@ class MultiReaderTest < Test::Unit::TestCase
   def tear_down()
     @ir.close()
     @dir.close()
+  end
+end
+
+class IndexReaderTest < Test::Unit::TestCase
+  def setup()
+    @dir = RAMDirectory.new()
+  end
+
+  def tear_down()
+    @dir.close()
+  end
+
+  def test_ir_multivalue_fields()
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    doc = Document.new()
+    doc << Field.new("tag", "Ruby", Field::Store::YES, Field::Index::NO, Field::TermVector::NO)
+    doc << Field.new("tag", "C", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::NO)
+    doc << Field.new("body", "this is the body Document Field", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    doc << Field.new("tag", "Lucene", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS)
+    doc << Field.new("tag", "Ferret", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_OFFSETS)
+    doc << Field.new("title", "this is the title DocField", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+    doc << Field.new("author", "this is the author field", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
+
+    fis = FieldInfos.new()
+    fis << doc
+    assert_equal(4, fis.size)
+
+    fi = fis["tag"]
+    assert_equal(true, fi.indexed?)
+    assert_equal(true, fi.store_term_vector?)
+    assert_equal(true, fi.store_positions?)
+    assert_equal(true, fi.store_offsets?)
+
+    iw << doc
+    iw.close()
+
+    ir = IndexReader.open(@dir, false)
+
+    doc = ir.get_document(0)
+    assert_equal(4, doc.field_count)
+    assert_equal(7, doc.entry_count)
+    entries = doc.fields("tag")
+    assert_equal(4, entries.size)
+    assert_equal("Ruby", entries[0].data)
+    assert_equal("C", entries[1].data)
+    assert_equal("Lucene", entries[2].data)
+    assert_equal("Ferret", entries[3].data)
+
+    doc.remove_field("tag")
+    assert_equal(4, doc.field_count)
+    assert_equal(6, doc.entry_count)
+    assert_equal("C", doc.field("tag").data)
+
+    doc.remove_fields("tag")
+    assert_equal(3, doc.field_count)
+    assert_equal(3, doc.entry_count)
+
+    ir.delete(0)
+    ir.close()
+
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw << doc
+    iw.optimize()
+    iw.close()
+    doc = nil
+
+    ir = IndexReader.open(@dir, false)
+    doc = ir.get_document(0)
+    assert_equal(3, doc.field_count)
+    assert_equal(3, doc.entry_count)
+
+    ir.close()
+  end
+
+  def t(start_offset, end_offset)
+    TermVectorOffsetInfo.new(start_offset, end_offset)
+  end
+
+  def do_test_term_vectors(ir)
+    tv = ir.get_term_vector(3, "body")
+
+    assert_equal("body", tv.field)
+    assert_equal(["word1", "word2", "word3", "word4"], tv.terms)
+    assert_equal([3, 1, 4, 2], tv.term_frequencies)
+    assert_equal([[2, 4, 7], [3], [0, 5, 8, 9], [1,6]], tv.positions)
+    assert_equal([[t(12,17), t(24,29), t(42,47)],
+                  [t(18,23)],
+                  [t(0,5), t(30,35), t(48,53), t(54,59)],
+                  [t(6,11), t(36,41)]], tv.offsets)
+    tv = nil
+
+    tvs = ir.get_term_vectors(3)
+    assert_equal(3, tvs.size)
+    tv = tvs[0]
+    assert_equal("author", tv.field)
+    assert_equal(["Leo", "Tolstoy"], tv.terms)
+    assert(tv.offsets.nil?)
+    tv = tvs[1]
+    assert_equal("body", tv.field)
+    assert_equal(["word1", "word2", "word3", "word4"], tv.terms)
+    tv = tvs[2]
+    assert_equal("title", tv.field)
+    assert_equal(["War And Peace"], tv.terms)
+    assert(tv.positions.nil?)
+    assert_equal(t(0, 13), tv.offsets[0][0])
+  end
+
+  def test_ir_read_while_optimizing()
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    docs = IndexTestHelper.prepare_ir_test_docs()
+    IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
+      iw << docs[i]
+    end
+    iw.close()
+
+    ir = IndexReader.open(@dir, false)
+    do_test_term_vectors(ir)
+    
+    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw.optimize()
+    iw.close()
+
+    do_test_term_vectors(ir)
+
+    ir.close()
+  end
+
+  def test_ir_read_while_optimizing_on_disk()
+    dpath = File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir')
+    fs_dir = FSDirectory.get_directory(dpath, true)
+
+    iw = IndexWriter.new(fs_dir, WhiteSpaceAnalyzer.new(), true, false)
+    docs = IndexTestHelper.prepare_ir_test_docs()
+    IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
+      iw << docs[i]
+    end
+    iw.close()
+
+    ir = IndexReader.open(fs_dir, false)
+    do_test_term_vectors(ir)
+    
+    iw = IndexWriter.new(fs_dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw.optimize()
+    iw.close()
+
+    do_test_term_vectors(ir)
+
+    ir.close()
+    fs_dir.close()
   end
 end
 

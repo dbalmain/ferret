@@ -32,7 +32,6 @@ module Ferret::Index
       if @field_name == other.field_name 
         return @text <=> other.text 
       else
-
         return @field_name <=> other.field_name
       end
     end

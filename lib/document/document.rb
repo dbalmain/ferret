@@ -52,6 +52,13 @@ module Ferret::Document
       return @fields.size
     end
 
+    # Returns the number of entries held within the document. This counts
+    # all sections so for fields which have multiple entries, each entry
+    # is counted
+    def entry_count()
+      return @fields.values.flatten.size
+    end
+
     # Adds a field to a document.  Several fields may be added with the same
     # name.  In this case, if the fields are indexed, their text is treated
     # as though appended for the purposes of search.

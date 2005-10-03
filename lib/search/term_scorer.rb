@@ -16,15 +16,16 @@ module Ferret::Search
     def initialize(weight, td, similarity, norms) 
       super(similarity)
 
-      @docs = Array.new(32) # buffered doc numbers
-      @freqs = Array.new(32) # buffered term freqs
-      @pointer_max = 0;
+      @doc = 0
+      @docs = Array.new(32, 0) # buffered doc numbers
+      @freqs = Array.new(32, 0) # buffered term freqs
+      @pointer = @pointer_max = 0;
       @score_cache = Array.new(SCORE_CACHE_SIZE)
 
       @weight = weight
-      @termDocs = td
+      @term_docs = td
       @norms = norms
-      @weightValue = weight.getValue()
+      @weight_value = weight.value
 
       SCORE_CACHE_SIZE.times do |i|
         @score_cache[i] = similarity().tf(i) * @weight_value
@@ -48,7 +49,7 @@ module Ferret::Search
           score = similarity.tf(f) * @weight_value # cache miss
         end
 
-        score *= sim.decode_norm(norms[@doc])      # normalize for field
+        score *= sim.decode_norm(@norms[@doc])      # normalize for field
 
         yield(@doc, score)                         # collect score
 
@@ -92,7 +93,7 @@ module Ferret::Search
     def score() 
       f = @freqs[@pointer]
       # compute tf(f)*weight
-      if  f < SCORE_CACHE_SIZE                   # check cache
+      if  f < SCORE_CACHE_SIZE                 # check cache
         raw = @score_cache[f]                  # cache hit
       else
         raw = similarity().tf(f) * @weight_value # cache miss
