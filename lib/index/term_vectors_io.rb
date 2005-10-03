@@ -137,12 +137,8 @@ module Ferret::Index
 
       if vectors != nil 
         vectors.each do |vector|
-          if (vector.instance_of? SegmentTermPositionVector)
-            store_positions = (vector.size > 0 and vector.positions != nil)
-            store_offsets = (vector.size > 0 and vector.offsets != nil)
-          else
-            store_positions = store_offsets = false
-          end
+          store_positions = (vector.size > 0 and vector.positions != nil)
+          store_offsets = (vector.size > 0 and vector.offsets != nil)
 
           create_field(@field_infos.field_number(vector.field),
                        store_positions, store_offsets)
@@ -540,17 +536,7 @@ module Ferret::Index
           end
         end
         
-        tv = nil
-        if (store_positions or store_offsets)
-          tv = SegmentTermPositionVector.new(field,
-                                             terms,
-                                             term_freqs,
-                                             positions,
-                                             offsets)
-        else 
-          tv = SegmentTermVector.new(field, terms, term_freqs)
-        end
-        return tv
+        SegmentTermVector.new(field, terms, term_freqs, positions, offsets)
       end
 
       def check_valid_format(istream)

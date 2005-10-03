@@ -48,20 +48,20 @@ class TermVectorsIOTest < Test::Unit::TestCase
   def test_tv_io_add_documents()
     tvs1 = [] 
     tvs2 = [] 
-    tv = SegmentTermPositionVector.new("field1",
+    tv = SegmentTermVector.new("field1",
            ["word1", "word2"],
            [3, 2],
            [[1, 5, 8], [2, 9]],
            [[t(0,5), t(34,39), t(45,50)],[t(6,11), t(51,56)]])
     tvs1 << tv
-    tv = SegmentTermPositionVector.new("field2",
+    tv = SegmentTermVector.new("field2",
            ["word3", "word4"],
            [1, 5],
            [[8], [2, 9, 11, 34, 56]],
            [[t(45,50)], [t(6,10), t(51,56), t(64,69), t(103,108), t(183,188)]])
     tvs1 << tv
     tv_w = TermVectorsWriter.new(@dir, "_test", @fis)
-    tv = SegmentTermPositionVector.new("field1",
+    tv = SegmentTermVector.new("field1",
            ["word1", "word2"],
            [3, 2],
            [[1, 5, 8], [2, 9]],
