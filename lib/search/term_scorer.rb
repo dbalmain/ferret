@@ -2,7 +2,6 @@ module Ferret::Search
   # Expert: A +Scorer+ for documents matching a +Term+.
   class TermScorer < Scorer 
     SCORE_CACHE_SIZE = 32
-    MAX_DOCS = 0x7FFFFFFF
 
     # Returns the current document number matching the query.
     # Initially invalid, until #next() is called the first time.
@@ -11,7 +10,8 @@ module Ferret::Search
     # Construct a +TermScorer+.
     # weight:: The weight of the +Term+ in the query.
     # td:: An iterator over the documents matching the +Term+.
-    # similarity:: The +Similarity+ implementation to be used for score computations.
+    # similarity:: The +Similarity+ implementation to be used for score
+    # computations.
     # norms:: The field norms of the document fields for the +Term+.
     def initialize(weight, td, similarity, norms) 
       super(similarity)
@@ -32,41 +32,57 @@ module Ferret::Search
       end
     end
 
-    def each_hit
-      next?()
-      each_hit_up_to(MAX_DOCS)
-    end
-
-    def each_hit_up_to(last = MAX_DOCS)
+    # Expert: Iterates over matching all documents, yielding the document
+    # number and the score.
+    #
+    # returns:: true if more matching documents may remain.
+    # :yield: doc, score
+    def each_hit()
       sim = similarity() # cache sim in local
-      while (@doc < last) # for docs in window
+      while next?
         f = @freqs[@pointer]
 
         # compute tf(f)*weight
         if f < SCORE_CACHE_SIZE                    # check cache
           score = @score_cache[f]                  # cache hit
         else
-          score = similarity.tf(f) * @weight_value # cache miss
+          score = sim.tf(f) * @weight_value # cache miss
         end
 
         score *= sim.decode_norm(@norms[@doc])      # normalize for field
 
         yield(@doc, score)                         # collect score
-
-        @pointer += 1
-        if @pointer >= @pointer_max
-          @pointer_max = @term_docs.read(@docs, @freqs)  # refill buffers
-          if (@pointer_max != 0) 
-            @pointer = 0
-          else 
-            @term_docs.close() # close stream
-            @doc = MAX_DOCS    # set to sentinel value
-            return false
-          end
-        end
-        @doc = @docs[@pointer]
       end
-      return true
+    end
+
+    # Expert: Iterates over matching documents in a range.
+    #
+    # NOTE: that #next? needs to be called first.
+    #
+    # max:: Do not score documents past this. Default will search all documents
+    # avaliable.
+    # returns:: true if more matching documents may remain.
+    # :yield: doc, score
+    def each_hit_up_to(max = MAX_DOCS)
+      sim = similarity() # cache sim in local
+      while (@doc < max) # for docs in window
+        f = @freqs[@pointer]
+
+        # compute tf(f)*weight
+        if f < SCORE_CACHE_SIZE                    # check cache
+          score = @score_cache[f]                  # cache hit
+        else
+          score = sim.tf(f) * @weight_value # cache miss
+        end
+
+        score *= sim.decode_norm(@norms[@doc])      # normalize for field
+
+        yield(@doc, score)                         # collect score
+        if not next?
+          return false
+        end
+      end
+      return true # false if we didn't find +max+ hits
     end
 
 
@@ -99,7 +115,7 @@ module Ferret::Search
         raw = similarity().tf(f) * @weight_value # cache miss
       end
 
-      return raw * Similarity.decode_norm(norms[@doc]) # normalize for field
+      return raw * Similarity.decode_norm(@norms[@doc]) # normalize for field
     end
 
     # Skips to the first match beyond the current whose document number is
@@ -125,7 +141,7 @@ module Ferret::Search
         @docs[@pointer] = @doc = @term_docs.doc
         @freqs[@pointer] = @term_docs.freq
       else 
-        @doc = Integer.MAX_VALUE
+        @doc = MAX_DOCS
       end
       return result
     end

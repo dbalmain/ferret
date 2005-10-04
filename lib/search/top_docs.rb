@@ -11,5 +11,9 @@ module Ferret::Search
       @total_hits = total_hits
       @score_docs = score_docs
     end
+
+    def to_s
+      "#{total_hits} hits:\n#{score_docs}"
+    end
   end
 end

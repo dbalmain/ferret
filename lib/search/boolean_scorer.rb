@@ -5,6 +5,7 @@ module Ferret::Search
   # 
   # Implements skip_to(), and has no limitations on the numbers of added scorers.
   class BooleanScorer < Scorer 
+    attr_reader :required_scorers, :coordinator
 
     class Coordinator 
       attr_accessor :max_coord, :nr_matchers
@@ -43,7 +44,7 @@ module Ferret::Search
       @optional_scorers = []
       @prohibited_scorers = []
       @counting_sum_scorer = nil
-      @coordinator = Coordinator.new()
+      @coordinator = Coordinator.new(similarity)
     end
 
     def add_scorer(scorer, occur) 
@@ -71,12 +72,13 @@ module Ferret::Search
 
     # Count a scorer as a single match. 
     class SingleMatchScorer < Scorer 
-      def initialize(scorer) 
+      def initialize(parent_scorer, scorer) 
         super(scorer.similarity)
         @scorer = scorer
+        @parent_scorer = parent_scorer
       end
       def score()
-        @coordinator.nr_matchers += 1
+        @parent_scorer.coordinator.nr_matchers += 1
         return @scorer.score
       end
       def doc() 
@@ -93,38 +95,49 @@ module Ferret::Search
       end
     end
 
-    def counting_disjunction_sum_scorer(scorers)
-    # each scorer from the list counted as a single matcher
-    
-      disjunc_sum_scorer =  DisjunctionSumScorer.new(scorers) 
-      class <<disjunc_sum_scorer
-        def score()
-          @coordinator.nr_matchers += nr_matchers
-          return super
-        end
+    class CountingDisjunctionSumScorer < DisjunctionSumScorer
+      def initialize(parent_scorer, scorers)
+        super(scorers)
+        @parent_scorer = parent_scorer
+      end
+      def score
+        @parent_scorer.coordinator.nr_matchers += @nr_matchers
+        return super
       end
     end
 
-
-    def counting_conjunction_sum_scorer(required_scorers)
+    def counting_disjunction_sum_scorer(scorers)
     # each scorer from the list counted as a single matcher
     
-       required_nr_matchers = required_scorers.size
-       cs = ConjunctionScorer.new(Similarity.default)
-       class <<cs
-        def score()
-          @coordinator.nr_matchers += required_nr_matchers
-          # All scorers match, so default Similarity super.score() always has 1 as
-          # the coordination factor.
-          # Therefore the sum of the scores of the @required_scorers
-          # is used as score.
-          return super
+      return CountingDisjunctionSumScorer.new(self, scorers) 
+    end
+
+    class CountingConjunctionScorer < ConjunctionScorer
+      def initialize(parent_scorer, similarity)
+        super(similarity)
+        @parent_scorer = parent_scorer
+        @required_nr_matchers = parent_scorer.required_scorers.size
+        @last_scored_doc = -1
+      end
+      def score
+        if (@parent_scorer.doc() > @last_scored_doc)
+          @last_scored_doc = @parent_scorer.doc()
+          @parent_scorer.coordinator.nr_matchers += @required_nr_matchers
         end
+
+        return super
       end
+    end
+
+    def counting_conjunction_sum_scorer(required_scorers)
+      # each scorer from the list counted as a single matcher
+    
+      required_nr_matchers = required_scorers.size
+      ccs = CountingConjunctionScorer.new(self, Similarity.default)
       @required_scorers.each do |scorer|
-        cs << scorer
+        ccs << scorer
       end
-      return cs
+      return ccs
     end
 
     # Returns the scorer to be used for match counting and score summing.
@@ -136,7 +149,7 @@ module Ferret::Search
           return NonMatchingScorer.new # only prohibited scorers
         elsif @optional_scorers.size == 1
           return make_counting_sum_scorer2( # the only optional scorer is required
-                    SingleMatchScorer.new(@optional_scorers[0]),
+                    SingleMatchScorer.new(self, @optional_scorers[0]),
                     []) # no optional scorers left
         else # more than 1 @optional_scorers, no required scorers
           return make_counting_sum_scorer2( # at least one optional scorer is required
@@ -145,7 +158,7 @@ module Ferret::Search
         end
       elsif @required_scorers.size == 1 # 1 required
         return make_counting_sum_scorer2(
-                    SingleMatchScorer.new(@required_scorers[0]),
+                    SingleMatchScorer.new(self, @required_scorers[0]),
                     @optional_scorers)
       else # more required scorers
         return make_counting_sum_scorer2(
@@ -174,7 +187,7 @@ module Ferret::Search
       elsif (optional_scorers.size == 1)
         return make_counting_sum_scorer3(
                         required_counting_sum_scorer,
-                        SingleMatchScorer.new(optional_scorers[0]))
+                        SingleMatchScorer.new(self, optional_scorers[0]))
       else # more optional
         return make_counting_sum_scorer3(
                         required_counting_sum_scorer,
@@ -204,12 +217,12 @@ module Ferret::Search
       end
     end
 
-    # Scores and collects all matching documents.
-    # hc:: The collector to which all matching documents are passed through
-    # HitCollector#collect(int, float).
+    # Expert: Iterates over matching all documents, yielding the document
+    # number and the score.
     #
-    # When this method is used the #explain(int) method should not be used.
-    def each_hit(hc)
+    # returns:: true if more matching documents may remain.
+    # :yield: doc, score
+    def each_hit()
       if @counting_sum_scorer.nil?
         init_counting_sum_scorer()
       end
@@ -218,16 +231,15 @@ module Ferret::Search
       end
     end
 
-    # Expert: Collects matching documents in a range.
+    # Expert: Iterates over matching documents in a range.
     #
-    # Note that #next? must be called once before this method is
-    # called for the first time.
+    # NOTE: that #next? needs to be called first.
     #
-    # hc:: The collector to which all matching documents are passed through
-    #      HitCollector#collect(int, float).
-    # max:: Do not score documents past this.
-    #       returns:: true if more matching documents may remain.
-    def each_hit_up_to(hc, max)
+    # max:: Do not score documents past this. Default will search all documents
+    # avaliable.
+    # returns:: true if more matching documents may remain.
+    # :yield: doc, score
+    def each_hit_up_to(max = MAX_DOCS)
       # nil pointer exception when next? was not called before:
       doc_nr = @counting_sum_scorer.doc()
       while (doc_nr < max) 

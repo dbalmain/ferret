@@ -16,6 +16,7 @@ module Ferret::Search
     # Attempts to add more than the permitted number of clauses cause
     # TooManyClauses to be raisen.
     attr_accessor :max_clause_count
+    attr_reader :clauses
     DEFAULT_MAX_CLAUSE_COUNT = 1024
 
     # Thrown when an attempt is made to add more than #max_clause_count()
@@ -27,18 +28,20 @@ module Ferret::Search
     # Constructs an empty boolean query.
     # 
     # Similarity#coord(int,int) may be disabled in scoring, as appropriate.
-    # For example, this score factor does not make sense for most
-    # automatically generated queries, like WildcardQuery and FuzzyQuery.
+    # For example, this score factor does not make sense for most automatically
+    # generated queries, like WildcardQuery and FuzzyQuery.
     # 
     # coord_disabled:: disables Similarity#coord(int,int) in scoring.
-    def initialize(coord_disabled = nil) 
+    def initialize(coord_disabled = false) 
+      super()
       @coord_disabled = coord_disabled
       @clauses = []
+      @max_clause_count = DEFAULT_MAX_CLAUSE_COUNT
     end
 
-    # Returns true iff Similarity#coord(int,int) is disabled in
-    # scoring for this query instance.
-    # @see #BooleanQuery(boolean)
+    # Returns true iff Similarity#coord(int,int) is disabled in scoring for
+    # this query instance.
+    # See #BooleanQuery(boolean)
     def coord_disabled?()
       return @coord_disabled
     end
@@ -89,49 +92,44 @@ module Ferret::Search
       @clauses << clause
     end
 
-    # Returns the set of clauses in this query. 
-    def clauses() 
-      return @clauses
-    end
-
     class BooleanWeight < Weight 
       attr_accessor :similarity
       attr_accessor :weights
       attr_reader :query
 
-      def initialize(searcher, query)
+      def initialize(query, searcher)
         @query = query
         @weights = []
        
-        @similarity = get_similarity(searcher)
-        @clauses.each do |clause|
+        @similarity = query.get_similarity(searcher)
+        query.clauses.each do |clause|
           @weights << clause.query.create_weight(searcher)
         end
       end
 
       def value()
-        return boost()
+        return @query.boost()
       end
 
       def sum_of_squared_weights()
         sum = 0
         @weights.each_with_index do |weight, i|
-          clause = @clauses[i]
+          clause = @query.clauses[i]
           if not clause.prohibited?
             sum += weight.sum_of_squared_weights()         # sum sub weights
           end
         end
 
-        sum *= boost() * boost()             # boost each sub-weight
+        sum *= @query.boost() * @query.boost()             # boost each sub-weight
 
         return sum 
       end
 
 
       def normalize(norm) 
-        norm *= boost()
+        norm *= @query.boost()
         @weights.each_with_index do |weight, i|
-          clause = @clauses[i]
+          clause = @query.clauses[i]
           if not clause.prohibited?
             weight.normalize(norm)
           end
@@ -144,7 +142,7 @@ module Ferret::Search
         result = BooleanScorer.new(@similarity)
 
         @weights.each_with_index do |weight, i|
-          clause = @clauses[i]
+          clause = @query.clauses[i]
           sub_scorer = weight.scorer(reader)
           if (sub_scorer != nil)
             result.add_scorer(sub_scorer, clause.occur)
@@ -165,12 +163,12 @@ module Ferret::Search
         sum = 0.0
 
         @weights.each_with_index do |weight, i|
-          clause = @clauses[i]
+          clause = @query.clauses[i]
           explanation = weight.explain(reader, doc)
           max_coord += 1 if not clause.prohibited?
           if explanation.value > 0 
             if not clause.prohibited?
-              sum_expl.add_detail(explanation)
+              sum_expl << explanation
               sum += explanation.value
               coord += 1
             else 
@@ -192,13 +190,16 @@ module Ferret::Search
         else 
           result = Explanation.new()
           result.description = "product of:"
-          result.add_detail(sum_expl)
-          result.add_detail(Explanation.new(coord_factor,
-                                           "coord("+coord+"/"+max_coord+")"))
+          result << sum_expl
+          result << Explanation.new(coord_factor, "coord(#{coord}/#{max_coord})")
           result.value = sum * coord_factor
           return result
         end
       end
+    end #end BooleanWeight
+
+    def create_weight(searcher)
+      return BooleanWeight.new(self, searcher)
     end
 
     def rewrite(reader)

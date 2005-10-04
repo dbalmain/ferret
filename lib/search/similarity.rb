@@ -253,12 +253,12 @@ module Ferret::Search
       
     # See source
     def idf(doc_freq, num_docs)
-      return Math.log(num_docs/(doc_freq+1)) + 1.0
+      return Math.log(num_docs.to_f/(doc_freq+1)) + 1.0
     end
       
     # See source
     def coord(overlap, max_overlap)
-      return overlap / max_overlap
+      return overlap.to_f / max_overlap
     end
   end
 

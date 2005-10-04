@@ -12,30 +12,33 @@ module Ferret::Search
         return ""
       end
 
-      # Use this operator for terms that _must_ appear in the matching documents. 
+      # Use this operator for terms that _must_ appear in the matching
+      # documents. 
       MUST = Occur.new("MUST")
 
-      # Use this operator for terms that _should_ appear in the 
-      # matching documents. For a BooleanQuery with two +SHOULD+ 
-      # subqueries, at least one of the queries must appear in the matching documents. 
+      # Use this operator for terms that _should_ appear in the matching
+      # documents. For a BooleanQuery with two +SHOULD+ subqueries, at
+      # least one of the queries must appear in the matching documents. 
       SHOULD = Occur.new("SHOULD")
 
-      # Use this operator for terms that _must not_ appear in the matching documents.
-      # Note that it is not possible to search for queries that only consist
-      # of a +MUST_NOT+ query. 
+      # Use this operator for terms that _must not_ appear in the matching
+      # documents.  Note that it is not possible to search for queries that
+      # only consist of a +MUST_NOT+ query. 
       MUST_NOT = Occur.new("MUST_NOT")
     end
 
     # The query whose matching documents are combined by the boolean query.
     attr_accessor :query
 
-    # If true, documents documents which _do not_ match this sub-query will _not_ match the boolean query.
+    # If true, documents documents which _do not_ match this sub-query will
+    # _not_ match the boolean query.
     attr_writer :required
     def required?
       @required
     end
     
-    # If true, documents documents which _do_ match this sub-query will _not_ match the boolean query.
+    # If true, documents documents which _do_ match this sub-query will _not_
+    # match the boolean query.
     attr_writer :prohibited
     def prohibited?
       @prohibited
@@ -57,13 +60,13 @@ module Ferret::Search
 
 
     def set_fields(occur) 
-      if (occur == Occur.MUST) 
+      if (occur == Occur::MUST) 
         @required = true
         @prohibited = false
-      elsif (occur == Occur.SHOULD) 
+      elsif (occur == Occur::SHOULD) 
         @required = false
         @prohibited = false
-      elsif (occur == Occur.MUST_NOT) 
+      elsif (occur == Occur::MUST_NOT) 
         @required = false
         @prohibited = true
       else 
@@ -73,7 +76,9 @@ module Ferret::Search
 
     # Returns true iff +other+ is equal to this. 
     def eql?(other) 
-      return false if not other.instance_of?(BooleanClause)
+      if not other.instance_of?(BooleanClause)
+        return false
+      end
       return (@query == other.query and
               @required == other.required? and
               @prohibited == other.prohibited?)

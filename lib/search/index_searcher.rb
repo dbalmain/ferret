@@ -57,7 +57,7 @@ module Ferret::Search
       hq = HitQueue.new(num_docs)
       total_hits = 0
       min_score = 0.0
-      scorer.each_hit_up_to() do |doc, score|
+      scorer.each_hit() do |doc, score|
         if score > 0.0 and (bits.nil? or bits.get(doc)) # skip docs not in bits
           total_hits += 1
           if hq.size < num_docs or score >= min_score 

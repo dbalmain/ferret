@@ -183,5 +183,40 @@ module IndexTestHelper
     end
     return docs
   end
+
+  def IndexTestHelper.prepare_search_docs
+    data = [
+      {"field" => "word1"},
+      {"field" => "word1 word2"},
+      {"field" => "word1 word3"},
+      {"field" => "word1 word3"},
+      {"field" => "word1 word2"},
+      {"field" => "word1"},
+      {"field" => "word1 word3"},
+      {"field" => "word1"},
+      {"field" => "word1 word2 word3"},
+      {"field" => "word1"},
+      {"field" => "word1"},
+      {"field" => "word1 word3"},
+      {"field" => "word1"},
+      {"field" => "word1"},
+      {"field" => "word1 word3"},
+      {"field" => "word1"},
+      {"field" => "word1"},
+      {"field" => "word1"}
+    ]
+
+    docs = []
+    data.each_with_index do |fields, i|
+      doc = Document::Document.new()
+      doc.boost = i+1
+
+      fields.each_pair do |field, text|
+        doc << Field.new(field, text, Field::Store::NO, Field::Index::TOKENIZED, Field::TermVector::NO, i+1)
+      end
+      docs << doc
+    end
+    return docs
+  end
 end
 

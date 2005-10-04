@@ -7,6 +7,7 @@ module Ferret::Search
   # Document scores are computed using a given +Similarity+ implementation.
   class Scorer 
     attr_reader :similarity
+    MAX_DOCS = 0x7FFFFFFF
 
     # Constructs a Scorer.
     # similarity:: The +Similarity+ implementation used by this scorer.
@@ -14,29 +15,28 @@ module Ferret::Search
       @similarity = similarity
     end
 
-    # Scores and collects all matching documents.
-    # 
-    # When this method is used the #explain(int) method should not be used.
-    def each_hit()
+    # Expert: Iterates over matching all documents, yielding the document
+    # number and the score.
+    #
+    # returns:: true if more matching documents may remain.
+    # :yield: doc, score
+    def each_hit(hc)
       while next?
         yield(doc(), score())
       end
     end
-
-    # Expert: Collects matching documents in a range.  Hook for optimization.
-    # NOTE: that #next?() must be called once before this method is called
-    # for the first time.
+ 
+    # Expert: Iterates over matching documents in a range.
     #
-    # hc:: The collector to which all matching documents are passed through
-    #      HitCollector#collect().
-    # max:: Do not score documents past this.
+    # max:: Do not score documents past this. Default will search all documents
+    # avaliable.
     # returns:: true if more matching documents may remain.
-    def each_hit_up_to(max)
-      while doc() < max
+    # :yield: doc, score
+    def each_hit_up_to(max = MAX_DOCS)
+      while (next? and doc() < max)
         yield(doc(), score())
-        return false unless next?
       end
-      return true
+      return doc() < max
     end
 
     # Advances to the next document matching the query.

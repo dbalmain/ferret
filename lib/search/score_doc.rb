@@ -30,5 +30,9 @@ module Ferret::Search
         return result
       end
     end
+
+    def to_s
+      "#{doc}:#{score}"
+    end
   end
 end
