@@ -148,7 +148,7 @@ module Ferret::Search
         @pointer += 1
       end
       if (tf == 0) 
-        while (@term_docs.next()) 
+        while (@term_docs.next?) 
           if (@term_docs.doc() == doc) 
             tf = @term_docs.freq()
           end

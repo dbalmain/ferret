@@ -68,7 +68,7 @@ module Ferret::Search
       end
 
       score_docs = Array.new(hq.size)
-      (hq.size - 1).down_to(0) do |i|
+      (hq.size - 1).downto(0) do |i|
         score_docs[i] = hq.pop
       end
 
@@ -131,7 +131,7 @@ module Ferret::Search
     end
 
     def explain(query, doc)
-      return query.weight(this).explain(@reader, doc)
+      return query.weight(self).explain(@reader, doc)
     end
 
   end

@@ -24,11 +24,10 @@ module Ferret::Search
       return buffer
     end
 
-
     # Render an explanation as HTML. 
     def to_html() 
       buffer = "<ul>\n"
-      buffer << "<li>" + @value + " = " + @description + "</li>\n"
+      buffer << "<li>#{@value} = #{@description}</li>\n"
 
       @details.each do |detail|
         buffer << detail.to_html

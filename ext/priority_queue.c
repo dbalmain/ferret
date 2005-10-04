@@ -114,10 +114,10 @@ frt_priq_insert(VALUE self, VALUE e)
 	size = priq->size;
 	heap = priq->heap;
 	
-	if(len > size){
+	if(len < size){
 		frt_priq_push(self, e);
 		return 1;
-	} else if((len > 0) && !rb_funcall(self, less_than, 2, e, heap[1])){
+	} else if ((len > 0) && !rb_funcall(self, less_than, 2, e, heap[1])) {
 		heap[1] = e;
 		priq_down(priq, self, rary);
 		return 1;

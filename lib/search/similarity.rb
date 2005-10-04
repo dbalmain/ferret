@@ -66,9 +66,15 @@ module Ferret::Search
     NORM_TABLE = Array.new(256) { |i| Similarity.byte_to_float(i) }
 
     # Decodes a normalization factor stored in an index.
-    # @see #encode_norm(float)
+    # See Similarity#encode_norm(float)
     def Similarity.decode_norm(b) 
       return NORM_TABLE[b & 0xFF]
+    end
+
+    # Decodes a normalization factor stored in an index.
+    # See Similarity#encode_norm(float)
+    def decode_norm(b)
+      return self.class.decode_norm(b)
     end
 
     # Computes the normalization value for a field given the total number of
@@ -120,6 +126,10 @@ module Ferret::Search
     # See Field#boost=
     def Similarity.encode_norm(f) 
       return Similarity.float_to_byte(f)
+    end
+
+    def encode_norm(f) 
+      return self.class.float_to_byte(f)
     end
 
     # Computes a score factor based on a term or phrase's frequency in a

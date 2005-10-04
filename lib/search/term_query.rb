@@ -47,8 +47,8 @@ module Ferret::Search
         # explain query weight
         query_expl = Explanation.new(nil, "query_weight(#{@query}), product of:")
 
+        boost_expl = Explanation.new(@query.boost(), "boost")
         if (@query.boost() != 1.0)
-          boost_expl = Explanation.new(@query.boost(), "boost")
           query_expl << boost_expl
         end
         query_expl << idf_expl
@@ -69,17 +69,17 @@ module Ferret::Search
         field_expl << (tf_expl)
         field_expl << (idf_expl)
 
-        field_norms = reader.get_norms(field)
-        field_norm = field_norms!=nil ? Similarity.decode_norm(field_norms[doc]) : 0.0
+        field_norms = reader.get_norms(field_name)
+        field_norm = field_norms.nil? ? 0.0 : Similarity.decode_norm(field_norms[doc])
         field_norm_expl = Explanation.new(field_norm,
-                                          "field_norm(field=#{field}, doc=#{doc})")
+                                          "field_norm(field=#{field_name}, doc=#{doc})")
         field_expl << field_norm_expl
 
-        field_expl.value= tf_expl.value * idf_expl.value * field_norm_expl.value 
+        field_expl.value = tf_expl.value * idf_expl.value * field_norm_expl.value 
         explanation << field_expl
 
         # combine them
-        explanation.setValue(query_expl.value * field_expl.value)
+        explanation.value = (query_expl.value * field_expl.value)
 
         if (query_expl.value == 1.0)
           return field_expl
@@ -104,12 +104,8 @@ module Ferret::Search
     end
 
     # Prints a user-readable version of this query. 
-    def to_s(field_name) 
-      buffer = ""
-      if not @term.field_name == field_name
-        buffer << @term.field_name + ":"
-      end
-      buffer << @term.text
+    def to_s() 
+      buffer = "#{@term.field_name}:#{@term.text}"
       if @boost != 1.0
         buffer << "^ #{boost()}"
       end

@@ -1,6 +1,6 @@
 module Ferret::Utils
   # A PriorityQueue maintains a partial ordering of its objects such that
-  # the least object can always be found in constant time. put()'s and
+  # the least object can always be found in constant time. push()'s and
   # pop()'s require log(size) time. The objects in this priority queue must
   # be Comparable
   class PriorityQueue 
@@ -34,8 +34,8 @@ module Ferret::Utils
     # object:: the object to be inserted
     # return true if object is added, false otherwise.
     def insert(object)
-      if(@size < max_size)
-        put(object)
+      if(@size < @max_size)
+        push(object)
         return true
       elsif (@size > 0 and less_than(top, object))
         @heap[1] = object
