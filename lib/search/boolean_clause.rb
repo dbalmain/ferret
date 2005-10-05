@@ -59,21 +59,6 @@ module Ferret::Search
     end
 
 
-    def set_fields(occur) 
-      if (occur == Occur::MUST) 
-        @required = true
-        @prohibited = false
-      elsif (occur == Occur::SHOULD) 
-        @required = false
-        @prohibited = false
-      elsif (occur == Occur::MUST_NOT) 
-        @required = false
-        @prohibited = true
-      else 
-        raise ArgumentError, "Unknown operator " + occur
-      end
-    end
-
     # Returns true iff +other+ is equal to this. 
     def eql?(other) 
       if not other.instance_of?(BooleanClause)
@@ -90,9 +75,26 @@ module Ferret::Search
       return @query.hash() ^ (@required ? 1 : 0) ^ (@prohibited ? 2 : 0)
     end
 
-
+    # represent a boolean clause as a string
     def to_s() 
       return @occur.to_s() + @query.to_s()
     end
+    
+    private
+
+      def set_fields(occur) 
+        if (occur == Occur::MUST) 
+          @required = true
+          @prohibited = false
+        elsif (occur == Occur::SHOULD) 
+          @required = false
+          @prohibited = false
+        elsif (occur == Occur::MUST_NOT) 
+          @required = false
+          @prohibited = true
+        else 
+          raise ArgumentError, "Unknown operator " + occur
+        end
+      end
   end
 end

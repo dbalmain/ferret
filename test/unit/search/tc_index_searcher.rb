@@ -117,8 +117,8 @@ class IndexSearcherTest < Test::Unit::TestCase
     top_docs.score_docs.each do |score_doc|
       assert_equal(score_doc.score, is.explain(boolean_query, score_doc.doc).value)
     end
-    puts top_docs.score_docs
-    puts is.explain(boolean_query, 2)
+    #puts top_docs.score_docs
+    #puts is.explain(boolean_query, 2)
     docs = get_docs(top_docs.score_docs)
     assert(docs.include?(1))
     assert(docs.include?(2))

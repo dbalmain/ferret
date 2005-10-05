@@ -49,15 +49,15 @@ module Ferret::Search
     # Implement coord disabling.
     # Inherit javadoc.
     def get_similarity(searcher) 
-      result = super
+      sim = super
       if (@coord_disabled) # disable coord as requested
-        class <<result 
+        class <<sim 
           def coord(overlap, max_overlap) 
             return 1.0
           end
         end
       end
-      return result
+      return sim
     end
 
     # Adds a clause to a boolean query.  Clauses may be:
@@ -267,9 +267,7 @@ module Ferret::Search
 
         sub_query = clause.query
         if sub_query.instance_of? BooleanQuery # wrap sub-bools in parens
-          buffer << "("
-          buffer << c.query.to_s(field)
-          buffer << ")"
+          buffer << "(#{c.query.to_s(field)})"
         else
           buffer << c.query.to_s(field)
         end
@@ -288,12 +286,13 @@ module Ferret::Search
     end
 
     # Returns true iff +o+ is equal to this. 
-    def equals(other) 
+    def eql?(other) 
       if not other.instance_of?(BooleanQuery)
         return false
       end
       return (boost() == other.boost() and @clauses == other.clauses)
     end
+    alias :== :eql?
 
     # Returns a hash code value for this object.
     def hash() 
