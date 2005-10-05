@@ -53,7 +53,7 @@ module Ferret::Search
         end
         query_expl << idf_expl
 
-        query_norm_expl = Explanation.new(@query_norm,"query_norm")
+        query_norm_expl = Explanation.new(@query_norm||0.0,"query_norm")
         query_expl << query_norm_expl
 
         query_expl.value = boost_expl.value * idf_expl.value * query_norm_expl.value
