@@ -50,7 +50,7 @@ module Ferret::Search
       query = searcher.rewrite(self)
       weight = query.create_weight(searcher)
       sum = weight.sum_of_squared_weights()
-      norm = get_similarity(searcher).query_norm(sum)
+      norm = similarity(searcher).query_norm(sum)
       weight.normalize(norm)
       return weight
     end
@@ -104,7 +104,7 @@ module Ferret::Search
     # Similarity implementation, perhaps one that delegates through that of
     # the Searcher.  By default the Searcher's Similarity implementation is
     # returned.
-    def get_similarity(searcher) 
+    def similarity(searcher) 
       return searcher.similarity
     end
   end

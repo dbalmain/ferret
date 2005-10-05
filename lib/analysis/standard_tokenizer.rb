@@ -5,49 +5,47 @@ if __FILE__ == $0
   require 'token'
 end
 
-module Ferret
-  module Analysis
-    # The standard tokenizer is an advanced tokenizer which tokenizes morst
-    # words correctly as well as tokenizing things like email addresses, web
-    # addresses, phone numbers, etc.
+module Ferret::Analysis
+  # The standard tokenizer is an advanced tokenizer which tokenizes morst
+  # words correctly as well as tokenizing things like email addresses, web
+  # addresses, phone numbers, etc.
 
-    class StandardTokenizer < RETokenizer
-      ALPHA      = /[[:alpha:]]+/
-      APOSTROPHE = /#{ALPHA}('#{ALPHA})+/
-      ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
-      P          = /[_\/.,-]/
-      HASDIGIT   = /\w*\d\w*/
+  class StandardTokenizer < RETokenizer
+    ALPHA      = /[[:alpha:]]+/
+    APOSTROPHE = /#{ALPHA}('#{ALPHA})+/
+    ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
+    P          = /[_\/.,-]/
+    HASDIGIT   = /\w*\d\w*/
 
-      protected
+    protected
 
-        # Collects only characters which are not spaces tabs or carraige returns
-        def token_re()
-          #/#{NUM}|#{EMAIL}|#{ACRONYM}\w*|#{C0MPANY}|#{APOSTROPHE}|\w+/
-          # This is a simplified version of the original Lucene standard
-          # tokenizer.  I think it works better. I hope so anyway. Any way to
-          # do this more neatly?
-          /[[:alpha:]]+(('[[:alpha:]]+)+
-                       |\.([[:alpha:]]\.)+
-                       |(@|\&)\w+([-.]\w+)*
-                       )
-          |\w+(([\-._]\w+)*\@\w+([-.]\w+)+
-              |#{P}#{HASDIGIT}(#{P}\w+#{P}#{HASDIGIT})*(#{P}\w+)?
-              |(\.\w+)+
-              |
-              )
-          /x
+      # Collects only characters which are not spaces tabs or carraige returns
+      def token_re()
+        #/#{NUM}|#{EMAIL}|#{ACRONYM}\w*|#{C0MPANY}|#{APOSTROPHE}|\w+/
+        # This is a simplified version of the original Lucene standard
+        # tokenizer.  I think it works better. I hope so anyway. Any way to
+        # do this more neatly?
+        /[[:alpha:]]+(('[[:alpha:]]+)+
+                     |\.([[:alpha:]]\.)+
+                     |(@|\&)\w+([-.]\w+)*
+                     )
+        |\w+(([\-._]\w+)*\@\w+([-.]\w+)+
+            |#{P}#{HASDIGIT}(#{P}\w+#{P}#{HASDIGIT})*(#{P}\w+)?
+            |(\.\w+)+
+            |
+            )
+        /x
+      end
+
+      # stem the 's and remove the '.'s from acronyms
+      def normalize(str)
+        if str =~ /^#{ACRONYM}$/
+          str.gsub!(/\./, '')
+        elsif str =~ /^#{APOSTROPHE}$/
+          str.gsub!(/'[sS]$/, '')
         end
-
-        # stem the 's and remove the '.'s from acronyms
-        def normalize(str)
-          if str =~ /^#{ACRONYM}$/
-            str.gsub!(/\./, '')
-          elsif str =~ /^#{APOSTROPHE}$/
-            str.gsub!(/'[sS]$/, '')
-          end
-          str
-        end
-    end
+        str
+      end
   end
 end
 

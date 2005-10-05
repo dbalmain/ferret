@@ -9,7 +9,7 @@ module Ferret::Search
       attr_reader :value, :query
 
       def initialize(query, searcher)
-        @similarity = query.get_similarity(searcher)
+        @similarity = query.similarity(searcher)
         @idf = @similarity.idf(searcher.doc_freq(query.term),
                                searcher.max_doc) # compute idf
         @query = query

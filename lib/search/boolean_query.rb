@@ -48,7 +48,7 @@ module Ferret::Search
 
     # Implement coord disabling.
     # Inherit javadoc.
-    def get_similarity(searcher) 
+    def similarity(searcher) 
       sim = super
       if (@coord_disabled) # disable coord as requested
         class <<sim 
@@ -101,7 +101,7 @@ module Ferret::Search
         @query = query
         @weights = []
        
-        @similarity = query.get_similarity(searcher)
+        @similarity = query.similarity(searcher)
         query.clauses.each do |clause|
           @weights << clause.query.create_weight(searcher)
         end
