@@ -13,15 +13,15 @@ module Ferret::Analysis
     # Reader. Override to allow Analyzer to choose strategy based on
     # document and/or field.
     # string:: the string representing the text in the field
-    # field_name:: name of the field. Not required.
-    def token_stream(field_name, string)
+    # field:: name of the field. Not required.
+    def token_stream(field, string)
       return LowerCaseTokenizer.new(string)
     end
   end
 
   # An Analyzer that uses WhiteSpaceTokenizer.
   class WhiteSpaceAnalyzer < Analyzer
-    def token_stream(field_name, string)
+    def token_stream(field, string)
       return WhiteSpaceTokenizer.new(string)
     end
   end
@@ -45,14 +45,14 @@ module Ferret::Analysis
     end
 
     # Filters LowerCaseTokenizer with StopFilter.
-    def token_stream(field_name, string)
+    def token_stream(field, string)
       return StopFilter.new(LowerCaseTokenizer.new(string), @stop_words)
     end
   end
 
   # An Analyzer that filters LetterTokenizer with LowerCaseFilter.
   class StandardAnalyzer < StopAnalyzer
-    def token_stream(field_name, string)
+    def token_stream(field, string)
       return StopFilter.new(LowerCaseFilter.new(StandardTokenizer.new(string)), @stop_words)
     end
   end
@@ -75,19 +75,19 @@ module Ferret::Analysis
 
     # Defines an analyzer to use for the specified field.
     #
-    # field_name:: field name requiring a non-default analyzer.
+    # field:: field name requiring a non-default analyzer.
     # analyzer:: non-default analyzer to use for field
-    def add_analyzer(field_name, analyzer)
-      @analyzers[field_name] = analyzer
+    def add_analyzer(field, analyzer)
+      @analyzers[field] = analyzer
     end
 
-    def token_stream(field_name, string)
-      analyzer = @analyzers[field_name]
+    def token_stream(field, string)
+      analyzer = @analyzers[field]
       if (analyzer == nil)
         analyzer = @default_analyzer;
       end
 
-      return analyzer.token_stream(field_name, string)
+      return analyzer.token_stream(field, string)
     end
   end
 end

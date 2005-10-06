@@ -1,3 +1,9 @@
+class Float
+  def =~(o)
+    return (1 - self/o).abs < 0.0000000001
+  end
+end
+
 module Ferret::Utils
   # Provides support for converting longs to Strings, and back again. The
   # strings are structured so that lexicographic sorting order is preserved.

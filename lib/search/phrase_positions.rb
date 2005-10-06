@@ -47,5 +47,9 @@ module Ferret::Search
         return false
       end
     end
+
+    def to_s
+      "pp->(doc => #{@doc}, position => #{position})"
+    end
   end
 end

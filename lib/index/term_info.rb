@@ -33,9 +33,9 @@ module Ferret::Index
         @skip_offset == o.skip_offset
     end
     alias eql? ==
-  end
 
-  def to_s()
-    "TermInfo:df=#{@doc_freq}:fp=#{@freq_pointer}:pp=#{@prox_pointer}:so=#{@skip_offset}"
+    def to_s()
+      "TermInfo:df=#{@doc_freq}:fp=#{@freq_pointer}:pp=#{@prox_pointer}:so=#{@skip_offset}"
+    end
   end
 end

@@ -43,8 +43,8 @@ module Ferret::Search
     # Prints a user-readable version of this query. 
     def to_s(field) 
       buffer = ""
-      if term.field_name != field
-          buffer << term.field_name + ":"
+      if term.field != field
+          buffer << term.field + ":"
       end
       buffer << term.text
       if (boost() != 1.0) 

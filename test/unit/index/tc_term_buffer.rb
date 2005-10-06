@@ -7,7 +7,7 @@ class TermBufferTest < Test::Unit::TestCase
     t = Term.new("title", "Ferret Tutorial")
     tb = TermBuffer.new
     tb.term = t
-    assert_equal(t.field_name, tb.field_name)
+    assert_equal(t.field, tb.field)
     assert_equal("Ferret Tutorial", tb.text_str)
     assert_equal("Ferret Tutorial".length, tb.text_length)
     assert_equal(t, tb.term)
@@ -18,7 +18,7 @@ class TermBufferTest < Test::Unit::TestCase
     tb.term = Term.new("title", "Ferret Tutorial")
     tb2 = TermBuffer.new
     tb2.set!(tb)
-    assert_equal(tb.field_name, tb2.field_name)
+    assert_equal(tb.field, tb2.field)
     assert_equal("Ferret Tutorial", tb2.text_str)
     assert_equal("Ferret Tutorial".length, tb2.text_length)
     assert_equal(tb.term, tb2.term)
@@ -52,6 +52,6 @@ class TermBufferTest < Test::Unit::TestCase
     tb.read(input, fi)
     assert_equal("Dave Balmain", tb.text_str)
     assert_equal("Dave Balmain", tb.term.text)
-    assert_equal("Writer", tb.field_name)
+    assert_equal("Writer", tb.field)
   end
 end

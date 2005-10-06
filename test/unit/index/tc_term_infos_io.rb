@@ -115,7 +115,7 @@ class TermInfosIOTest < Test::Unit::TestCase
     assert_equal(257, tir.get_terms_position(Term.new("word", "dustmop")))
     assert_equal(TermInfo.new(1, 5, 5, 0), tir.get_term_info(term_dualize))
     assert_equal(term_dumbly, tir.get_term(127))
-    terms = tir.terms_starting_at(term_dumbly)
+    terms = tir.terms_from(term_dumbly)
     assert_equal(term_dumbly, terms.term)
     assert(terms.next?)
     assert_equal(Term.new("word", "dumbness"), terms.term)

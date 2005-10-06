@@ -5,6 +5,7 @@ module Ferret::Search
   # This query may be combined with other terms or queries with a BooleanQuery.
   class PhraseQuery < Query 
     def initialize()
+      super
       @slop = 0
       @terms = []
       @positions = []
@@ -26,7 +27,7 @@ module Ferret::Search
     #
     # The slop is zero by default, requiring exact matches.
     attr_accessor :slop
-    attr_reader :terms, :positions
+    attr_reader :terms, :positions, :field
 
     # Adds a term to the end of the query phrase.
     #
@@ -45,13 +46,18 @@ module Ferret::Search
       end
       
       if @terms.size == 0
-        @field = term.field_name
-      elsif (term.field_name != field)
+        @field = term.field
+      elsif (term.field != @field)
         raise ArgumentError, "All phrase terms must be in the same field: #{term}"
       end
       
       @terms << term
       @positions << position
+    end
+
+    def << term
+      add(term)
+      return self
     end
     
     class PhraseWeight < Weight 
@@ -60,27 +66,27 @@ module Ferret::Search
       def initialize(query, searcher)
         @query = query
         @similarity = query.similarity(searcher)
-        @idf = similarity.idf(@query.terms, searcher)
+        @idf = @similarity.idf_phrase(@query.terms, searcher)
       end
 
       def to_s() return "phrase_weight(#{@value})" end
 
       def sum_of_squared_weights() 
-        @query_weight = @idf * @query.boost(); # compute query weight
-        return @query_weight * @query_weight;  # square it
+        @query_weight = @idf * @query.boost()  # compute query weight
+        return @query_weight * @query_weight   # square it
       end
 
       def normalize(query_norm) 
         @query_norm = query_norm
-        @query_weight *= query_norm;           # normalize query weight
-        @value = @query_weight * @idf;         # idf for document 
+        @query_weight *= query_norm            # normalize query weight
+        @value = @query_weight * @idf          # idf for document 
       end
 
       def scorer(reader)
-        return nil if @terms.size == 0 # optimize zero-term case
+        return nil if @query.terms.size == 0   # optimize zero-term case
 
         tps = []
-        @terms.each do |term|
+        @query.terms.each do |term|
           tp = reader.term_positions_for(term)
           return nil if tp.nil?
           tps << tp
@@ -89,12 +95,12 @@ module Ferret::Search
         if (@query.slop == 0)				  # optimize exact case
           return ExactPhraseScorer.new(self, tps, @query.positions,
                                        @similarity,
-                                       reader.norms(@query.field))
+                                       reader.get_norms(@query.field))
         else
           return SloppyPhraseScorer.new(self, tps, @query.positions,
                                    @similarity,
                                    @query.slop,
-                                   reader.norms(@query.field))
+                                   reader.get_norms(@query.field))
         end
       end
 
@@ -102,15 +108,11 @@ module Ferret::Search
         result = Explanation.new()
         result.description = "weight(#{@query} in #{doc}), product of:"
 
-        doc_freqs = " "
-        query = "\" "
-        @terms.each_with_index do |term, i|
-          doc_freqs << "#{term.text}=#{reader.doc_freq(@term)} "
-          query << "#{term.text} "
-        end
-        query.append('\"')
+        doc_freqs = @query.terms.map do |term|
+          "#{term.text}=#{reader.doc_freq(term)}"
+        end.join(", ")
 
-        idf_expl = Explanation.new(@idf, "idf(#{field}:#{doc_freqs})")
+        idf_expl = Explanation.new(@idf, "idf(#{@query.field}:<#{doc_freqs}>)")
         
         # explain query weight
         query_expl = Explanation.new()
@@ -133,14 +135,14 @@ module Ferret::Search
         # explain field weight
         field_expl = Explanation.new()
         field_expl.description =
-          "field_weight(#{@query.field}:#{@query} in #{doc}), product of:"
+          "field_weight(#{query} in #{doc}), product of:"
 
         tf_expl = scorer(reader).explain(doc)
         field_expl << tf_expl
         field_expl << idf_expl
 
         field_norm_expl = Explanation.new()
-        field_norms = reader.norms(field)
+        field_norms = reader.get_norms(@query.field)
         field_norm =
           field_norms ? Similarity.decode_norm(field_norms[doc]) : 0.0
         field_norm_expl.value = field_norm
@@ -170,7 +172,7 @@ module Ferret::Search
         tq.boost = boost()
         return tq.create_weight(searcher)
       end
-      return PhraseWeight.new(searcher)
+      return PhraseWeight.new(self, searcher)
     end
 
     # @see org.apache.lucene.search.Query#extract_terms(java.util.Set)
@@ -179,14 +181,15 @@ module Ferret::Search
     end
 
     # Prints a user-readable version of this query. 
-    def to_s(f) 
+    def to_s(f=nil) 
       buffer = ""
-      buffer << "#{field}:" if @field != f
-      buffer << "\" "
+      buffer << "#{@field}:" if @field != f
+      buffer << '"'
       @terms.each { |term| buffer << "#{term.text} " }
-      buffer.append("\"")
+      buffer.rstrip!
+      buffer << '"'
       buffer << "~#{slop}" if (slop != 0) 
-      buffer.append("^#{boost()}") if boost() != 1.0
+      buffer << "^#{boost()}" if boost() != 1.0
       return buffer
     end
 

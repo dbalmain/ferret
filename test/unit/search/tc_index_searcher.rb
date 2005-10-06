@@ -11,9 +11,11 @@ class IndexSearcherTest < Test::Unit::TestCase
     @documents = IndexTestHelper.prepare_search_docs()
     @documents.each { |doc| iw << doc }
     iw.close()
+    @is = IndexSearcher.new(@dir)
   end
 
   def tear_down()
+    @is.close
     @dir.close()
   end
 
@@ -25,108 +27,82 @@ class IndexSearcherTest < Test::Unit::TestCase
     docs
   end
 
+  def do_test_top_docs(query, expected, top=nil, total_hits=nil)
+    top_docs = @is.search(query)
+    assert_equal(expected.length, top_docs.score_docs.size)
+    assert_equal(top, top_docs.score_docs[0].doc) if top
+    if total_hits
+      assert_equal(total_hits, top_docs.total_hits)
+    else
+      assert_equal(expected.length, top_docs.total_hits)
+    end
+    top_docs.score_docs.each do |score_doc|
+      assert(expected.include?(score_doc.doc))
+      assert(score_doc.score =~ @is.explain(query, score_doc.doc).value)
+    end
+  end
+
   def test_term_query
-    term_query = TermQuery.new(Term.new("field", "word2"));
-    term_query.boost = 100
-    is = IndexSearcher.new(@dir)
-    top_docs = is.search(term_query)
-    #puts top_docs.score_docs
-    assert_equal(3, top_docs.total_hits)
+    tq = TermQuery.new(Term.new("field", "word2"));
+    tq.boost = 100
+    do_test_top_docs(tq, [1,4,8])
 
-    docs = get_docs(top_docs.score_docs)
-    assert(docs.include?(1))
-    assert(docs.include?(4))
-    assert(docs.include?(8))
-    #puts is.explain(term_query, 1).to_html
-    #puts is.explain(term_query, 4)
-
-    term_query = TermQuery.new(Term.new("field", "word1"));
-    top_docs = is.search(term_query)
+    tq = TermQuery.new(Term.new("field", "word1"));
+    top_docs = @is.search(tq)
     #puts top_docs.score_docs
     assert_equal(@documents.size, top_docs.total_hits)
     assert_equal(10, top_docs.score_docs.size)
-    top_docs = is.search(term_query, nil, 20)
+    top_docs = @is.search(tq, nil, 20)
     assert_equal(@documents.size, top_docs.score_docs.size)
   end
 
   def test_boolean_query
-    boolean_query = BooleanQuery.new()
-    term_query1 = TermQuery.new(Term.new("field", "word1"))
-    term_query2 = TermQuery.new(Term.new("field", "word3"))
-    boolean_query.add_query(term_query1, BooleanClause::Occur::MUST)
-    boolean_query.add_query(term_query2, BooleanClause::Occur::MUST)
-    is = IndexSearcher.new(@dir)
-    top_docs = is.search(boolean_query)
-    assert_equal(6, top_docs.total_hits)
-    assert(top_docs.score_docs[0].doc != 8)
+    bq = BooleanQuery.new()
+    tq1 = TermQuery.new(Term.new("field", "word1"))
+    tq2 = TermQuery.new(Term.new("field", "word3"))
+    bq.add_query(tq1, BooleanClause::Occur::MUST)
+    bq.add_query(tq2, BooleanClause::Occur::MUST)
+    do_test_top_docs(bq, [2,3,6,8,11,14], 14)
 
-    top_docs.score_docs.each do |score_doc|
-      assert_equal(score_doc.score, is.explain(boolean_query, score_doc.doc).value)
-    end
-    docs = get_docs(top_docs.score_docs)
-    assert(docs.include?(2))
-    assert(docs.include?(3))
-    assert(docs.include?(6))
-    assert(docs.include?(8))
-    assert(docs.include?(11))
-    assert(docs.include?(14))
+    tq3 = TermQuery.new(Term.new("field", "word2"))
+    bq.add_query(tq3, BooleanClause::Occur::SHOULD)
+    do_test_top_docs(bq, [2,3,6,8,11,14], 8)
 
-    term_query3 = TermQuery.new(Term.new("field", "word2"))
-    boolean_query.add_query(term_query3, BooleanClause::Occur::SHOULD)
-    top_docs = is.search(boolean_query)
-    assert_equal(6, top_docs.total_hits)
-    assert(top_docs.score_docs[0].doc == 8)
+    bq = BooleanQuery.new()
+    bq.add_query(tq2, BooleanClause::Occur::MUST)
+    bq.add_query(tq3, BooleanClause::Occur::MUST_NOT)
+    do_test_top_docs(bq, [2,3,6,11,14])
 
-    top_docs.score_docs.each do |score_doc|
-      assert_equal(score_doc.score, is.explain(boolean_query, score_doc.doc).value)
-    end
-    docs = get_docs(top_docs.score_docs)
-    assert(docs.include?(2))
-    assert(docs.include?(3))
-    assert(docs.include?(6))
-    assert(docs.include?(8))
-    assert(docs.include?(11))
-    assert(docs.include?(14))
-    
-    boolean_query = BooleanQuery.new()
-    boolean_query.add_query(term_query2, BooleanClause::Occur::MUST)
-    boolean_query.add_query(term_query3, BooleanClause::Occur::MUST_NOT)
-    top_docs = is.search(boolean_query)
-    assert_equal(5, top_docs.total_hits)
-    
-    top_docs.score_docs.each do |score_doc|
-      assert_equal(score_doc.score, is.explain(boolean_query, score_doc.doc).value)
-    end
-    docs = get_docs(top_docs.score_docs)
-    assert(docs.include?(2))
-    assert(docs.include?(3))
-    assert(docs.include?(6))
-    assert(docs.include?(11))
-    assert(docs.include?(14))
+    bq = BooleanQuery.new()
+    bq.add_query(tq2, BooleanClause::Occur::MUST_NOT)
+    do_test_top_docs(bq, [])
 
-    boolean_query = BooleanQuery.new()
-    boolean_query.add_query(term_query2, BooleanClause::Occur::MUST_NOT)
-    top_docs = is.search(boolean_query)
-    assert_equal(0, top_docs.total_hits)
+    bq = BooleanQuery.new()
+    bq.add_query(tq2, BooleanClause::Occur::SHOULD)
+    bq.add_query(tq3, BooleanClause::Occur::SHOULD)
+    do_test_top_docs(bq, [1,2,3,4,6,8,11,14])
+  end
 
-    boolean_query = BooleanQuery.new()
-    boolean_query.add_query(term_query2, BooleanClause::Occur::SHOULD)
-    boolean_query.add_query(term_query3, BooleanClause::Occur::SHOULD)
-    top_docs = is.search(boolean_query)
-    assert_equal(8, top_docs.total_hits)
-    top_docs.score_docs.each do |score_doc|
-      assert_equal(score_doc.score, is.explain(boolean_query, score_doc.doc).value)
-    end
-    #puts top_docs.score_docs
-    #puts is.explain(boolean_query, 2)
-    docs = get_docs(top_docs.score_docs)
-    assert(docs.include?(1))
-    assert(docs.include?(2))
-    assert(docs.include?(3))
-    assert(docs.include?(4))
-    assert(docs.include?(6))
-    assert(docs.include?(8))
-    assert(docs.include?(11))
-    assert(docs.include?(14))
+  def test_phrase_query()
+    pq = PhraseQuery.new()
+    t1 = Term.new("field", "quick")
+    t2 = Term.new("field", "brown")
+    t3 = Term.new("field", "fox")
+    pq << t1 << t2 << t3
+    do_test_top_docs(pq, [1])
+
+    pq.slop = 4
+    do_test_top_docs(pq, [1,16,17])
+
+    pq = PhraseQuery.new()
+    pq << t1
+    pq.add(t3, 2)
+    do_test_top_docs(pq, [1,11,14])
+
+    pq.slop = 1
+    do_test_top_docs(pq, [1,11,14,16])
+
+    pq.slop = 4
+    do_test_top_docs(pq, [1,11,14,16,17])
   end
 end

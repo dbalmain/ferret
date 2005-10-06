@@ -5,7 +5,7 @@ include Ferret::Index
 class TermTest < Test::Unit::TestCase
   def test_term()
     term1 = Term.new("bfield1", "athis is text1")
-    assert_equal(term1.field_name, "bfield1")
+    assert_equal(term1.field, "bfield1")
     assert_equal(term1.text, "athis is text1")
     term2 = Term.new("afield2", "athis is text1")
     term3 = Term.new("bfield1", "bthis is text2")

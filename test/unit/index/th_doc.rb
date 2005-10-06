@@ -186,24 +186,24 @@ module IndexTestHelper
 
   def IndexTestHelper.prepare_search_docs
     data = [
-      {"field" => "word1"},
-      {"field" => "word1 word2"},
-      {"field" => "word1 word3"},
-      {"field" => "word1 word3"},
-      {"field" => "word1 word2"},
-      {"field" => "word1"},
-      {"field" => "word1 word3"},
-      {"field" => "word1"},
-      {"field" => "word1 word2 word3"},
-      {"field" => "word1"},
-      {"field" => "word1"},
-      {"field" => "word1 word3"},
-      {"field" => "word1"},
-      {"field" => "word1"},
-      {"field" => "word1 word3"},
-      {"field" => "word1"},
-      {"field" => "word1"},
-      {"field" => "word1"}
+      {"date" => "20051001", "field" => "word1"},
+      {"date" => "20051002", "field" => "word1 word2 the quick brown fox"},
+      {"date" => "20051003", "field" => "word1 word3"},
+      {"date" => "20051004", "field" => "word1 word3"},
+      {"date" => "20051005", "field" => "word1 word2"},
+      {"date" => "20051006", "field" => "word1"},
+      {"date" => "20051007", "field" => "word1 word3"},
+      {"date" => "20051008", "field" => "word1"},
+      {"date" => "20051009", "field" => "word1 word2 word3 the fast brown fox"},
+      {"date" => "20051010", "field" => "word1"},
+      {"date" => "20051011", "field" => "word1"},
+      {"date" => "20051012", "field" => "word1 word3 the quick red fox"},
+      {"date" => "20051013", "field" => "word1"},
+      {"date" => "20051014", "field" => "word1"},
+      {"date" => "20051015", "field" => "word1 word3 the quick hairy fox"},
+      {"date" => "20051016", "field" => "word1"},
+      {"date" => "20051017", "field" => "word1 the quick fox is brown"},
+      {"date" => "20051018", "field" => "word1 the brown fox is quick"}
     ]
 
     docs = []

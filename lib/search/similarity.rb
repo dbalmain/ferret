@@ -91,9 +91,9 @@ module Ferret::Search
     # #encode_norm(float).  Thus they have limited precision, and documents
     # must be re-indexed if this method is altered.
     #
-    # field_name:: the name of the field
+    # field:: the name of the field
     # num_tokens:: the total number of tokens contained in fields named
-    #              _field_name_ of _doc_.
+    #              _field_ of _doc_.
     #
     # See Field#set_boost
     def length_norm
@@ -232,7 +232,7 @@ module Ferret::Search
   # Expert: Default scoring implementation.
   class DefaultSimilarity < Similarity
     # See source
-    def length_norm(field_name, num_terms)
+    def length_norm(field, num_terms)
       return 1.0 / Math.sqrt(num_terms)
     end
     

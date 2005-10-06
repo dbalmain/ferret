@@ -75,12 +75,8 @@ module Ferret::Search
     end
 
     def skip_to(target)
-      each do |pp|
-        break if not @more = pp.skip_to(target)
-      end
-      if @more
-        sort()                                   # re-sort
-      end
+      each() { |pp| break if not @more = pp.skip_to(target) }
+      sort() if @more                            # re-sort
       return do_next()
     end
 
@@ -99,7 +95,7 @@ module Ferret::Search
     
     def sort() 
       @pq.clear()
-      each do |pp|
+      each() do |pp|
         @pq.push(pp)
       end
       pq_to_list()
@@ -129,17 +125,17 @@ module Ferret::Search
     def explain(doc)
       tf_explanation = Explanation.new()
 
-      while (next? and @query.doc < doc)
+      while (next? and doc() < doc)
       end
 
-      phrase_freq = (@query.doc == doc) ? @freq : 0.0
-      tf_explanation.value = @query.similarity.tf(phrase_freq)
+      phrase_freq = (doc() == doc) ? @freq : 0.0
+      tf_explanation.value = @similarity.tf(phrase_freq)
       tf_explanation.description = "tf(phrase_freq=#{phrase_freq})"
 
       return tf_explanation
     end
 
-    def to_s() return "scorer(#{@weight})" end
+    def to_s() return "phrase_scorer(#{@weight})" end
 
   end
 

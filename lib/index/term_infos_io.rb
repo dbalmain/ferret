@@ -104,7 +104,7 @@ module Ferret::Index
         @out.write_vint(start)                   # write shared prefix length
         @out.write_vint(length)                  # write delta length
         @out.write_chars(term.text, start, length)  # write delta chars
-        @out.write_vint(@field_infos.field_number(term.field_name)) # write field num
+        @out.write_vint(@field_infos.field_number(term.field)) # write field num
         @last_term = term
       end
   end
@@ -201,7 +201,7 @@ module Ferret::Index
     end
 
     # Returns an enumeration of terms starting at or after the named term. 
-    def terms_starting_at(term)
+    def terms_from(term)
       get_position(term)
       return enum().clone()
     end

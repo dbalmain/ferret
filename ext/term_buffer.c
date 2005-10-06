@@ -236,7 +236,7 @@ frt_termbuffer_hash(VALUE self)
 void 
 Init_term_buffer(void) {
   // IDs
-	field_name = rb_intern("field_name");
+	field_name = rb_intern("name");
 
 	// TermBuffer
 	cTermBuffer = rb_define_class_under(mIndex, "TermBuffer", rb_cObject);
@@ -247,7 +247,7 @@ Init_term_buffer(void) {
 	rb_define_method(cTermBuffer, "initialize", frt_termbuffer_init, 0);
 	rb_define_method(cTermBuffer, "initialize_copy", frt_termbuffer_init_copy, 1);
 	rb_define_method(cTermBuffer, "text", frt_termbuffer_get_text, 0);
-	rb_define_method(cTermBuffer, "field_name", frt_termbuffer_get_field_name, 0);
+	rb_define_method(cTermBuffer, "field", frt_termbuffer_get_field_name, 0);
 	rb_define_method(cTermBuffer, "text_length", frt_termbuffer_get_text_length, 0);
 	rb_define_method(cTermBuffer, "<=>", frt_termbuffer_compare_to, 1);
 	rb_define_method(cTermBuffer, "hash", frt_termbuffer_hash, 0);

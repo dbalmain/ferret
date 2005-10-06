@@ -153,6 +153,6 @@ Init_term(void)
 	rb_define_method(cTerm, "to_s", frt_term_to_s, 0);
 	rb_define_method(cTerm, "<=>", frt_term_compare_to, 1);
 	rb_define_method(cTerm, "text", frt_term_get_text, 0);
-	rb_define_method(cTerm, "field_name", frt_term_get_field, 0);
+	rb_define_method(cTerm, "field", frt_term_get_field, 0);
 	rb_define_method(cTerm, "hash", frt_term_hash, 0);
 }

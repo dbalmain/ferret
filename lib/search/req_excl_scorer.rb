@@ -9,7 +9,7 @@ module Ferret::Search
     # req_scorer:: The scorer that must match, except where
     # excl_scorer:: indicates exclusion.
     def initialize(req_scorer, excl_scorer) 
-      super(nil); # No similarity used.
+      super(nil) # No similarity used.
       @req_scorer = req_scorer
       @excl_scorer = excl_scorer
 

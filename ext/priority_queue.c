@@ -1,6 +1,6 @@
 #include "ferret.h"
 
-ID less_than;
+ID less_than, put_heap;
 /****************************************************************************
  *
  * PriorityQueue Methods
@@ -121,8 +121,9 @@ frt_priq_insert(VALUE self, VALUE e)
 		heap[1] = e;
 		priq_down(priq, self, rary);
 		return 1;
-	} else
+	} else {
 		return 0;
+  }
 }
 
 static VALUE
@@ -171,7 +172,7 @@ frt_priq_clear(VALUE self)
 {
 	PriorityQueue *priq;
 	Data_Get_Struct(self, PriorityQueue, priq);
-	VALUE heap = rb_ary_new2(priq->size);
+	VALUE heap = rb_ary_new2(priq->size+1);
 	rb_iv_set(self, "@heap", heap);
 	priq->heap = RARRAY(heap)->ptr;
 	priq->len = 0;
@@ -210,6 +211,7 @@ void
 Init_priority_queue(void)
 {
 	less_than = rb_intern("less_than");
+	put_heap = rb_intern("put_heap");
 	
 	cPriorityQueue = rb_define_class_under(mUtils, "PriorityQueue", rb_cObject);
 	rb_define_alloc_func(cPriorityQueue, frt_priq_alloc);

@@ -20,7 +20,7 @@ module Ferret::Search
     #
     # returns:: true if more matching documents may remain.
     # :yield: doc, score
-    def each_hit(hc)
+    def each_hit()
       while next?
         yield(doc(), score())
       end

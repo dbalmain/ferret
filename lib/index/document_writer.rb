@@ -220,7 +220,7 @@ module Ferret::Index
               last_position = position
             end
             # check to see if we switched to a new field
-            term_field = posting.term.field_name
+            term_field = posting.term.field
             if (current_field != term_field) 
               # changing field - see if there is something to save
               current_field = term_field

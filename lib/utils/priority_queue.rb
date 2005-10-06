@@ -74,6 +74,10 @@ module Ferret::Utils
       @size = 0
     end
 
+    def put_heap
+      puts @heap
+    end
+
     # resets the queue after the top has been changed
     def adjust_top()
       down_heap()

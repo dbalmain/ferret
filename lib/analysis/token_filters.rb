@@ -67,7 +67,7 @@ module Ferret::Analysis
   # analyzer like this:
   #
   #   def MyAnalyzer < Analyzer
-  #     def token_stream(field_name, reader)
+  #     def token_stream(field, reader)
   #       return PorterStemFilter.new(LowerCaseTokenizer.new(reader))
   #     end
   #   end

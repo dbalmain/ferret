@@ -20,7 +20,7 @@ module Ferret::Search
       begin 
         pp = @pq.pop()
         pos = start = pp.position
-        next_pos = pq.top().position
+        next_pos = @pq.top().position
         while pos <= next_pos
           start = pos       # advance pp to min window
           if not pp.next_position()
@@ -31,7 +31,7 @@ module Ferret::Search
         end
 
         match_length = last_pos - start
-        if (match_length <= slop)
+        if (match_length <= @slop)
           freq += @similarity.sloppy_freq(match_length) # score match
         end
 

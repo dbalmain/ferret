@@ -35,7 +35,7 @@ module Ferret::Search
         return nil if term_docs.nil?
 
         return TermScorer.new(self, term_docs, @similarity,
-                              reader.get_norms(@query.term.field_name))
+                              reader.get_norms(@query.term.field))
       end
 
       def explain(reader, doc)
@@ -61,7 +61,7 @@ module Ferret::Search
         explanation << query_expl
 
         # explain field weight
-        field_name = @query.term.field_name
+        field_name = @query.term.field
         field_expl = Explanation.new()
         field_expl.description = "field_weight(#{@query.term} in #{doc}), product of:"
 
@@ -105,7 +105,7 @@ module Ferret::Search
 
     # Prints a user-readable version of this query. 
     def to_s() 
-      buffer = "#{@term.field_name}:#{@term.text}"
+      buffer = "#{@term.field}:#{@term.text}"
       if @boost != 1.0
         buffer << "^ #{boost()}"
       end
