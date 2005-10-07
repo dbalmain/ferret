@@ -1,37 +1,34 @@
 module Ferret::Search
   # Expert: Compares two ScoreDoc objects for sorting.
   class ScoreDocComparator 
+    include Comparable
 
     # Special comparator for sorting hits according to computed relevance (score). 
     RELEVANCE = ScoreDocComparator.new() 
     class <<RELEVANCE
-      def compare (i, j) 
-        return -1 if (i.score > j.score)
-        return 1 if (i.score < j.score)
-        return 0
+      def <=>(i, j) 
+        return -(i.score <=> j.score)
       end
-      def sort_value (i) 
+      def sort_value(i) 
         return i.score
       end
       def sort_type() 
-        return SortField::SCORE
+        return SortField::SortBy::SCORE
       end
     end
 
 
     # Special comparator for sorting hits according to index order (number). 
-    INDEXORDER = ScoreDocComparator.new() 
-    class <<INDEXORDER
-      def compare (i, j) 
-        return -1 if (i.doc < j.doc)
-        return 1  if (i.doc > j.doc)
-        return 0
+    INDEX_ORDER = ScoreDocComparator.new() 
+    class <<INDEX_ORDER
+      def <=>(i, j) 
+        return i.doc <=> j.doc
       end
-      def sort_value (i) 
+      def sort_value(i) 
         return i.doc
       end
       def sort_type() 
-        return SortField::DOC
+        return SortField::SortBy::DOC
       end
     end
 
@@ -43,7 +40,7 @@ module Ferret::Search
     # returns:: +-1+ if +i+ should come before +j+
     #           +1+  if +i+ should come after +j+
     #           +0+  if they are equal
-    def compare(i, j)
+    def <=>(i, j)
       return NotImplementedError
     end
 

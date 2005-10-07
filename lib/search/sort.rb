@@ -8,7 +8,7 @@ module Ferret::Search
   # not need to be stored (unless you happen to want it back with the rest of
   # your document data).  In other words:
   # 
-  #   document << Field.new("byNumber",
+  #   document << Field.new("by_number",
   #                         x.to_s,
   #                         Field::Store::NO,
   #                         Field::Index::UN_TOKENIZED))
@@ -45,10 +45,10 @@ module Ferret::Search
   # 
   # === Memory Usage
   # 
-  # Sorting uses of caches of term values maintained by the internal
-  # HitQueue(s).  The cache is static and contains an integer or float array
-  # of length +IndexReader#max_doc()+ for each field name for which a sort is
-  # performed.  In other words, the size of the cache in bytes is:
+  # Sorting uses caches of term values maintained by the internal HitQueue(s).
+  # The cache is static and contains an integer or float array of length
+  # +IndexReader#max_doc+ for each field name for which a sort is performed.
+  # In other words, the size of the cache in bytes is:
   # 
   #   4 * IndexReader#max_doc * (# of different fields actually used to sort)
   # 
@@ -74,13 +74,13 @@ module Ferret::Search
     def initialize(fields = [SortField::FIELD_SCORE, SortField::FIELD_DOC],
                    reverse = false)
       fields = [fields] unless fields.is_a?(Array)
-      if fields[0].is_a?(String)
-        fields.size.times do |i|
-          fields[i] = SortField.new(fields[i], SortField::AUTO, reverse)
-        end
-        fields << SortField::FIELD_DOC if fields.size == 1
-      end
       @fields = fields
+      if fields[0].is_a?(String)
+        @fields = fields.map do |field|
+          SortField.new(field, SortField::SortBy::AUTO, reverse)
+        end
+        @fields << SortField::FIELD_DOC if @fields.size == 1
+      end
     end
 
     # Represents sorting by computed relevance. Using this sort criteria returns
@@ -90,16 +90,10 @@ module Ferret::Search
     RELEVANCE = Sort.new()
 
     # Represents sorting by index order. 
-    INDEXORDER = Sort.new(SortField::FIELD_DOC)
+    INDEX_ORDER = Sort.new(SortField::FIELD_DOC)
 
     def to_s() 
-      buffer = ""
-
-      @fields.each do |field|
-        buffer << field.to_s + ","
-      end
-
-      return buffer[0..-2]
+      return @fields.map {|field| "#{field}"}.join(", ")
     end
   end
 end

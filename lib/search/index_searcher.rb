@@ -76,7 +76,6 @@ module Ferret::Search
       return TopDocs.new(total_hits, score_docs)
     end
 
-    # inherit javadoc
 #      def search(query, filter, num_docs, sort)
 #       
 #        scorer = query.weight(self).scorer(@reader)
@@ -101,7 +100,6 @@ module Ferret::Search
 #      end
 
 
-    # inherit javadoc
 #      def search(query, filter, results)
 #        HitCollector collector = results
 #        if (filter != nil) 

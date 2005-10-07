@@ -174,7 +174,7 @@ module Ferret::Search
       return PhraseWeight.new(self, searcher)
     end
 
-    # @see org.apache.lucene.search.Query#extract_terms(java.util.Set)
+    # See Query#extract_terms()
     def extract_terms(query_terms) 
       query_terms.add_all(@terms)
     end

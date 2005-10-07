@@ -53,8 +53,6 @@ module Ferret::Search
       return @coord_disabled
     end
 
-    # Implement coord disabling.
-    # Inherit javadoc.
     def similarity(searcher) 
       sim = super
       if (@coord_disabled) # disable coord as requested
