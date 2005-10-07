@@ -66,11 +66,43 @@ frt_term_get_text(VALUE self)
 }
 
 static VALUE 
+frt_term_set_text(VALUE self, VALUE rtext)
+{
+	Term *term;
+	int tlen = RSTRING(rtext)->len;
+ 	char *text = RSTRING(rtext)->ptr;
+	Data_Get_Struct(self, Term, term);
+
+	REALLOC_N(term->text, char, tlen + 1);
+	
+	MEMCPY(term->text, text, char, tlen);
+	term->tlen = tlen;
+	
+	return Qnil;
+}
+
+static VALUE 
 frt_term_get_field(VALUE self)
 {
 	Term *term;
 	Data_Get_Struct(self, Term, term);
 	return rb_str_new(term->field, term->flen);
+}
+
+static VALUE 
+frt_term_set_field(VALUE self, VALUE rfield)
+{
+	Term *term;
+	int flen = RSTRING(rfield)->len;
+ 	char *field = RSTRING(rfield)->ptr;
+	Data_Get_Struct(self, Term, term);
+
+	REALLOC_N(term->field, char, flen + 1);
+	
+	MEMCPY(term->field, field, char, flen);
+	term->flen = flen;
+	
+	return Qnil;
 }
 
 VALUE 
@@ -153,6 +185,8 @@ Init_term(void)
 	rb_define_method(cTerm, "to_s", frt_term_to_s, 0);
 	rb_define_method(cTerm, "<=>", frt_term_compare_to, 1);
 	rb_define_method(cTerm, "text", frt_term_get_text, 0);
+	rb_define_method(cTerm, "text=", frt_term_set_text, 1);
 	rb_define_method(cTerm, "field", frt_term_get_field, 0);
+	rb_define_method(cTerm, "field=", frt_term_set_field, 1);
 	rb_define_method(cTerm, "hash", frt_term_hash, 0);
 }

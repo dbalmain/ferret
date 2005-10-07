@@ -66,8 +66,9 @@ module Ferret::Index
 
     def clone() 
       clone = super
-      clone.input = @input.clone()
-      clone.term_info = TermInfo.new(@term_info)
+      clone.input = @input.clone
+      clone.term_info = @term_info.clone
+      #puts "clone.term_info i s #{clone.term_info}"
       clone.term_buffer = @term_buffer.clone
       clone.prev_buffer = @prev_buffer.clone
       return clone
@@ -83,6 +84,7 @@ module Ferret::Index
 
     # Increments the enumeration to the next element.  True if one exists.
     def next?
+      #puts "This is why we went to the next element. Perhaps?????"
       @position += 1
       if (@position > @size - 1) 
         @term_buffer.reset()
@@ -115,6 +117,7 @@ module Ferret::Index
         @index_pointer += @input.read_vlong() # read index pointer
       end
 
+      #puts "and now the buffer is #{@term_buffer} term = #{@term_info}"
       return true
     end
 
@@ -147,9 +150,10 @@ module Ferret::Index
 
     # Sets the argument to the current TermInfo in the enumeration.
     # Initially invalid, valid after next() called for the first time.
-    def term_info=(ti) 
-      return ti.set!(term_info)
-    end
+    attr_writer :term_info
+    #def term_info=(ti) 
+    #  return @term_info.set!(ti)
+    #end
 
     # Returns the doc_freq from the current TermInfo in the enumeration.
     # Initially invalid, valid after next() called for the first time.

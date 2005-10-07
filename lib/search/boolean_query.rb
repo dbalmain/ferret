@@ -19,6 +19,14 @@ module Ferret::Search
     attr_reader :clauses
     DEFAULT_MAX_CLAUSE_COUNT = 1024
 
+    @@max_clause_count = DEFAULT_MAX_CLAUSE_COUNT
+    def BooleanQuery.max_clause_count
+      return @@max_clause_count
+    end
+    def BooleanQuery.max_clause_count=(mcc)
+      @@max_clause_count = mcc
+    end
+
     # Thrown when an attempt is made to add more than #max_clause_count()
     # clauses. This typically happens if a PrefixQuery, FuzzyQuery,
     # WildcardQuery, or RangeQuery is expanded to many terms during search. 
@@ -36,7 +44,6 @@ module Ferret::Search
       super()
       @coord_disabled = coord_disabled
       @clauses = []
-      @max_clause_count = DEFAULT_MAX_CLAUSE_COUNT
     end
 
     # Returns true iff Similarity#coord(int,int) is disabled in scoring for
@@ -85,7 +92,7 @@ module Ferret::Search
     # raises:: TooManyClauses if the new number of clauses exceeds the
     #          maximum clause number. See #max_clause_count()
     def add_clause(clause) 
-      if @clauses.size >= @max_clause_count
+      if @clauses.size >= @@max_clause_count
         raise TooManyClauses
       end
 

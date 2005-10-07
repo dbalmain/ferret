@@ -194,10 +194,11 @@ module Ferret
 
       def initialize(readers, starts, t)
         @queue = SegmentMergeQueue.new(readers.length)
-        readers.each do |reader|
+        readers.each_index do |i|
+          reader = readers[i]
           term_enum = nil
           if (t != nil) 
-            term_enum = reader.terms(t)
+            term_enum = reader.terms_from(t)
           else
             term_enum = reader.terms()
           end
@@ -228,7 +229,7 @@ module Ferret
         while top and @term == top.term
           @queue.pop()
           @doc_freq += top.term_enum.doc_freq() # increment freq
-          if (top.next())
+          if (top.next?)
             @queue.push(top) # restore queue
           else
             top.close()     # done with a segment
@@ -338,7 +339,7 @@ module Ferret
       end
 
       def close()
-        @reader_term_docs.flatten.each do |rtd|
+        @reader_term_docs.compact.each do |rtd|
           rtd.close()
         end
       end

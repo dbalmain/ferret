@@ -3,7 +3,7 @@ include Ferret::Index
 module Ferret::Search
   # Abstract class for enumerating a subset of all terms. 
   #
-  # Term enumerations are always ordered by Term.compareTo().  Each term in
+  # Term enumerations are always ordered by Term.<=>().  Each term in
   # the enumeration is greater than all that precede it.  
   class FilteredTermEnum < TermEnum 
       
@@ -14,6 +14,7 @@ module Ferret::Search
     def initialize()
       @term = nil
       @enum = nil
+      @reader = nil
     end
 
     # Equality compare on the term 
@@ -32,11 +33,11 @@ module Ferret::Search
     end
       
     def enum=(enum)
-      @actualEnum = enum
+      @enum = enum
       # Find the first term that matches
       term = @enum.term()
       if (term != nil and term_compare(term)) 
-          @term = term
+        @term = term
       else
         next?
       end
@@ -56,23 +57,19 @@ module Ferret::Search
       return false if (@enum == nil) # enum not initialized
       @term = nil
       while @term.nil? 
-        if end_enum()
+        if end_enum() or ! @enum.next?
           return false
         end
-        if @enum.next?
-          term = @enum.term()
-          if (term_compare(term)) 
-            @term = term
-            return true
-          end
-        else
-          return false
+        term = @enum.term()
+        if (term_compare(term)) 
+          @term = term
+          return true
         end
       end
       @term = nil
       return false
     end
-    
+
     # Closes the enumeration to further activity, freeing resources.  
     def close()
       @enum.close()

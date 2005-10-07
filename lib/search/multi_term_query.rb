@@ -13,6 +13,7 @@ module Ferret::Search
 
     # Constructs a query for terms matching +term+. 
     def initialize(term) 
+      super()
       @term = term
     end
 
@@ -23,15 +24,15 @@ module Ferret::Search
      
 
     def rewrite(reader)
-      enumerator = get_enum(reader)
+      enumerator = get_term_enum(reader)
       bq = BooleanQuery.new(true)
       begin 
         begin 
           t = enumerator.term()
           if (t != nil)
             tq = TermQuery.new(t)      # found a match
-            tq.boost = boost() * enumerator.difference() # set the boost
-            bq.add(tq, BooleanClause::Occur::SHOULD)     # add to query
+            tq.boost = boost() * enumerator.difference()   # set the boost
+            bq.add_query(tq, BooleanClause::Occur::SHOULD) # add to query
           end
         end while enumerator.next?
       ensure 

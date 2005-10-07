@@ -9,8 +9,8 @@ module Ferret::Search
     # There must be at least one term and either term may be nil,
     # in which case there is no bound on that side, but if there are
     # two terms, both terms *must* be for the same field.
-    def initialize(lower_term, upper_term, inclusive)
-    
+    def initialize(lower_term, upper_term, inclusive = true)
+      super()
       if (lower_term.nil? and upper_term.nil?)
         raise ArgumentError, "At least one term must be non-nil"
       end
@@ -34,9 +34,9 @@ module Ferret::Search
       enumerator = reader.terms_from(@lower_term)
 
       begin 
-        check_lower = not @inclusive
+        check_lower = (not @inclusive)
         test_field = field()
-        do 
+        begin 
           term = enumerator.term
 
           break if term.nil? or term.field != test_field
@@ -53,7 +53,7 @@ module Ferret::Search
             end
             tq = TermQuery.new(term) # found a match
             tq.boost = boost()       # set the boost
-            bq.add(tq, BooleanClause::Occur::SHOULD) # add to query
+            bq.add_query(tq, BooleanClause::Occur::SHOULD) # add to query
           end
         end while enumerator.next?
       ensure 
@@ -88,10 +88,10 @@ module Ferret::Search
 
     # Returns true iff +o+ is equal to this. 
     def eql?(o) 
-      return o.instance_of? RangeQuery) and 
-          (boost() == o.boost()) and
+      return ((o.instance_of?(RangeQuery)) and 
+          (self.boost() == o.boost()) and
           (@inclusive == o.inclusive?) and
-          (@lower_term.field == o.loser_term.field)
+          (@lower_term.field == o.loser_term.field))
     end
 
     # Returns a hash code value for this object.

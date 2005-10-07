@@ -12,7 +12,7 @@ module Ferret::Search
   #    * RangeQuery
   #    * Span::SpanQuery
   #
-  #    A parser for queries is contained in:
+  # A parser for queries is contained in:
   #    * Ferret::QueryParser::QueryParser
   #
   class Query

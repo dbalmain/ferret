@@ -195,7 +195,7 @@ frt_priq_adjust_top(VALUE self)
 	Data_Get_Struct(self, PriorityQueue, priq);
 	VALUE rary = rb_iv_get(self, "@heap");
 	
-	priq_up(priq, self, rary);
+	priq_down(priq, self, rary);
 	
 	return Qnil;
 }

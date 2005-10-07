@@ -202,7 +202,7 @@ module Ferret::Index
 
     # Returns an enumeration of terms starting at or after the named term. 
     def terms_from(term)
-      get_position(term)
+      get_term_info(term)
       return enum().clone()
     end
 

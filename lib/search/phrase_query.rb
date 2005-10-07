@@ -41,8 +41,7 @@ module Ferret::Search
     # int the query.
     def add(term, position = nil) 
       if position.nil?
-        position = 0
-        position = @positions[-1] + 1 if @positions.size > 0
+        position = (@positions.size > 0) ? (@positions[-1] + 1) : 0
       end
       
       if @terms.size == 0

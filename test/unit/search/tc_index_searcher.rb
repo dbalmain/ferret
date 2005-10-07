@@ -37,8 +37,10 @@ class IndexSearcherTest < Test::Unit::TestCase
       assert_equal(expected.length, top_docs.total_hits)
     end
     top_docs.score_docs.each do |score_doc|
-      assert(expected.include?(score_doc.doc))
-      assert(score_doc.score =~ @is.explain(query, score_doc.doc).value)
+      assert(expected.include?(score_doc.doc),
+             "#{score_doc.doc} was found unexpectedly")
+      assert(score_doc.score =~ @is.explain(query, score_doc.doc).value, 
+        "Scores(#{score_doc.score} != #{@is.explain(query, score_doc.doc).value})")
     end
   end
 
@@ -104,5 +106,61 @@ class IndexSearcherTest < Test::Unit::TestCase
 
     pq.slop = 4
     do_test_top_docs(pq, [1,11,14,16,17])
+  end
+
+  def test_range_query()
+    t1 = Term.new("date", "20051006")
+    t2 = Term.new("date", "20051009")
+    rq = RangeQuery.new(t1, t2)
+    do_test_top_docs(rq, [5,6,7,8])
+
+    rq = RangeQuery.new(t1, t2, false)
+    do_test_top_docs(rq, [6,7])
+
+    t1.text = "20051003"
+    rq = RangeQuery.new(nil, t1, false)
+    do_test_top_docs(rq, [0,1])
+
+    t1.text = "20051015"
+    rq = RangeQuery.new(t1, nil, false)
+    do_test_top_docs(rq, [15,16,17])
+  end
+
+  def test_prefix_query()
+    t = Term.new("cat", "cat1")
+    pq = PrefixQuery.new(t)
+    do_test_top_docs(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
+
+    t.text = "cat1/sub2"
+    pq = PrefixQuery.new(t)
+    do_test_top_docs(pq, [3, 4, 13, 15])
+  end
+
+  def test_wildcard_query()
+    t = Term.new("cat", "cat1*")
+    wq = WildcardQuery.new(t)
+    do_test_top_docs(wq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
+
+    t.text = "cat1*/su??ub2"
+    wq = WildcardQuery.new(t)
+    do_test_top_docs(wq, [4, 16])
+  end
+
+  def test_prefix_query()
+    t11 = Term.new("field", "quick")
+    t12 = Term.new("field", "fast")
+    t21 = Term.new("field", "brown")
+    t22 = Term.new("field", "red")
+    t23 = Term.new("field", "hairy")
+    t3 = Term.new("field", "fox")
+
+    mpq = MultiPhraseQuery.new()
+    mpq << [t11, t12]
+    mpq << [t21, t22, t23]
+    mpq << t3
+    do_test_top_docs(mpq, [1, 8, 11, 14])
+
+    mpq.slop = 4
+    do_test_top_docs(mpq, [1, 8, 11, 14, 16, 17])
   end
 end

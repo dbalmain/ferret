@@ -13,7 +13,9 @@ module Ferret::Search
     end
 
     def to_s
-      "#{total_hits} hits:\n#{score_docs}"
+      buffer = "#{total_hits} hits:\n"
+      score_docs.each {|sd| buffer << "\t#{sd}\n" }
+      return buffer
     end
   end
 end

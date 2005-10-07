@@ -12,7 +12,7 @@ module Ferret::Search
   #    <big><big><big><big><big>&Sigma</big></big></big></big></big></td>
   #    <td valign="middle"><small>
   #    #tf(int) tf(t in d)#
-  #    #idf(Term,Searcher) idf(t)#
+  #    #idf_term(Term,Searcher) idf(t)#
   #    Field#getBoost getBoost(t.field in d)#
   #    #length_norm(String,int) length_norm(t.field in d)
   #    </small></td>
@@ -133,7 +133,7 @@ module Ferret::Search
     end
 
     # Computes a score factor based on a term or phrase's frequency in a
-    # document.  This value is multiplied by the #idf(Term, Searcher)
+    # document.  This value is multiplied by the #idf_term(Term, Searcher)
     # factor for each term in the query and these products are then summed to
     # form the initial score for a document.
     #

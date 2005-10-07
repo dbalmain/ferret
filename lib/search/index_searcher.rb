@@ -7,6 +7,7 @@ module Ferret::Search
   # recommended to open only one IndexSearcher and use it for all of your searches.
   class IndexSearcher
     attr_accessor :similarity
+    attr_reader :reader
 
     # Creates a searcher searching the index in the provided directory. 
     def initialize(directory)
