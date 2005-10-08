@@ -16,6 +16,10 @@ module Ferret::Utils
       end
     end
 
+    def hash
+      return self.class.make_key(@name).hash
+    end
+
     protected
       @@all_parameters = {}
 

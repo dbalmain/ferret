@@ -2,7 +2,7 @@ require 'monitor'
 
 module Ferret::Search
   # Expert: A hit queue for sorting by hits by terms in more than one field.
-  # Uses +FieldCache::DEFAULT+ for maintaining internal term lookup tables.
+  # Uses +FieldCache+ for maintaining internal term lookup tables.
   class FieldSortedHitQueue < PriorityQueue 
     # Stores a comparator corresponding to each field being sorted by 
     attr_accessor :comparators
