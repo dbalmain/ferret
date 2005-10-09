@@ -44,7 +44,19 @@ module Ferret::Search
       return query.weight(self)
     end
 
-    def search(query, filter = nil, num_docs = 10)
+    # The main search method for the index. You need to create a query to
+    # pass to this method. You can also pass a hash with one or more of the
+    # following; {filter, num_docs, sort}
+    #
+    # query::    the query to run on the index
+    # filter::   filters docs from the search result
+    # num_docs:: the number of docs to return. The default is 10.
+    # sort::     an array of SortFields describing how to sort the results.
+    def search(query, args = {})
+      filter = args[:filter]
+      num_docs = args[:num_docs]||10
+      sort = args[:sort]
+
       if (num_docs <= 0)  # nil might be returned from hq.top() below.
         raise ArgumentError, "num_docs must be > 0 to run a search"
       end
@@ -55,7 +67,12 @@ module Ferret::Search
       end
 
       bits = (filter.nil? ? nil : filter.bits(@reader))
-      hq = HitQueue.new(num_docs)
+      if (sort)
+        fields = sort.is_a?(Array) ? sort : sort.fields
+        hq = FieldSortedHitQueue.new(@reader, fields, num_docs)
+      else
+        hq = HitQueue.new(num_docs)
+      end
       total_hits = 0
       min_score = 0.0
       scorer.each_hit() do |doc, score|
@@ -75,30 +92,6 @@ module Ferret::Search
 
       return TopDocs.new(total_hits, score_docs)
     end
-
-#      def search(query, filter, num_docs, sort)
-#       
-#        scorer = query.weight(self).scorer(@reader)
-#        if (scorer == nil)
-#          return TopFieldDocs.new(0, [], sort.fields)
-#
-#        bits = filter != nil ? filter.bits(@reader) : nil
-#        hq = FieldSortedHitQueue.new(@reader, sort.fields, num_docs)
-#        total_hits = [0]
-#        scorer.score() do |doc, score|
-#          if score > 0.0 and (bits == nil or bits.get(doc)) # skip docs not in bits
-#            total_hits[0] += 1
-#            hq.insert(FieldDoc.new(doc, score))
-#          end
-#        end
-#
-#        ScoreDoc[] score_docs = new ScoreDoc[hq.size()]
-#        for (int i = hq.size()-1; i >= 0; i -= 1)        # put docs in array
-#          score_docs[i] = hq.fillFields ((FieldDoc) hq.pop())
-#
-#        return TopFieldDocs.new(total_hits[0], score_docs, hq.getFields())
-#      end
-
 
 #      def search(query, filter, results)
 #        HitCollector collector = results

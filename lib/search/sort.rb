@@ -68,25 +68,31 @@ module Ferret::Search
 
     attr_accessor :fields
 
-    # Sorts by computed relevance. This is the same sort criteria as calling
-    # Searcher#search(Query) Searcher#search()without a sort criteria,
-    # only with slightly more overhead.
+    # Sorts by computed relevance. You can pass a string representing the name
+    # of the field you want to sort on, a SortField, or an array of either
+    # (but not a mixed array). If you pass a string or and array of strings
+    # you can also pass a reverse flag. If you pass a SortField the reverse is
+    # handled by it.
+    #
+    # fields::  The fields you want to sort on. See also SortField
+    # reverse:: pass true if you want the sort order to be reversed. Only
+    #    works if you pass the field names.
     def initialize(fields = [SortField::FIELD_SCORE, SortField::FIELD_DOC],
                    reverse = false)
       fields = [fields] unless fields.is_a?(Array)
       @fields = fields
       if fields[0].is_a?(String)
         @fields = fields.map do |field|
-          SortField.new(field, SortField::SortBy::AUTO, reverse)
+          SortField.new(field, {:sort_type => SortField::SortType::AUTO,
+                                :reverse => reverse})
         end
         @fields << SortField::FIELD_DOC if @fields.size == 1
       end
     end
 
     # Represents sorting by computed relevance. Using this sort criteria returns
-    # the same results as calling
-    # Searcher#search(Query) Searcher#search()without a sort criteria,
-    # only with slightly more overhead.
+    # the same results as calling Searcher#search(Query) Searcher#search()
+    # without a sort criteria, only with slightly more overhead.
     RELEVANCE = Sort.new()
 
     # Represents sorting by index order. 

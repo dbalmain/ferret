@@ -1,19 +1,18 @@
 module Ferret::Search
   # Expert: Compares two ScoreDoc objects for sorting.
   class ScoreDocComparator 
-    include Comparable
 
     # Special comparator for sorting hits according to computed relevance (score). 
     RELEVANCE = ScoreDocComparator.new() 
     class <<RELEVANCE
-      def <=>(i, j) 
+      def compare(i, j) 
         return -(i.score <=> j.score)
       end
       def sort_value(i) 
         return i.score
       end
       def sort_type() 
-        return SortField::SortBy::SCORE
+        return SortField::SortType::SCORE
       end
     end
 
@@ -21,14 +20,14 @@ module Ferret::Search
     # Special comparator for sorting hits according to index order (number). 
     INDEX_ORDER = ScoreDocComparator.new() 
     class <<INDEX_ORDER
-      def <=>(i, j) 
+      def compare(i, j) 
         return i.doc <=> j.doc
       end
       def sort_value(i) 
         return i.doc
       end
       def sort_type() 
-        return SortField::SortBy::DOC
+        return SortField::SortType::DOC
       end
     end
 
@@ -40,7 +39,7 @@ module Ferret::Search
     # returns:: +-1+ if +i+ should come before +j+
     #           +1+  if +i+ should come after +j+
     #           +0+  if they are equal
-    def <=>(i, j)
+    def compare(i, j)
       return NotImplementedError
     end
 
@@ -66,6 +65,50 @@ module Ferret::Search
     # See SortField
     def sort_type()
       return NotImplementedError
+    end
+  end
+
+  class SimpleFieldComparator < ScoreDocComparator
+    def initialize(index, sort_type)
+      @index = index
+      @sort_type = sort_type
+    end
+
+    def compare(j, i) 
+      return @index[i.doc] <=> @index[j.doc]
+    end
+    def sort_value(i) 
+      return @index[i.doc]
+    end
+    def sort_type() 
+      return @sort_type
+    end
+  end
+
+  class SpecialFieldComparator < SimpleFieldComparator
+    def initialize(index, sort_type, comparator)
+      super(index, sort_type)
+      @comparator = comparator
+    end
+    def compare(j, i) 
+      return @comparator.call(@index[i.doc], @index[j.doc])
+    end
+  end
+
+  class StringFieldComparator < ScoreDocComparator
+    def initialize(index)
+      @str_index = index.str_index
+      @str_map = index.str_map
+    end
+
+    def compare(i, j) 
+      return @str_index[i.doc] <=> @str_index[j.doc]
+    end
+    def sort_value(i) 
+      return @str_map[@str_index[i.doc]]
+    end
+    def sort_type() 
+      return SortField::SortType::STRING
     end
   end
 end

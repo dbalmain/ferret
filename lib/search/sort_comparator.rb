@@ -24,7 +24,7 @@ module Ferret::Search
 
       class <<score_doc_comparator
         attr_writer :cache_values
-        def <=>(i, j) 
+        def compare(i, j) 
           return @cached_values[i.doc] <=> @cached_values[j.doc]
         end
 
@@ -33,7 +33,7 @@ module Ferret::Search
         end
 
         def sort_type()
-          return SortField::SortBy::CUSTOM
+          return SortField::SortType::CUSTOM
         end
       end
       score_doc_comparator.cached_values = cached_values

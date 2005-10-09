@@ -1,358 +1,214 @@
-require 'monitor'
-# Expert: The default cache implementation, storing all values in memory.
-# A WeakHashMap is used for storage.
-class FieldCacheImpl
-  include MonitorMixin
+module Ferret::Search
+  require 'monitor'
 
-  # Expert: Every key in the internal cache is of this type. 
-  class Entry 
-    # Creates one of these objects. 
-    def initialize(field, type, comparator = nil) 
-      if (comparator and type != SortField::SortBy::CUSTOM)
-        raise ArgumentError,
-          "Only a custom sort field can be created with a custom comparator."
+  # Expert: The default cache implementation, storing all values in memory.
+  # A WeakHashMap is used for storage.
+  class FieldCache
+    StringIndex = Struct.new(:str_index, :str_map)
+
+    # Expert: Every key in the internal cache is of this type. 
+    class Entry 
+      attr_reader :field, :sort_type, :comparator
+      # Creates one of these objects. 
+      def initialize(field, sort_type, comparator = nil) 
+        @field = field
+        @sort_type = sort_type
+        @comparator = comparator
       end
 
-      @field = field
-      @type = type
-      @comparator = comparator
-    end
-
-    # Creates one of these objects for a custom comparator. 
-    def Entry.new_custom(field, comparator) 
-      return Entry.new(field, SortField::SortBy::CUSTOM, comparator)
-    end
-
-    # Two of these are equal iff they reference the same field and type. 
-    def eql?(o) 
-      return (o.instance_of? Entry and o.field = @field and
-              o.type = @type and o.comparator = @comparator)
-    end
-    alias :== :eql?
-
-    # Composes a hashcode based on the field and type. 
-    def hash() 
-      return @field.hash ^ @type.hash ^ (@comparator==nil ? 0 : @comparator.hash)
-    end
-  end
-
-  INT_PARSER = lambda {|i| i.to_i}
-
-  FLOAT_PARSER = lambda {|i| i.to_f}
-
-  # The internal cache. Maps Entry to array of interpreted term values.
-  @@cache = {} # should make this a weak hash map
-
-  # See if an object is in the cache. 
-  def lookup(reader, field, type, comparator = nil) 
-    entry = Entry.new(field, type)
-    synchronized(this) 
-      reader_cache = (HashMap)cache.get(reader)
-      return nil if reader_cache.nil?
-      return reader_cache[entry]
-    end
-  end
-
-  # See if a custom object is in the cache. 
-  def lookup_custom(reader, field, comparator) 
-    lookup(reader, field, SortField::SortBy::CUSTOM, comparator)
-  end
-
-  # Put an object into the cache. 
-  Object store (IndexReader reader, String field, int type, Object value) 
-    Entry entry = new Entry (field, type)
-    synchronized (this) 
-      HashMap reader_cache = (HashMap)cache.get(reader)
-      if (reader_cache == nil) 
-        reader_cache = HashMap.new()
-        cache.put(reader,reader_cache)
+      # Two of these are equal iff they reference the same field and sort_type. 
+      def eql?(o) 
+        return (o.instance_of? Entry and o.field == @field and
+                o.sort_type == @sort_type and o.comparator == comparator)
       end
-      return reader_cache.put (entry, value)
-    end
-  end
+      alias :== :eql?
 
-  # Put a custom object into the cache. 
-  Object store (IndexReader reader, String field, Object comparer, Object value) 
-    Entry entry = new Entry (field, comparer)
-    synchronized (this) 
-      HashMap reader_cache = (HashMap)cache.get(reader)
-      if (reader_cache == nil) 
-        reader_cache = HashMap.new()
-        cache.put(reader, reader_cache)
+      # Composes a hashcode based on the field and sort_type. 
+      def hash() 
+        return @field.hash ^ @sort_type.hash ^ @comparator.hash
       end
-      return reader_cache.put (entry, value)
     end
-  end
 
-  # inherit javadocs
-  def getInts (reader, field)
-    return getInts(reader, field, INT_PARSER)
-  end
+    INT_PARSER = lambda {|i| i.to_i}
 
-  # inherit javadocs
-  def getInts (reader, field, parser)
- 
-    field = field.intern()
-    Object ret = lookup (reader, field, parser)
-    if (ret == nil) 
-      def retArray = new int[reader.maxDoc()]
-      if (retArray.length > 0) 
-        TermDocs termDocs = reader.termDocs()
-        TermEnum termEnum = reader.terms (new Term (field, ""))
-        begin 
-          if (termEnum.term() == nil) 
-            raise new RuntimeException ("no terms in field " + field)
-          end
-          do 
-            Term term = termEnum.term()
-            if (term.field() != field) break
-             termval = Integer.parseInt (term.text())
-            termDocs.seek (termEnum)
-            while (termDocs.next()) 
-              retArray[termDocs.doc()] = termval
-            end
-          endwhile (termEnum.next())
-        ensure 
-          termDocs.close()
-          termEnum.close()
+    FLOAT_PARSER = lambda {|i| i.to_f}
+
+    # The internal cache. Maps Entry to array of interpreted term values.
+    @@cache = WeakKeyHash.new.extend(MonitorMixin)
+
+    # See if an object is in the cache. 
+    def FieldCache.lookup(reader, field, sort_type) 
+      entry = Entry.new(field, sort_type)
+      @@cache.synchronize() do
+        reader_cache = @@cache[reader]
+        return nil if reader_cache.nil?
+        return reader_cache[entry]
+      end
+    end
+
+    # Put an object into the cache. 
+    def FieldCache.store(reader, field, sort_type, value) 
+      entry = Entry.new(field, sort_type)
+      @@cache.synchronize() do
+        reader_cache = @@cache[reader]
+        if (reader_cache == nil) 
+          reader_cache = {}
+          @@cache[reader] = reader_cache
         end
+        return reader_cache[entry] = value
       end
-      store (reader, field, parser, retArray)
-      return retArray
     end
-    return (int[]) ret
-  end
 
-  # inherit javadocs
-  public float[] getFloats (reader, field)
-   
-    return getFloats(reader, field, FLOAT_PARSER)
-  end
-
-  # inherit javadocs
-  public float[] getFloats (IndexReader reader, String field,
-                            FloatParser parser)
-    field = field.intern()
-    Object ret = lookup (reader, field, parser)
-    if (ret == nil) 
-      final float[] retArray = new float[reader.maxDoc()]
-      if (retArray.length > 0) 
-        TermDocs termDocs = reader.termDocs()
-        TermEnum termEnum = reader.terms (new Term (field, ""))
-        begin 
-          if (termEnum.term() == nil) 
-            raise new RuntimeException ("no terms in field " + field)
-          end
-          do 
-            Term term = termEnum.term()
-            if (term.field() != field) break
-            float termval = Float.parseFloat (term.text())
-            termDocs.seek (termEnum)
-            while (termDocs.next()) 
-              retArray[termDocs.doc()] = termval
-            end
-          endwhile (termEnum.next())
-        ensure 
-          termDocs.close()
-          termEnum.close()
-        end
-      end
-      store (reader, field, parser, retArray)
-      return retArray
-    end
-    return (float[]) ret
-  end
-
-  # inherit javadocs
-  def getStrings (reader, field)
- 
-    field = field.intern()
-    Object ret = lookup (reader, field, SortField.STRING)
-    if (ret == nil) 
-      def retArray = new String[reader.maxDoc()]
-      if (retArray.length > 0) 
-        TermDocs termDocs = reader.termDocs()
-        TermEnum termEnum = reader.terms (new Term (field, ""))
-        begin 
-          if (termEnum.term() == nil) 
-            raise new RuntimeException ("no terms in field " + field)
-          end
-          do 
-            Term term = termEnum.term()
-            if (term.field() != field) break
-             termval = term.text()
-            termDocs.seek (termEnum)
-            while (termDocs.next()) 
-              retArray[termDocs.doc()] = termval
-            end
-          endwhile (termEnum.next())
-        ensure 
-          termDocs.close()
-          termEnum.close()
-        end
-      end
-      store (reader, field, SortField.STRING, retArray)
-      return retArray
-    end
-    return (String[]) ret
-  end
-
-  # inherit javadocs
-  defIndex getStringIndex (reader, field)
- 
-    field = field.intern()
-    Object ret = lookup (reader, field, STRING_INDEX)
-    if (ret == nil) 
-      def retArray = new int[reader.maxDoc()]
-      def mterms = new String[reader.maxDoc()+1]
-      if (retArray.length > 0) 
-        TermDocs termDocs = reader.termDocs()
-        TermEnum termEnum = reader.terms (new Term (field, ""))
-        def t = 0;  # current term number
-
-        # an entry for documents that have no terms in this field
-        # should a document with no terms be at top or bottom?
-        # this puts them at the top - if it is changed, FieldDocSortedHitQueue
-        # needs to change as well.
-        mterms[t += 1] = nil
-
-        begin 
-          if (termEnum.term() == nil) 
-            raise new RuntimeException ("no terms in field " + field)
-          end
-          do 
-            Term term = termEnum.term()
-            if (term.field() != field) break
-
-            # store term text
-            # we expect that there is at most one term per document
-            if (t >= mterms.length) raise new RuntimeException ("there are more terms than " +
-            		"documents in field \"" + field + "\", but it's impossible to sort on " +
-            		"tokenized fields")
-            mterms[t] = term.text()
-
-            termDocs.seek (termEnum)
-            while (termDocs.next()) 
-              retArray[termDocs.doc()] = t
-            end
-
-            t += 1
-          endwhile (termEnum.next())
-        ensure 
-          termDocs.close()
-          termEnum.close()
-        end
-
-        if (t == 0) 
-          # if there are no terms, make the term array
-          # have a single nil entry
-          mterms = new String[1]
-        elsif (t < mterms.length) 
-          # if there are less terms than documents,
-          # trim off the dead array space
-          def terms = new String[t]
-          System.arraycopy (mterms, 0, terms, 0, t)
-          mterms = terms
-        end
-      end
-      defIndex value = new StringIndex (retArray, mterms)
-      store (reader, field, STRING_INDEX, value)
-      return value
-    end
-    return (StringIndex) ret
-  end
-
-  # The pattern used to detect integer values in a field 
-  # removed for java 1.3 compatibility
-   protected static final Pattern pIntegers = Pattern.compile ("[0-9\\-]+")
-  # 
-
-  # The pattern used to detect float values in a field 
-  # removed for java 1.3 compatibility
-  # protected static final Object pFloats = Pattern.compile ("[0-9+\\-\\.eEfFdD]+")
-
-  # inherit javadocs
-  public Object getAuto (reader, field)
- 
-    field = field.intern()
-    Object ret = lookup (reader, field, SortField.AUTO)
-    if (ret == nil) 
-      TermEnum enumerator = reader.terms (new Term (field, ""))
-      begin 
-        Term term = enumerator.term()
-        if (term == nil) 
-          raise new RuntimeException ("no terms in field " + field + " - cannot determine sort type")
-        end
-        if (term.field() == field) 
-           termtext = term.text().trim()
-
-          # Java 1.4 level code:
-
-           if (pIntegers.matcher(termtext).matches())
-           return IntegerSortedHitQueue.comparator (reader, enumerator, field)
-
-           elsif (pFloats.matcher(termtext).matches())
-           return FloatSortedHitQueue.comparator (reader, enumerator, field)
-
-          # Java 1.3 level code:
+    # Checks the internal cache for an appropriate entry, and if none is found,
+    # reads the terms in +field+ and parses them with the provided parser and
+    # returns an array of size +reader.max_doc+ of the value each document has
+    # in the given field.
+    #
+    # reader::     Used to get field values.
+    # field::      Which field contains the values.
+    # sort_type::  The type of sort to run on the field. Holds the parser
+    # return::     The values in the given field for each document.
+    def FieldCache.get_index(reader, field, sort_type)
+      index = lookup(reader, field, sort_type)
+      if (index == nil) 
+        parser = sort_type.parser
+        index = Array.new(reader.max_doc)
+        if (index.length > 0) 
+          term_docs = reader.term_docs
+          term_enum = reader.terms_from(Term.new(field, ""))
           begin 
-            Integer.parseInt (termtext)
-            ret = getInts (reader, field)
-          rescue (nfe1) 
+            if term_enum.term.nil? 
+              raise "no terms in field '#{field}' to sort by"
+            end
             begin 
-              Float.parseFloat (termtext)
-              ret = getFloats (reader, field)
-            rescue (nfe2) 
-              ret = getStringIndex (reader, field)
-            end
+              term = term_enum.term
+              break if (term.field != field)
+              termval = parser.call(term.text)
+              term_docs.seek(term_enum)
+              while term_docs.next? 
+                index[term_docs.doc] = termval
+              end
+            end while term_enum.next?
+          ensure 
+            term_docs.close()
+            term_enum.close()
           end
-          if (ret != nil) 
-            store (reader, field, SortField.AUTO, ret)
-          end
-        else 
-          raise new RuntimeException ("field \"" + field + "\" does not appear to be indexed")
         end
-      ensure 
-        enumerator.close()
+        store(reader, field, sort_type, index)
       end
-
+      return index
     end
-    return ret
-  end
 
-  # inherit javadocs
-  public Comparable[] getCustom (reader, field, comparator)
- 
-    field = field.intern()
-    Object ret = lookup (reader, field, comparator)
-    if (ret == nil) 
-      final Comparable[] retArray = new Comparable[reader.maxDoc()]
-      if (retArray.length > 0) 
-        TermDocs termDocs = reader.termDocs()
-        TermEnum termEnum = reader.terms (new Term (field, ""))
+    # Checks the internal cache for an appropriate entry, and if none is found
+    # reads the term values in +field+ and returns an array of them in natural
+    # order, along with an array telling which element in the term array each
+    # document uses.
+    #
+    # reader::  Used to get field values.
+    # field::   Which field contains the strings.
+    # returns:: Array of terms and index into the array for each document.
+    def FieldCache.get_string_index(reader, field)
+      index = lookup(reader, field, SortField::SortType::STRING)
+      if (index == nil) 
+        str_index = Array.new(reader.max_doc)
+        str_map = Array.new(reader.max_doc+1)
+        if (str_index.length > 0) 
+          term_docs = reader.term_docs
+          term_enum = reader.terms_from(Term.new(field,""))
+          t = 0 # current term number
+
+          # an entry for documents that have no terms in this field should a
+          # document with no terms be at top or bottom?
+          #
+          # this puts them at the top - if it is changed, FieldDocSortedHitQueue
+          # needs to change as well.
+          str_map[t] = nil
+          t += 1
+
+          begin 
+            if (term_enum.term() == nil) 
+              raise "no terms in field #{field} to sort by"
+            end
+            begin
+              term = term_enum.term
+              break if (term.field != field)
+
+              # store term text
+              # we expect that there is at most one term per document
+              if (t >= str_map.length)
+                raise "there are more terms than documents in field \"#{field}\", but it's impossible to sort on tokenized fields"
+              end
+              str_map[t] = term.text
+
+              term_docs.seek(term_enum)
+              while term_docs.next?
+                str_index[term_docs.doc] = t
+              end
+
+              t += 1
+            end while term_enum.next?
+          ensure 
+            term_docs.close()
+            term_enum.close()
+          end
+
+          if (t == 0) 
+            # if there are no terms, make the term array
+            # have a single nil entry
+            # str_map = [nil] <= already set above
+          elsif (t < str_map.length) 
+            # if there are less terms than documents,
+            # trim off the dead array space
+            str_map.compact!
+          end
+        end
+        index = StringIndex.new(str_index, str_map)
+        store(reader, field, SortField::SortType::STRING, index)
+      end
+      return index
+    end
+
+    # Checks the internal cache for an appropriate entry, and if none is found
+    # reads +field+ to see if it contains integers, floats or strings, and then
+    # calls one of the other methods in this class to get the values.  For
+    # string values, a StringIndex is returned.  After calling this method,
+    # there is an entry in the cache for both type +AUTO+ and the actual found
+    # type.
+    #
+    # reader:: Used to get field values.
+    # field::  Which field contains the values.
+    # return:: Integer Array, Float Array or StringIndex.
+    def FieldCache.get_auto_index(reader, field)
+      index = lookup(reader, field, SortField::SortType::AUTO)
+      if (index == nil) 
+        term_enum = reader.terms_from(Term.new(field, ""))
         begin 
-          if (termEnum.term() == nil) 
-            raise new RuntimeException ("no terms in field " + field)
+          term = term_enum.term
+          if (term == nil) 
+            raise "no terms in field #{field} to sort by"
           end
-          do 
-            Term term = termEnum.term()
-            if (term.field() != field) break
-            Comparable termval = comparator.getComparable (term.text())
-            termDocs.seek (termEnum)
-            while (termDocs.next()) 
-              retArray[termDocs.doc()] = termval
+          if (term.field == field) 
+            termtext = term.text.strip
+
+            if (termtext == termtext.to_i.to_s)
+              index = get_index(reader, field, SortField::SortType::INT)
+            elsif (termtext == termtext.to_f.to_s or termtext == "%f"%termtext.to_f)
+              index = get_index(reader, field, SortField::SortType::FLOAT)
+            else
+              index = get_string_index(reader, field)
             end
-          endwhile (termEnum.next())
+
+            if (index != nil) 
+              store(reader, field, SortField::SortType::AUTO, index)
+            end
+          else 
+            raise "field \"#{field}\" does not appear to be indexed"
+          end
         ensure 
-          termDocs.close()
-          termEnum.close()
+          term_enum.close()
         end
       end
-      store (reader, field, comparator, retArray)
-      return retArray
+      return index
     end
-    return (Comparable[]) ret
   end
-
 end
-

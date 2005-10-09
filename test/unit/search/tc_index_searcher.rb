@@ -54,7 +54,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     #puts top_docs.score_docs
     assert_equal(@documents.size, top_docs.total_hits)
     assert_equal(10, top_docs.score_docs.size)
-    top_docs = @is.search(tq, nil, 20)
+    top_docs = @is.search(tq, {:num_docs => 20})
     assert_equal(@documents.size, top_docs.score_docs.size)
   end
 
