@@ -17,7 +17,7 @@ module Ferret::Search
       buffer = "#{total_hits} hits sorted by <"
       buffer << [fields].flatten.map {|field| "#{@field}" }.join(", ")
       buffer << ">:\n"
-      score_docs.each {|sd| buffer << "\t%0.2f\n" % sd }
+      score_docs.each {|sd| buffer << "\t#{sd}\n" }
       return buffer
     end
   end

@@ -92,5 +92,14 @@ module Ferret::Utils
       end
       return bv
     end
+
+    def to_s
+      i = @bits
+      while i > 0
+        print(i&1)
+        i >>= 1
+      end
+      puts ""
+    end
   end
 end

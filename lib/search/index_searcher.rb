@@ -10,8 +10,18 @@ module Ferret::Search
     attr_reader :reader
 
     # Creates a searcher searching the index in the provided directory. 
-    def initialize(directory)
-      @reader = IndexReader.open(directory)
+    def initialize(arg)
+      if arg.is_a?(IndexReader)
+        @reader = arg
+      elsif arg.is_a?(Directory)
+        @reader = IndexReader.open(arg)
+      elsif arg.is_a?(String)
+        @dir = FSDirectory.open(arg)
+        @reader = IndexReader.open(@dir, true)
+      else
+        raise ArgumentError, "Unknown argument passed to initialize IndexReader"
+      end
+
       @similarity = Similarity.default
     end
     
@@ -93,6 +103,17 @@ module Ferret::Search
       return TopDocs.new(total_hits, score_docs)
     end
 
+    def search_collect(query, filter = nil)
+      scorer = query.weight(self).scorer(@reader)
+      return if scorer == nil
+      bits = (filter.nil? ? nil : filter.bits(@reader))
+      scorer.each_hit() do |doc, score|
+        if score > 0.0 and (bits.nil? or bits.get(doc)) # skip docs not in bits
+          yield(doc, score)
+        end
+      end
+    end
+
 #      def search(query, filter, results)
 #        HitCollector collector = results
 #        if (filter != nil) 
@@ -125,6 +146,5 @@ module Ferret::Search
     def explain(query, doc)
       return query.weight(self).explain(@reader, doc)
     end
-
   end
 end

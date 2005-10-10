@@ -32,7 +32,7 @@ module Ferret::Search
     end
 
     def to_s
-      "#{doc}:#{score}"
+      "#{@doc} -> %0.2f" % @score
     end
   end
 end

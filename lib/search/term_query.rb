@@ -16,7 +16,7 @@ module Ferret::Search
         @value = 0
       end
 
-      def to_s() return "TermWeight(" + @value + ")"; end
+      def to_s() return "TermWeight(#{@value})"; end
 
       def sum_of_squared_weights() 
         @query_weight = @idf * @query.boost()       # compute query weight
@@ -100,7 +100,7 @@ module Ferret::Search
     end
 
     def extract_terms(terms) 
-      terms.add(@term)
+      terms << @term
     end
 
     # Prints a user-readable version of this query. 
