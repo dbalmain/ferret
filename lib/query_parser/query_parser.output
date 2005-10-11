@@ -1,0 +1,315 @@
+state 8 contains 3 shift/reduce conflicts
+
+
+-------- Grammar --------
+
+rule 1 query: term_query
+rule 2 query: "(" query ")"
+rule 3 query: field_query
+rule 4 query: bool_query
+rule 5 term_query: WORD
+rule 6 @1: 
+rule 7 field_query: field_name ":" query @1
+rule 8 field_name: FIELD_NAME
+rule 9 bool_query: bool_query AND query
+rule 10 bool_query: bool_query OR query
+rule 11 bool_query: bool_query query
+rule 12 bool_query: REQ query
+rule 13 bool_query: NOT query
+
+------- Symbols -------
+
+**Nonterminals, with rules where they appear
+
+  $start (13)
+    on right: 
+    on left : 
+  query (14)
+    on right: 2 7 9 10 11 12 13
+    on left : 1 2 3 4
+  term_query (15)
+    on right: 1
+    on left : 5
+  field_query (16)
+    on right: 3
+    on left : 7
+  bool_query (17)
+    on right: 4 9 10 11
+    on left : 9 10 11 12 13
+  field_name (18)
+    on right: 7
+    on left : 8
+  @1 (19)
+    on right: 7
+    on left : 6
+
+**Terminals, with rules where they appear
+
+  $end (0) 
+  error (1) 
+  ":" (2) 7
+  REQ (3) 12
+  NOT (4) 13
+  AND (5) 9
+  OR (6) 10
+  LOW (7) 
+  LOWER (8) 
+  "(" (9) 2
+  ")" (10) 2
+  WORD (11) 5
+  FIELD_NAME (12) 8
+
+--------- State ---------
+
+state 0
+
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 4
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 1
+
+   5) term_query : WORD _
+
+  $default      reduce using rule 5 (term_query)
+
+
+state 2
+
+   8) field_name : FIELD_NAME _
+
+  $default      reduce using rule 8 (field_name)
+
+
+state 3
+
+  12) bool_query : REQ _ query
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 11
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 4
+
+
+  $end          shift, and go to state 12
+
+
+state 5
+
+  13) bool_query : NOT _ query
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 13
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 6
+
+   1) query : term_query _
+
+  $default      reduce using rule 1 (query)
+
+
+state 7
+
+   3) query : field_query _
+
+  $default      reduce using rule 3 (query)
+
+
+state 8
+
+   4) query : bool_query _
+   9) bool_query : bool_query _ AND query
+  10) bool_query : bool_query _ OR query
+  11) bool_query : bool_query _ query
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  AND           shift, and go to state 15
+  OR            shift, and go to state 16
+  "("           shift, and go to state 10
+  "("           [reduce using rule 4 (query)]
+  WORD          shift, and go to state 1
+  WORD          [reduce using rule 4 (query)]
+  FIELD_NAME    shift, and go to state 2
+  FIELD_NAME    [reduce using rule 4 (query)]
+  $default      reduce using rule 4 (query)
+
+  query         go to state 14
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 9
+
+   7) field_query : field_name _ ":" query @1
+
+  ":"           shift, and go to state 17
+
+
+state 10
+
+   2) query : "(" _ query ")"
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 18
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 11
+
+  12) bool_query : REQ query _
+
+  $default      reduce using rule 12 (bool_query)
+
+
+state 12
+
+
+  $end          shift, and go to state 19
+
+
+state 13
+
+  13) bool_query : NOT query _
+
+  $default      reduce using rule 13 (bool_query)
+
+
+state 14
+
+  11) bool_query : bool_query query _
+
+  $default      reduce using rule 11 (bool_query)
+
+
+state 15
+
+   9) bool_query : bool_query AND _ query
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 20
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 16
+
+  10) bool_query : bool_query OR _ query
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 21
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 17
+
+   7) field_query : field_name ":" _ query @1
+
+  REQ           shift, and go to state 3
+  NOT           shift, and go to state 5
+  "("           shift, and go to state 10
+  WORD          shift, and go to state 1
+  FIELD_NAME    shift, and go to state 2
+
+  query         go to state 22
+  term_query    go to state 6
+  field_query   go to state 7
+  bool_query    go to state 8
+  field_name    go to state 9
+
+state 18
+
+   2) query : "(" query _ ")"
+
+  ")"           shift, and go to state 23
+
+
+state 19
+
+
+  $default      accept
+
+
+state 20
+
+   9) bool_query : bool_query AND query _
+
+  $default      reduce using rule 9 (bool_query)
+
+
+state 21
+
+  10) bool_query : bool_query OR query _
+
+  $default      reduce using rule 10 (bool_query)
+
+
+state 22
+
+   7) field_query : field_name ":" query _ @1
+
+  $default      reduce using rule 6 (@1)
+
+  @1            go to state 24
+
+state 23
+
+   2) query : "(" query ")" _
+
+  $default      reduce using rule 2 (query)
+
+
+state 24
+
+   7) field_query : field_name ":" query @1 _
+
+  $default      reduce using rule 7 (field_query)
+

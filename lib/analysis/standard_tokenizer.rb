@@ -1,4 +1,6 @@
 if __FILE__ == $0
+  module Ferret
+  end
   $:.unshift File.dirname(__FILE__)
   require 'token_stream'
   require 'tokenizers'
@@ -55,8 +57,8 @@ if __FILE__ == $0
   en = "\033[m"
 
   $stdin.each do |line|
-    st = Ferret::Analysis::StandardTokenizer.new(line)
-    while tk = st.next()
+    stk = Ferret::Analysis::StandardTokenizer.new(line)
+    while tk = stk.next()
       puts "    <" + tk.term_text + "> from " + tk.start_offset.to_s + " to " + tk.end_offset.to_s
     end
   end

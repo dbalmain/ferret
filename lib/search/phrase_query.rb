@@ -39,9 +39,9 @@ module Ferret::Search
     # term:: the term to search for
     # position:: the relative position of the term to the rest of the terms
     # int the query.
-    def add(term, position = nil) 
+    def add(term, position = nil, pos_inc = 1) 
       if position.nil?
-        position = (@positions.size > 0) ? (@positions[-1] + 1) : 0
+        position = (@positions.size > 0) ? (@positions[-1] + pos_inc) : 0
       end
       
       if @terms.size == 0
@@ -54,7 +54,7 @@ module Ferret::Search
       @positions << position
     end
 
-    def << term
+    def <<(term)
       add(term)
       return self
     end
@@ -184,7 +184,14 @@ module Ferret::Search
       buffer = ""
       buffer << "#{@field}:" if @field != f
       buffer << '"'
-      @terms.each { |term| buffer << "#{term.text} " }
+      last_pos = -1
+      @terms.each_index do |i|
+        term = @terms[i]
+        pos = @positions[i]
+        last_pos.upto(pos-2) {buffer << "<> "}
+        last_pos = pos
+        buffer << "#{term.text} "
+      end
       buffer.rstrip!
       buffer << '"'
       buffer << "~#{slop}" if (slop != 0) 

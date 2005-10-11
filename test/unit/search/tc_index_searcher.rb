@@ -9,7 +9,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     @dir = RAMDirectory.new()
     iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
     @documents = IndexTestHelper.prepare_search_docs()
-    @documents.each { |doc| iw << doc }
+    @documents.each { |doc| iw << doc; }
     iw.close()
     @is = IndexSearcher.new(@dir)
   end
@@ -64,6 +64,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     tq2 = TermQuery.new(Term.new("field", "word3"))
     bq.add_query(tq1, BooleanClause::Occur::MUST)
     bq.add_query(tq2, BooleanClause::Occur::MUST)
+    puts "fuck"
     do_test_top_docs(bq, [2,3,6,8,11,14], 14)
 
     tq3 = TermQuery.new(Term.new("field", "word2"))
@@ -109,20 +110,40 @@ class IndexSearcherTest < Test::Unit::TestCase
   end
 
   def test_range_query()
-    t1 = Term.new("date", "20051006")
-    t2 = Term.new("date", "20051009")
-    rq = RangeQuery.new(t1, t2)
-    do_test_top_docs(rq, [5,6,7,8])
+    rq = RangeQuery.new("date", "20051006", "20051010", true, true)
+    do_test_top_docs(rq, [6,7,8,9,10])
 
-    rq = RangeQuery.new(t1, t2, false)
-    do_test_top_docs(rq, [6,7])
+    rq = RangeQuery.new("date", "20051006", "20051010", false, true)
+    do_test_top_docs(rq, [7,8,9,10])
 
-    t1.text = "20051003"
-    rq = RangeQuery.new(nil, t1, false)
-    do_test_top_docs(rq, [0,1])
+    rq = RangeQuery.new("date", "20051006", "20051010", true, false)
+    do_test_top_docs(rq, [6,7,8,9])
 
-    t1.text = "20051015"
-    rq = RangeQuery.new(t1, nil, false)
+    rq = RangeQuery.new("date", "20051006", "20051010", false, false)
+    do_test_top_docs(rq, [7,8,9])
+
+    rq = RangeQuery.new("date", nil, "20051003", false, true)
+    do_test_top_docs(rq, [0,1,2,3])
+
+    rq = RangeQuery.new("date", nil, "20051003", false, false)
+    do_test_top_docs(rq, [0,1,2])
+
+    rq = RangeQuery.new_less("date", "20051003", true)
+    do_test_top_docs(rq, [0,1,2,3])
+
+    rq = RangeQuery.new_less("date", "20051003", false)
+    do_test_top_docs(rq, [0,1,2])
+
+    rq = RangeQuery.new("date", "20051014", nil, true, false)
+    do_test_top_docs(rq, [14,15,16,17])
+
+    rq = RangeQuery.new("date", "20051014", nil, false, false)
+    do_test_top_docs(rq, [15,16,17])
+
+    rq = RangeQuery.new_more("date", "20051014", true)
+    do_test_top_docs(rq, [14,15,16,17])
+
+    rq = RangeQuery.new_more("date", "20051014", false)
     do_test_top_docs(rq, [15,16,17])
   end
 

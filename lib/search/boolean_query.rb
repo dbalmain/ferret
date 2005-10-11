@@ -96,6 +96,7 @@ module Ferret::Search
 
       @clauses << clause
     end
+    alias :<< :add_clause
 
     class BooleanWeight < Weight 
       attr_accessor :similarity
@@ -257,11 +258,9 @@ module Ferret::Search
     end
 
     # Prints a user-readable version of this query. 
-    def to_s(field) 
+    def to_s(field = nil) 
       buffer = ""
-      if boost() != 1.0
-        buffer << "("
-      end
+      buffer << "(" if boost != 1.0
 
       @clauses.each_with_index do |clause, i|
         if clause.prohibited?
@@ -272,9 +271,9 @@ module Ferret::Search
 
         sub_query = clause.query
         if sub_query.instance_of? BooleanQuery # wrap sub-bools in parens
-          buffer << "(#{c.query.to_s(field)})"
+          buffer << "(#{clause.query.to_s(field)})"
         else
-          buffer << c.query.to_s(field)
+          buffer << clause.query.to_s(field)
         end
 
         if i != (@clauses.size - 1)
@@ -282,10 +281,7 @@ module Ferret::Search
         end
       end
 
-      if boost() != 1.0 
-        buffer << ")^"
-        buffer << boost()
-      end
+      buffer << ")^#{boost}" if boost() != 1.0 
 
       return buffer
     end

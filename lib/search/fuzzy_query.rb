@@ -87,7 +87,11 @@ module Ferret::Search
     end
       
     def to_s(field = nil) 
-      return "#{super(field)}~#{@minimum_similarity}"
+      buffer = ""
+      buffer << "#{@term.field}:" if @term.field != field
+      buffer << "#{@term.text}~#{minimum_similarity}"
+      buffer << "^#{boost()}" if (boost() != 1.0) 
+      return buffer
     end
     
     class ScoreTerm

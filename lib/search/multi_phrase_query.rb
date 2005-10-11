@@ -25,9 +25,9 @@ module Ferret::Search
     # See PhraseQuery#add(Term, int)
     # terms:: the array of terms to search for or a single term
     # position:: the position to search for these terms
-    def add(terms, position = nil) 
+    def add(terms, position = nil, pos_inc = 1) 
       if position.nil?
-        position = (@positions.size > 0) ? (@positions[-1] + 1) : 0
+        position = (@positions.size > 0) ? (@positions[-1] + pos_inc) : 0
       end
 
       if terms.instance_of?(Term)
@@ -180,16 +180,21 @@ module Ferret::Search
     # Prints a user-readable version of this query. 
     def to_s(f = nil) 
       buffer = ""
-      buffer << "#{f}:" if @field != f 
+      buffer << "#{@field}:" if @field != f 
       buffer << '"'
-      buffer << @term_arrays.map do |terms|
-        "(#{terms.map {|term| term.text}.join("|")})"
-      end.join(" ")
+      last_pos = -1
+      @term_arrays.each_index do |i|
+        terms = @term_arrays[i]
+        pos = @positions[i]
+        last_pos.upto(pos-2) {buffer << "<> "}
+        last_pos = pos
+        buffer << "#{terms.map {|term| term.text}.join("|")} "
+      end
+      buffer.rstrip!
       buffer << '"'
 
       buffer << "~#{@slop}" if (@slop != 0) 
-
-      buffer << "^#{boost()}" if (boost() != 1.0) 
+      buffer << "^#{boost()}" if boost() != 1.0
       return buffer
     end
   end

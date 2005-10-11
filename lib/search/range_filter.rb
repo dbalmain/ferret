@@ -58,26 +58,24 @@ module Ferret::Search
         begin 
           begin 
             term = term_enum.term()
-            if (term != nil and term.field == @field_name) 
-              if (!check_lower or @lower_term.nil? or term.text > @lower_term) 
-                check_lower = false
-                if @upper_term
-                  compare = @upper_term <=> term.text
-                  # if beyond the upper term, or is exclusive and
-                  # this is equal to the upper term, break out 
-                  if ((compare < 0) or (!@include_upper and compare == 0))
-                    break
-                  end
-                end
-                # we have a good term, find the docs 
-                
-                term_docs.seek(term_enum)
-                while term_docs.next?
-                  bits.set(term_docs.doc)
+            break if (term.nil? or term.field != @field_name) 
+
+            if (!check_lower or @lower_term.nil? or term.text > @lower_term) 
+              check_lower = false
+              if @upper_term
+                compare = @upper_term <=> term.text
+                # if beyond the upper term, or is exclusive and
+                # this is equal to the upper term, break out 
+                if ((compare < 0) or (!@include_upper and compare == 0))
+                  break
                 end
               end
-            else 
-              break
+              # we have a good term, find the docs 
+              
+              term_docs.seek(term_enum)
+              while term_docs.next?
+                bits.set(term_docs.doc)
+              end
             end
           end while term_enum.next?
         ensure 
