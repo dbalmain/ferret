@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end query_parser.y modeval..id3bf199d855', 'query_parser.y', 116
+module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 116
   attr_accessor :default_field
 
   # true if you want to downcase wild card queries. This is set to try by
@@ -42,7 +42,9 @@ module_eval <<'..end query_parser.y modeval..id3bf199d855', 'query_parser.y', 11
 
   ECHR =  %q,:()\[\]{}!+"~^\-\|<>\=\*\?,
   EWCHR = %q,:()\[\]{}!+"~^\-\|<>\=,
+
   def parse(str)
+    str = clean_string(str)
     str.strip!
     @q = []
 
@@ -75,13 +77,81 @@ module_eval <<'..end query_parser.y modeval..id3bf199d855', 'query_parser.y', 11
       str = $'
     end
     @q.push [ false, '$' ]
-    p @q
+    #p @q
 
     do_parse
   end
 
   def next_token
     @q.shift
+  end
+
+  PHRASE_CHARS = [?<, ?>, ?|, ?"] # these chars have meaning within phrases
+  def clean_string(str)
+    escape_chars = ECHR.gsub(/\\/,"").unpack("c*")
+    pb = nil
+    br_stack = []
+    quote_open = false
+    # leave a little extra
+    new_str = []
+
+    str.each_byte do |b|
+      # ignore escaped characters
+      if pb == ?\\
+        if quote_open and PHRASE_CHARS.index(b)
+          new_str << ?\\ # this was left off the first time through
+        end
+
+        new_str << b
+        pb = (b == ?\\ ? ?: : b) # \\ has escaped itself so does nothing more
+        next
+      end
+      case b
+      when ?\\
+        new_str << b if !quote_open # We do our own escaping below
+      when ?"
+        quote_open = !quote_open
+        new_str << b
+      when ?(
+        if !quote_open
+          br_stack << b
+        else
+          new_str << ?\\
+        end
+        new_str << b
+      when ?)
+        if !quote_open
+          if br_stack.size == 0
+            new_str.unshift(?()
+          else
+            br_stack.pop
+          end
+        else
+          new_str << ?\\
+        end
+        new_str << b
+      when ?>
+        if quote_open
+          if pb == ?<
+            new_str.delete_at(-2)
+          else
+            new_str << ?\\
+          end
+        end
+        new_str << b
+      else
+        if quote_open
+          if escape_chars.index(b) and b != ?|
+            new_str << ?\\
+          end
+        end
+        new_str << b
+      end
+      pb = b
+    end
+    new_str << ?" if quote_open
+    br_stack.each { |b| new_str << ?) }
+    return new_str.pack("c*")  
   end
 
   def get_range_query(start_word, end_word, inc_upper, inc_lower)
@@ -254,7 +324,7 @@ module_eval <<'..end query_parser.y modeval..id3bf199d855', 'query_parser.y', 11
     return BooleanClause.new(query, occur)
   end
 
-..end query_parser.y modeval..id3bf199d855
+..end query_parser.y modeval..id399a860b6b
 
 ##### racc 1.4.4 generates ###
 
