@@ -64,7 +64,6 @@ class IndexSearcherTest < Test::Unit::TestCase
     tq2 = TermQuery.new(Term.new("field", "word3"))
     bq.add_query(tq1, BooleanClause::Occur::MUST)
     bq.add_query(tq2, BooleanClause::Occur::MUST)
-    puts "fuck"
     do_test_top_docs(bq, [2,3,6,8,11,14], 14)
 
     tq3 = TermQuery.new(Term.new("field", "word2"))

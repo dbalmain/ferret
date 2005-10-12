@@ -86,9 +86,6 @@ module Ferret::Index
 
     # Called to complete TermInfos creation. 
     def close()
-      # clear this threads cache 
-      Thread.current["#{self.object_id}-term_enum"] = nil
-
       @out.seek(4)          # write @size after format
       @out.write_long(@size)
       @out.close()
@@ -118,6 +115,9 @@ module Ferret::Index
 
     def initialize(dir, seg, fis)
       super()
+
+      Thread.current["#{self.object_id}-term_enum"] = nil
+
       @directory = dir
       @segment = seg
       @field_infos = fis
@@ -134,6 +134,9 @@ module Ferret::Index
     end
 
     def close()
+      # clear this threads cache 
+      Thread.current["#{self.object_id}-term_enum"] = nil
+
       @orig_enum.close() if (@orig_enum != nil)
       @index_enum.close() if (@index_enum != nil)
     end
@@ -212,7 +215,7 @@ module Ferret::Index
         term_enum = Thread.current["#{self.object_id}-term_enum"]
         if (term_enum == nil) 
           term_enum = terms()
-          Thread.current["#{self.object_id}-term_enum"] = term_enum 
+          @xterm_enum = Thread.current["#{self.object_id}-term_enum"] = term_enum 
         end
         return term_enum
       end

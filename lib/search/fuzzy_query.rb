@@ -51,7 +51,7 @@ module Ferret::Search
     
     def rewrite(reader)
 
-      enumerator = get_term_enum(reader)
+      fuzzy_enum = get_term_enum(reader)
       max_clause_count = BooleanQuery.max_clause_count
       st_queue = ScoreTermQueue.new(max_clause_count)
 
@@ -59,9 +59,9 @@ module Ferret::Search
         begin 
           min_score = 0.0
           score = 0.0
-          t = enumerator.term()
+          t = fuzzy_enum.term()
           if t
-            score = enumerator.difference()
+            score = fuzzy_enum.difference()
 
             # terms come in alphabetical order, therefore if queue is full and score
             # not bigger than min_score, we can skip
@@ -70,9 +70,9 @@ module Ferret::Search
               min_score = st_queue.top.score # maintain min_score
             end
           end
-        end while enumerator.next?
+        end while fuzzy_enum.next?
       ensure 
-        enumerator.close()
+        fuzzy_enum.close()
       end
       
       bq = BooleanQuery.new(true)
