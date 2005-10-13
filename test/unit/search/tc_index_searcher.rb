@@ -27,7 +27,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     docs
   end
 
-  def do_test_top_docs(query, expected, top=nil, total_hits=nil)
+  def check_hits(query, expected, top=nil, total_hits=nil)
     top_docs = @is.search(query)
     assert_equal(expected.length, top_docs.score_docs.size)
     assert_equal(top, top_docs.score_docs[0].doc) if top
@@ -47,7 +47,7 @@ class IndexSearcherTest < Test::Unit::TestCase
   def test_term_query
     tq = TermQuery.new(Term.new("field", "word2"));
     tq.boost = 100
-    do_test_top_docs(tq, [1,4,8])
+    check_hits(tq, [1,4,8])
 
     tq = TermQuery.new(Term.new("field", "word1"));
     top_docs = @is.search(tq)
@@ -64,25 +64,25 @@ class IndexSearcherTest < Test::Unit::TestCase
     tq2 = TermQuery.new(Term.new("field", "word3"))
     bq.add_query(tq1, BooleanClause::Occur::MUST)
     bq.add_query(tq2, BooleanClause::Occur::MUST)
-    do_test_top_docs(bq, [2,3,6,8,11,14], 14)
+    check_hits(bq, [2,3,6,8,11,14], 14)
 
     tq3 = TermQuery.new(Term.new("field", "word2"))
     bq.add_query(tq3, BooleanClause::Occur::SHOULD)
-    do_test_top_docs(bq, [2,3,6,8,11,14], 8)
+    check_hits(bq, [2,3,6,8,11,14], 8)
 
     bq = BooleanQuery.new()
     bq.add_query(tq2, BooleanClause::Occur::MUST)
     bq.add_query(tq3, BooleanClause::Occur::MUST_NOT)
-    do_test_top_docs(bq, [2,3,6,11,14])
+    check_hits(bq, [2,3,6,11,14])
 
     bq = BooleanQuery.new()
     bq.add_query(tq2, BooleanClause::Occur::MUST_NOT)
-    do_test_top_docs(bq, [])
+    check_hits(bq, [])
 
     bq = BooleanQuery.new()
     bq.add_query(tq2, BooleanClause::Occur::SHOULD)
     bq.add_query(tq3, BooleanClause::Occur::SHOULD)
-    do_test_top_docs(bq, [1,2,3,4,6,8,11,14])
+    check_hits(bq, [1,2,3,4,6,8,11,14])
   end
 
   def test_phrase_query()
@@ -91,79 +91,79 @@ class IndexSearcherTest < Test::Unit::TestCase
     t2 = Term.new("field", "brown")
     t3 = Term.new("field", "fox")
     pq << t1 << t2 << t3
-    do_test_top_docs(pq, [1])
+    check_hits(pq, [1])
 
     pq.slop = 4
-    do_test_top_docs(pq, [1,16,17])
+    check_hits(pq, [1,16,17])
 
     pq = PhraseQuery.new()
     pq << t1
     pq.add(t3, 2)
-    do_test_top_docs(pq, [1,11,14])
+    check_hits(pq, [1,11,14])
 
     pq.slop = 1
-    do_test_top_docs(pq, [1,11,14,16])
+    check_hits(pq, [1,11,14,16])
 
     pq.slop = 4
-    do_test_top_docs(pq, [1,11,14,16,17])
+    check_hits(pq, [1,11,14,16,17])
   end
 
   def test_range_query()
     rq = RangeQuery.new("date", "20051006", "20051010", true, true)
-    do_test_top_docs(rq, [6,7,8,9,10])
+    check_hits(rq, [6,7,8,9,10])
 
     rq = RangeQuery.new("date", "20051006", "20051010", false, true)
-    do_test_top_docs(rq, [7,8,9,10])
+    check_hits(rq, [7,8,9,10])
 
     rq = RangeQuery.new("date", "20051006", "20051010", true, false)
-    do_test_top_docs(rq, [6,7,8,9])
+    check_hits(rq, [6,7,8,9])
 
     rq = RangeQuery.new("date", "20051006", "20051010", false, false)
-    do_test_top_docs(rq, [7,8,9])
+    check_hits(rq, [7,8,9])
 
     rq = RangeQuery.new("date", nil, "20051003", false, true)
-    do_test_top_docs(rq, [0,1,2,3])
+    check_hits(rq, [0,1,2,3])
 
     rq = RangeQuery.new("date", nil, "20051003", false, false)
-    do_test_top_docs(rq, [0,1,2])
+    check_hits(rq, [0,1,2])
 
     rq = RangeQuery.new_less("date", "20051003", true)
-    do_test_top_docs(rq, [0,1,2,3])
+    check_hits(rq, [0,1,2,3])
 
     rq = RangeQuery.new_less("date", "20051003", false)
-    do_test_top_docs(rq, [0,1,2])
+    check_hits(rq, [0,1,2])
 
     rq = RangeQuery.new("date", "20051014", nil, true, false)
-    do_test_top_docs(rq, [14,15,16,17])
+    check_hits(rq, [14,15,16,17])
 
     rq = RangeQuery.new("date", "20051014", nil, false, false)
-    do_test_top_docs(rq, [15,16,17])
+    check_hits(rq, [15,16,17])
 
     rq = RangeQuery.new_more("date", "20051014", true)
-    do_test_top_docs(rq, [14,15,16,17])
+    check_hits(rq, [14,15,16,17])
 
     rq = RangeQuery.new_more("date", "20051014", false)
-    do_test_top_docs(rq, [15,16,17])
+    check_hits(rq, [15,16,17])
   end
 
   def test_prefix_query()
     t = Term.new("cat", "cat1")
     pq = PrefixQuery.new(t)
-    do_test_top_docs(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
+    check_hits(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
 
     t.text = "cat1/sub2"
     pq = PrefixQuery.new(t)
-    do_test_top_docs(pq, [3, 4, 13, 15])
+    check_hits(pq, [3, 4, 13, 15])
   end
 
   def test_wildcard_query()
     t = Term.new("cat", "cat1*")
     wq = WildcardQuery.new(t)
-    do_test_top_docs(wq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
+    check_hits(wq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
 
     t.text = "cat1*/su??ub2"
     wq = WildcardQuery.new(t)
-    do_test_top_docs(wq, [4, 16])
+    check_hits(wq, [4, 16])
   end
 
   def test_prefix_query()
@@ -178,9 +178,9 @@ class IndexSearcherTest < Test::Unit::TestCase
     mpq << [t11, t12]
     mpq << [t21, t22, t23]
     mpq << t3
-    do_test_top_docs(mpq, [1, 8, 11, 14])
+    check_hits(mpq, [1, 8, 11, 14])
 
     mpq.slop = 4
-    do_test_top_docs(mpq, [1, 8, 11, 14, 16, 17])
+    check_hits(mpq, [1, 8, 11, 14, 16, 17])
   end
 end

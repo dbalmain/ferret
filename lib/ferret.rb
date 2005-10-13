@@ -13,4 +13,6 @@ require 'store'
 require 'index'
 require 'search'
 require 'query_parser'
-require 'extensions'
+if File.exist?(File.join(File.dirname(__FILE__), '../ext/extensions.so'))
+  require 'extensions'
+end
