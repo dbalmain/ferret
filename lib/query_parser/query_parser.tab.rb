@@ -11,21 +11,23 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 116
+module_eval <<'..end query_parser.y modeval..id434256b68d', 'query_parser.y', 120
   attr_accessor :default_field
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
-  attr_writer :wild_lower
+  attr_accessor :wild_lower
+
   def wild_lower?() @wild_lower end
 
 
-  def initialize(default_field, analyzer = Analysis::Analyzer.new)
+  def initialize(default_field = "", options = {})
     @yydebug = true
     @field = @default_field = default_field
-    @analyzer = analyzer
-    @wild_lower = true
-    @occur_default = BooleanClause::Occur::SHOULD
+    @analyzer = options[:analyzer] || Analysis::Analyzer.new
+    @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
+    @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
+    @default_slop = options[:default_slop] || 0
   end
 
   RESERVED = {
@@ -56,7 +58,7 @@ module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 11
         @q.push [ RESERVED[$&]||$&, $& ]
       when /\A(\&\&|\|\|)/
         @q.push [ RESERVED[$&], $& ]
-      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[^\s\\][?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
+      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
         str = $'
         unescaped = $&.gsub(/\\(?!\\)/,"")
         @q.push [ :WILD_STRING, unescaped ]
@@ -177,11 +179,15 @@ module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 11
     end
   end
 
-  def get_fuzzy_query(word, min_sim)
+  def get_fuzzy_query(word, min_sim = nil)
     tokens = []
     stream = @analyzer.token_stream(@field, word)
     if token = stream.next # only makes sense to look at one term for fuzzy
-      return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+      if min_sim
+        return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+      else
+        return FuzzyQuery.new(Term.new(@field, token.term_text))
+      end
     else
       return nil
     end
@@ -198,6 +204,7 @@ module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 11
 
   def get_normal_phrase_query(positions)
     pq = PhraseQuery.new()
+    pq.slop = @default_slop
     pos_inc = 0
 
     positions.each do |position|
@@ -221,6 +228,7 @@ module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 11
 
   def get_multi_phrase_query(positions)
     mpq = MultiPhraseQuery.new()
+    mpq.slop = @default_slop
     pos_inc = 0
 
     positions.each do |position|
@@ -315,16 +323,16 @@ module_eval <<'..end query_parser.y modeval..id399a860b6b', 'query_parser.y', 11
       return clauses[0].query
     end
     bq = BooleanQuery.new()
-    clauses.each {|clause| bq << clause }
-    return bq
-  end
-
+    clauses.each {|clause|   bq << clause }
+    return bq                
+  end                        
+                             
   def get_boolean_clause(query, occur)
     return nil if query.nil?
     return BooleanClause.new(query, occur)
   end
 
-..end query_parser.y modeval..id399a860b6b
+..end query_parser.y modeval..id434256b68d
 
 ##### racc 1.4.4 generates ###
 
@@ -348,32 +356,33 @@ racc_reduce_table = [
  1, 28, :_reduce_none,
  1, 30, :_reduce_17,
  3, 30, :_reduce_18,
- 1, 34, :_reduce_19,
- 0, 36, :_reduce_20,
- 4, 31, :_reduce_21,
- 1, 35, :_reduce_22,
- 3, 32, :_reduce_23,
- 5, 32, :_reduce_24,
- 2, 32, :_reduce_25,
- 4, 32, :_reduce_26,
- 1, 37, :_reduce_27,
- 2, 37, :_reduce_28,
- 3, 37, :_reduce_29,
+ 2, 30, :_reduce_19,
+ 1, 34, :_reduce_20,
+ 0, 36, :_reduce_21,
+ 4, 31, :_reduce_22,
+ 1, 35, :_reduce_23,
+ 3, 32, :_reduce_24,
+ 5, 32, :_reduce_25,
+ 2, 32, :_reduce_26,
+ 4, 32, :_reduce_27,
+ 1, 37, :_reduce_28,
+ 2, 37, :_reduce_29,
  3, 37, :_reduce_30,
- 4, 33, :_reduce_31,
+ 3, 37, :_reduce_31,
  4, 33, :_reduce_32,
  4, 33, :_reduce_33,
  4, 33, :_reduce_34,
- 3, 33, :_reduce_35,
+ 4, 33, :_reduce_35,
  3, 33, :_reduce_36,
  3, 33, :_reduce_37,
  3, 33, :_reduce_38,
- 2, 33, :_reduce_39,
- 3, 33, :_reduce_40,
+ 3, 33, :_reduce_39,
+ 2, 33, :_reduce_40,
  3, 33, :_reduce_41,
- 2, 33, :_reduce_42 ]
+ 3, 33, :_reduce_42,
+ 2, 33, :_reduce_43 ]
 
-racc_reduce_n = 43
+racc_reduce_n = 44
 
 racc_shift_n = 73
 
@@ -381,7 +390,7 @@ racc_action_table = [
      7,    10,    61,    47,    38,    36,    48,    21,     3,    41,
     60,     6,     9,    12,    14,    16,    18,    37,    35,     1,
      7,    10,    33,    34,    58,    59,    40,    21,     3,    45,
-   -22,     6,     9,    12,    14,    16,    18,     7,    10,     1,
+   -23,     6,     9,    12,    14,    16,    18,     7,    10,     1,
     55,    42,    30,    56,    21,     3,    44,    28,     6,     9,
     12,    14,    16,    18,    43,    57,     1,     7,    10,    33,
     34,    70,    71,    39,    21,     3,    63,    64,     6,     9,
@@ -422,14 +431,14 @@ racc_action_pointer = [
    nil,   nil,   nil ]
 
 racc_action_default = [
-   -43,   -43,   -15,   -43,   -16,   -43,   -19,   -43,   -43,   -43,
-   -43,    -1,   -43,    -2,   -43,    -9,   -43,    -8,   -43,   -11,
-   -13,   -17,   -14,   -43,   -43,   -43,    -6,   -43,   -25,   -43,
-   -27,    -7,    -5,   -43,   -43,   -43,   -39,   -43,   -42,   -43,
-   -43,   -43,   -43,   -38,   -43,   -12,   -20,    73,   -43,   -23,
-   -43,   -43,   -28,    -3,    -4,   -40,   -41,   -10,   -36,   -35,
-   -37,   -43,   -18,   -33,   -34,   -21,   -26,   -43,   -29,   -30,
-   -31,   -32,   -24 ]
+   -44,   -44,   -15,   -44,   -16,   -44,   -20,   -44,   -44,   -44,
+   -44,    -1,   -44,    -2,   -44,    -9,   -44,    -8,   -44,   -11,
+   -13,   -17,   -14,   -44,   -44,   -44,    -6,   -44,   -26,   -44,
+   -28,    -7,    -5,   -44,   -44,   -44,   -40,   -44,   -43,   -44,
+   -44,   -44,   -19,   -39,   -44,   -12,   -21,    73,   -44,   -24,
+   -44,   -44,   -29,    -3,    -4,   -41,   -42,   -10,   -37,   -36,
+   -38,   -44,   -18,   -34,   -35,   -22,   -27,   -44,   -30,   -31,
+   -32,   -33,   -25 ]
 
 racc_goto_table = [
     32,    26,    11,     8,    31,    24,    65,    29,   nil,   nil,
@@ -625,146 +634,152 @@ module_eval <<'.,.,', 'query_parser.y', 70
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 75
+module_eval <<'.,.,', 'query_parser.y', 74
   def _reduce_19( val, _values)
-                    WildcardQuery.new(Term.new(@field, val[0]))
+                    get_fuzzy_query(val[0])
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 76
+module_eval <<'.,.,', 'query_parser.y', 79
   def _reduce_20( val, _values)
-@field = @default_field
+                    WildcardQuery.new(Term.new(@field, val[0]))
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 80
   def _reduce_21( val, _values)
+@field = @default_field
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 84
+  def _reduce_22( val, _values)
                     val[2]
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 81
-  def _reduce_22( val, _values)
- @field = val[0]
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 87
+module_eval <<'.,.,', 'query_parser.y', 85
   def _reduce_23( val, _values)
-                    get_phrase_query(val[1])
+ @field = val[0]
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 91
   def _reduce_24( val, _values)
+                    get_phrase_query(val[1])
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 95
+  def _reduce_25( val, _values)
                     get_phrase_query(val[1], val[4].to_i)
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 91
-  def _reduce_25( val, _values)
- nil
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 92
+module_eval <<'.,.,', 'query_parser.y', 95
   def _reduce_26( val, _values)
  nil
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 94
+module_eval <<'.,.,', 'query_parser.y', 96
   def _reduce_27( val, _values)
+ nil
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 98
+  def _reduce_28( val, _values)
  [val[0]]
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 95
-  def _reduce_28( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 99
+  def _reduce_29( val, _values)
  val[0] << val[1]
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 96
-  def _reduce_29( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 100
+  def _reduce_30( val, _values)
  val[0] << nil
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 97
-  def _reduce_30( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 101
+  def _reduce_31( val, _values)
  add_multi_word(val[0], val[2])
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 99
-  def _reduce_31( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 103
+  def _reduce_32( val, _values)
  get_range_query(val[1], val[2], true, true)
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 100
-  def _reduce_32( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 104
+  def _reduce_33( val, _values)
  get_range_query(val[1], val[2], true, false)
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 101
-  def _reduce_33( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 105
+  def _reduce_34( val, _values)
  get_range_query(val[1], val[2], false, true)
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 102
-  def _reduce_34( val, _values)
+module_eval <<'.,.,', 'query_parser.y', 106
+  def _reduce_35( val, _values)
  get_range_query(val[1], val[2], false, false)
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 103
-  def _reduce_35( val, _values)
- get_range_query(nil,    val[1], false, false)
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 104
-  def _reduce_36( val, _values)
- get_range_query(nil,    val[1], false, true)
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 105
-  def _reduce_37( val, _values)
- get_range_query(val[1], nil,    true, false)
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 106
-  def _reduce_38( val, _values)
- get_range_query(val[1], nil,    false, false)
-  end
-.,.,
-
 module_eval <<'.,.,', 'query_parser.y', 107
-  def _reduce_39( val, _values)
+  def _reduce_36( val, _values)
  get_range_query(nil,    val[1], false, false)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 108
-  def _reduce_40( val, _values)
- get_range_query(nil,    val[2], false, true)
+  def _reduce_37( val, _values)
+ get_range_query(nil,    val[1], false, true)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 109
-  def _reduce_41( val, _values)
- get_range_query(val[2], nil,    true, false)
+  def _reduce_38( val, _values)
+ get_range_query(val[1], nil,    true, false)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 110
+  def _reduce_39( val, _values)
+ get_range_query(val[1], nil,    false, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 111
+  def _reduce_40( val, _values)
+ get_range_query(nil,    val[1], false, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 112
+  def _reduce_41( val, _values)
+ get_range_query(nil,    val[2], false, true)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 113
   def _reduce_42( val, _values)
+ get_range_query(val[2], nil,    true, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 114
+  def _reduce_43( val, _values)
  get_range_query(val[1], nil,    false, false)
   end
 .,.,

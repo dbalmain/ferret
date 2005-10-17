@@ -42,7 +42,7 @@ module Ferret::Search
     end
 
     # Prints a user-readable version of this query. 
-    def to_s(field) 
+    def to_s(field = nil) 
       buffer = ""
       buffer << "#{@term.field}:" if @term.field != field
       buffer << @term.text

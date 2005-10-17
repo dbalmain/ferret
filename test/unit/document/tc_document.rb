@@ -18,8 +18,7 @@ class DocumentTest < Test::Unit::TestCase
     field = doc.remove_field("field1")
     assert_equal(2, doc.fields("field1").size)
     assert_equal(f11, field)
-    values = doc.values("field1")
-    assert_equal(["value2", "value3"], values)
+    assert_equal("value2 value3", doc.values("field1"))
     doc.remove_fields("field1")
     assert_equal(nil, doc.field("field1"))
   end
@@ -43,7 +42,7 @@ class DocumentTest < Test::Unit::TestCase
     doc.add_field(fb2)
 
     assert_equal(4, doc.fields("field1").size)
-    assert_equal(["value1", "value2"], doc.values("field1"))
+    assert_equal("value1 value2", doc.values("field1").strip)
     assert_equal([bin1, bin2], doc.binaries("field1"))
   end
 end

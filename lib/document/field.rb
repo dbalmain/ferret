@@ -29,9 +29,9 @@ module Ferret::Document
     # Documents returned from IndexReader#document(int) and
     # Hits#doc(int) may thus not have the same value present as when this field
     # was indexed.
-    attr_accessor :boost
+    attr_accessor :boost, :data
 
-    attr_reader :name, :data
+    attr_reader :name
 
     # True iff the value of the field is to be stored in the index for
     # return with search hits.  It is an error for this to be true if a
@@ -142,6 +142,11 @@ module Ferret::Document
     # store_term_vector:: Whether term vector should be stored
     #  * the field is neither stored nor indexed
     #  * the field is not indexed but term_vector is _TermVector::YES_
+    #
+    # binary:: Whether you want to store binary data in this field. Default is
+    #    false
+    # boost:: the boost for this field. Default is 1.0. A larger number makes
+    # this field more important.
     def initialize(name,
                    value,
                    stored = Store::YES,

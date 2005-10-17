@@ -25,8 +25,8 @@ module Ferret::Search
     # Default value is 0.5.
     # prefix_length:: Length of required common prefix. Default value is 0.
     def initialize(reader, term,
-                   minimum_similarity = FuzzyQuery::DEFAULT_MIN_SIMILARITY,
-                   prefix_length = FuzzyQuery::DEFAULT_PREFIX_LENGTH)
+                   minimum_similarity = FuzzyQuery.default_min_similarity,
+                   prefix_length = FuzzyQuery.default_prefix_length)
       super()
       
       @reader = reader

@@ -122,6 +122,38 @@ frt_termbuffer_compare_to_int(VALUE self, VALUE rother)
 	return comp;
 }
 
+VALUE
+frt_termbuffer_lt(VALUE self, VALUE rother)
+{
+  return frt_termbuffer_compare_to_int(self, rother) < 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_termbuffer_gt(VALUE self, VALUE rother)
+{
+  return frt_termbuffer_compare_to_int(self, rother) > 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_termbuffer_le(VALUE self, VALUE rother)
+{
+  return frt_termbuffer_compare_to_int(self, rother) <= 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_termbuffer_ge(VALUE self, VALUE rother)
+{
+  return frt_termbuffer_compare_to_int(self, rother) >= 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_termbuffer_eq(VALUE self, VALUE rother)
+{
+  if (rother == Qnil)
+    return Qfalse;
+  return frt_termbuffer_compare_to_int(self, rother) == 0 ? Qtrue : Qfalse;
+}
+
 static VALUE
 frt_termbuffer_compare_to(VALUE self, VALUE rother)
 {
@@ -250,6 +282,12 @@ Init_term_buffer(void) {
 	rb_define_method(cTermBuffer, "field", frt_termbuffer_get_field_name, 0);
 	rb_define_method(cTermBuffer, "text_length", frt_termbuffer_get_text_length, 0);
 	rb_define_method(cTermBuffer, "<=>", frt_termbuffer_compare_to, 1);
+	rb_define_method(cTermBuffer, "<", frt_termbuffer_lt, 1);
+	rb_define_method(cTermBuffer, ">", frt_termbuffer_gt, 1);
+	rb_define_method(cTermBuffer, "<=", frt_termbuffer_le, 1);
+	rb_define_method(cTermBuffer, ">=", frt_termbuffer_ge, 1);
+	rb_define_method(cTermBuffer, "eql?", frt_termbuffer_eq, 1);
+	rb_define_method(cTermBuffer, "==", frt_termbuffer_eq, 1);
 	rb_define_method(cTermBuffer, "hash", frt_termbuffer_hash, 0);
 	rb_define_method(cTermBuffer, "read", frt_termbuffer_read, 2);
 	rb_define_method(cTermBuffer, "reset", frt_termbuffer_reset, 0);

@@ -221,8 +221,7 @@ module Ferret::Search
     # number and the score.
     #
     # returns:: true if more matching documents may remain.
-    # :yield: doc, score
-    def each_hit()
+    def each_hit() # :yields: doc, score
       if @counting_sum_scorer.nil?
         init_counting_sum_scorer()
       end
@@ -238,8 +237,7 @@ module Ferret::Search
     # max:: Do not score documents past this. Default will search all documents
     # avaliable.
     # returns:: true if more matching documents may remain.
-    # :yield: doc, score
-    def each_hit_up_to(max = MAX_DOCS)
+    def each_hit_up_to(max = MAX_DOCS) # :yields: doc, score
       # nil pointer exception when next? was not called before:
       doc_nr = @counting_sum_scorer.doc()
       while (doc_nr < max) 

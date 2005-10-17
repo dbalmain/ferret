@@ -1,3 +1,7 @@
+# Documentation for Analysis
+module Ferret::Analysis
+end
+
 require 'analysis/token'
 require 'analysis/token_stream'
 require 'analysis/tokenizers'

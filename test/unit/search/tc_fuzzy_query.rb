@@ -30,14 +30,14 @@ class FuzzyQueryTest < Test::Unit::TestCase
   end
 
   def do_prefix_test(is, text, prefix, expected)
-    fq = FuzzyQuery.new(Term.new("field", text), FuzzyQuery::DEFAULT_MIN_SIMILARITY, prefix)
+    fq = FuzzyQuery.new(Term.new("field", text), FuzzyQuery.default_min_similarity, prefix)
     #puts is.explain(fq, 0)
     #puts is.explain(fq, 1)
     do_test_top_docs(is, fq, expected)
   end
 
   def test_fuzziness()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     add_doc("aaaaa", iw)
     add_doc("aaaab", iw)
     add_doc("aaabb", iw)
@@ -51,7 +51,7 @@ class FuzzyQueryTest < Test::Unit::TestCase
 
     is = IndexSearcher.new(@dir)
 
-    fq = FuzzyQuery.new(Term.new("field", "aaaaa"), FuzzyQuery::DEFAULT_MIN_SIMILARITY, 5)
+    fq = FuzzyQuery.new(Term.new("field", "aaaaa"), FuzzyQuery.default_min_similarity, 5)
 
     do_prefix_test(is, "aaaaa", 0, [0,1,2])
     do_prefix_test(is, "aaaaa", 1, [0,1,2])
@@ -79,7 +79,7 @@ class FuzzyQueryTest < Test::Unit::TestCase
     do_prefix_test(is, "ddddX", 4, [6])
     do_prefix_test(is, "ddddX", 5, [])
     
-    fq = FuzzyQuery.new(Term.new("anotherfield", "ddddX"), FuzzyQuery::DEFAULT_MIN_SIMILARITY, 0)
+    fq = FuzzyQuery.new(Term.new("anotherfield", "ddddX"), FuzzyQuery.default_min_similarity, 0)
     top_docs = is.search(fq)
     assert_equal(0, top_docs.total_hits)
 
@@ -87,8 +87,7 @@ class FuzzyQueryTest < Test::Unit::TestCase
   end
 
   def test_fuzziness_long()
-    return
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     add_doc("aaaaaaa", iw)
     add_doc("segment", iw)
     iw.optimize()

@@ -19,8 +19,7 @@ module Ferret::Search
     # number and the score.
     #
     # returns:: true if more matching documents may remain.
-    # :yield: doc, score
-    def each_hit()
+    def each_hit() # :yields: doc, score
       while next?
         yield(doc(), score())
       end
@@ -31,8 +30,7 @@ module Ferret::Search
     # max:: Do not score documents past this. Default will search all documents
     # avaliable.
     # returns:: true if more matching documents may remain.
-    # :yield: doc, score
-    def each_hit_up_to(max = MAX_DOCS)
+    def each_hit_up_to(max = MAX_DOCS) # :yields: doc, score
       while (next? and doc() < max)
         yield(doc(), score())
       end

@@ -17,7 +17,7 @@ class IndexWriterTest < Test::Unit::TestCase
     clock = @dir.make_lock(IndexWriter::COMMIT_LOCK_NAME)
     assert(! wlock.locked?)
     assert(! clock.locked?)
-    iw = IndexWriter.new(@dir, nil, true, false)
+    iw = IndexWriter.new(@dir, :create => true)
     assert(@dir.exists?("segments"))
     assert(wlock.locked?)
     iw.close()
@@ -27,7 +27,7 @@ class IndexWriterTest < Test::Unit::TestCase
   end
 
   def test_add_document
-    iw = IndexWriter.new(@dir, StandardAnalyzer.new, true, false)
+    iw = IndexWriter.new(@dir, :analyzer => StandardAnalyzer.new(), :create => true)
     doc = IndexTestHelper.prepare_document()
     infos = FieldInfos.new
     infos << doc
@@ -37,7 +37,7 @@ class IndexWriterTest < Test::Unit::TestCase
   end
 
   def test_add_documents
-    iw = IndexWriter.new(@dir, StandardAnalyzer.new, true, false)
+    iw = IndexWriter.new(@dir, :analyzer => StandardAnalyzer.new(), :create => true)
     # uncomment the following line to see logging
     #iw.info_stream = $stdout
     iw.merge_factor = 3

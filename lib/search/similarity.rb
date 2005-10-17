@@ -253,6 +253,7 @@ module Ferret::Search
       
     # See source
     def idf(doc_freq, num_docs)
+      return 0.0 if num_docs == 0
       return Math.log(num_docs.to_f/(doc_freq+1)) + 1.0
     end
       

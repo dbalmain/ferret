@@ -7,7 +7,7 @@ include Ferret::Analysis
 class IndexSearcherTest < Test::Unit::TestCase
   def setup()
     @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     @documents = IndexTestHelper.prepare_search_docs()
     @documents.each { |doc| iw << doc; }
     iw.close()

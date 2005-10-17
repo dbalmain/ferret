@@ -122,7 +122,37 @@ frt_term_to_s(VALUE self)
 	return rb_str_new(res, tlen + flen + 1 );
 }
 
-int 
+VALUE 
+frt_term_compare_to(VALUE self, VALUE rother)
+{
+	int comp, size, mylen, olen;
+	Term *term, *other;
+	Data_Get_Struct(self, Term, term);
+	Data_Get_Struct(rother, Term, other);
+	
+	mylen = term->flen;
+	olen = other->flen;
+	size = mylen >= olen ? olen : mylen;
+	comp = memcmp(term->field, other->field, size);
+	if(comp == 0){
+		if(mylen == olen){
+			mylen = term->tlen;
+			olen = other->tlen;
+			size = mylen >= olen ? olen : mylen;
+			comp = memcmp(term->text, other->text, size);
+			if(comp == 0 && mylen != olen)
+				comp = mylen > olen ? 1 : -1;
+		} else
+			comp = mylen > olen ? 1 : -1;
+	}
+	//comp = strcmp(term->field, other->field);
+	//if(comp == 0)
+	//	comp = strcmp(term->text, other->text);
+	return INT2FIX(comp);
+}
+
+// keep in synch with fuction above
+int
 frt_term_compare_to_int(VALUE self, VALUE rother)
 {
 	int comp, size, mylen, olen;
@@ -151,11 +181,44 @@ frt_term_compare_to_int(VALUE self, VALUE rother)
 	return comp;
 }
 
-static VALUE
-frt_term_compare_to(VALUE self, VALUE other)
+VALUE
+frt_term_lt(VALUE self, VALUE rother)
 {
-	return INT2FIX(frt_term_compare_to_int(self, other));
+  return frt_term_compare_to_int(self, rother) < 0 ? Qtrue : Qfalse;
 }
+
+VALUE
+frt_term_gt(VALUE self, VALUE rother)
+{
+  return frt_term_compare_to_int(self, rother) > 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_term_le(VALUE self, VALUE rother)
+{
+  return frt_term_compare_to_int(self, rother) <= 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_term_ge(VALUE self, VALUE rother)
+{
+  return frt_term_compare_to_int(self, rother) >= 0 ? Qtrue : Qfalse;
+}
+
+VALUE
+frt_term_eq(VALUE self, VALUE rother)
+{
+  if (rother == Qnil)
+    return Qfalse;
+  return frt_term_compare_to_int(self, rother) == 0 ? Qtrue : Qfalse;
+}
+
+
+//static VALUE
+//frt_term_compare_to(VALUE self, VALUE other)
+//{
+//	return INT2FIX(frt_term_compare_to_int(self, other));
+//}
 
 static VALUE
 frt_term_hash(VALUE self)
@@ -184,6 +247,12 @@ Init_term(void)
 	rb_define_method(cTerm, "set!", frt_term_set, 2);
 	rb_define_method(cTerm, "to_s", frt_term_to_s, 0);
 	rb_define_method(cTerm, "<=>", frt_term_compare_to, 1);
+	rb_define_method(cTerm, "<", frt_term_lt, 1);
+	rb_define_method(cTerm, ">", frt_term_gt, 1);
+	rb_define_method(cTerm, "<=", frt_term_le, 1);
+	rb_define_method(cTerm, ">=", frt_term_ge, 1);
+	rb_define_method(cTerm, "eql?", frt_term_eq, 1);
+	rb_define_method(cTerm, "==", frt_term_eq, 1);
 	rb_define_method(cTerm, "text", frt_term_get_text, 0);
 	rb_define_method(cTerm, "text=", frt_term_set_text, 1);
 	rb_define_method(cTerm, "field", frt_term_get_field, 0);

@@ -23,5 +23,4 @@ require 'index/index_writer'
 require 'index/multi_reader'
 require 'index/segment_merger'
 require 'index/segment_reader'
-
-#require 'index/index'
+require 'index/index'

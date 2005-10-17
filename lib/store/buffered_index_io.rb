@@ -2,7 +2,7 @@ module Ferret::Store
   BUFFER_SIZE = 1024
   BUFFER = " " * BUFFER_SIZE
 
-  # Base implementation class for buffered @link IndexOutputend. 
+  # Base implementation class for a buffered IndexOutput. 
   class BufferedIndexOutput < IndexOutput 
 
     def initialize
@@ -17,16 +17,18 @@ module Ferret::Store
       # The following code offers a 5% speed improvement over the line
       # below. It relies on the fact that ruby will throw an error if we try
       # and modify a character that is out of range for the string.
-      begin
-        @buffer[@buffer_position] = b
-        @buffer_position += 1
-      rescue IndexError
-        flush
-        @buffer[@buffer_position] = b
-        @buffer_position += 1
-      end
+      #begin
+      #  @buffer[@buffer_position] = b
+      #  @buffer_position += 1
+      #rescue IndexError
+      #  flush
+      #  @buffer[@buffer_position] = b
+      #  @buffer_position += 1
+      #end
 
-      #flush if @buffer_position >= BUFFER_SIZE
+      flush if @buffer_position >= BUFFER_SIZE
+      @buffer[@buffer_position] = b
+      @buffer_position += 1
     end
 
     # Writes an array of bytes.
@@ -50,13 +52,12 @@ module Ferret::Store
       flush()
     end
 
-    # Returns the current position in this file, where the next write will
-    # occur.
+    # Get the current position in the file, where the next write will occur.
     def pos() 
       return @buffer_start + @buffer_position
     end
 
-    # Sets current position in this file, where the next write will occur.
+    # Set the current position in the file, where the next write will occur.
     def seek(pos)
       flush()
       @buffer_start = pos
@@ -88,6 +89,7 @@ module Ferret::Store
       @buffer_position = 0
     end
 
+    # Read and return a single byte from the file
     def read_byte
       refill if (@buffer_position >= @buffer_length)
       byte = @buffer[@buffer_position]
@@ -95,27 +97,35 @@ module Ferret::Store
       return byte
     end
 
-    def read_bytes(b, offset, len)
+    # Read +len+ bytes into +buffer+ starting at position +offset+ in +buffer+
+    #
+    # buffer:: The string buffer to read the characters into.
+    # offset:: The position in +buffer+ to start writing to.
+    # len:: the number of characters to read
+    # returns:: the buffer
+    def read_bytes(buffer, offset, len)
       if (len < BUFFER_SIZE) 
         offset.upto(offset+len-1) do |i| # read byte-by-byte
-          b[i] = read_byte
+          buffer[i] = read_byte
         end
       else                               # read all-at-once
         start = pos()
         seek_internal(start)
-        read_internal(b, offset, len)
+        read_internal(buffer, offset, len)
 
         @buffer_start = start + len      # adjust stream variables
         @buffer_position = 0
         @buffer_length = 0               # trigger refill on read
       end
-      return b
+      return buffer
     end
 
+    # Get the current position in the file, where the next read will occur.
     def pos()
       return @buffer_start + @buffer_position
     end
 
+    # Set the current position in the file, where the next read will occur.
     def seek(pos)
       if (pos >= @buffer_start and pos < (@buffer_start + @buffer_length))
         @buffer_position = pos - @buffer_start  # seek within buffer
@@ -127,6 +137,9 @@ module Ferret::Store
       end
     end
 
+    # Creates a clone of the BufferedIndexReader. Reading from a
+    # BufferedIndexInput should not change the state (read position) in the
+    # clone and vice-versa.
     def clone() 
       bii = super
       bii.buffer = @buffer.clone if @buffer
@@ -154,6 +167,7 @@ module Ferret::Store
         raise NotImplementedError
       end
 
+      # Refill the buffer from the file.
       def refill
         start = @buffer_start + @buffer_position
         last = start + BUFFER_SIZE

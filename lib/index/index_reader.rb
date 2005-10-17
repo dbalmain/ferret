@@ -6,11 +6,11 @@ module Ferret::Index
   # class which implements it is searchable.
   #
   # Concrete subclasses of IndexReader are usually constructed with a call to
-  # one of the static +open()+ methods, e.g. +#open(String)+.
+  # one of the static <tt>open()</tt> methods, e.g. <tt>#open</tt>.
   #
   # For efficiency, in this API documents are often referred to via
   # _document numbers_, non-negative integers which each name a unique
-  # document in the index.  These document numbers are ephemeral -= 1they may change
+  # document in the index.  These document numbers are ephemeral, ie they may change
   # as documents are added to and deleted from an index.  Clients should thus not
   # rely on a given document having the same number between sessions.
   # 
@@ -81,12 +81,14 @@ module Ferret::Index
     end
 
     # Returns an index reader to read the index in the directory
-    def IndexReader.open(directory, close_directory = true)
+    def IndexReader.open(directory, close_directory = true, infos = nil)
       directory.synchronize do # in- & inter-process sync
         commit_lock = directory.make_lock(IndexWriter::COMMIT_LOCK_NAME)
         commit_lock.while_locked() do
-          infos = SegmentInfos.new()
-          infos.read(directory)
+          if infos.nil?
+            infos = SegmentInfos.new()
+            infos.read(directory)
+          end
           if (infos.size() == 1) # index is optimized
             return SegmentReader.get(infos[0], infos, close_directory)
           end
@@ -172,6 +174,24 @@ module Ferret::Index
     # +Document+ in this index. 
     def get_document(n)
       raise NotImplementedError
+    end
+
+    # Returns the first document with the term +term+. This is useful, for
+    # example, if we are indexing rows from a database. We can store the id of
+    # each row in a field in the index and use this method get the document by
+    # the id. Hence, only one document is returned.
+    #
+    # term: The term we are searching for.
+    def get_document_with_term(term)
+      docs = term_docs_for(term)
+      if (docs == nil) then return nil end
+      document = nil
+      begin 
+        document = get_document(docs.doc) if docs.next?
+      ensure 
+        docs.close()
+      end
+      return document
     end
 
     # Returns true if document _n_ has been deleted 
@@ -316,6 +336,7 @@ module Ferret::Index
         do_delete(doc_num)
         @has_changes = true
       end
+      return 1
     end
 
     # Implements deletion of the document numbered +doc_num+.
@@ -331,12 +352,12 @@ module Ferret::Index
     # passes it to this method.  Returns the number of documents deleted.  See
     # #delete for information about when this deletion will become effective.
     def delete_docs_with_term(term)
-      docs = term_docs(term)
+      docs = term_docs_for(term)
       if (docs == nil) then return 0 end
       n = 0
       begin 
-        while (docs.next()) 
-          delete(docs.doc())
+        while (docs.next?) 
+          delete(docs.doc)
           n += 1
         end
       ensure 

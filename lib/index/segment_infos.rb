@@ -61,6 +61,11 @@ module Ferret
         @counter = 0
       end
 
+      def clone
+        clone = self.clone
+        self.each_index {|i| clone[i] = self[i].clone}
+      end
+
       def read(directory)
         input = directory.open_input(SEGMENT_FILENAME)
         begin
@@ -116,7 +121,7 @@ module Ferret
 
       def to_s()
         str = "\nSegmentInfos: <"
-        each() { |si| str << si.name + ":" + si.doc_count.to_s + "," }
+        each() { |si| str << "#{si.name}:#{si.doc_count}," }
         str[-1] = ">"
         str
       end

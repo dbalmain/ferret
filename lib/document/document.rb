@@ -116,10 +116,18 @@ module Ferret::Document
     # name:: the name of the field
     # Return:: a _String_ of field values
     def values(name)
-      values = []
+      return nil if @fields[name].nil?
+      @fields[name].map {|f| f.data if not f.binary? }.join(" ")
+    end
+    alias :[] :values
 
-      @fields[name].each {|f| values << f.data if not f.binary? }
-      return values
+    # Sets the data in field +field+ to +text+. If there is more than one
+    # field of that name then it will set the data in the first field of that
+    # name.
+    def []=(field_name, data)
+      field = field(field_name)
+      raise ArgumentError, "Field does not exist" unless field
+      field.data = data
     end
 
     # Returns an array of binaries of the field specified as the method

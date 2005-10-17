@@ -306,7 +306,7 @@ module IndexReaderCommon
 
     @ir.commit()
 
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new())
     iw.optimize()
     iw.close()
 
@@ -404,7 +404,7 @@ module IndexReaderCommon
 
     ir2.commit()
 
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new())
     iw.optimize()
     iw.close()
 
@@ -425,7 +425,7 @@ class SegmentReaderTest < Test::Unit::TestCase
 
   def setup()
     @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
       iw << docs[i]
@@ -448,7 +448,7 @@ class MultiReaderTest < Test::Unit::TestCase
 
   def setup()
     @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
       iw << docs[i]
@@ -476,7 +476,7 @@ class IndexReaderTest < Test::Unit::TestCase
   end
 
   def test_ir_multivalue_fields()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     doc = Document.new()
     doc << Field.new("tag", "Ruby", Field::Store::YES, Field::Index::NO, Field::TermVector::NO)
     doc << Field.new("tag", "C", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::NO)
@@ -523,7 +523,7 @@ class IndexReaderTest < Test::Unit::TestCase
     ir.delete(0)
     ir.close()
 
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new())
     iw << doc
     iw.optimize()
     iw.close()
@@ -571,7 +571,7 @@ class IndexReaderTest < Test::Unit::TestCase
   end
 
   def test_ir_read_while_optimizing()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
       iw << docs[i]
@@ -581,7 +581,7 @@ class IndexReaderTest < Test::Unit::TestCase
     ir = IndexReader.open(@dir, false)
     do_test_term_vectors(ir)
     
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new())
     iw.optimize()
     iw.close()
 
@@ -595,7 +595,7 @@ class IndexReaderTest < Test::Unit::TestCase
                        '../../temp/fsdir')
     fs_dir = FSDirectory.get_directory(dpath, true)
 
-    iw = IndexWriter.new(fs_dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
       iw << docs[i]
@@ -605,7 +605,7 @@ class IndexReaderTest < Test::Unit::TestCase
     ir = IndexReader.open(fs_dir, false)
     do_test_term_vectors(ir)
     
-    iw = IndexWriter.new(fs_dir, WhiteSpaceAnalyzer.new(), false, false)
+    iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new())
     iw.optimize()
     iw.close()
 

@@ -64,9 +64,13 @@ rule
                   {
                     get_term_query(val[0])
                   }
-                | WORD '~' WORD
+                | WORD '~' WORD =HIGH
                   {
                     get_fuzzy_query(val[0], val[2])
+                  }
+                | WORD '~' =LOW
+                  {
+                    get_fuzzy_query(val[0])
                   }
                 ;
   wild_query    : WILD_STRING
@@ -117,16 +121,18 @@ end
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
-  attr_writer :wild_lower
+  attr_accessor :wild_lower
+
   def wild_lower?() @wild_lower end
 
 
-  def initialize(default_field, analyzer = Analysis::Analyzer.new)
+  def initialize(default_field = "", options = {})
     @yydebug = true
     @field = @default_field = default_field
-    @analyzer = analyzer
-    @wild_lower = true
-    @occur_default = BooleanClause::Occur::SHOULD
+    @analyzer = options[:analyzer] || Analysis::Analyzer.new
+    @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
+    @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
+    @default_slop = options[:default_slop] || 0
   end
 
   RESERVED = {
@@ -157,7 +163,7 @@ end
         @q.push [ RESERVED[$&]||$&, $& ]
       when /\A(\&\&|\|\|)/
         @q.push [ RESERVED[$&], $& ]
-      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[^\s\\][?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
+      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
         str = $'
         unescaped = $&.gsub(/\\(?!\\)/,"")
         @q.push [ :WILD_STRING, unescaped ]
@@ -278,11 +284,15 @@ end
     end
   end
 
-  def get_fuzzy_query(word, min_sim)
+  def get_fuzzy_query(word, min_sim = nil)
     tokens = []
     stream = @analyzer.token_stream(@field, word)
     if token = stream.next # only makes sense to look at one term for fuzzy
-      return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+      if min_sim
+        return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+      else
+        return FuzzyQuery.new(Term.new(@field, token.term_text))
+      end
     else
       return nil
     end
@@ -299,6 +309,7 @@ end
 
   def get_normal_phrase_query(positions)
     pq = PhraseQuery.new()
+    pq.slop = @default_slop
     pos_inc = 0
 
     positions.each do |position|
@@ -322,6 +333,7 @@ end
 
   def get_multi_phrase_query(positions)
     mpq = MultiPhraseQuery.new()
+    mpq.slop = @default_slop
     pos_inc = 0
 
     positions.each do |position|
@@ -416,10 +428,10 @@ end
       return clauses[0].query
     end
     bq = BooleanQuery.new()
-    clauses.each {|clause| bq << clause }
-    return bq
-  end
-
+    clauses.each {|clause|   bq << clause }
+    return bq                
+  end                        
+                             
   def get_boolean_clause(query, occur)
     return nil if query.nil?
     return BooleanClause.new(query, occur)

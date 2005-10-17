@@ -16,7 +16,7 @@ class SearchAndSortTest < Test::Unit::TestCase
 
   def setup()
     @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = [                                                             # len mod
       {"search"=>"findall","string"=>"a","int"=>"6","float"=>"0.01"},    #  4   0
       {"search"=>"findall","string"=>"c","int"=>"5","float"=>"0.1"},     #  3   3

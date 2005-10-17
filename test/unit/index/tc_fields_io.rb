@@ -16,8 +16,8 @@ class FieldsWriterTest < Test::Unit::TestCase
 
   def test_writer
     doc = Document.new
-    doc << Field.new("name", "daily news")
-    doc << Field.new("content", "Nothing happened today.")
+    doc << Field.new("name", "daily news", Field::Store::YES)
+    doc << Field.new("content", "Nothing happened today.", Field::Store::YES)
     
     infos = FieldInfos.new
     infos << doc

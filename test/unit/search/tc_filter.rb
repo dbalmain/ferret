@@ -15,7 +15,7 @@ class FilterTest < Test::Unit::TestCase
 
   def setup()
     @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = [                                                             # len mod
       {"int"=>"0","date"=>"20040601","switch"=>"on"},
       {"int"=>"1","date"=>"20041001","switch"=>"off"},

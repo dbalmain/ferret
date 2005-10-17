@@ -40,7 +40,7 @@ class SpansBasicTest < Test::Unit::TestCase
       "finish start one two three four five six seven"
     ]
     @dir = RAMDirectory.new
-    iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true)
+    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     data.each do |line|
       doc = Document.new()
       doc << Field.new("field", line, Field::Store::NO, Field::Index::TOKENIZED)

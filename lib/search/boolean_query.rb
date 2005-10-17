@@ -16,7 +16,7 @@ module Ferret::Search
     # Attempts to add more than the permitted number of clauses cause
     # TooManyClauses to be raisen.
     attr_accessor :max_clause_count
-    attr_reader :clauses
+    attr_accessor :clauses
     DEFAULT_MAX_CLAUSE_COUNT = 1024
 
     @@max_clause_count = DEFAULT_MAX_CLAUSE_COUNT

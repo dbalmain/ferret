@@ -25,16 +25,16 @@ class QueryParserTest < Test::Unit::TestCase
       ['field:"one|two three|four|five six|seven"', 'field:"one|two three|four|five six|seven"'],
       ['[aaa bbb]', '[aaa bbb]'],
       ['{aaa bbb]', '{aaa bbb]'],
-      ['[aaa bbb}', '[aaa bbb}'],
+      ['field:[aaa bbb}', 'field:[aaa bbb}'],
       ['{aaa bbb}', '{aaa bbb}'],
       ['{aaa|', '{aaa|'],
       ['[aaa|', '[aaa|'],
-      ['|aaa}', '|aaa}'],
+      ['field:|aaa}', 'field:|aaa}'],
       ['|aaa]', '|aaa]'],
       ['>aaa', '{aaa|'],
       ['>=aaa', '[aaa|'],
       ['<aaa', '|aaa}'],
-      ['<=aaa', '|aaa]'],
+      ['field:<=aaa', 'field:|aaa]'],
       ['REQ one REQ two', '+one +two'],
       ['REQ one two', '+one two'],
       ['one REQ two', 'one +two'],
@@ -74,6 +74,8 @@ class QueryParserTest < Test::Unit::TestCase
       ['ab?de', 'ab?de'],
       ['ab*de', 'ab*de'],
       ['asdf?*?asd*dsf?asfd*asdf?', 'asdf?*?asd*dsf?asfd*asdf?'],
+      ['field:a* AND field:(b*)', '+field:a* +field:b*'],
+      ['field:abc~ AND field:(b*)', '+field:abc~0.5 +field:b*'],
       ['asdf?*?asd*dsf?asfd*asdf?^20.0', 'asdf?*?asd*dsf?asfd*asdf?^20.0']
     ]
 

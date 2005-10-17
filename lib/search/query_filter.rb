@@ -33,7 +33,7 @@ module Ferret::Search
 
       bits = BitVector.new()
 
-      IndexSearcher.new(reader).search_collect(@query) do |doc, score|
+      IndexSearcher.new(reader).search_each(@query) do |doc, score|
         bits.set(doc)  # set bit for hit
       end
 

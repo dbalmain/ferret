@@ -6,8 +6,7 @@ module Ferret::Search
   # or @link #search(Query,Filter)endmethods. For performance reasons it is 
   # recommended to open only one IndexSearcher and use it for all of your searches.
   class IndexSearcher
-    attr_accessor :similarity
-    attr_reader :reader
+    attr_accessor :similarity, :reader
 
     # Creates a searcher searching the index in the provided directory. 
     def initialize(arg)
@@ -32,40 +31,57 @@ module Ferret::Search
       @reader.close()
     end
 
+    # Expert: Returns the number of documents containing +term+.
+    # Called by search code to compute term weights.
+    # See IndexReader#doc_freq
     def doc_freq(term)
       return @reader.doc_freq(term)
     end
 
+    # Expert: For each term in the terms array, calculates the number of
+    # documents containing +term+. Returns an array with these
+    # document frequencies. Used to minimize number of remote calls.
     def doc_freqs(terms)
       result = Array.new(terms.length)
       terms.each_with_index {|term, i| result[i] = doc_freq(term)}
       return result
     end
 
+    # Expert: Returns the stored fields of document +i+.
+    # Called by HitCollector implementations.
+    # See IndexReader#get_document
     def doc(i)
       return @reader.document(i)
     end
 
+    # Expert: Returns one greater than the largest possible document number.
+    # Called by search code to compute term weights.
+    # See IndexReader#max_doc
     def max_doc()
       return @reader.max_doc()
     end
 
+    # Creates a weight for +query+
+    # returns:: new weight
     def create_weight(query)
       return query.weight(self)
     end
 
     # The main search method for the index. You need to create a query to
     # pass to this method. You can also pass a hash with one or more of the
-    # following; {filter, num_docs, sort}
+    # following; {filter, num_docs, first_doc, sort}
     #
     # query::    the query to run on the index
     # filter::   filters docs from the search result
-    # num_docs:: the number of docs to return. The default is 10.
+    # first_doc:: The index in the results of the first doc retrieved.
+    #    Default is 0
+    # num_docs:: The number of results returned. Default is 10
     # sort::     an array of SortFields describing how to sort the results.
-    def search(query, args = {})
-      filter = args[:filter]
-      num_docs = args[:num_docs]||10
-      sort = args[:sort]
+    def search(query, options = {})
+      filter = options[:filter]
+      first_doc = options[:first_doc]||0
+      num_docs = options[:num_docs]||10
+      sort = options[:sort]
 
       if (num_docs <= 0)  # nil might be returned from hq.top() below.
         raise ArgumentError, "num_docs must be > 0 to run a search"
@@ -79,9 +95,9 @@ module Ferret::Search
       bits = (filter.nil? ? nil : filter.bits(@reader))
       if (sort)
         fields = sort.is_a?(Array) ? sort : sort.fields
-        hq = FieldSortedHitQueue.new(@reader, fields, num_docs)
+        hq = FieldSortedHitQueue.new(@reader, fields, num_docs + first_doc)
       else
-        hq = HitQueue.new(num_docs)
+        hq = HitQueue.new(num_docs + first_doc)
       end
       total_hits = 0
       min_score = 0.0
@@ -96,14 +112,26 @@ module Ferret::Search
       end
 
       score_docs = Array.new(hq.size)
-      (hq.size - 1).downto(0) do |i|
-        score_docs[i] = hq.pop
+      if (hq.size > first_doc)
+        score_docs = Array.new(hq.size - first_doc)
+        first_doc.times { hq.pop }
+        (hq.size - 1).downto(0) do |i|
+          score_docs[i] = hq.pop
+        end
+      else
+        score_docs = []
+        hq.clear
       end
 
       return TopDocs.new(total_hits, score_docs)
     end
 
-    def search_collect(query, filter = nil)
+    # Accepts a block and iterates through all of results yielding the doc
+    # number and the score for that hit. The hits are unsorted. This is the
+    # fastest way to get all of the hits from a search. However, you will
+    # usually want your hits sorted at least by score so you should use the
+    # #search method.
+    def search_each(query, filter = nil)
       scorer = query.weight(self).scorer(@reader)
       return if scorer == nil
       bits = (filter.nil? ? nil : filter.bits(@reader))
@@ -114,25 +142,11 @@ module Ferret::Search
       end
     end
 
-#      def search(query, filter, results)
-#        HitCollector collector = results
-#        if (filter != nil) 
-#          final BitSet bits = filter.bits(@reader)
-#          collector = HitCollector.new() 
-#              def collect(doc, score) 
-#                if (bits.get(doc)) # skip docs not in bits
-#                  results.collect(doc, score)
-#                end
-#              end
-#            end
-#        end
-#
-#        Scorer scorer = query.weight(this).scorer(@reader)
-#        if (scorer == nil)
-#          return
-#        scorer.score(collector)
-#      end
-
+    # rewrites the query into a query that can be processed by the search
+    # methods. For example, a Fuzzy query is turned into a massive boolean
+    # query.
+    #
+    # original:: The original query to be rewritten.
     def rewrite(original)
       query = original
       rewritten_query = query.rewrite(@reader)
@@ -143,6 +157,13 @@ module Ferret::Search
       return query
     end
 
+    # Returns an Explanation that describes how +doc+ scored against
+    # +query+.
+    # 
+    # This is intended to be used in developing Similarity implementations,
+    # and, for good performance, should not be displayed with every hit.
+    # Computing an explanation is as expensive as executing the query over the
+    # entire index.
     def explain(query, doc)
       return query.weight(self).explain(@reader, doc)
     end
