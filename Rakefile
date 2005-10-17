@@ -38,12 +38,7 @@ Rake::TestTask.new("test_functional") { |t|
 desc "Report code statistics (KLOCS, etc) from application"
 task :stats do
   CodeStatistics.new(
-                      ["Store", "lib/store"],
-                      ["Index", "lib/index"],
-                      ["Analysis", "lib/analysis"],
-                      ["Utils", "lib/utils"],
-                      ["Search", "lib/search"],
-                      ["Document", "lib/document"],
+                      ["Ferret", "lib/ferret"],
                       ["Units", "test/unit"],
                       ["Units-extended", "test/longrunning"]
                     ).to_s

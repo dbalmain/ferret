@@ -1,7 +1,0 @@
-require 'utils/string_helper'
-require 'utils/parameter'
-require 'utils/priority_queue'
-require 'utils/bit_vector'
-require 'utils/date_tools'
-require 'utils/number_tools'
-require 'utils/weak_key_hash'

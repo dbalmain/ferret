@@ -1,5 +1,3 @@
-$:.unshift File.join(File.dirname(__FILE__), '../ext')
-
 #--
 # Copyright (c) 2005 David Balmain
 #
@@ -22,19 +20,22 @@ $:.unshift File.join(File.dirname(__FILE__), '../ext')
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
-# :include: ../README
+# :include: ../../README
 module Ferret
   VERSION="0.1"
 end
 
-require 'utils'
-require 'document'
-require 'stemmers'
-require 'analysis'
-require 'store'
-require 'query_parser'
-require 'index'
-require 'search'
-if File.exist?(File.join(File.dirname(__FILE__), '../ext/extensions.so'))
+require 'ferret/utils'
+require 'ferret/document'
+require 'ferret/stemmers'
+require 'ferret/analysis'
+require 'ferret/store'
+require 'ferret/query_parser'
+require 'ferret/index'
+require 'ferret/search'
+
+# try and load the C extension but it isn't necessary.
+begin
   require 'extensions'
+rescue Exception => e 
 end

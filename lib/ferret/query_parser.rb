@@ -268,4 +268,4 @@ module Ferret
   end
 end
 
-require 'query_parser/query_parser.tab.rb'
+require 'ferret/query_parser/query_parser.tab.rb'

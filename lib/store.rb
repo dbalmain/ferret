@@ -1,5 +1,0 @@
-require 'store/directory'
-require 'store/index_io'
-require 'store/buffered_index_io'
-require 'store/fs_store'
-require 'store/ram_store'
