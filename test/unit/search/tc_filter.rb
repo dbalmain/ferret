@@ -1,10 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
 
 class FilterTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Search
+  include Ferret::Analysis
+  include Ferret::Index
+
   def add_doc(hash, writer)
     doc = Document.new()
     hash.each_pair do |field, text|
@@ -14,9 +16,11 @@ class FilterTest < Test::Unit::TestCase
   end
 
   def setup()
-    @dir = RAMDirectory.new()
-    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
-    docs = [                                                             # len mod
+    @dir = Ferret::Store::RAMDirectory.new()
+    iw = IndexWriter.new(@dir,
+                         :analyzer => WhiteSpaceAnalyzer.new(),
+                         :create => true)
+    docs = [ 
       {"int"=>"0","date"=>"20040601","switch"=>"on"},
       {"int"=>"1","date"=>"20041001","switch"=>"off"},
       {"int"=>"2","date"=>"20051101","switch"=>"on"},

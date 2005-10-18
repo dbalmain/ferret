@@ -1,10 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
-
 class SearchAndSortTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Search
+  include Ferret::Store
+  include Ferret::Analysis
+  include Ferret::Index
+
   def add_doc(hash, writer)
     doc = Document.new()
     hash.each_pair do |field, text|

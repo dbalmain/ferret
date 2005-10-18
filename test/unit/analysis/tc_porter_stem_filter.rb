@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class PorterStemFilterTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_porterstempfilter()
     input = StringReader.new('breath Breathes BreatHed BREATHING')
     t = PorterStemFilter.new(LowerCaseFilter.new(WhiteSpaceTokenizer.new(input)))

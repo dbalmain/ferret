@@ -2,9 +2,6 @@ $:.unshift File.join(File.dirname(__FILE__), '../../lib')
 
 require 'ferret'
 
-include Ferret::Store
-
-
 vints = [ 9223372036854775807,
           0x00,
           0xFFFFFFFFFFFFFFFF]
@@ -12,7 +9,7 @@ t = Time.new
 10.times do
   dpath = File.join(File.dirname(__FILE__),
                        'fsdir')
-  dir = FSDirectory.get_directory(dpath, true)
+  dir = Ferret::Store::FSDirectory.get_directory(dpath, true)
 
   100.times do
     ostream = dir.create_output("rw_vint.test")

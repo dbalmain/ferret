@@ -1,12 +1,11 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
-
 class MultipleTermDocPosEnumTest < Test::Unit::TestCase
+  include Ferret::Search
+  include Ferret::Analysis
+
   def setup()
-    @dir = RAMDirectory.new()
+    @dir = Ferret::Store::RAMDirectory.new()
     iw = IndexWriter.new(@dir, WhiteSpaceAnalyzer.new(), true, false)
     @documents = IndexTestHelper.prepare_search_docs()
     @documents.each { |doc| iw << doc }

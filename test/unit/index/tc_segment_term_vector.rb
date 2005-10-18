@@ -1,8 +1,10 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class SegmentTermVectorTest < Test::Unit::TestCase
+
+  include Ferret::Index
+
   def setup()
     @terms = ["Apples", "Oranges", "Bananas", "Kiwis", "Mandarins"]
     term_freqs = [4,2,1,12,4]
@@ -25,6 +27,9 @@ class SegmentTermVectorTest < Test::Unit::TestCase
 end
 
 class SegmentTermVectorWithPosOffsetsTest < Test::Unit::TestCase
+
+  include Ferret::Index
+
   def setup()
     @terms = ["Apples", "Oranges", "Bananas", "Kiwis", "Mandarins"]
     term_freqs = [4,2,1,12,4]

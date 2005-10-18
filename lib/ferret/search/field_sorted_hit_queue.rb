@@ -3,7 +3,7 @@ require 'monitor'
 module Ferret::Search
   # Expert: A hit queue for sorting by hits by terms in more than one field.
   # Uses +FieldCache+ for maintaining internal term lookup tables.
-  class FieldSortedHitQueue < PriorityQueue 
+  class FieldSortedHitQueue < Ferret::Utils::PriorityQueue 
     # Stores a comparator corresponding to each field being sorted by 
     attr_accessor :comparators
 
@@ -83,7 +83,7 @@ module Ferret::Search
 
     # Internal cache of comparators. Similar to FieldCache, only
     # caches comparators instead of term values. 
-    @@comparators = WeakKeyHash.new.extend(MonitorMixin)
+    @@comparators = Ferret::Utils::WeakKeyHash.new.extend(MonitorMixin)
 
     # Returns a comparator if it is in the cache. 
     def lookup(reader, field, sort_type, comproc) 

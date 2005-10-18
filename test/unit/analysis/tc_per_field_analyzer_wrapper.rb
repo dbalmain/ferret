@@ -1,7 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class PerFieldAnalyzerWrapperTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
   def test_perfieldanalyzerwrapper()
     aw = PerFieldAnalyzerWrapper.new(Analyzer.new())
     aw.add_analyzer("abstract", WhiteSpaceAnalyzer.new())

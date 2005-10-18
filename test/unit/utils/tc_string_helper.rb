@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Utils::StringHelper
 
 class StringHelperTest < Test::Unit::TestCase
+  include Ferret::Utils::StringHelper
+
   def test_string_difference()
     assert_equal(3, string_difference("David", "Dave"))
     assert_equal(0, string_difference("David", "Erik"))

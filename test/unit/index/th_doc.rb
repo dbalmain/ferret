@@ -1,9 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Document
-include Ferret::Index
 
 module IndexTestHelper
+  include Ferret::Document
+  include Ferret::Index
+  include Ferret::Analysis
+  include Ferret::Search
+
   def IndexTestHelper.make_binary(size)
     tmp = Array.new(size)
     size.times {|i| tmp[i] = i%256 }
@@ -14,7 +17,7 @@ module IndexTestHelper
   COMPRESSED_BINARY_DATA = IndexTestHelper.make_binary(56)
 
   def IndexTestHelper.prepare_document
-    doc = Document::Document.new()
+    doc = Document.new()
 
     doc << Field.new("text_field1", "field one text", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::NO)
     doc << Field.new("text_field2", "field field field two text", Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
@@ -43,7 +46,7 @@ module IndexTestHelper
     docs = []
 
     data.each do |food|
-      doc = Document::Document.new()
+      doc = Document.new()
       doc << Field.new("name", food[0], Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
       doc << Field.new("colour", food[1], Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
       docs << doc
@@ -99,7 +102,7 @@ module IndexTestHelper
     docs = []
 
     books.each do |book|
-      doc = Document::Document.new()
+      doc = Document.new()
       doc << Field.new("author", book["author"], Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
       doc << Field.new("title", book["title"], Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
       doc << Field.new("year", book["year"], Field::Store::YES, Field::Index::NO, Field::TermVector::NO)
@@ -227,7 +230,7 @@ module IndexTestHelper
 
     docs = []
     data.each_with_index do |fields, i|
-      doc = Document::Document.new()
+      doc = Document.new()
       doc.boost = i+1
 
       fields.each_pair do |field, text|

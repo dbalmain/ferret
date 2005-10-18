@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Utils
 
 class WeakKeyHashTest < Test::Unit::TestCase
+  include Ferret::Utils
+
   def test_marshalling()
     w = WeakKeyHash.new()
     a = []

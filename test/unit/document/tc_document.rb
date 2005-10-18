@@ -1,8 +1,7 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Document
-
 class DocumentTest < Test::Unit::TestCase
+  include Ferret::Document
   def test_document()
     doc = Document.new()
     f11 = Field.new("field1", "value1", Field::Store::YES, Field::Index::NO)

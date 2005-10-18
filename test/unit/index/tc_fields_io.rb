@@ -1,13 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
-include Ferret::Document
-include Ferret::Store
-
 class FieldsWriterTest < Test::Unit::TestCase
 
+  include Ferret::Index
+  include Ferret::Document
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -48,8 +47,11 @@ end
 
 class FieldsReaderTest < Test::Unit::TestCase
 
+  include Ferret::Index
+  include Ferret::Document
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -87,8 +89,12 @@ class FieldsReaderTest < Test::Unit::TestCase
 end
 
 class FieldsIOTest < Test::Unit::TestCase
+
+  include Ferret::Index
+  include Ferret::Document
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
     doc = IndexTestHelper.prepare_document()
     infos = FieldInfos.new
     infos << doc

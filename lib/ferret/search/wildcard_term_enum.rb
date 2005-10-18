@@ -6,6 +6,8 @@ module Ferret::Search
   # the enumeration is greater than all that precede it.
   # 
   class WildcardTermEnum < FilteredTermEnum 
+    include Ferret::Index
+
     attr_reader :end_enum
 
     WILDCARD_STRING = '*'

@@ -1,5 +1,6 @@
 module Ferret::Search::Spans
-  class SpanScorer < Scorer 
+  class SpanScorer < Ferret::Search::Scorer 
+    include Ferret::Search
 
     def initialize(spans, weight, similarity, norms)
       @first_time = true
@@ -37,7 +38,8 @@ module Ferret::Search::Spans
 
     def score()
       raw = similarity().tf(@freq) * @value           # raw score
-      return raw * Similarity.decode_norm(@norms[@doc]) # normalize
+      # normalize
+      return raw * Similarity.decode_norm(@norms[@doc])
     end
 
     def skip_to(target)

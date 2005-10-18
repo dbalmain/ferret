@@ -1,9 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
-include Ferret::Analysis
-
 module IndexReaderCommon
+
+  include Ferret::Index
+  include Ferret::Analysis
 
   def test_index_reader
 
@@ -424,7 +424,7 @@ class SegmentReaderTest < Test::Unit::TestCase
   include IndexReaderCommon
 
   def setup()
-    @dir = RAMDirectory.new()
+    @dir = Ferret::Store::RAMDirectory.new()
     iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
@@ -447,7 +447,7 @@ class MultiReaderTest < Test::Unit::TestCase
   include IndexReaderCommon
 
   def setup()
-    @dir = RAMDirectory.new()
+    @dir = Ferret::Store::RAMDirectory.new()
     iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()
     IndexTestHelper::IR_TEST_DOC_CNT.times do |i|
@@ -467,8 +467,12 @@ class MultiReaderTest < Test::Unit::TestCase
 end
 
 class IndexReaderTest < Test::Unit::TestCase
+  include Ferret::Index
+  include Ferret::Analysis
+  include Ferret::Document
+
   def setup()
-    @dir = RAMDirectory.new()
+    @dir = Ferret::Store::RAMDirectory.new()
   end
 
   def tear_down()
@@ -593,7 +597,7 @@ class IndexReaderTest < Test::Unit::TestCase
   def test_ir_read_while_optimizing_on_disk()
     dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    fs_dir = FSDirectory.get_directory(dpath, true)
+    fs_dir = Ferret::Store::FSDirectory.get_directory(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()

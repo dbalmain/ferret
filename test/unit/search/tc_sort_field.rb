@@ -1,6 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
 class SortFieldTest < Test::Unit::TestCase
+  include Ferret::Search
+
   def test_field_score()
     fs = SortField::FIELD_SCORE
     assert_equal(SortField::SortType::SCORE, fs.sort_type)

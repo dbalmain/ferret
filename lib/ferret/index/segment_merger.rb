@@ -1,5 +1,5 @@
-include Ferret::Store
 module Ferret::Index
+
   # The SegmentMerger class combines two or more Segments, represented by
   # an IndexReader#add, into a single Segment.  After adding the
   # appropriate readers, call the merge method to combine the segments.
@@ -22,7 +22,8 @@ module Ferret::Index
       @term_infos_writer = nil
       @queue = nil
       @term_info = TermInfo.new()
-      @skip_buffer = RAMDirectory::RAMIndexOutput.new(RAMDirectory::RAMFile.new(""))
+      @skip_buffer = Ferret::Store::RAMDirectory::RAMIndexOutput.new(
+                          Ferret::Store::RAMDirectory::RAMFile.new(""))
     end
 
     # Add an IndexReader to the collection of readers that are to be merged

@@ -1,9 +1,10 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
-include Ferret::Analysis
 
 class IndexTest < Test::Unit::TestCase
+  include Ferret::Index
+  include Ferret::Analysis
+
   def setup()
     @qp = Ferret::QueryParser.new()
   end

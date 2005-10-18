@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Document
 
 class DateToolsTest < Test::Unit::TestCase
+  include Ferret::Utils
+
   def test_serialization()
     # grab time to the nearest millisecond
     t = Time.at((Time.now().to_i*1000).floor()/1000)

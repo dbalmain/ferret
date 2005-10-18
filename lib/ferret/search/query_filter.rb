@@ -21,7 +21,7 @@ module Ferret::Search
     def bits(reader)
 
       if (@cache == nil) 
-        @cache = WeakKeyHash.new.extend(MonitorMixin)
+        @cache = Ferret::Utils::WeakKeyHash.new.extend(MonitorMixin)
       end
 
       @cache.synchronize() do # check cache
@@ -31,7 +31,7 @@ module Ferret::Search
         end
       end
 
-      bits = BitVector.new()
+      bits = Ferret::Utils::BitVector.new()
 
       IndexSearcher.new(reader).search_each(@query) do |doc, score|
         bits.set(doc)  # set bit for hit

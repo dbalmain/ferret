@@ -1,7 +1,7 @@
 #include "ferret.h"
 
 void
-Init_extensions(void)
+Init_ferret_ext(void)
 {
   // IDs
 	frt_newobj = rb_intern("new");

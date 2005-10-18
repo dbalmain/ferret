@@ -2,6 +2,8 @@ module Ferret::Search
   # A Query that matches documents within an exclusive range. A RangeQuery
   # is built by QueryParser for input like +[010 120]+.
   class RangeQuery < Query
+    include Ferret::Index
+
     attr_reader :lower_term, :upper_term
 
     # Constructs a query selecting all terms greater than

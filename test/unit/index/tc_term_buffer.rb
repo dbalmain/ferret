@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class TermBufferTest < Test::Unit::TestCase
+  include Ferret::Index
   def test_term_set()
     t = Term.new("title", "Ferret Tutorial")
     tb = TermBuffer.new
@@ -37,7 +37,7 @@ class TermBufferTest < Test::Unit::TestCase
   end
 
   def test_read()
-    dir = RAMDirectory.new
+    dir = Ferret::Store::RAMDirectory.new
     fi = FieldInfos.new
     tb = TermBuffer.new
     tb.term = Term.new("Author", "Dave")

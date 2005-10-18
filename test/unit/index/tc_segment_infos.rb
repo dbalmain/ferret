@@ -1,10 +1,11 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class SegmentInfosTest < Test::Unit::TestCase
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -44,8 +45,10 @@ class SegmentInfosTest < Test::Unit::TestCase
 end
 
 class SegmentInfoTest < Test::Unit::TestCase
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -60,7 +63,7 @@ class SegmentInfoTest < Test::Unit::TestCase
     assert_equal(si.name, "seg1")
     @dir.close()
     @dpath = File.dirname(__FILE__) + '/../../temp/fsdir'
-    @dir = FSDirectory.get_directory(@dpath, true)
+    @dir = Ferret::Store::FSDirectory.get_directory(@dpath, true)
     si.name = "seg2"
     si.doc_count += 2
     si.directory = @dir

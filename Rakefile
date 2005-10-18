@@ -51,5 +51,7 @@ Rake::RDocTask.new("appdoc") do |rdoc|
   rdoc.options << '--line-numbers --inline-source'
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('TODO')
+  rdoc.rdoc_files.include('TUTORIAL')
+  rdoc.rdoc_files.include('MIT-LICENCE')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end

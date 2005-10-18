@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class TermInfosIOTest < Test::Unit::TestCase
+  include Ferret::Index
+
   DICT = [ "duad", "dual", "dualism", "dualist", "duality", "dualize", "duan",
       "duarchy", "dub", "dubber", "dubbin", "dubbing", "dubiety", "dubiosity",
       "dubious", "dubiously", "dubiousness", "dubitate", "dubitation", "dubnium",
@@ -51,7 +52,7 @@ class TermInfosIOTest < Test::Unit::TestCase
   TEST_SEGMENT = "_test"
 
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()

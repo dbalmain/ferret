@@ -50,7 +50,7 @@ module Ferret::Search::Spans
       def next?
         if (@count == @freq) 
           if not @positions.next?
-            @doc = Scorer::MAX_DOCS
+            @doc = Ferret::Search::Scorer::MAX_DOCS
             return false
           end
           @doc = @positions.doc()
@@ -69,7 +69,7 @@ module Ferret::Search::Spans
         end
 
         if not @positions.skip_to(target)
-          @doc = Scorer::MAX_DOCS
+          @doc = Ferret::Search::Scorer::MAX_DOCS
           return false
         end
 
@@ -92,11 +92,14 @@ module Ferret::Search::Spans
         if @doc < 0
           buffer << "START"
         else
-          buffer << (@doc==Scorer::MAX_DOCS ? "END" : "#{@doc}-#{@position}")
+          if @doc == Ferret::Search::Scorer::MAX_DOCS
+            buffer << "END"
+          else
+            buffer << "#{@doc}-#{@position}"
+          end
         end
         return buffer
       end
     end
-
   end
 end

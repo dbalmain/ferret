@@ -127,7 +127,7 @@ module Ferret::Search
       end
     end
     
-    class ScoreTermQueue < PriorityQueue 
+    class ScoreTermQueue < Ferret::Utils::PriorityQueue 
       
       # See PriorityQueue#less_than(o1, o2)
       def less_than(st1, st2) 

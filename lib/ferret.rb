@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
-# :include: ../../README
+# :include: ../TUTORIAL
 module Ferret
   VERSION="0.1"
 end
@@ -30,12 +30,12 @@ require 'ferret/document'
 require 'ferret/stemmers'
 require 'ferret/analysis'
 require 'ferret/store'
-require 'ferret/query_parser'
 require 'ferret/index'
 require 'ferret/search'
+require 'ferret/query_parser'
 
 # try and load the C extension but it isn't necessary.
 begin
-  require 'extensions'
+  require 'ferret_ext'
 rescue Exception => e 
 end

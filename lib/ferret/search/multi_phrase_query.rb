@@ -9,6 +9,8 @@ module Ferret::Search
   # 
   # Author Anders Nielsen
   class MultiPhraseQuery < Query 
+    include Ferret::Index
+
     attr_accessor :slop
     attr_reader :positions, :term_arrays, :field
 
@@ -51,6 +53,7 @@ module Ferret::Search
     alias :<< :add
     
     class MultiPhraseWeight < Weight 
+      include Ferret::Index
 
       attr_reader :query, :value
 

@@ -1,178 +1,44 @@
-== Ferret
+= Ferret
 
 Ferret is a Ruby port of the Java Lucene search engine.
 (http://jakarta.apache.org/lucene/) In the same way as Lucene, it is not a
 standalone application, but a library you can use to index documents and
 search for things in them later.
 
-== Quick Introduction to Ferret
+== Requirements
 
-The simplest way to use Ferret is through the Ferret::Index::Index class.
-Start by including the Ferret module.
+* Ruby 1.8
+* (C compiler to build the extension but not required to use Ferret)
 
-  require 'ferret'
-  include Ferret
+== Installation
 
-=== Creating an index
+De-compress the archive and enter its top directory.
 
-To create an in memory index is very simple;
+  tar zxpvf ferret-0.1.tar.gz
+  cd ferret-0.1
+
+Then to compile the C extension type:
+
+  $ ruby setup.rb config
+  $ ruby setup.rb setup
+
+If you don't have a C compiler, never mind. Just go straight to the next step.
+On *nix you'll need to run this with root privalages. Type;
+
+  # ruby setup.rb install
   
-  index = Index::Index.new()
+These simple steps install ferret in the default location of Ruby libraries.
+You can also install files into your favorite directory by supplying setup.rb
+some options. Try;
 
-To create a persistent index;
-
-  index = Index::Index.new(:path => '/path/to/index')
-
-Both of these methods create new Indexes with the StandardAnalyzer. An
-analyzer is what you use to divide the input data up into tokens which you can
-search for later. If you'd like to use a different analyzer you can specify it
-here, eg;
-
-  index = Index::Index.new(:path => '/path/to/index',
-                           :analyzer => WhiteSpaceAnalyzer.new)
-
-For more options when creating an Index refer to Ferret::Index::Index.
-
-=== Adding Documents
-
-To add a document you can simply add a string or an array of strings.
-
-  index << "This is a new document to be indexed"
-  index << ["And here", "is another", "new document", "to be indexed"]
-
-But these are pretty simple documents. If this is all you want to index you
-could probably just use SimpleSearch. So let's give our documents some fields;
-
-  index << {:title => "Programming Ruby", :content => "blah blah blah"}
-  index << {:title => "Programming Ruby", :content => "yada yada yada"}
-
-Or if you are indexing data stored in a database, you'll probably want to
-store the id;
-
-  index << {:id => row.id, :title => row.title, :date => row.date}
-
-The methods above while store all of the input data as well tokenizing and
-indexing it. Sometimes we won't want to tokenize (divide the string into
-tokens) the data. For example, we might want to leave the title as a complete
-string and only allow searchs for that complete string. Sometimes we won't
-want to store the data as it's already stored in the database so it'll be a
-waste to store it in the index. Or perhaps we are doing without a database and 
-using Ferret to store all of our data, in which case we might not want to
-index it. For example, if we are storing images in the index, we won't want to
-index them. All of this can be done using Ferret's Ferret::Document module.
-eg;
-
-  doc = Document.new
-  doc << Field.new("id",    row.id,    Field::Store::NO,  Field::Index::UNTOKENIZED)
-  doc << Field.new("title", row.title, Field::Store::YES, Field::Index::UNTOKENIZED)
-  doc << Field.new("data",  row.data,  Field::Store::YES, Field::Index::TOKENIZED)
-  doc << Field.new("image", row.image, Field::Store::YES, Field::Index::NO)
-  index << doc
-
-You can also compress the data that you are storing or store term vectors with
-the data. Read more about this in Ferret::Document::Field.
-
-=== Searching
-
-Now that we have data in our index, how do we actually use this index to
-search the data? The Index offers two search methods, Index#search and
-Index#search_each. The first method returns a Ferret::Index::TopDocs object.
-The second we'll show here. Lets say we wanted to find all documents with the
-phrase "quick brown fox" in the content field. We'd write;
-
-  index.search('content:"quick brown fox"') do |doc, score|
-    puts "Document #{doc} found with a score of #{score}"
-  end
-
-But "fast" has a pretty similar meaning to "quick" and we don't mind if the
-fox is a little red. So we could expand our search like this;
-
-  index.search('content:"quick|fast brown|red fox"') do |doc, score|
-    puts "Document #{doc} found with a score of #{score}"
-  end
-
-What if we want to find all documents entered on or after 5th of September,
-2005 with the words "ruby" or "rails" in it. We could type something like;
-
-  index.search('date:( >= 20050905) content:(ruby OR rails)') do |doc, score|
-    puts "Document #{doc} found with a score of #{score}"
-  end
-
-Ferret has quite a complex query language. To find out more about Ferret's
-query language, see Ferret::QueryParser. You can also construct even more
-complex queries like Ferret::Search::Spans by hand. See Ferret::Search::Query
-for more information.
-
-=== Accessing Documents
-
-You may have noticed that when we run a search we only get the document number
-back. By itself this isn't much use to us. Getting the data from the index is
-very straightforward. For example if we want the title field form the 3rd
-document type;
-  
-  index[2]["title"]
-
-NOTE: documents are indexed from 0.
-
-Let's go back to the database example above. If we store all of our documents
-with an id then we can access that field using the id. As long as we called
-our id field "id" we can do this
-
-  id = "89721347"
-  index[id]["title"]
-
-If however we called our id field "key" we'll have to do this;
-
-  id = Term.new("key", "89721347")
-  index[id]["title"]
-
-Pretty simple huh? You should note though that if there are more then one
-document with the same *id* or *key* then only the first one will be returned
-so it is probably better that you ensure the key is unique somehow. (Ferret
-cannot do that for you)
+ $ ruby setup.rb --help
 
 
-=== Modifying and Deleting Documents
+== Usage
 
-What if we want to change the data in the index. Ferret doesn't actually let
-you change the data once it is in the index. But you can delete documents so
-the standard way to modify data is to delete it and re-add it again with the
-modifications made. It is important to note that when doing this the documents
-will get a new document number so you should be careful not to use a document
-number after the document has been deleted. Here is an examle of modifying a
-document;
-
-  index << {:title => "Programing Rbuy", :content => "blah blah blah"}
-  doc_num = nil
-  index.search('title:"Programing Rbuy"') {|doc, score| doc_num = doc}
-  return unless doc_num
-  doc = index[doc_num]
-  index.delete(doc_num)
-
-  # modify doc
-  doc["title"] = "Programming Ruby"
-
-  index << doc
-
-Again, we can use the the id field as above. This time though every document
-that matches the id will be deleted. Again, it is probably a good idea if you
-somehow ensure that your *ids* are kept unique.
-
-  id = "23453422"
-  index.delete(id)
-
-Or;
-
-  id = Term.new("key", "23452345")
-  index.delete(id)
-  
-=== Onwards
-
-This is just a small sampling of what Ferret allows you to do.  Ferret, like
-Lucene, is designed to be extended, and allows you to construct your own query
-types, analyzers, and so on. Future versions of Ferret will contain more of
-these, as well as instructions for how to subclass the base modules to create
-your own. For now you can look in the following places for more documentation;
+You can read the TUTORIAL which you'll find in the same directory as this
+README. You can also check the following modules for more specific
+documentation.
 
 * Ferret::Analysis: for more information on how the data is processed when it
   is tokenized. There are a number of things you can do with your data such as

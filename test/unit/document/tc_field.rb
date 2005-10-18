@@ -1,9 +1,10 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Document
-include Ferret::Utils
 
 class FieldTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Utils
+
   def test_store()
     assert_equal("COMPRESS", Field::Store::COMPRESS.to_s)
     assert_equal("YES", Field::Store::YES.to_s)

@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class WordListLoaderTest < Test::Unit::TestCase
+  include Ferret::Analysis
   def test_word_set_from_file()
     wl = WordListLoader.word_set_from_file(File.dirname(__FILE__) + '/data/wordfile')
     assert_equal(6, wl.size())

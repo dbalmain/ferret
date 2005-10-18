@@ -1,11 +1,11 @@
 require 'monitor'
-include Ferret::Store
 
 module Ferret::Index
+
   # Class for accessing a compound stream.
   # This class implements a directory, but is limited to only read operations.
   # Directory methods that would normally modify data raise.
-  class CompoundFileReader < Directory
+  class CompoundFileReader < Ferret::Store::Directory
 
     include MonitorMixin
 
@@ -187,7 +187,6 @@ module Ferret::Index
   # contains an encoding identifier, a long pointer to the start of this file's
   # data section, and a UTF String with that file's extension.
   class CompoundFileWriter
-    BUFFER_SIZE = 1024
 
     attr_reader :directory, :file_name
 
@@ -311,9 +310,9 @@ module Ferret::Index
           is = @directory.open_input(source.file_name)
           remainder = length = is.length
 
-          buffer = BUFFER.clone
+          buffer = Ferret::Store::BUFFER.clone
           while (remainder > 0)
-            len = [remainder, BUFFER_SIZE].min
+            len = [remainder, Ferret::Store::BUFFER_SIZE].min
             is.read_bytes(buffer, 0, len)
             os.write_bytes(buffer, len)
             remainder -= len
@@ -324,7 +323,7 @@ module Ferret::Index
             raise(IOError,
               "Non-zero remainder length after copying: " + remainder.to_s +
                 " (id: " + source.file_name + ", length: " + length.to_s +
-                ", buffer size: " + BUFFER_SIZE.to_s + ")")
+                ", buffer size: " + Ferret::Store::BUFFER_SIZE.to_s + ")")
           end
 
           # Verify that the output length diff is equal to original file

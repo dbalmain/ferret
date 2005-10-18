@@ -226,6 +226,9 @@ module Ferret
   # get_boolean_query::       Called with an array of clauses.
   #
   class QueryParser < Racc::Parser
+    include Ferret::Search
+    include Ferret::Index
+
     # Create a new QueryParser.
     #
     # default_field:: all queries without a specified query string are run on

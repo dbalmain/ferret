@@ -1,10 +1,10 @@
-include Ferret::Utils
 
 module Ferret::Search
+
   # A clause in a BooleanQuery. 
   class BooleanClause
     
-    class Occur < Parameter
+    class Occur < Ferret::Utils::Parameter
       
       def to_s() 
         return "+" if (self == MUST)

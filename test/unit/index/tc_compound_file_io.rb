@@ -1,12 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
-include Ferret::Store
 
 class CompoundFileWriterTest < Test::Unit::TestCase
 
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -38,8 +38,10 @@ end
 
 class CompoundFileReaderTest < Test::Unit::TestCase
 
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()
@@ -71,8 +73,10 @@ end
 
 class CompoundFileIOTest < Test::Unit::TestCase
 
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()

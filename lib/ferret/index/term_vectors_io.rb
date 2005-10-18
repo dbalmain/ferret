@@ -217,7 +217,8 @@ module Ferret::Index
         
         last_term_text = ""
         @terms.each do |term|
-          start = StringHelper.string_difference(last_term_text, term.term_text)
+          start = Ferret::Utils::StringHelper.string_difference(last_term_text,
+                                                                term.term_text)
           length = term.term_text.length() - start
           @tvf.write_vint(start)       # write shared prefix length
           @tvf.write_vint(length)      # write delta length

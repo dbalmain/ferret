@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Document
 
 class NumberToolsTest < Test::Unit::TestCase
+  include Ferret::Utils
+
   def test_near_zero()
     2.times() do |i|
       2.times() { |j| subtest_two_longs(i, j) }

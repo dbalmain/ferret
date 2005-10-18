@@ -4,6 +4,8 @@ module Ferret::Search
   # 
   # This code borrows heavily from RangeQuery, but is implemented as a Filter.
   class RangeFilter < Filter 
+    include Ferret::Index
+
     # field_name:: The field this range applies to
     # lower_term:: The lower bound on this range
     # upper_term:: The upper bound on this range
@@ -45,7 +47,7 @@ module Ferret::Search
     # Returns a BitVector with true for documents which should be permitted in
     # search results, and false for those that should not.
     def bits(reader)
-      bits = BitVector.new()
+      bits = Ferret::Utils::BitVector.new()
       term_enum = reader.terms_from(Term.new(@field_name, @lower_term||""))
       
       begin 

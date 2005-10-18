@@ -1,8 +1,10 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
 
 class SimilarityTest < Test::Unit::TestCase
+  include Ferret::Search
+  include Ferret::Index
+
   def test_byte_float_conversion()
     256.times do |i|
       assert_equal(i, Similarity.float_to_byte(Similarity.byte_to_float(i)))

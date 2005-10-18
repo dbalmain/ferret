@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class StandardAnalyzerTest < Test::Unit::TestCase
+  include Ferret::Utils::StringHelper
+  include Ferret::Analysis
+
   def test_lettertokenizer()
     input = StringReader.new('D.Ba_l-n@gma-l.com AB&Sons Toys\'r\'us you\'re she\'s, #$%^$%*& job@dot I.B.M. the an AnD THEIR')
     sa = StandardAnalyzer.new()

@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Utils
 
 class PriorityQueueTest < Test::Unit::TestCase
+  include Ferret::Utils
 
   PQ_STRESS_SIZE = 1000
 

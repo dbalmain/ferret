@@ -1,21 +1,23 @@
-include Ferret::Index
 module Ferret::Search
+
   # Implements search over a single IndexReader.
   # 
   # Applications usually need only call the inherited @link #search(Query)end
   # or @link #search(Query,Filter)endmethods. For performance reasons it is 
   # recommended to open only one IndexSearcher and use it for all of your searches.
   class IndexSearcher
+    include Ferret::Index
+
     attr_accessor :similarity, :reader
 
     # Creates a searcher searching the index in the provided directory. 
     def initialize(arg)
       if arg.is_a?(IndexReader)
         @reader = arg
-      elsif arg.is_a?(Directory)
+      elsif arg.is_a?(Ferret::Store::Directory)
         @reader = IndexReader.open(arg)
       elsif arg.is_a?(String)
-        @dir = FSDirectory.open(arg)
+        @dir = Ferret::Store::FSDirectory.open(arg)
         @reader = IndexReader.open(@dir, true)
       else
         raise ArgumentError, "Unknown argument passed to initialize IndexReader"

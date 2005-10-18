@@ -1,10 +1,7 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
-
 class QueryParserTest < Test::Unit::TestCase
+
 
   def setup()
     @parser = Ferret::QueryParser.new("xxx")

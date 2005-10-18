@@ -140,7 +140,7 @@ module Ferret::Search
   end
 
 
-  class PhraseQueue < PriorityQueue
+  class PhraseQueue < Ferret::Utils::PriorityQueue
     def less_than(pp1, pp2)
       if (pp1.doc == pp2.doc) 
         return pp1.position < pp2.position

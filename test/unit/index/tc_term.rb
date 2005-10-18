@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class TermTest < Test::Unit::TestCase
+  include Ferret::Index
   def test_term()
     term1 = Term.new("bfield1", "athis is text1")
     assert_equal(term1.field, "bfield1")

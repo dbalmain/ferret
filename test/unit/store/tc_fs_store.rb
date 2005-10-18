@@ -1,23 +1,26 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 require File.dirname(__FILE__) + "/tm_store"
 require File.dirname(__FILE__) + "/tm_store_lock"
-include Ferret::Store
 
-class FSDirectory
-  def FSDirectory.directory_cache
-    @@Directories
-  end
+module Ferret::Store
 
-  def ref_count
-    @ref_count
-  end
+  class FSDirectory
+    def FSDirectory.directory_cache
+      @@Directories
+    end
 
-  def get_lock_prefix
-    lock_prefix
+    def ref_count
+      @ref_count
+    end
+
+    def get_lock_prefix
+      lock_prefix
+    end
   end
 end
 
 class FSStoreTest < Test::Unit::TestCase
+  include Ferret::Store
   include StoreTest
   include StoreLockTest
   def setup

@@ -1,11 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class TermVectorsIOTest < Test::Unit::TestCase
 
+  include Ferret::Index
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
     @fis = FieldInfos.new
     @fis.add("field1", true, true, true, true)
     @fis.add("field2", true, true)

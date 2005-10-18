@@ -1,11 +1,10 @@
-include Ferret::Index
-
 module Ferret::Search
+
   # Abstract class for enumerating a subset of all terms. 
   #
   # Term enumerations are always ordered by Term.<=>().  Each term in
   # the enumeration is greater than all that precede it.  
-  class FilteredTermEnum < TermEnum 
+  class FilteredTermEnum < Ferret::Index::TermEnum 
       
     # Returns the current Term in the enumeration.
     # Returns nil if no Term matches or all terms have been enumerated. 

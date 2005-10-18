@@ -1,6 +1,6 @@
 module Ferret::Search::Spans
   # Base class for span-based queries. 
-  class SpanQuery < Query 
+  class SpanQuery < Ferret::Search::Query 
     # Expert: Returns the matches for this query in an index.  Used internally
     # to search for spans. 
     def spans(reader)

@@ -1,9 +1,9 @@
-include Ferret::Store
-require 'search/similarity'
+require 'ferret/search/similarity'
 
 module Ferret
 module Index
 #module Ferret::Index
+
   require "monitor"
 
   # An IndexWriter creates and maintains an index.
@@ -70,7 +70,7 @@ module Index
         @directory = dir
       end
       @close_dir = options[:close_dir] || false
-      @analyzer = options[:analyzer] || StandardAnalyzer.new
+      @analyzer = options[:analyzer] || Ferret::Analysis::StandardAnalyzer.new
       @merge_factor = DEFAULT_MERGE_FACTOR
       @min_merge_docs = DEFAULT_MIN_MERGE_DOCS
       @max_merge_docs = DEFAULT_MAX_MERGE_DOCS
@@ -79,7 +79,7 @@ module Index
 
       @similarity = Search::Similarity.default
       @segment_infos = SegmentInfos.new()
-      @ram_directory = RAMDirectory.new()
+      @ram_directory = Ferret::Store::RAMDirectory.new()
 
       # Make sure that the lock is released when this object is destroyed
       define_finalizer(self, proc { |id| @write_lock.release() if @write_lock})

@@ -36,7 +36,7 @@ module Ferret::Utils
     # s1:: The first string to compare
     # s2:: The second string to compare
     # returns:: The first position where the two strings differ.
-    def string_difference(s1, s2) 
+    def StringHelper.string_difference(s1, s2) 
       len = [s1.length, s2.length].min
       len.times do |i|
         return i if (s1[i] != s2[i]) 

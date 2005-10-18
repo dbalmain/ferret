@@ -1,6 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
 class SortTest < Test::Unit::TestCase
+  include Ferret::Search
+
   def test_basic()
     s = Sort::RELEVANCE
     assert_equal(2, s.fields.size)

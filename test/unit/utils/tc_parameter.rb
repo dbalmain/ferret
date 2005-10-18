@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Utils
 
 class ParameterTest < Test::Unit::TestCase
+  include Ferret::Utils
+
   class Param1 < Parameter
     VAL1 = Param1.new("VAL")
   end

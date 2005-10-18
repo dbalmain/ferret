@@ -1,10 +1,9 @@
 require File.dirname(__FILE__) + "/../test_helper"
-include Ferret::Store
 require 'benchmark'
 
 class RAMStoreTest < Test::Unit::TestCase
   def setup
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def teardown

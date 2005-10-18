@@ -1,4 +1,4 @@
-#! /local/ruby/bin/ruby
+#!/usr/bin/env ruby
 #
 # $Id: PorterStemmer.rb,v 1.1.1.1 2004/04/17 13:55:20 pragdave Exp $
 #

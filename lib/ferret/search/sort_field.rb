@@ -1,10 +1,9 @@
-include Ferret::Utils
-
 module Ferret::Search
+
   # Stores information about how to sort documents by terms in an individual
   # field.  Fields must be indexed in order to sort by them.
   class SortField
-    class SortType < Parameter
+    class SortType < Ferret::Utils::Parameter
       attr_reader :parser, :comparator
 
       # Creates a new SortType. A SortType is used to specify how a field is

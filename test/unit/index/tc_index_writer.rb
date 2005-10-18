@@ -1,11 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
-include Ferret::Analysis
 
 class IndexWriterTest < Test::Unit::TestCase
+  include Ferret::Index
+  include Ferret::Analysis
+
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def tear_down()

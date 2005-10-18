@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_whitespaceanalyzer()
     input = StringReader.new('DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$')
     a = WhiteSpaceAnalyzer.new()

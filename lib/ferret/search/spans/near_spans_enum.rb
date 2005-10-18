@@ -1,7 +1,7 @@
 module Ferret::Search::Spans
   class NearSpansEnum < SpansEnum
 
-    class CellQueue < PriorityQueue 
+    class CellQueue < Ferret::Utils::PriorityQueue 
       def less_than(o1, o2) 
         if (o1.doc == o2.doc) 
           if (o1.start == o2.start) 

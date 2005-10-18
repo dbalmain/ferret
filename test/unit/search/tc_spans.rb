@@ -1,10 +1,14 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Search::Spans
-include Ferret::Analysis
 
 class SpansBasicTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Search
+  include Ferret::Store
+  include Ferret::Index
+  include Ferret::Search::Spans
+  include Ferret::Analysis
+
   def setup()
     data = [
       "start finish one two three four five six seven",

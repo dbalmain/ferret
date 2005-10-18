@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../../../test_helper"
 
-include Lucene::Document
 
 class NumberToolsTest < Test::Unit::TestCase
+  include Lucene::Document
   def test_near_zero()
     10.times() do |i|
       10.times() { |j| subtest_two_longs(i, j) }

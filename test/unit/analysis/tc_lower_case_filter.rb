@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class LowerCaseFilterTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_lowercasefilter()
     input = StringReader.new('DBalmain@gmail.com is My E-Mail 52   #$ ADDRESS. 23#@$')
     t = LowerCaseFilter.new(WhiteSpaceTokenizer.new(input))

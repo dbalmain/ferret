@@ -5,6 +5,7 @@ module Ferret::Search
   # Term enumerations are always ordered by Term.compareTo().  Each term in
   # the enumeration is greater than all that precede it.
   class FuzzyTermEnum < FilteredTermEnum 
+    include Ferret::Index
     attr_reader :end_enum
 
     # This should be somewhere around the average long word.

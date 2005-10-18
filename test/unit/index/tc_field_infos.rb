@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Index
-include Ferret::Store
 
 class FieldInfosTest < Test::Unit::TestCase
+  include Ferret::Index
+
   def test_field_info()
     fi = FieldInfo.new("name", true, 1, true, true, true)
     assert_equal(fi.name, "name")
@@ -75,7 +75,7 @@ class FieldInfosTest < Test::Unit::TestCase
     doc = IndexTestHelper.prepare_document
     fis = FieldInfos.new()
     fis << doc
-    dir = RAMDirectory.new
+    dir = Ferret::Store::RAMDirectory.new
     fis.write_to_dir(dir, "_test")
     fis2 = FieldInfos.new(dir, "_test")
     assert_equal("text_field1", fis2["text_field1"].name)
@@ -97,7 +97,7 @@ class FieldInfosTest < Test::Unit::TestCase
 
   def test_fis_rw()
     fis = FieldInfos.new()
-    dir = RAMDirectory.new()
+    dir = Ferret::Store::RAMDirectory.new()
     fis.add("field1", false, false, false, false)
     fis.add("field2", true, false, false, false)
     fis.add("field3", true, true, false, false)

@@ -1,9 +1,8 @@
 require 'monitor'
-include Ferret::Utils::StringHelper
 module Ferret::Index
-# This stores a monotonically increasing set of <Term, TermInfo> pairs in a
-# Directory.  A TermInfos can be written once, in order.  
 
+  # This stores a monotonically increasing set of <Term, TermInfo> pairs in a
+  # Directory.  A TermInfos can be written once, in order.  
   class TermInfosWriter 
     attr_reader :index_interval, :skip_interval, :out
     attr_writer :other
@@ -95,7 +94,7 @@ module Ferret::Index
 
     private
       def write_term(term)
-        start = StringHelper.string_difference(@last_term.text, term.text)
+        start = Ferret::Utils::StringHelper.string_difference(@last_term.text, term.text)
         length = term.text.length() - start
 
         @out.write_vint(start)                   # write shared prefix length

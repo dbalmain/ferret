@@ -1,5 +1,8 @@
 module Ferret::Index
   class Index
+    include Ferret::Store
+    include Ferret::Search
+    include Ferret::Document
 
     def initialize(options = {})
       if options[:path]

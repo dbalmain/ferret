@@ -1,8 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Utils
 
 class BitVectorTest < Test::Unit::TestCase
+  include Ferret::Utils
+
   def test_bv()
     bv = BitVector.new
     assert_equal(0, bv.count)
@@ -28,7 +29,7 @@ class BitVectorTest < Test::Unit::TestCase
   end
 
   def test_bv_rw()
-    dir = RAMDirectory.new
+    dir = Ferret::Store::RAMDirectory.new
     bv = BitVector.new
     assert_equal(0, bv.count)
     bv.set(5)

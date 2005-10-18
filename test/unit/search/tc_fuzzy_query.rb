@@ -1,10 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
-
 class FuzzyQueryTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Search
+  include Ferret::Store
+  include Ferret::Analysis
+  include Ferret::Index
+
   def add_doc(text, writer)
     doc = Document.new()
     doc << Field.new("field", text, Field::Store::NO, Field::Index::TOKENIZED)

@@ -4,7 +4,7 @@ module Ferret::Index
   # @author Anders Nielsen
   class MultipleTermDocPosEnum < TermDocEnum 
 
-    class TermPositionsQueue < PriorityQueue 
+    class TermPositionsQueue < Ferret::Utils::PriorityQueue 
       def initialize(term_positions)
         super(term_positions.size)
 

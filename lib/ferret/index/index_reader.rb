@@ -39,7 +39,7 @@ module Ferret::Index
 
     attr_reader :directory
     
-    class FieldOption < Parameter
+    class FieldOption < Ferret::Utils::Parameter
       # all fields
       ALL = FieldOption.new("ALL")
       # all indexed fields

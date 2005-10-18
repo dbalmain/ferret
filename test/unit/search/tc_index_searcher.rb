@@ -1,10 +1,12 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Search
-include Ferret::Store
-include Ferret::Analysis
-
 class IndexSearcherTest < Test::Unit::TestCase
+  include Ferret::Document
+  include Ferret::Search
+  include Ferret::Store
+  include Ferret::Analysis
+  include Ferret::Index
+
   def setup()
     @dir = RAMDirectory.new()
     iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)

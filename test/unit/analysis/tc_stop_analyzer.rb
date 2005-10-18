@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class StopAnalyzerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_stopanalyzer()
     input = StringReader.new('The Quick AND the DEAD the and to it there their')
     a = StopAnalyzer.new()

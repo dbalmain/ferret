@@ -1,12 +1,13 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-include Ferret::Index
 
 class SegmentTermEnumTest < Test::Unit::TestCase
+  include Ferret::Index
+
   TEST_SEGMENT = "_test"
 
   def setup()
-    @dir = RAMDirectory.new
+    @dir = Ferret::Store::RAMDirectory.new
   end
 
   def test_initialize()

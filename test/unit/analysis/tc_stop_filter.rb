@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class StopFilterTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_stopfilter()
     input = StringReader.new('The Quick AND the DEAD the and to it there their')
     t = StopFilter.new_with_file(LowerCaseTokenizer.new(input), File.dirname(__FILE__) + '/data/wordfile')

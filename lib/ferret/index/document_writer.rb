@@ -1,18 +1,19 @@
-require 'search/similarity'
+require 'ferret/search/similarity'
+
 module Ferret::Index
-  include Ferret::Search
+
   class DocumentWriter 
-    # If non-nil, a message will be printed to this if max_field_length is reached.
+    # If non-nil, a message will be printed to this if max_field_length is
+    # reached.
     attr_writer :info_stream
 
-    # directory:: The directory to write the document information to
-    # analyzer:: The analyzer to use for the document
-    # similarity:: The Similarity function
-    #     <writer.similarity>
-    # max_field_length:: The maximum number of tokens a field may have
-    #     <writer.max_field_length>
-    # term_index_interval:: The interval of terms in the index
-    #     <writer.max_field_length>
+    # directory::           The directory to write the document information to
+    # analyzer::            The analyzer to use for the document
+    # similarity::          The Similarity function writer.similarity
+    # max_field_length::    The maximum number of tokens a field may have
+    #                       writer.max_field_length
+    # term_index_interval:: The interval of terms in the index 
+    #                       writer.max_field_length
     def initialize(directory,
                    analyzer,
                    similarity,
@@ -47,12 +48,12 @@ module Ferret::Index
       end
 
       # invert doc into posting_table
-      @posting_table.clear();        # clear posting_table
+      @posting_table.clear();                    # clear posting_table
       arr_size = @field_infos.size
       @field_lengths = Array.new(arr_size, 0)    # init field_lengths
       @field_positions = Array.new(arr_size, 0)  # init field_positions
       @field_offsets = Array.new(arr_size, 0)    # init field_offsets
-      @field_boosts = Array.new(arr_size, doc.boost)     # init field_boosts
+      @field_boosts = Array.new(arr_size, doc.boost) # init field_boosts
 
       invert_document(doc)
 
@@ -264,7 +265,7 @@ module Ferret::Index
             norm = @field_boosts[i] * @similarity.length_norm(fi.name, @field_lengths[i])
             norms = @directory.create_output(segment + ".f" + i.to_s)
             begin 
-              norms.write_byte(Similarity.encode_norm(norm))
+              norms.write_byte(Ferret::Search::Similarity.encode_norm(norm))
             ensure 
               norms.close()
             end

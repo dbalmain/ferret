@@ -1,5 +1,6 @@
 module Ferret::Search::Spans
-  class SpanWeight < Weight
+  class SpanWeight < Ferret::Search::Weight
+    include Ferret::Search
     def initialize(query, searcher)
       @similarity = query.similarity(searcher)
       @query = query

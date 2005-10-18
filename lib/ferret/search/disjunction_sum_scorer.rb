@@ -67,7 +67,7 @@ module Ferret::Search
     end
 
     # A +PriorityQueue+ that orders by Scorer#doc(). 
-    class ScorerQueue < PriorityQueue 
+    class ScorerQueue < Ferret::Utils::PriorityQueue 
       def less_than(scorer1, scorer2) 
         return scorer1.doc < scorer2.doc
       end

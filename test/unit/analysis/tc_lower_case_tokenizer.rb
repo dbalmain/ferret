@@ -1,7 +1,9 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-include Ferret::Analysis
 
 class LowerCaseTokenizerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+  include Ferret::Utils::StringHelper
+
   def test_normalize()
     lt = LowerCaseTokenizer.new(StringReader.new(""))
     assert_equal('!', lt.__send__(:normalize,"!"))

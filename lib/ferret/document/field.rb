@@ -1,5 +1,3 @@
-include Ferret::Utils
-
 module Ferret::Document
   # A field is a section of a Document.  Each field has two parts, a name
   # and a value.  Values may be free text, provided as a String or as a
@@ -73,7 +71,7 @@ module Ferret::Document
     # field string
     def store_offsets?() return @store_offset end
 
-    class Store < Parameter
+    class Store < Ferret::Utils::Parameter
       # Store the original field value in the index in a compressed form.
       # This is useful for long documents and for binary valued fields.
       COMPRESS = Store.new("COMPRESS")
@@ -88,7 +86,7 @@ module Ferret::Document
       NO = Store.new("NO")
     end
 
-    class Index < Parameter
+    class Index < Ferret::Utils::Parameter
       # Do not index the field value. This field can thus not be searched,
       # but one can still access its contents provided it is Field.Store
       # stored
@@ -105,7 +103,7 @@ module Ferret::Document
       UNTOKENIZED = Index.new("UNTOKENIZED")
     end
 
-    class TermVector < Parameter
+    class TermVector < Ferret::Utils::Parameter
       # Do not store term vectors. 
       NO = TermVector.new("NO")
 
@@ -253,10 +251,10 @@ module Ferret::Document
       if @data.respond_to? :read
         return @data
       elsif @data.instance_of? String
-        return StringHelper::StringReader.new(@data)
+        return Ferret::Utils::StringHelper::StringReader.new(@data)
       else
         # if it is binary object try to return a string representation
-        return StringHelper::StringReader.new(@data.to_s)
+        return Ferret::Utils::StringHelper::StringReader.new(@data.to_s)
       end
     end
 
