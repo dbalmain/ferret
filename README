@@ -17,9 +17,12 @@ De-compress the archive and enter its top directory.
   tar zxpvf ferret-0.1.tar.gz
   cd ferret-0.1
 
-Then to compile the C extension type:
+Run the setup config;
 
   $ ruby setup.rb config
+
+Then to compile the C extension (optional) type:
+
   $ ruby setup.rb setup
 
 If you don't have a C compiler, never mind. Just go straight to the next step.
