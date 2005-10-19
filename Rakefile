@@ -109,11 +109,6 @@ end
 
 # Create Packages ------------------------------------------------------------
 
-task :release => [:package]
-PKG_DIR = "../packages"
-
-directory PKG_DIR
-
 PKG_FILES = FileList[
   'setup.rb',
   '[-A-Z]*',
@@ -199,14 +194,11 @@ end
 # Creating a release
 
 desc "Make a new release"
-task :release => [
-  :prerelease,
-  :clobber,
-  :all_tests,
-  :update_version,
-  :package,
-  :tag] do
-  
+task :prerelease => [:clobber, :all_tests, :parsers]
+task :package => [:prerelease]
+task :tag => [:prerelease]
+task :update_version => [:prerelease]
+task :release => [:tag, :update_version, :package] do
   announce 
   announce "**************************************************************"
   announce "* Release #{PKG_VERSION} Complete."
@@ -240,6 +232,7 @@ task :prerelease do
   unless data =~ /^$/
     fail "'svn -q status' is not clean ... do you have unchecked-in files?"
   end
+  
   announce "No outstanding checkins found ... OK"
 end
 
