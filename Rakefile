@@ -1,3 +1,4 @@
+$:. << 'lib'
 # Some parts of this Rakefile where taken from Jim Weirich's Rakefile for
 # Rake. Other parts where stolen from the David Heinemeier Hansson's Rails
 # Rakefile. Both are under MIT-LICENSE. Thanks to both for their excellent
@@ -9,6 +10,7 @@ require 'rake/rdoctask'
 require 'rake/clean'
 require 'rake_utils/code_statistics'
 require 'lib/ferret'
+
 begin
   require 'rubygems'
   require 'rake/gempackagetask'
@@ -16,12 +18,16 @@ rescue Exception
   nil
 end
 
+CURRENT_VERSION = Ferret::VERSION
 if ENV['REL']
   PKG_VERSION = ENV['REL']
 else
-  PKG_VERSION = Ferret::VERSION
+  PKG_VERSION = CURRENT_VERSION
 end
 
+def announce(msg='')
+  STDERR.puts msg
+end
 
 $VERBOSE = nil
 CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'])
@@ -213,13 +219,13 @@ task :prerelease do
   announce 
   announce "**************************************************************"
   announce "* Making RubyGem Release #{PKG_VERSION}"
-  announce "* (current version #{VERSION})"
+  announce "* (current version #{CURRENT_VERSION})"
   announce "**************************************************************"
   announce  
 
   # Is a release number supplied?
   unless ENV['REL']
-    fail "Usage: rake release REL=x.y.z"
+    fail "Usage: rake release REL=x.y.z [REUSE=tag_suffix]"
   end
 
   # Is the release different than the current release.
@@ -229,10 +235,9 @@ task :prerelease do
   end
 
   # Are all source files checked in?
-  announce "Checking for unchecked-in files..."
   data = `svn -q status`
   unless data =~ /^$/
-    fail "CVS update is not clean ... do you have unchecked-in files?"
+    fail "'svn -q status' is not clean ... do you have unchecked-in files?"
   end
   announce "No outstanding checkins found ... OK"
 end
@@ -241,37 +246,36 @@ task :update_version => [:prerelease] do
   if PKG_VERSION == CURRENT_VERSION
     announce "No version change ... skipping version update"
   else
-    announce "Updating Rake version to #{PKG_VERSION}"
-    open("lib/rake.rb") do |rakein|
-      open("lib/rake.rb.new", "w") do |rakeout|
-        rakein.each do |line|
-          if line =~ /^RAKEVERSION\s*=\s*/
-            rakeout.puts "RAKEVERSION = '#{PKG_VERSION}'"
+    announce "Updating Ferret version to #{PKG_VERSION}"
+    open("lib/ferret.rb") do |ferret_in|
+      open("lib/ferret.rb.new", "w") do |ferret_out|
+        ferret_in.each do |line|
+          if line =~ /^  VERSION\s*=\s*/
+            ferret_out.puts "  VERSION = '#{PKG_VERSION}'"
           else
-            rakeout.puts line
+            ferret_out.puts line
           end
         end
       end
     end
-    mv "lib/rake.rb.new", "lib/rake.rb"
     if ENV['RELTEST']
       announce "Release Task Testing, skipping commiting of new version"
     else
-      sh %{cvs commit -m "Updated to version #{PKG_VERSION}" lib/rake.rb}
+      mv "lib/ferret.rb.new", "lib/ferret.rb"
     end
+    sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/ferret.rb}
   end
 end
 
-desc "Tag all the CVS files with the latest release number (REL=x.y.z)"
+desc "Tag all the SVN files with the latest release number (REL=x.y.z)"
 task :tag => [:prerelease] do
-  reltag = "REL_#{PKG_VERSION.gsub(/\./, '_')}"
-  reltag << ENV['REUSE'].gsub(/\./, '_') if ENV['REUSE']
-  announce "Tagging CVS with [#{reltag}]"
+  reltag = "REL-#{PKG_VERSION}"
+  reltag << ENV['REUSE'] if ENV['REUSE']
+  announce "Tagging SVN with [#{reltag}]"
   if ENV['RELTEST']
-    announce "Release Task Testing, skipping CVS tagging"
+    announce "Release Task Testing, skipping CVS tagging. Would do the following;"
+    announce %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
   else
-    sh %{cvs tag #{reltag}}
+    sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
   end
 end
-
-
