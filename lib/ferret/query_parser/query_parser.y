@@ -10,6 +10,7 @@ class Ferret::QueryParser
 
   options no_result_var
 
+  expect 1
 rule
 
   top_query     : bool_query
