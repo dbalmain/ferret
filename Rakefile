@@ -203,6 +203,7 @@ task :release => [
   :prerelease,
   :clobber,
   :all_tests,
+  :update_version,
   :package,
   :tag] do
   
@@ -273,7 +274,7 @@ task :tag => [:prerelease] do
   reltag << ENV['REUSE'] if ENV['REUSE']
   announce "Tagging SVN with [#{reltag}]"
   if ENV['RELTEST']
-    announce "Release Task Testing, skipping CVS tagging. Would do the following;"
+    announce "Release Task Testing, skipping SVN tagging. Would do the following;"
     announce %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
   else
     sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
