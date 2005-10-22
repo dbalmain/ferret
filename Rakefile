@@ -115,6 +115,7 @@ PKG_FILES = FileList[
   'ext/**/*', 
   'lib/**/*.rb', 
   'test/**/*.rb',
+  'test/**/wordfile',
   'rake_utils/**/*.rb',
   'Rakefile'
 ]
@@ -170,7 +171,7 @@ else
 
     s.author = "David Balmain"
     s.email = "dbalmain@gmail.com"
-    s.homepage = "http://ferret.davebalmain.com"
+    s.homepage = "http://ferret.davebalmain.com/trac"
     s.rubyforge_project = "ferret"
 #     if ENV['CERT_DIR']
 #       s.signing_key = File.join(ENV['CERT_DIR'], 'gem-private_key.pem')

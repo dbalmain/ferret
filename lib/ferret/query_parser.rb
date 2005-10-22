@@ -106,12 +106,12 @@ module Ferret
   #
   # Some examples;
   #
-  #   '+sport:ski -sport:snowboard sport:taboggen'
+  #   '+sport:ski -sport:snowboard sport:toboggen'
   #   '+ingredient:chocolate +ingredient:strawberries -ingredient:wheat'
   #
   # You may also use the boolean operators "AND", "&&", "OR" and "||". eg;
   #
-  #   'sport:ski AND NOT sport:snowboard OR sport:taboggen'
+  #   'sport:ski AND NOT sport:snowboard OR sport:toboggen'
   #   'ingredient:chocolate AND ingredient:strawberries AND NOT ingredient:wheat'
   #
   # You can set the default operator when you create the query parse.

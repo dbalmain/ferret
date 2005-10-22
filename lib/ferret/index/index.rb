@@ -6,6 +6,7 @@ module Ferret::Index
 
     def initialize(options = {})
       if options[:path]
+        options[:create_if_missing] = true if options[:create_if_missing].nil? 
         @dir = FSDirectory.new(options[:path], true)
         options[:close_dir] = true
       elsif options[:dir]

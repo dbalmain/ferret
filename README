@@ -87,10 +87,17 @@ only run on linux.
 
 == Contact
 
-Bug reports, patches, queries, discussion etc should be addressed to
-the mailing list. More information on the list can be found at:
+For bug reports and patches I have set up Trac here;
 
-http://ferret.davebalmain.com/
+  http://ferret.davebalmain.com/trac
+
+Queries, discussion etc should be addressed to the forum or mailing lists hosted
+at;
+
+  http://rubyforge.org/projects/ferret/
+
+Alternatively you could create a new page for discussion on the wiki at my Trac
+page above. Or, if you're shy, please feel free to email me directly at dbalmain@gmail.com
 
 Of course, since Ferret is almost a straight port of Java Lucene,
 everything said about Lucene at http://jakarta.apache.org/lucene/ should

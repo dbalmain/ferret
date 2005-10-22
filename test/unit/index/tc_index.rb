@@ -130,11 +130,36 @@ class IndexTest < Test::Unit::TestCase
 
   def test_fs_index
     fs_path = File.join(File.dirname(__FILE__), '../../temp/fsdir')
-    index = Index.new(:path => fs_path, :create => true, :default_field => "def_field")
+    `rm -rf #{fs_path}`
+    assert_raise(Errno::ENOENT) {Index.new(:path => fs_path, :create_if_missing => false, :default_field => "def_field")}
+    index = Index.new(:path => fs_path, :default_field => "def_field")
     do_test_index_with_array(index)
+    `rm -rf #{fs_path}`
     index = Index.new(:path => fs_path, :create => true, :default_field => "def_field")
     do_test_index_with_hash(index)
-    index = Index.new(:create => true, :default_field => "def_field")
+    index = Index.new(:path => fs_path, :create => true, :default_field => "def_field")
     do_test_index_with_doc_array(index)
+  end
+
+  def test_fs_index_is_persistant
+    fs_path = File.join(File.dirname(__FILE__), '../../temp/fsdir')
+    `rm -rf #{fs_path}`
+    data = [
+      {"def_field" => "one two", :id => "me"},
+      {"def_field" => "one", :field2 => "three"},
+      {"def_field" => "two"},
+      {"def_field" => "one", :field2 => "four"},
+      {"def_field" => "one two"},
+      {"def_field" => "two", :field2 => "three", "field3" => "four"},
+      {"def_field" => "one"},
+      {"def_field" => "two", :field2 => "three", "field3" => "five"}
+    ]
+    index = Index.new(:path => fs_path, :default_field => "def_field")
+    data.each {|doc| index << doc }
+    assert_equal(8, index.size)
+    index.close
+    index = Index.new(:path => fs_path, :default_field => "def_field")
+    assert_equal(8, index.size)
+    assert_equal("four", index[5]["field3"])
   end
 end

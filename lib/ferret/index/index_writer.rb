@@ -94,11 +94,12 @@ module Index
           else
             begin
               @segment_infos.read(@directory)
-            rescue IOError => ioe
+            rescue Exception => e
               if options[:create_if_missing]
                 @segment_infos.write(@directory)
               else
-                raise ioe
+                @write_lock.release() # obtain write lock
+                raise e
               end
             end
           end 

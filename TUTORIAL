@@ -74,21 +74,21 @@ Index#search_each. The first method returns a Ferret::Index::TopDocs object.
 The second we'll show here. Lets say we wanted to find all documents with the
 phrase "quick brown fox" in the content field. We'd write;
 
-  index.search('content:"quick brown fox"') do |doc, score|
+  index.search_each('content:"quick brown fox"') do |doc, score|
     puts "Document #{doc} found with a score of #{score}"
   end
 
 But "fast" has a pretty similar meaning to "quick" and we don't mind if the
 fox is a little red. So we could expand our search like this;
 
-  index.search('content:"quick|fast brown|red fox"') do |doc, score|
+  index.search_each('content:"quick|fast brown|red fox"') do |doc, score|
     puts "Document #{doc} found with a score of #{score}"
   end
 
 What if we want to find all documents entered on or after 5th of September,
 2005 with the words "ruby" or "rails" in it. We could type something like;
 
-  index.search('date:( >= 20050905) content:(ruby OR rails)') do |doc, score|
+  index.search_each('date:( >= 20050905) content:(ruby OR rails)') do |doc, score|
     puts "Document #{doc} found with a score of #{score}"
   end
 
