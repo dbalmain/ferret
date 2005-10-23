@@ -106,7 +106,7 @@ module Ferret::Index
     def search(query, options = {})
       if query.is_a?(String)
         if @qp.nil?
-          @qp = Ferret::QueryParser.new(@default_field, options)
+          @qp = Ferret::QueryParser.new(@default_field, @options)
         end
         query = @qp.parse(query)
       end

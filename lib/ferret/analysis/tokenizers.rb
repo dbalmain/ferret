@@ -20,16 +20,16 @@ module Ferret::Analysis
   # An abstract base class for simple regular expression oriented
   # tokenizers. Very powerful tokenizers can be created using this class as
   # can be seen from the StandardTokenizer class. Bellow is an example of a
-  # simple implementation of a LetterTokenizer using an RETokenizer.
+  # simple implementation of a LetterTokenizer using an RegExpTokenizer.
   # Basically, a token is a sequence of alphabetic characters separated by
   # one or more non-alphabetic characters.
   #
-  #   class LetterTokenizer < RETokenizer
+  #   class LetterTokenizer < RegExpTokenizer
   #       def token_re()
   #         /[a-zA-Z]+/
   #       end
   #   end
-  class RETokenizer < Tokenizer
+  class RegExpTokenizer < Tokenizer
 
     # Initialize with an IO implementing input such as a file.
     #
@@ -76,10 +76,10 @@ module Ferret::Analysis
   # A LetterTokenizer is a tokenizer that divides text at non-letters.
   # That's to say, it defines tokens as maximal strings of adjacent letters,
   # as defined by the regular expression _/[a-zA-Z]+/_.
-  class LetterTokenizer < RETokenizer
+  class LetterTokenizer < RegExpTokenizer
     protected
       # Collects only characters which satisfy the regular expression
-    # _/[a-zA-Z]+/_.
+      # _/[a-zA-Z]+/_.
       def token_re()
         /[a-zA-Z]+/
       end
@@ -97,7 +97,7 @@ module Ferret::Analysis
 
   # A WhiteSpaceTokenizer is a tokenizer that divides text at whiteSpace.
   # Adjacent sequences of non-WhiteSpace characters form tokens.
-  class WhiteSpaceTokenizer < RETokenizer
+  class WhiteSpaceTokenizer < RegExpTokenizer
     protected
       # Collects only characters which are not spaces tabs or carraige returns
       def token_re()

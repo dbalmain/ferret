@@ -12,7 +12,7 @@ module Ferret::Analysis
   # words correctly as well as tokenizing things like email addresses, web
   # addresses, phone numbers, etc.
 
-  class StandardTokenizer < RETokenizer
+  class StandardTokenizer < RegExpTokenizer
     ALPHA      = /[[:alpha:]]+/
     APOSTROPHE = /#{ALPHA}('#{ALPHA})+/
     ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/

@@ -75,5 +75,13 @@ module Ferret::Analysis
       end
       @position_increment = pos_inc
     end
+
+    # Returns a string representation of the token with all the attributes.
+    def to_s
+      buf = "#{term_text}:#{start_offset}->#{end_offset}"
+      buf << "(pos_inc=#{@position_increment})" if (@position_increment != 1)
+      buf << "(type=#{@type})" if (@type != "word")
+      buf
+    end
   end
 end

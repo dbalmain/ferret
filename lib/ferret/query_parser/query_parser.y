@@ -442,12 +442,16 @@ end
 
 if __FILE__ == $0
   $:.unshift File.join(File.dirname(__FILE__), '..')
+  $:.unshift File.join(File.dirname(__FILE__), '../..')
   require 'utils'
   require 'analysis'
   require 'document'
   require 'store'
   require 'index'
   require 'search'
+
+  include Ferret::Search
+  include Ferret::Index
 
   st = "\033[7m"
   en = "\033[m"

@@ -95,13 +95,13 @@ module StoreTest
   end
 
   def test_rw_utf8_strings
-    text = '³³ ÄÄÄÄÄÄ'
+    text = 'Â³Â³ Ã„Ã„Ã„Ã„Ã„Ã„ é“å¾·ç¶“'
     ostream = @dir.create_output("rw_utf8_strings.test")
     ostream.write_string(text)
     ostream.write_string(text*100)
     ostream.close
     istream = @dir.open_input("rw_utf8_strings.test")
-    assert_equal(text, istream.read_string, "Short string test failed")
+    assert_equal(text, x = istream.read_string, "Short string test failed")
     assert_equal(text*100, istream.read_string, "Short string test failed")
     istream.close
   end
