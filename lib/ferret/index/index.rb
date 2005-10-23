@@ -23,7 +23,7 @@ module Ferret::Index
       @reader = nil
       @options.delete(:create) # only want to create the first time if at all
       @close_dir = @options.delete(:close_dir) || false # we'll hold this here
-      @default_field = @options[:default_field] || ""
+      @default_field = @options[:default_field] || "*"
       @open = true
     end
 
@@ -104,14 +104,16 @@ module Ferret::Index
     # num_docs:: The number of results returned. Default is 10
     # sort::     an array of SortFields describing how to sort the results.
     def search(query, options = {})
+      ensure_searcher_open()
       if query.is_a?(String)
         if @qp.nil?
           @qp = Ferret::QueryParser.new(@default_field, @options)
         end
+        # we need to set this ever time, in case a new field has been added
+        @qp.fields = @reader.get_field_names
         query = @qp.parse(query)
       end
 
-      ensure_searcher_open()
       return @searcher.search(query, options)
     end
 

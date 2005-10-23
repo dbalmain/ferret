@@ -106,12 +106,12 @@ module Ferret
   #
   # Some examples;
   #
-  #   '+sport:ski -sport:snowboard sport:toboggen'
+  #   '+sport:ski -sport:snowboard sport:toboggan'
   #   '+ingredient:chocolate +ingredient:strawberries -ingredient:wheat'
   #
   # You may also use the boolean operators "AND", "&&", "OR" and "||". eg;
   #
-  #   'sport:ski AND NOT sport:snowboard OR sport:toboggen'
+  #   'sport:ski AND NOT sport:snowboard OR sport:toboggan'
   #   'ingredient:chocolate AND ingredient:strawberries AND NOT ingredient:wheat'
   #
   # You can set the default operator when you create the query parse.
@@ -128,10 +128,10 @@ module Ferret
   #
   # You can also do open ended queries like this;
   #
-  #   'date:[20050725|' # all dates >= 20050725
-  #   'date:{20050725|' # all dates >  20050725
-  #   'date:|20050905]' # all dates <= 20050905
-  #   'date:|20050905}' # all dates <  20050905
+  #   'date:[20050725>' # all dates >= 20050725
+  #   'date:{20050725>' # all dates >  20050725
+  #   'date:<20050905]' # all dates <= 20050905
+  #   'date:<20050905}' # all dates <  20050905
   #
   # Or like this;
   #

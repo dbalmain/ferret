@@ -63,28 +63,33 @@ rule
                 ;
   term_query    : WORD
                   {
-                    get_term_query(val[0])
+                    _get_term_query(val[0])
                   }
                 | WORD '~' WORD =HIGH
                   {
-                    get_fuzzy_query(val[0], val[2])
+                    _get_fuzzy_query(val[0], val[2])
                   }
                 | WORD '~' =LOW
                   {
-                    get_fuzzy_query(val[0])
+                    _get_fuzzy_query(val[0])
                   }
                 ;
   wild_query    : WILD_STRING
                   {
-                    WildcardQuery.new(Term.new(@field, val[0]))
+                    _get_wild_query(val[0])
                   }
                 ;
-  field_query   : field_name ':' query {@field = @default_field}
+  field_query   : field ':' query {@field = @default_field}
                   {
                     val[2]
                   }
+                | '*' {@field = @fields} ':' query {@field = @default_field}
+                  {
+                    val[3]
+                  }
                 ;
-  field_name    : WORD               { @field = val[0] }
+  field         : WORD               { @field = [val[0]] }
+                | field '|' WORD     { @field = val[0] += [val[2]] }
                 ;
   phrase_query  : '\"' phrase_words '\"'
                   {
@@ -102,23 +107,23 @@ rule
                 | phrase_words '<' '>'     { val[0] << nil  }
                 | phrase_words '|' WORD    { add_multi_word(val[0], val[2])  }
                 ;
-  range_query   : '[' WORD WORD ']' { get_range_query(val[1], val[2], true, true) }
-                | '[' WORD WORD '}' { get_range_query(val[1], val[2], true, false) }
-                | '{' WORD WORD ']' { get_range_query(val[1], val[2], false, true) }
-                | '{' WORD WORD '}' { get_range_query(val[1], val[2], false, false) }
-                | '|' WORD '}'      { get_range_query(nil,    val[1], false, false) }
-                | '|' WORD ']'      { get_range_query(nil,    val[1], false, true) }
-                | '[' WORD '|'      { get_range_query(val[1], nil,    true, false) }
-                | '{' WORD '|'      { get_range_query(val[1], nil,    false, false) }
-                | '<' WORD          { get_range_query(nil,    val[1], false, false) }
-                | '<' '=' WORD      { get_range_query(nil,    val[2], false, true) }
-                | '>' '='  WORD     { get_range_query(val[2], nil,    true, false) }
-                | '>' WORD          { get_range_query(val[1], nil,    false, false) }
+  range_query   : '[' WORD WORD ']' { _get_range_query(val[1], val[2], true, true) }
+                | '[' WORD WORD '}' { _get_range_query(val[1], val[2], true, false) }
+                | '{' WORD WORD ']' { _get_range_query(val[1], val[2], false, true) }
+                | '{' WORD WORD '}' { _get_range_query(val[1], val[2], false, false) }
+                | '<' WORD '}'      { _get_range_query(nil,    val[1], false, false) }
+                | '<' WORD ']'      { _get_range_query(nil,    val[1], false, true) }
+                | '[' WORD '>'      { _get_range_query(val[1], nil,    true, false) }
+                | '{' WORD '>'      { _get_range_query(val[1], nil,    false, false) }
+                | '<' WORD          { _get_range_query(nil,    val[1], false, false) }
+                | '<' '=' WORD      { _get_range_query(nil,    val[2], false, true) }
+                | '>' '='  WORD     { _get_range_query(val[2], nil,    true, false) }
+                | '>' WORD          { _get_range_query(val[1], nil,    false, false) }
                 ;
 end
 
 ---- inner
-  attr_accessor :default_field
+  attr_accessor :default_field, :fields
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
@@ -129,11 +134,15 @@ end
 
   def initialize(default_field = "", options = {})
     @yydebug = true
+    if default_field.is_a?(String) and default_field.index("|")
+      default_field = default_field.split("|")
+    end
     @field = @default_field = default_field
     @analyzer = options[:analyzer] || Analysis::Analyzer.new
     @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
     @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
     @default_slop = options[:default_slop] || 0
+    @fields = options[:fields]||[]
   end
 
   RESERVED = {
@@ -262,41 +271,45 @@ end
     return new_str.pack("c*")  
   end
 
-  def get_range_query(start_word, end_word, inc_upper, inc_lower)
-    return RangeQuery.new(@field, start_word, end_word, inc_upper, inc_lower)
+  def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
+     RangeQuery.new(field, start_word, end_word, inc_upper, inc_lower)
   end
 
-  def get_term_query(word)
+  def get_term_query(field, word)
     tokens = []
-    stream = @analyzer.token_stream(@field, word)
+    stream = @analyzer.token_stream(field, word)
     while token = stream.next
       tokens << token
     end
     if tokens.length == 0
       return nil
     elsif tokens.length == 1
-      return TermQuery.new(Term.new(@field, tokens[0].term_text))
+      return TermQuery.new(Term.new(field, tokens[0].term_text))
     else
       pq = PhraseQuery.new()
       tokens.each do |token|
-        pq.add(Term.new(@field, token.term_text), nil, token.position_increment)
+        pq.add(Term.new(field, token.term_text), nil, token.position_increment)
       end
       return pq
     end
   end
 
-  def get_fuzzy_query(word, min_sim = nil)
+  def get_fuzzy_query(field, word, min_sim = nil)
     tokens = []
-    stream = @analyzer.token_stream(@field, word)
+    stream = @analyzer.token_stream(field, word)
     if token = stream.next # only makes sense to look at one term for fuzzy
       if min_sim
-        return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+        return FuzzyQuery.new(Term.new(field, token.term_text), min_sim.to_f)
       else
-        return FuzzyQuery.new(Term.new(@field, token.term_text))
+        return FuzzyQuery.new(Term.new(field, token.term_text))
       end
     else
       return nil
     end
+  end
+
+  def get_wild_query(field, regexp)
+    WildcardQuery.new(Term.new(field, regexp))
   end
 
   def add_multi_word(words, word)
@@ -308,7 +321,7 @@ end
     return words
   end
 
-  def get_normal_phrase_query(positions)
+  def get_normal_phrase_query(field, positions)
     pq = PhraseQuery.new()
     pq.slop = @default_slop
     pos_inc = 0
@@ -318,13 +331,13 @@ end
         pos_inc += 1
         next
       end
-      stream = @analyzer.token_stream(@field, position)
+      stream = @analyzer.token_stream(field, position)
       tokens = []
       while token = stream.next
         tokens << token
       end
       tokens.each do |token|
-        pq.add(Term.new(@field, token.term_text), nil,
+        pq.add(Term.new(field, token.term_text), nil,
                token.position_increment + pos_inc)
         pos_inc = 0
       end
@@ -332,7 +345,7 @@ end
     return pq
   end
 
-  def get_multi_phrase_query(positions)
+  def get_multi_phrase_query(field, positions)
     mpq = MultiPhraseQuery.new()
     mpq.slop = @default_slop
     pos_inc = 0
@@ -346,21 +359,21 @@ end
         position.compact! # it doesn't make sense to have an empty spot here
         terms = []
         position.each do |word|
-          stream = @analyzer.token_stream(@field, word)
+          stream = @analyzer.token_stream(field, word)
           if token = stream.next # only put one term per word
-            terms << Term.new(@field, token.term_text)
+            terms << Term.new(field, token.term_text)
           end
         end
         mpq.add(terms, nil, pos_inc + 1) # must go at least one forward
         pos_inc = 0
       else
-        stream = @analyzer.token_stream(@field, position)
+        stream = @analyzer.token_stream(field, position)
         tokens = []
         while token = stream.next
           tokens << token
         end
         tokens.each do |token|
-          mpq.add([Term.new(@field, token.term_text)], nil,
+          mpq.add([Term.new(field, token.term_text)], nil,
                  token.position_increment + pos_inc)
           pos_inc = 0
         end
@@ -371,7 +384,7 @@ end
 
   def get_phrase_query(positions, slop = nil)
     if positions.size == 1 and not positions[0].is_a?(Array)
-      return get_term_query(words[0])
+      return _get_term_query(words[0])
     end
 
     multi_phrase = false
@@ -384,14 +397,16 @@ end
       end
     end
 
-    q = nil
-    if not multi_phrase
-      q = get_normal_phrase_query(positions.flatten)
-    else
-      q = get_multi_phrase_query(positions)
+    return do_multiple_fields() do |field|
+      q = nil
+      if not multi_phrase
+        q = get_normal_phrase_query(field, positions.flatten)
+      else
+        q = get_multi_phrase_query(field, positions)
+      end
+      q.slop = slop if slop
+      next q
     end
-    q.slop = slop if slop
-    return q
   end
 
   def add_and_clause(clauses, clause)
@@ -429,7 +444,7 @@ end
       return clauses[0].query
     end
     bq = BooleanQuery.new()
-    clauses.each {|clause|   bq << clause }
+    clauses.each {|clause| bq << clause }
     return bq                
   end                        
                              
@@ -437,6 +452,32 @@ end
     return nil if query.nil?
     return BooleanClause.new(query, occur)
   end
+
+  def do_multiple_fields()
+    if @field.is_a? String
+      return yield(@field)
+    elsif @field.size == 1
+      return yield(@field[0])
+    else
+      bq = BooleanQuery.new()
+      @field.each do |field|
+        q = yield(field)
+        bq << BooleanClause.new(q) if q
+      end
+      return bq                
+    end
+  end
+
+  def method_missing(meth, *args)
+    if meth.to_s =~ /_(get_[a-z_]+_query)/
+      do_multiple_fields() do |field|
+        self.__send__($1, *([field] + args))
+      end
+    else
+      raise NoMethodError.new("No such method #{meth} in #{self.class}", meth, args)
+    end
+  end
+
 
 ---- footer
 
@@ -456,7 +497,7 @@ if __FILE__ == $0
   st = "\033[7m"
   en = "\033[m"
 
-  parser = Ferret::QueryParser.new("default")
+  parser = Ferret::QueryParser.new("default", :fields => ["f1", "f2", "f3"])
 
   $stdin.each do |line|
     query = parser.parse(line)

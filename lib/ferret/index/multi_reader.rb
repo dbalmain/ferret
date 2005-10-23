@@ -178,7 +178,7 @@ module Ferret
       end
 
       # See IndexReader#get_field_names
-      def get_field_names(field_option)
+      def get_field_names(field_option = IndexReader::FieldOption::ALL)
         # maintain a unique set of field names
         field_set = Set.new
         @sub_readers.each do |reader|

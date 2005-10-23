@@ -188,7 +188,7 @@ module Ferret::Index
     end
 
     # See IndexReader#get_field_names
-    def get_field_names(field_option) 
+    def get_field_names(field_option = IndexReader::FieldOption::ALL) 
       field_set = Set.new
       @field_infos.each do |fi|
         if (field_option == IndexReader::FieldOption::ALL) 

@@ -11,8 +11,8 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 121
-  attr_accessor :default_field
+module_eval <<'..end query_parser.y modeval..ida7635f3098', 'query_parser.y', 126
+  attr_accessor :default_field, :fields
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
@@ -23,11 +23,15 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
 
   def initialize(default_field = "", options = {})
     @yydebug = true
+    if default_field.is_a?(String) and default_field.index("|")
+      default_field = default_field.split("|")
+    end
     @field = @default_field = default_field
     @analyzer = options[:analyzer] || Analysis::Analyzer.new
     @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
     @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
     @default_slop = options[:default_slop] || 0
+    @fields = options[:fields]||[]
   end
 
   RESERVED = {
@@ -156,41 +160,45 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
     return new_str.pack("c*")  
   end
 
-  def get_range_query(start_word, end_word, inc_upper, inc_lower)
-    return RangeQuery.new(@field, start_word, end_word, inc_upper, inc_lower)
+  def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
+     RangeQuery.new(field, start_word, end_word, inc_upper, inc_lower)
   end
 
-  def get_term_query(word)
+  def get_term_query(field, word)
     tokens = []
-    stream = @analyzer.token_stream(@field, word)
+    stream = @analyzer.token_stream(field, word)
     while token = stream.next
       tokens << token
     end
     if tokens.length == 0
       return nil
     elsif tokens.length == 1
-      return TermQuery.new(Term.new(@field, tokens[0].term_text))
+      return TermQuery.new(Term.new(field, tokens[0].term_text))
     else
       pq = PhraseQuery.new()
       tokens.each do |token|
-        pq.add(Term.new(@field, token.term_text), nil, token.position_increment)
+        pq.add(Term.new(field, token.term_text), nil, token.position_increment)
       end
       return pq
     end
   end
 
-  def get_fuzzy_query(word, min_sim = nil)
+  def get_fuzzy_query(field, word, min_sim = nil)
     tokens = []
-    stream = @analyzer.token_stream(@field, word)
+    stream = @analyzer.token_stream(field, word)
     if token = stream.next # only makes sense to look at one term for fuzzy
       if min_sim
-        return FuzzyQuery.new(Term.new(@field, token.term_text), min_sim.to_f)
+        return FuzzyQuery.new(Term.new(field, token.term_text), min_sim.to_f)
       else
-        return FuzzyQuery.new(Term.new(@field, token.term_text))
+        return FuzzyQuery.new(Term.new(field, token.term_text))
       end
     else
       return nil
     end
+  end
+
+  def get_wild_query(field, regexp)
+    WildcardQuery.new(Term.new(field, regexp))
   end
 
   def add_multi_word(words, word)
@@ -202,7 +210,7 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
     return words
   end
 
-  def get_normal_phrase_query(positions)
+  def get_normal_phrase_query(field, positions)
     pq = PhraseQuery.new()
     pq.slop = @default_slop
     pos_inc = 0
@@ -212,13 +220,13 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
         pos_inc += 1
         next
       end
-      stream = @analyzer.token_stream(@field, position)
+      stream = @analyzer.token_stream(field, position)
       tokens = []
       while token = stream.next
         tokens << token
       end
       tokens.each do |token|
-        pq.add(Term.new(@field, token.term_text), nil,
+        pq.add(Term.new(field, token.term_text), nil,
                token.position_increment + pos_inc)
         pos_inc = 0
       end
@@ -226,7 +234,7 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
     return pq
   end
 
-  def get_multi_phrase_query(positions)
+  def get_multi_phrase_query(field, positions)
     mpq = MultiPhraseQuery.new()
     mpq.slop = @default_slop
     pos_inc = 0
@@ -240,21 +248,21 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
         position.compact! # it doesn't make sense to have an empty spot here
         terms = []
         position.each do |word|
-          stream = @analyzer.token_stream(@field, word)
+          stream = @analyzer.token_stream(field, word)
           if token = stream.next # only put one term per word
-            terms << Term.new(@field, token.term_text)
+            terms << Term.new(field, token.term_text)
           end
         end
         mpq.add(terms, nil, pos_inc + 1) # must go at least one forward
         pos_inc = 0
       else
-        stream = @analyzer.token_stream(@field, position)
+        stream = @analyzer.token_stream(field, position)
         tokens = []
         while token = stream.next
           tokens << token
         end
         tokens.each do |token|
-          mpq.add([Term.new(@field, token.term_text)], nil,
+          mpq.add([Term.new(field, token.term_text)], nil,
                  token.position_increment + pos_inc)
           pos_inc = 0
         end
@@ -265,7 +273,7 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
 
   def get_phrase_query(positions, slop = nil)
     if positions.size == 1 and not positions[0].is_a?(Array)
-      return get_term_query(words[0])
+      return _get_term_query(words[0])
     end
 
     multi_phrase = false
@@ -278,14 +286,16 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
       end
     end
 
-    q = nil
-    if not multi_phrase
-      q = get_normal_phrase_query(positions.flatten)
-    else
-      q = get_multi_phrase_query(positions)
+    return do_multiple_fields() do |field|
+      q = nil
+      if not multi_phrase
+        q = get_normal_phrase_query(field, positions.flatten)
+      else
+        q = get_multi_phrase_query(field, positions)
+      end
+      q.slop = slop if slop
+      next q
     end
-    q.slop = slop if slop
-    return q
   end
 
   def add_and_clause(clauses, clause)
@@ -323,7 +333,7 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
       return clauses[0].query
     end
     bq = BooleanQuery.new()
-    clauses.each {|clause|   bq << clause }
+    clauses.each {|clause| bq << clause }
     return bq                
   end                        
                              
@@ -332,131 +342,169 @@ module_eval <<'..end query_parser.y modeval..id81724dccc9', 'query_parser.y', 12
     return BooleanClause.new(query, occur)
   end
 
-..end query_parser.y modeval..id81724dccc9
+  def do_multiple_fields()
+    if @field.is_a? String
+      return yield(@field)
+    elsif @field.size == 1
+      return yield(@field[0])
+    else
+      bq = BooleanQuery.new()
+      @field.each do |field|
+        q = yield(field)
+        bq << BooleanClause.new(q) if q
+      end
+      return bq                
+    end
+  end
+
+  def method_missing(meth, *args)
+    if meth.to_s =~ /_(get_[a-z_]+_query)/
+      do_multiple_fields() do |field|
+        self.__send__($1, *([field] + args))
+      end
+    else
+      raise NoMethodError.new("No such method #{meth} in #{self.class}", meth, args)
+    end
+  end
+
+
+..end query_parser.y modeval..ida7635f3098
 
 ##### racc 1.4.4 generates ###
 
 racc_reduce_table = [
  0, 0, :racc_error,
- 1, 25, :_reduce_1,
- 1, 26, :_reduce_2,
- 3, 26, :_reduce_3,
- 3, 26, :_reduce_4,
- 2, 26, :_reduce_5,
- 2, 27, :_reduce_6,
- 2, 27, :_reduce_7,
- 1, 27, :_reduce_8,
+ 1, 26, :_reduce_1,
+ 1, 27, :_reduce_2,
+ 3, 27, :_reduce_3,
+ 3, 27, :_reduce_4,
+ 2, 27, :_reduce_5,
+ 2, 28, :_reduce_6,
+ 2, 28, :_reduce_7,
+ 1, 28, :_reduce_8,
+ 1, 30, :_reduce_none,
+ 3, 30, :_reduce_10,
  1, 29, :_reduce_none,
- 3, 29, :_reduce_10,
- 1, 28, :_reduce_none,
- 3, 28, :_reduce_12,
- 1, 28, :_reduce_none,
- 1, 28, :_reduce_none,
- 1, 28, :_reduce_none,
- 1, 28, :_reduce_none,
- 1, 30, :_reduce_17,
- 3, 30, :_reduce_18,
- 2, 30, :_reduce_19,
- 1, 34, :_reduce_20,
- 0, 36, :_reduce_21,
- 4, 31, :_reduce_22,
- 1, 35, :_reduce_23,
- 3, 32, :_reduce_24,
+ 3, 29, :_reduce_12,
+ 1, 29, :_reduce_none,
+ 1, 29, :_reduce_none,
+ 1, 29, :_reduce_none,
+ 1, 29, :_reduce_none,
+ 1, 31, :_reduce_17,
+ 3, 31, :_reduce_18,
+ 2, 31, :_reduce_19,
+ 1, 35, :_reduce_20,
+ 0, 37, :_reduce_21,
+ 4, 32, :_reduce_22,
+ 0, 38, :_reduce_23,
+ 0, 39, :_reduce_24,
  5, 32, :_reduce_25,
- 2, 32, :_reduce_26,
- 4, 32, :_reduce_27,
- 1, 37, :_reduce_28,
- 2, 37, :_reduce_29,
- 3, 37, :_reduce_30,
- 3, 37, :_reduce_31,
- 4, 33, :_reduce_32,
- 4, 33, :_reduce_33,
- 4, 33, :_reduce_34,
- 4, 33, :_reduce_35,
- 3, 33, :_reduce_36,
- 3, 33, :_reduce_37,
- 3, 33, :_reduce_38,
- 3, 33, :_reduce_39,
- 2, 33, :_reduce_40,
- 3, 33, :_reduce_41,
- 3, 33, :_reduce_42,
- 2, 33, :_reduce_43 ]
+ 1, 36, :_reduce_26,
+ 3, 36, :_reduce_27,
+ 3, 33, :_reduce_28,
+ 5, 33, :_reduce_29,
+ 2, 33, :_reduce_30,
+ 4, 33, :_reduce_31,
+ 1, 40, :_reduce_32,
+ 2, 40, :_reduce_33,
+ 3, 40, :_reduce_34,
+ 3, 40, :_reduce_35,
+ 4, 34, :_reduce_36,
+ 4, 34, :_reduce_37,
+ 4, 34, :_reduce_38,
+ 4, 34, :_reduce_39,
+ 3, 34, :_reduce_40,
+ 3, 34, :_reduce_41,
+ 3, 34, :_reduce_42,
+ 3, 34, :_reduce_43,
+ 2, 34, :_reduce_44,
+ 3, 34, :_reduce_45,
+ 3, 34, :_reduce_46,
+ 2, 34, :_reduce_47 ]
 
-racc_reduce_n = 44
+racc_reduce_n = 48
 
-racc_shift_n = 73
+racc_shift_n = 78
 
 racc_action_table = [
-     7,    10,    61,    47,    38,    36,    48,    21,     3,    41,
-    60,     6,     9,    12,    14,    16,    18,    37,    35,     1,
-     7,    10,    33,    34,    58,    59,    40,    21,     3,    45,
-   -23,     6,     9,    12,    14,    16,    18,     7,    10,     1,
-    55,    42,    30,    56,    21,     3,    44,    28,     6,     9,
-    12,    14,    16,    18,    43,    57,     1,     7,    10,    33,
-    34,    70,    71,    39,    21,     3,    63,    64,     6,     9,
-    12,    14,    16,    18,     7,    10,     1,    27,    62,    25,
-    66,    21,     3,    67,    68,     6,     9,    12,    14,    16,
-    18,     7,    10,     1,    69,    23,    72,   nil,    21,     3,
-   nil,   nil,     6,     9,    12,    14,    16,    18,    21,     3,
-     1,   nil,     6,     9,    12,    14,    16,    18,    21,     3,
-     1,   nil,     6,     9,    12,    14,    16,    18,    21,     3,
-     1,   nil,     6,     9,    12,    14,    16,    18,    52,   nil,
-     1,   nil,   nil,    49,    50,   nil,    51 ]
+     8,    10,    60,    59,    75,    74,    50,    21,     2,    25,
+   -26,     7,     9,    41,    13,    15,    17,    19,     8,    10,
+     3,    43,    64,    26,   -26,    21,     2,    40,    38,     7,
+     9,    63,    13,    15,    17,    19,     8,    10,     3,    36,
+    46,    53,    37,    21,     2,    49,    34,     7,     9,    45,
+    13,    15,    17,    19,    58,    57,     3,     8,    10,    31,
+    33,    54,    55,    56,    21,     2,    44,    48,     7,     9,
+    61,    13,    15,    17,    19,    67,    66,     3,     8,    10,
+    31,    33,    62,    42,    65,    21,     2,    39,    30,     7,
+     9,    70,    13,    15,    17,    19,     8,    10,     3,    71,
+    72,    73,    24,    21,     2,    77,   nil,     7,     9,   nil,
+    13,    15,    17,    19,    21,     2,     3,   nil,     7,     9,
+   nil,    13,    15,    17,    19,    21,     2,     3,   nil,     7,
+     9,   nil,    13,    15,    17,    19,    21,     2,     3,   nil,
+     7,     9,   nil,    13,    15,    17,    19,    21,     2,     3,
+   nil,     7,     9,   nil,    13,    15,    17,    19,   nil,   nil,
+     3 ]
 
 racc_action_check = [
-     0,     0,    41,    27,    14,    12,    28,     0,     0,    18,
-    41,     0,     0,     0,     0,     0,     0,    14,    12,     0,
-    24,    24,    24,    24,    40,    40,    16,    24,    24,    24,
-    21,    24,    24,    24,    24,    24,    24,     3,     3,    24,
-    35,    21,     9,    37,     3,     3,    23,     9,     3,     3,
-     3,     3,     3,     3,    23,    39,     3,    11,    11,    11,
-    11,    61,    61,    15,    11,    11,    44,    44,    11,    11,
-    11,    11,    11,    11,    34,    34,    11,     8,    42,     5,
-    48,    34,    34,    49,    50,    34,    34,    34,    34,    34,
-    34,    33,    33,    34,    51,     1,    67,   nil,    33,    33,
-   nil,   nil,    33,    33,    33,    33,    33,    33,    10,    10,
-    33,   nil,    10,    10,    10,    10,    10,    10,    25,    25,
-    10,   nil,    25,    25,    25,    25,    25,    25,     7,     7,
-    25,   nil,     7,     7,     7,     7,     7,     7,    29,   nil,
-     7,   nil,   nil,    29,    29,   nil,    29 ]
+     0,     0,    38,    38,    64,    64,    30,     0,     0,     6,
+    21,     0,     0,    17,     0,     0,     0,     0,     2,     2,
+     0,    21,    42,     6,    21,     2,     2,    17,    15,     2,
+     2,    42,     2,     2,     2,     2,    33,    33,     2,    13,
+    24,    34,    15,    33,    33,    28,    13,    33,    33,    24,
+    33,    33,    33,    33,    37,    35,    33,    23,    23,    23,
+    23,    35,    35,    35,    23,    23,    23,    26,    23,    23,
+    39,    23,    23,    23,    23,    46,    46,    23,    12,    12,
+    12,    12,    40,    19,    43,    12,    12,    16,    11,    12,
+    12,    53,    12,    12,    12,    12,    31,    31,    12,    54,
+    55,    56,     3,    31,    31,    72,   nil,    31,    31,   nil,
+    31,    31,    31,    31,    49,    49,    31,   nil,    49,    49,
+   nil,    49,    49,    49,    49,    25,    25,    49,   nil,    25,
+    25,   nil,    25,    25,    25,    25,     8,     8,    25,   nil,
+     8,     8,   nil,     8,     8,     8,     8,    10,    10,     8,
+   nil,    10,    10,   nil,    10,    10,    10,    10,   nil,   nil,
+    10 ]
 
 racc_action_pointer = [
-    -3,    85,   nil,    34,   nil,    77,   nil,   118,    77,    32,
-    98,    54,    -5,   nil,    -6,    54,    16,   nil,    -1,   nil,
-   nil,    28,   nil,    36,    17,   108,   nil,     3,    -7,   128,
-   nil,   nil,   nil,    88,    71,    30,   nil,    33,   nil,    45,
-     4,    -8,    68,   nil,    46,   nil,   nil,   nil,    70,    70,
-    67,    84,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,    41,   nil,   nil,   nil,   nil,   nil,    86,   nil,   nil,
-   nil,   nil,   nil ]
+    -3,   nil,    15,    92,   nil,   nil,     7,   nil,   126,   nil,
+   137,    88,    75,    29,   nil,    18,    78,     3,   nil,    73,
+   nil,     8,   nil,    54,    30,   115,    57,   nil,    43,   nil,
+     6,    93,   nil,    33,    28,    45,   nil,    44,   -19,    60,
+    72,   nil,    12,    74,   nil,   nil,    54,   nil,   nil,   104,
+   nil,   nil,   nil,    81,    89,    87,    82,   nil,   nil,   nil,
+   nil,   nil,   nil,   nil,   -17,   nil,   nil,   nil,   nil,   nil,
+   nil,   nil,    95,   nil,   nil,   nil,   nil,   nil ]
 
 racc_action_default = [
-   -44,   -44,   -15,   -44,   -16,   -44,   -20,   -44,   -44,   -44,
-   -44,    -1,   -44,    -2,   -44,    -9,   -44,    -8,   -44,   -11,
-   -13,   -17,   -14,   -44,   -44,   -44,    -6,   -44,   -26,   -44,
-   -28,    -7,    -5,   -44,   -44,   -44,   -40,   -44,   -43,   -44,
-   -44,   -44,   -19,   -39,   -44,   -12,   -21,    73,   -44,   -24,
-   -44,   -44,   -29,    -3,    -4,   -41,   -42,   -10,   -37,   -36,
-   -38,   -44,   -18,   -34,   -35,   -22,   -27,   -44,   -30,   -31,
-   -32,   -33,   -25 ]
+   -48,   -14,   -48,   -48,   -15,   -16,   -48,   -20,   -48,   -23,
+   -48,   -48,    -1,   -48,    -2,   -48,    -9,   -48,    -8,   -48,
+   -11,   -17,   -13,   -48,   -48,   -48,   -48,    -6,   -48,    -7,
+   -48,   -48,    -5,   -48,   -30,   -48,   -32,   -48,   -44,   -48,
+   -48,   -47,   -48,   -19,   -12,   -43,   -48,   -21,   -27,   -48,
+    78,    -3,    -4,   -48,   -48,   -28,   -48,   -33,   -45,   -40,
+   -41,   -10,   -46,   -42,   -48,   -18,   -39,   -38,   -22,   -24,
+   -31,   -35,   -48,   -34,   -37,   -36,   -25,   -29 ]
 
 racc_goto_table = [
-    32,    26,    11,     8,    31,    24,    65,    29,   nil,   nil,
-   nil,   nil,   nil,    32,   nil,   nil,   nil,   nil,   nil,    46,
-   nil,   nil,    53,    54 ]
+    27,    32,    29,    12,    68,    23,    11,    28,    76,    35,
+   nil,   nil,    32,   nil,   nil,   nil,   nil,    47,   nil,   nil,
+    51,   nil,    52,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+   nil,    69 ]
 
 racc_goto_check = [
-     3,     4,     2,     1,     4,     2,    12,    13,   nil,   nil,
-   nil,   nil,   nil,     3,   nil,   nil,   nil,   nil,   nil,     4,
-   nil,   nil,     3,     3 ]
+     4,     3,     4,     2,    12,     2,     1,    13,    14,    15,
+   nil,   nil,     3,   nil,   nil,   nil,   nil,     4,   nil,   nil,
+     3,   nil,     3,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+   nil,     4 ]
 
 racc_goto_pointer = [
-   nil,     3,     2,   -11,    -6,   nil,   nil,   nil,   nil,   nil,
-   nil,   nil,   -40,    -2 ]
+   nil,     6,     3,   -11,    -8,   nil,   nil,   nil,   nil,   nil,
+   nil,   nil,   -43,    -2,   -61,    -4 ]
 
 racc_goto_default = [
-   nil,   nil,   nil,    13,    15,    17,    19,    20,    22,     2,
-     4,     5,   nil,   nil ]
+   nil,   nil,   nil,    14,    16,    18,    20,    22,     1,     4,
+     5,     6,   nil,   nil,   nil,   nil ]
 
 racc_token_table = {
  false => 0,
@@ -474,19 +522,20 @@ racc_token_table = {
  ")" => 12,
  "~" => 13,
  :WILD_STRING => 14,
- "\"" => 15,
- "<" => 16,
- ">" => 17,
- "|" => 18,
- "[" => 19,
- "]" => 20,
- "}" => 21,
- "{" => 22,
- "=" => 23 }
+ "*" => 15,
+ "|" => 16,
+ "\"" => 17,
+ "<" => 18,
+ ">" => 19,
+ "[" => 20,
+ "]" => 21,
+ "}" => 22,
+ "{" => 23,
+ "=" => 24 }
 
 racc_use_result_var = false
 
-racc_nt_base = 24
+racc_nt_base = 25
 
 Racc_arg = [
  racc_action_table,
@@ -520,10 +569,11 @@ Racc_token_to_s_table = [
 '")"',
 '"~"',
 'WILD_STRING',
+'"*"',
+'"|"',
 '"\""',
 '"<"',
 '">"',
-'"|"',
 '"["',
 '"]"',
 '"}"',
@@ -540,8 +590,10 @@ Racc_token_to_s_table = [
 'phrase_query',
 'range_query',
 'wild_query',
-'field_name',
+'field',
 '@1',
+'@2',
+'@3',
 'phrase_words']
 
 Racc_debug_parser = false
@@ -624,25 +676,25 @@ module_eval <<'.,.,', 'query_parser.y', 58
 
 module_eval <<'.,.,', 'query_parser.y', 67
   def _reduce_17( val, _values)
-                    get_term_query(val[0])
+                    _get_term_query(val[0])
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 71
   def _reduce_18( val, _values)
-                    get_fuzzy_query(val[0], val[2])
+                    _get_fuzzy_query(val[0], val[2])
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 75
   def _reduce_19( val, _values)
-                    get_fuzzy_query(val[0])
+                    _get_fuzzy_query(val[0])
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 80
   def _reduce_20( val, _values)
-                    WildcardQuery.new(Term.new(@field, val[0]))
+                    _get_wild_query(val[0])
   end
 .,.,
 
@@ -658,129 +710,153 @@ module_eval <<'.,.,', 'query_parser.y', 85
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 86
+module_eval <<'.,.,', 'query_parser.y', 85
   def _reduce_23( val, _values)
- @field = val[0]
+@field = @fields
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 92
+module_eval <<'.,.,', 'query_parser.y', 85
   def _reduce_24( val, _values)
-                    get_phrase_query(val[1])
+@field = @default_field
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 96
+module_eval <<'.,.,', 'query_parser.y', 89
   def _reduce_25( val, _values)
-                    get_phrase_query(val[1], val[4].to_i)
+                    val[3]
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 96
+module_eval <<'.,.,', 'query_parser.y', 90
   def _reduce_26( val, _values)
- nil
+ @field = [val[0]]
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 91
+  def _reduce_27( val, _values)
+ @field = val[0] += [val[2]]
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 97
-  def _reduce_27( val, _values)
- nil
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 99
   def _reduce_28( val, _values)
- [val[0]]
+                    get_phrase_query(val[1])
   end
 .,.,
 
-module_eval <<'.,.,', 'query_parser.y', 100
+module_eval <<'.,.,', 'query_parser.y', 101
   def _reduce_29( val, _values)
- val[0] << val[1]
+                    get_phrase_query(val[1], val[4].to_i)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 101
   def _reduce_30( val, _values)
- val[0] << nil
+ nil
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 102
   def _reduce_31( val, _values)
- add_multi_word(val[0], val[2])
+ nil
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 104
   def _reduce_32( val, _values)
- get_range_query(val[1], val[2], true, true)
+ [val[0]]
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 105
   def _reduce_33( val, _values)
- get_range_query(val[1], val[2], true, false)
+ val[0] << val[1]
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 106
   def _reduce_34( val, _values)
- get_range_query(val[1], val[2], false, true)
+ val[0] << nil
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 107
   def _reduce_35( val, _values)
- get_range_query(val[1], val[2], false, false)
-  end
-.,.,
-
-module_eval <<'.,.,', 'query_parser.y', 108
-  def _reduce_36( val, _values)
- get_range_query(nil,    val[1], false, false)
+ add_multi_word(val[0], val[2])
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 109
-  def _reduce_37( val, _values)
- get_range_query(nil,    val[1], false, true)
+  def _reduce_36( val, _values)
+ _get_range_query(val[1], val[2], true, true)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 110
-  def _reduce_38( val, _values)
- get_range_query(val[1], nil,    true, false)
+  def _reduce_37( val, _values)
+ _get_range_query(val[1], val[2], true, false)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 111
-  def _reduce_39( val, _values)
- get_range_query(val[1], nil,    false, false)
+  def _reduce_38( val, _values)
+ _get_range_query(val[1], val[2], false, true)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 112
-  def _reduce_40( val, _values)
- get_range_query(nil,    val[1], false, false)
+  def _reduce_39( val, _values)
+ _get_range_query(val[1], val[2], false, false)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 113
-  def _reduce_41( val, _values)
- get_range_query(nil,    val[2], false, true)
+  def _reduce_40( val, _values)
+ _get_range_query(nil,    val[1], false, false)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 114
-  def _reduce_42( val, _values)
- get_range_query(val[2], nil,    true, false)
+  def _reduce_41( val, _values)
+ _get_range_query(nil,    val[1], false, true)
   end
 .,.,
 
 module_eval <<'.,.,', 'query_parser.y', 115
+  def _reduce_42( val, _values)
+ _get_range_query(val[1], nil,    true, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 116
   def _reduce_43( val, _values)
- get_range_query(val[1], nil,    false, false)
+ _get_range_query(val[1], nil,    false, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 117
+  def _reduce_44( val, _values)
+ _get_range_query(nil,    val[1], false, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 118
+  def _reduce_45( val, _values)
+ _get_range_query(nil,    val[2], false, true)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 119
+  def _reduce_46( val, _values)
+ _get_range_query(val[2], nil,    true, false)
+  end
+.,.,
+
+module_eval <<'.,.,', 'query_parser.y', 120
+  def _reduce_47( val, _values)
+ _get_range_query(val[1], nil,    false, false)
   end
 .,.,
 
@@ -809,7 +885,7 @@ if __FILE__ == $0
   st = "\033[7m"
   en = "\033[m"
 
-  parser = Ferret::QueryParser.new("default")
+  parser = Ferret::QueryParser.new("default", :fields => ["f1", "f2", "f3"])
 
   $stdin.each do |line|
     query = parser.parse(line)

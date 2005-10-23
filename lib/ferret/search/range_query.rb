@@ -96,7 +96,7 @@ module Ferret::Search
         buffer << (@include_lower ? "[" : "{")
         buffer << @lower_term
       else
-        buffer << "|"
+        buffer << "<"
       end
 
       buffer << " " if @upper_term and @lower_term
@@ -105,7 +105,7 @@ module Ferret::Search
         buffer << @upper_term
         buffer << (@include_upper ? "]" : "}")
       else
-        buffer << "|"
+        buffer << ">"
       end
 
       if boost() != 1.0

@@ -72,14 +72,14 @@ class IndexTest < Test::Unit::TestCase
 
   def do_test_index_with_doc_array(index)
     data = [
-      {"def_field" => "one two", :id => "me"},
-      {"def_field" => "one", :field2 => "three"},
+      {"def_field" => "one two multi", :id => "me"},
+      {"def_field" => "one", :field2 => "three multi"},
       {"def_field" => "two"},
       {"def_field" => "one", :field2 => "four"},
       {"def_field" => "one two"},
       {"def_field" => "two", :field2 => "three", "field3" => "four"},
-      {"def_field" => "one"},
-      {"def_field" => "two", :field2 => "three", "field3" => "five"}
+      {"def_field" => "one multi2"},
+      {"def_field" => "two", :field2 => "three multi2", "field3" => "five multi"}
     ]
     data.each {|doc| index << doc }
     q = "one AND two"
@@ -90,6 +90,10 @@ class IndexTest < Test::Unit::TestCase
     check_results(index, q, [0, 1, 3, 4, 6, 7])
     q = "two AND (field3:f*)"
     check_results(index, q, [5, 7])
+    q = "*:(multi OR multi2)"
+    check_results(index, q, [0, 1, 6, 7])
+    q = "field2|field3:(multi OR multi2)"
+    check_results(index, q, [1, 7])
     doc = index[5]
     assert_equal("three", index[5]["field2"])
     assert(!index.has_deletions?)
@@ -99,6 +103,7 @@ class IndexTest < Test::Unit::TestCase
     assert(index.has_deletions?)
     assert(index.deleted?(5))
     assert_equal(7, index.size)
+    q = "two AND (field3:f*)"
     check_results(index, q, [7])
     doc["field2"] = "dave"
     index << doc
@@ -114,7 +119,7 @@ class IndexTest < Test::Unit::TestCase
     assert(! index.deleted?(7))
     t = Term.new("field2", "four")
     assert_equal("one", index[t]["def_field"])
-    assert_equal("one two", index["me"]["def_field"])
+    assert_equal("one two multi", index["me"]["def_field"])
     index.delete("me")
     assert(index.deleted?(0))
   end
