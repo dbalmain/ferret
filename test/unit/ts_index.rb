@@ -1,18 +1,2 @@
-$:.unshift File.dirname(__FILE__)
-
-require 'index/tc_compound_file_io.rb'
-require 'index/tc_field_infos.rb'
-require 'index/tc_fields_io.rb'
-require 'index/tc_index_writer.rb'
-require 'index/tc_index_reader.rb'
-require 'index/tc_segment_infos.rb'
-require 'index/tc_segment_term_docs.rb'
-require 'index/tc_segment_term_enum.rb'
-require 'index/tc_segment_term_vector.rb'
-require 'index/tc_term.rb'
-require 'index/tc_term_buffer.rb'
-require 'index/tc_term_info.rb'
-require 'index/tc_term_infos_io.rb'
-require 'index/tc_term_vector_offset_info.rb'
-require 'index/tc_term_vectors_io.rb'
-require 'index/tc_index.rb'
+require File.join(File.dirname(__FILE__), "../test_helper.rb")
+load_test_dir('unit/index')

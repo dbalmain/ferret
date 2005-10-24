@@ -1,9 +1,73 @@
 module Ferret::Index
+  # This is a simplified interface to the index. See the TUTORIAL for more
+  # information on how to use this class.
   class Index
     include Ferret::Store
     include Ferret::Search
     include Ferret::Document
 
+    # If you create an Index without any options, it'll simply create an index
+    # in memory. But this class is highly configurable and every option that
+    # you can supply to IndexWriter and QueryParser, you can also set here.
+    #
+    # === Options
+    #
+    # path::              A string representing the path to the index
+    #                     directory. If you are creating the index for the
+    #                     first time the directory will be created if it's
+    #                     missing. You should not choose a directory which
+    #                     contains other files.
+    # create_if_missing:: Create the index if no index is found in the
+    #                     specified directory. Otherwise, use the existing
+    #                     index. This defaults to true and has no effect on in
+    #                     memory indexes.
+    # create::            Creates the index, even if one already exists. That
+    #                     means any existing index will be deleted. This
+    #                     option defaults to false and has no effect for in
+    #                     memory indexes. It is probably better to use the
+    #                     create_if_missing option.
+    # default_field::     This specifies the field or fields that will be 
+    #                     searched by the query parser. You can use a string
+    #                     to specify one field, eg, "title". Or you can
+    #                     specify multiple fields with a String - 
+    #                     "title|content" - or with an Array - ["title",
+    #                     "content"]. This defaults to "*" which signifies all
+    #                     fields in the index.
+    # analyzer::          Sets the default analyzer for the index. This is
+    #                     used by both the IndexWriter and the QueryParser to
+    #                     tokenize the input. The default is the
+    #                     StandardAnalyzer.
+    # dir::               This is an Ferret::Store::Directory object. This can
+    #                     be useful if you have an already existing in-memory
+    #                     index which you'd like to read with this class. If
+    #                     you want to create a new index, you are better off
+    #                     passing in a path.
+    # close_dir::         This specifies whether you would this class to close
+    #                     the index directory when this class is closed. This
+    #                     only has any meaning when you pass in a directory
+    #                     object in the *dir* option, in which case it
+    #                     defaults to false. Otherwise it is always true.
+    # occur_default::     Set to either BooleanClause::Occur::SHOULD (default)
+    #                     or BooleanClause::Occur::MUST to specify the default
+    #                     Occur operator.
+    # wild_lower::        Set to false if you don't want the terms in fuzzy and
+    #                     wild queries to be set to lower case. You should do
+    #                     this if your analyzer doesn't downcase. The default
+    #                     is true.
+    # default_slop::      Set the default slop for phrase queries. This
+    #                     defaults to 0.
+    # 
+    # Some examples;
+    #
+    #   index = Index::Index.new(:analyzer => WhiteSpaceAnalyzer.new())
+    #
+    #   index = Index::Index.new(:path => '/path/to/index',
+    #                            :create_if_missing => false)
+    #
+    #   index = Index::Index.new(:dir => directory,
+    #                            :close_dir => false
+    #                            :default_slop => 2)
+    #   
     def initialize(options = {})
       if options[:path]
         options[:create_if_missing] = true if options[:create_if_missing].nil? 
@@ -27,6 +91,7 @@ module Ferret::Index
       @open = true
     end
 
+    # Closes this index by closing its associated reader and writer objects.
     def close
       if not @open
         raise "tried to close an already closed directory"

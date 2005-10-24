@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end query_parser.y modeval..ida7635f3098', 'query_parser.y', 126
+module_eval <<'..end query_parser.y modeval..idd71e8b50a2', 'query_parser.y', 126
   attr_accessor :default_field, :fields
 
   # true if you want to downcase wild card queries. This is set to try by
@@ -21,7 +21,7 @@ module_eval <<'..end query_parser.y modeval..ida7635f3098', 'query_parser.y', 12
   def wild_lower?() @wild_lower end
 
 
-  def initialize(default_field = "", options = {})
+  def initialize(default_field = "*", options = {})
     @yydebug = true
     if default_field.is_a?(String) and default_field.index("|")
       default_field = default_field.split("|")
@@ -343,7 +343,9 @@ module_eval <<'..end query_parser.y modeval..ida7635f3098', 'query_parser.y', 12
   end
 
   def do_multiple_fields()
-    if @field.is_a? String
+    # set @field to all fields if @field is the multi-field operator
+    @field = @fields if @field.is_a?(String) and @field == "*"
+    if @field.is_a?(String)
       return yield(@field)
     elsif @field.size == 1
       return yield(@field[0])
@@ -368,7 +370,7 @@ module_eval <<'..end query_parser.y modeval..ida7635f3098', 'query_parser.y', 12
   end
 
 
-..end query_parser.y modeval..ida7635f3098
+..end query_parser.y modeval..idd71e8b50a2
 
 ##### racc 1.4.4 generates ###
 
@@ -712,7 +714,7 @@ module_eval <<'.,.,', 'query_parser.y', 85
 
 module_eval <<'.,.,', 'query_parser.y', 85
   def _reduce_23( val, _values)
-@field = @fields
+@field = "*"
   end
 .,.,
 

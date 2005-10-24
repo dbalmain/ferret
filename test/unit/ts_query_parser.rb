@@ -1,3 +1,2 @@
-$:.unshift File.dirname(__FILE__)
-
-require 'query_parser/tc_query_parser.rb'
+require File.join(File.dirname(__FILE__), "../test_helper.rb")
+load_test_dir('unit/query_parser')

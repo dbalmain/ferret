@@ -83,7 +83,7 @@ rule
                   {
                     val[2]
                   }
-                | '*' {@field = @fields} ':' query {@field = @default_field}
+                | '*' {@field = "*"} ':' query {@field = @default_field}
                   {
                     val[3]
                   }
@@ -132,7 +132,7 @@ end
   def wild_lower?() @wild_lower end
 
 
-  def initialize(default_field = "", options = {})
+  def initialize(default_field = "*", options = {})
     @yydebug = true
     if default_field.is_a?(String) and default_field.index("|")
       default_field = default_field.split("|")
@@ -454,7 +454,9 @@ end
   end
 
   def do_multiple_fields()
-    if @field.is_a? String
+    # set @field to all fields if @field is the multi-field operator
+    @field = @fields if @field.is_a?(String) and @field == "*"
+    if @field.is_a?(String)
       return yield(@field)
     elsif @field.size == 1
       return yield(@field[0])

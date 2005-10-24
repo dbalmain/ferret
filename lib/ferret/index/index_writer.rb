@@ -53,12 +53,15 @@ module Index
     # +dir+, replacing the index already there, if any.
     # NOTE:: all options are passed in a hash.
     #
-    # dir::      the index directory
-    # analyzer:: the analyzer to use. Defaults to StandardAnalyzer.
-    # create::   +true+ to create the index or overwrite the existing one 
-    #            +false+ to append to the existing index
+    # dir::               the index directory
+    # analyzer::          the analyzer to use. Defaults to StandardAnalyzer.
+    # create::            +true+ to create the index or overwrite the existing
+    #                     one +false+ to append to the existing index
     # create_if_missing:: +true+ to create the index if it's missing
     #                     +false+ to throw an IOError if it's missing
+    # close_dir::         This specifies whether you would this class to close
+    #                     the index directory when this class is closed. The
+    #                     default is false.
     def initialize(dir, options = {})
       super()
       create = options[:create]||false

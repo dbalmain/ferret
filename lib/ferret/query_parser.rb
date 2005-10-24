@@ -233,18 +233,26 @@ module Ferret
     #
     # default_field:: all queries without a specified query string are run on
     #                 this field.
-    # options:: the following options exist;
     #
-    # * *analyzer* the analyzer is used to break phrases up into terms and
-    #   to turn terms in tokens recognized in the index. Analysis::Analyzer
-    #   is the default
-    # * *occur_default* Set to either BooleanClause::Occur::SHOULD (default)
-    #   or BooleanClause::Occur::MUST to specify the default Occur operator.
-    # * *wild_lower* Set to false if you don't want the terms in fuzzy and
-    #   wild queries to be set to lower case. You should do this if your
-    #   analyzer doesn't downcase. The default is true.
-    # * *default_slop* Set the default slop for phrase queries. This defaults
-    #   to 0.
+    # options::       the following options exist and should be passed in as a
+    #                 hash. eg;
+    #
+    #   qp = QueryParser.new("*", { :analyzer => WhiteSpaceAnalyzer.new(),
+    #                               :wild_lower => true})
+    #
+    # === Options
+    #
+    # analyzer::      The analyzer is used to break phrases up into terms and
+    #                 to turn terms in tokens recognized in the index.
+    #                 Analysis::Analyzer is the default
+    # occur_default:: Set to either BooleanClause::Occur::SHOULD (default)
+    #                 or BooleanClause::Occur::MUST to specify the default
+    #                 Occur operator.
+    # wild_lower::    Set to false if you don't want the terms in fuzzy and
+    #                 wild queries to be set to lower case. You should do this
+    #                 if your analyzer doesn't downcase. The default is true.
+    # default_slop::  Set the default slop for phrase queries. This defaults
+    #                 to 0.
     def initialize(default_field = "", options = {})
     end
 
