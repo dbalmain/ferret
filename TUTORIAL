@@ -28,7 +28,9 @@ For more options when creating an Index refer to Ferret::Index::Index.
 
 === Adding Documents
 
-To add a document you can simply add a string or an array of strings.
+To add a document you can simply add a string or an array of strings. This will
+store all the strings in the "" (ie empty string) field (unless you specify the
+default field when you create the index).
 
   index << "This is a new document to be indexed"
   index << ["And here", "is another", "new document", "to be indexed"]
@@ -107,6 +109,12 @@ document type;
   index[2]["title"]
 
 NOTE: documents are indexed from 0.
+
+The default field is an empty string when you use the simple string document so
+to access those strings you'll have type;
+
+  index << "This is a document"
+  index[0][""]
 
 Let's go back to the database example above. If we store all of our documents
 with an id then we can access that field using the id. As long as we called

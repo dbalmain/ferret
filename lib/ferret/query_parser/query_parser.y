@@ -473,7 +473,7 @@ end
   def method_missing(meth, *args)
     if meth.to_s =~ /_(get_[a-z_]+_query)/
       do_multiple_fields() do |field|
-        self.__send__($1, *([field] + args))
+        send($1, *([field] + args))
       end
     else
       raise NoMethodError.new("No such method #{meth} in #{self.class}", meth, args)
