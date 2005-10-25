@@ -82,7 +82,7 @@ frt_indexin_refill(VALUE self)
       rStr, INT2FIX(0), INT2FIX(len_to_read));
 
   memcpy(my_buf->buffer, RSTRING(rStr)->ptr, BUFFER_SIZE);
-  //my_buf->buffer = StringValuePtr(rStr);
+  /* my_buf->buffer = StringValuePtr(rStr); */
 
   my_buf->len = len_to_read;
   my_buf->start = start;
@@ -143,7 +143,7 @@ frt_read_bytes(VALUE self, VALUE rbuffer, int offset, int len)
 
     my_buf->start = my_buf->start + len;
     my_buf->pos = 0;
-    my_buf->len = 0;              // trigger refill() on read()
+    my_buf->len = 0;              /* trigger refill() on read() */
   }
 
   return rbuf;
@@ -168,11 +168,11 @@ frt_indexin_seek(VALUE self, VALUE rpos)
   Data_Get_Struct(self, IndexBuffer, my_buf);
 
   if ((pos >= my_buf->start) && (pos < (my_buf->start + my_buf->len))) {
-    my_buf->pos = pos - my_buf->start;  // seek within buffer
+    my_buf->pos = pos - my_buf->start;  /* seek within buffer */
   } else {
     my_buf->start = pos;
     my_buf->pos = 0;
-    my_buf->len = 0;              // trigger refill() on read()
+    my_buf->len = 0;                    /* trigger refill() on read() */
     rb_funcall(self, frt_seek_internal, 1, rpos);
   }
   return Qnil;
@@ -229,9 +229,9 @@ frt_read_vint(VALUE self)
   register int shift = 7;
 
   b = frt_read_byte(self);
-  i = b & 0x7F; // 0x7F = 0b01111111
+  i = b & 0x7F; /* 0x7F = 0b01111111 */
   
-  while ((b & 0x80) != 0) {// 0x80 = 0b10000000
+  while ((b & 0x80) != 0) {/* 0x80 = 0b10000000 */
     b = frt_read_byte(self);
     i |= (b & 0x7F) << shift;
     shift += 7;
@@ -249,7 +249,7 @@ frt_indexin_read_vint(VALUE self)
 void
 frt_read_chars(VALUE self, char* buffer, int off, int len) 
 {
-	//byte_t b, b1, b2;
+	/* byte_t b, b1, b2; */
 	int end, i;
 
 	end = off + len;
@@ -257,21 +257,6 @@ frt_read_chars(VALUE self, char* buffer, int off, int len)
 	for(i = off; i < end; i++) {
 		buffer[i] = frt_read_byte(self);
   }
-//	for(i = off; i < end; i++){
-//		b = frt_read_byte(self);
-//		if((b & 0x80) == 0){
-//			buffer[i] = (char)(b & 0x7F);
-//		} else {
-//			if((b & 0xE0) != 0xE0){
-//				b1 = frt_read_byte(self);
-//				buffer[i] = (char)(((b & 0x1F) << 6) | (b1 & 0x3F));
-//			} else{
-//				b1 = frt_read_byte(self);
-//				b2 = frt_read_byte(self);
-//				buffer[i] = (char)(((b & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F));
-//			}
-//		}
-//	}
 }
 
 static VALUE
@@ -412,7 +397,7 @@ static VALUE
 frt_indexout_write_ulong(VALUE self, VALUE rulong)
 {
   unsigned long long l;
-  l = rb_num2ull(rulong); // ruby 1.8 doesn't have NUM2ULL. Added in 1.9
+  l = rb_num2ull(rulong); /* ruby 1.8 doesn't have NUM2ULL. Added in 1.9 */
   frt_write_byte(self, (l >> 56) & 0xFF);
   frt_write_byte(self, (l >> 48) & 0xFF);
   frt_write_byte(self, (l >> 40) & 0xFF);
@@ -492,13 +477,13 @@ frt_indexout_write_string(VALUE self, VALUE rstr)
 void
 Init_indexio(void)
 {
-  // IDs
+  /* IDs */
   frt_length = rb_intern("length");
   frt_flush_buffer = rb_intern("flush_buffer");
   frt_read_internal = rb_intern("read_internal");
   frt_seek_internal = rb_intern("seek_internal");
 
-  // IndexInput
+  /* IndexInput */
   cIndexIn = rb_define_class_under(mStore, "IndexInput", rb_cObject);
   cBufferedIndexIn = rb_define_class_under(mStore, "BufferedIndexInput", cIndexIn);
   rb_define_alloc_func(cBufferedIndexIn, frt_indexbuffer_alloc);
@@ -518,7 +503,7 @@ Init_indexio(void)
   rb_define_method(cBufferedIndexIn, "read_string", frt_indexin_read_string, 0);
   rb_define_method(cBufferedIndexIn, "read_chars", frt_indexin_read_bytes, 3);
 
-  // IndexOutput
+  /* IndexOutput */
   cIndexOut = rb_define_class_under(mStore, "IndexOutput", rb_cObject);
   cBufferedIndexOut = rb_define_class_under(mStore, "BufferedIndexOutput", cIndexOut);
   rb_define_alloc_func(cBufferedIndexOut, frt_indexbuffer_alloc);
@@ -538,6 +523,6 @@ Init_indexio(void)
   rb_define_method(cBufferedIndexOut, "write_chars", frt_indexout_write_chars, 3);
   rb_define_method(cBufferedIndexOut, "write_string", frt_indexout_write_string, 1);
 
-  // FSIndexInput
-  //cFSIndexIn = rb_define_class_under(mStore, "FSIndexInput", cBufferedIndexIn);
+  /* FSIndexInput */
+  /*cFSIndexIn = rb_define_class_under(mStore, "FSIndexInput", cBufferedIndexIn); */
 }

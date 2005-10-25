@@ -42,32 +42,32 @@ typedef struct RAMFile {
   int   length;
 } RAMFile;
 
-// IDs
-ID frt_newobj;
+/* IDs */
+extern ID frt_newobj;
 
-// Modules
-VALUE mFerret;
-VALUE mStore;
-VALUE mIndex;
-VALUE mUtils;
-VALUE mStringHelper;
+/* Modules */
+extern VALUE mFerret;
+extern VALUE mStore;
+extern VALUE mIndex;
+extern VALUE mUtils;
+extern VALUE mStringHelper;
 
-// Classes
-VALUE cRAMDirectory;
-VALUE cIndexIn;
-VALUE cBufferedIndexIn;
-VALUE cFSIndexIn;
-VALUE cIndexOut;
-VALUE cBufferedIndexOut;
-VALUE cFSIndexOut;
-VALUE cRAMIndexOut;
-VALUE cRAMIndexIn;
-VALUE cTerm;
-VALUE cTermBuffer;
-VALUE cPriorityQueue;
-VALUE cSegmentMergeQueue;
+/* Classes */
+extern VALUE cRAMDirectory;
+extern VALUE cIndexIn;
+extern VALUE cBufferedIndexIn;
+extern VALUE cFSIndexIn;
+extern VALUE cIndexOut;
+extern VALUE cBufferedIndexOut;
+extern VALUE cFSIndexOut;
+extern VALUE cRAMIndexOut;
+extern VALUE cRAMIndexIn;
+extern VALUE cTerm;
+extern VALUE cTermBuffer;
+extern VALUE cPriorityQueue;
+extern VALUE cSegmentMergeQueue;
 
-// Ferret Inits
+/* Ferret Inits */
 extern void Init_indexio();
 extern void Init_term();
 extern void Init_priority_queue();
@@ -76,7 +76,7 @@ extern void Init_segment_merge_queue();
 extern void Init_ram_directory();
 extern void Init_string_helper();
 
-// External functions
+/* External functions */
 extern int frt_hash(register char *p, register int len);
 extern unsigned long long frt_read_vint(VALUE self);
 extern void frt_read_chars(VALUE self, char *buf, int offset, int len);

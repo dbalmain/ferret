@@ -88,7 +88,21 @@ class QueryParserTest < Test::Unit::TestCase
 
       ['*:(xxx AND bbb)', '+(f1:xxx f2:xxx f3:xxx) +(f1:bbb f2:bbb f3:bbb)'],
       ['f1|f2:(xxx AND bbb)', '+(f1:xxx f2:xxx) +(f1:bbb f2:bbb)'],
-      ['asdf?*?asd*dsf?asfd*asdf?^20.0', 'asdf?*?asd*dsf?asfd*asdf?^20.0']
+      ['asdf?*?asd*dsf?asfd*asdf?^20.0', 'asdf?*?asd*dsf?asfd*asdf?^20.0'],
+      ['"onewordphrase"', 'onewordphrase']
+    ]
+      
+    pairs.each do |pair|
+      assert_equal(pair[1], parser.parse(pair[0]).to_s(parser.default_field))
+    end
+  end
+
+  def test_qp_with_standard_analyzer()
+    parser = Ferret::QueryParser.new("xxx", :fields => ["f1", "f2", "f3"],
+                                     :analyzer => Ferret::Analysis::StandardAnalyzer.new)
+    pairs = [
+    ['key:1234', 'key:1234'],
+      ['key:(1234)', 'key:1234']
     ]
       
     pairs.each do |pair|

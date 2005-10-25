@@ -1,16 +1,16 @@
 #include "ferret.h"
 
-// IDs
+/* IDs */
 ID frt_newobj;
 
-// Modules
+/* Modules */
 VALUE mFerret;
 VALUE mStore;
 VALUE mIndex;
 VALUE mUtils;
 VALUE mStringHelper;
 
-// Classes
+/* Classes */
 VALUE cRAMDirectory;
 VALUE cIndexIn;
 VALUE cBufferedIndexIn;
@@ -28,16 +28,16 @@ VALUE cSegmentMergeQueue;
 void
 Init_ferret_ext(void)
 {
-  // IDs
+  /* IDs */
 	frt_newobj = rb_intern("new");
 
-  // Modules
+  /* Modules */
   mFerret = rb_define_module("Ferret");
   mStore = rb_define_module_under(mFerret, "Store");
   mIndex = rb_define_module_under(mFerret, "Index");
   mUtils = rb_define_module_under(mFerret, "Utils");
 
-  // Inits
+  /* Inits */
   Init_indexio();
   Init_term();
   Init_term_buffer();

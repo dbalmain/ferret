@@ -384,7 +384,7 @@ end
 
   def get_phrase_query(positions, slop = nil)
     if positions.size == 1 and not positions[0].is_a?(Array)
-      return _get_term_query(words[0])
+      return _get_term_query(positions[0])
     end
 
     multi_phrase = false
@@ -499,7 +499,9 @@ if __FILE__ == $0
   st = "\033[7m"
   en = "\033[m"
 
-  parser = Ferret::QueryParser.new("default", :fields => ["f1", "f2", "f3"])
+  parser = Ferret::QueryParser.new("default",
+                                   :fields => ["f1", "f2", "f3"],
+                                   :analyzer => Ferret::Analysis::StandardAnalyzer.new)
 
   $stdin.each do |line|
     query = parser.parse(line)

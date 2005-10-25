@@ -101,7 +101,7 @@ frt_rio_flush_buffer(VALUE self, VALUE rsrc, VALUE rlen)
   int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
   int src_offset;
   int len = FIX2INT(rlen);
-  //char *src = StringValuePtr(rsrc);
+  /* char *src = StringValuePtr(rsrc); */
   int pointer = FIX2INT(rb_iv_get(self, "pointer"));
  
 	VALUE file = rb_iv_get(self, "file");
@@ -275,26 +275,26 @@ frt_rii_close(VALUE self)
 void
 Init_ram_directory(void)
 {
-  // IDs
+  /* IDs */
   flush = rb_intern("flush");
   seek = rb_intern("seek");
 
-  // RAMDirectory
+  /* RAMDirectory */
   VALUE cDirectory = rb_define_class_under(mStore, "Directory", rb_cObject);
   cRAMDirectory = rb_define_class_under(mStore, "RAMDirectory", cDirectory);
 
-  // RAMFile
+  /* RAMFile */
   VALUE cRAMFile = rb_define_class_under(cRAMDirectory, "RAMFile", rb_cObject);
   rb_define_alloc_func(cRAMFile, frt_rf_alloc);
 
-  // Methods
+  /* Methods */
   rb_define_method(cRAMFile, "length", frt_rf_length, 0);
 
-  // RAMIndexOutput
+  /* RAMIndexOutput */
   cRAMIndexOut = rb_define_class_under(cRAMDirectory, "RAMIndexOutput", cBufferedIndexOut);
-  //rb_define_alloc_func(cRAMIndexOut, frt_ramio_alloc);
+  /*rb_define_alloc_func(cRAMIndexOut, frt_ramio_alloc); */
 
-  // Methods
+  /* Methods */
   rb_define_method(cRAMIndexOut, "initialize", frt_rio_init, 1);
   rb_define_method(cRAMIndexOut, "length", frt_rio_length, 0);
   rb_define_method(cRAMIndexOut, "flush_buffer", frt_rio_flush_buffer, 2);
@@ -303,11 +303,11 @@ Init_ram_directory(void)
   rb_define_method(cRAMIndexOut, "close", frt_rio_close, 0);
   rb_define_method(cRAMIndexOut, "write_to", frt_rio_write_to, 1);
 
-  // RAMIndexInput
+  /* RAMIndexInput */
   cRAMIndexIn = rb_define_class_under(cRAMDirectory, "RAMIndexInput", cBufferedIndexIn);
-  //rb_define_alloc_func(cRAMIndexIn, frt_ramio_alloc);
+  /*rb_define_alloc_func(cRAMIndexIn, frt_ramio_alloc); */
 
-  // Methods
+  /* Methods */
   rb_define_method(cRAMIndexIn, "initialize", frt_rii_init, 1);
   rb_define_method(cRAMIndexIn, "length", frt_rii_length, 0);
   rb_define_method(cRAMIndexIn, "read_internal", frt_rii_read_internal, 3);

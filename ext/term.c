@@ -145,13 +145,15 @@ frt_term_compare_to(VALUE self, VALUE rother)
 		} else
 			comp = mylen > olen ? 1 : -1;
 	}
-	//comp = strcmp(term->field, other->field);
-	//if(comp == 0)
-	//	comp = strcmp(term->text, other->text);
+  /*
+	comp = strcmp(term->field, other->field);
+	if(comp == 0)
+		comp = strcmp(term->text, other->text);
+  */
 	return INT2FIX(comp);
 }
 
-// keep in synch with fuction above
+/* keep in synch with fuction above */
 int
 frt_term_compare_to_int(VALUE self, VALUE rother)
 {
@@ -175,9 +177,11 @@ frt_term_compare_to_int(VALUE self, VALUE rother)
 		} else
 			comp = mylen > olen ? 1 : -1;
 	}
-	//comp = strcmp(term->field, other->field);
-	//if(comp == 0)
-	//	comp = strcmp(term->text, other->text);
+  /*
+	comp = strcmp(term->field, other->field);
+	if(comp == 0)
+		comp = strcmp(term->text, other->text);
+  */
 	return comp;
 }
 
@@ -214,11 +218,13 @@ frt_term_eq(VALUE self, VALUE rother)
 }
 
 
-//static VALUE
-//frt_term_compare_to(VALUE self, VALUE other)
-//{
-//	return INT2FIX(frt_term_compare_to_int(self, other));
-//}
+/*
+static VALUE
+frt_term_compare_to(VALUE self, VALUE other)
+{
+	return INT2FIX(frt_term_compare_to_int(self, other));
+}
+*/
 
 static VALUE
 frt_term_hash(VALUE self)
@@ -238,7 +244,7 @@ frt_term_hash(VALUE self)
 void
 Init_term(void)
 {
-	//Term
+	/* Term */
 	cTerm = rb_define_class_under(mIndex, "Term", rb_cObject);
 	rb_define_alloc_func(cTerm, frt_term_alloc);
 	rb_include_module(cTerm, rb_mComparable);

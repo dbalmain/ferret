@@ -267,15 +267,15 @@ frt_termbuffer_hash(VALUE self)
 
 void 
 Init_term_buffer(void) {
-  // IDs
+  /* IDs */
 	field_name = rb_intern("name");
 
-	// TermBuffer
+	/* TermBuffer */
 	cTermBuffer = rb_define_class_under(mIndex, "TermBuffer", rb_cObject);
 	rb_define_alloc_func(cTermBuffer, frt_termbuffer_alloc);
 	rb_include_module(cTermBuffer, rb_mComparable);
 
-  // Methods
+  /* Methods */
 	rb_define_method(cTermBuffer, "initialize", frt_termbuffer_init, 0);
 	rb_define_method(cTermBuffer, "initialize_copy", frt_termbuffer_init_copy, 1);
 	rb_define_method(cTermBuffer, "text", frt_termbuffer_get_text, 0);

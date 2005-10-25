@@ -30,11 +30,11 @@ frt_smq_less_than(VALUE self, VALUE rsti1, VALUE rsti2)
 void
 Init_segment_merge_queue(void)
 {
-  // IDs
+  /* IDs */
   eq = rb_intern("==");
   lt = rb_intern("<");
 
-  // SegmentMergeQueue
+  /* SegmentMergeQueue */
 	cSegmentMergeQueue = rb_define_class_under(mIndex, "SegmentMergeQueue", cPriorityQueue);
 
 	rb_define_method(cSegmentMergeQueue, "less_than", frt_smq_less_than, 2);
