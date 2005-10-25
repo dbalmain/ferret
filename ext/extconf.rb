@@ -1,3 +1,15 @@
 # extconf.rb for Ferret extensions
-require 'mkmf'
-create_makefile("ferret_ext")
+if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
+  File.open('Makefile', "w") {}
+  begin
+    `nmake`
+    require 'mkmf'
+    create_makefile("ferret_ext")
+  rescue => error
+    require 'fileutils'
+    FileUtils.copy('dummy.exe', 'nmake.exe')
+  end
+else
+  require 'mkmf'
+  create_makefile("ferret_ext")
+end

@@ -663,6 +663,8 @@ module FileOperations
   
   def make(task = nil)
     command(*[config('makeprog'), task].compact)
+  rescue => e
+    puts "The C extensions were not installed. But don't worry. Everything should work fine"
   end
 
   def extdir?(dir)
@@ -1235,6 +1237,8 @@ class Installer
 
   def extconf
     ruby "#{curr_srcdir()}/extconf.rb", *@config.config_opt
+  rescue => e
+    puts "The C extensions could not be installed"
   end
 
   def config_dir_data(rel)
@@ -1344,7 +1348,7 @@ class Installer
   def rubyextentions(dir)
     ents = glob_select("*.#{@config.dllext}", targetfiles())
     if ents.empty?
-      setup_rb_error "no ruby extention exists: 'ruby #{$0} setup' first"
+      puts "no ruby extention exists: 'ruby #{$0} setup' first"
     end
     ents
   end
