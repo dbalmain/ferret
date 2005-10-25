@@ -1,5 +1,30 @@
 #include "ferret.h"
 
+// IDs
+ID frt_newobj;
+
+// Modules
+VALUE mFerret;
+VALUE mStore;
+VALUE mIndex;
+VALUE mUtils;
+VALUE mStringHelper;
+
+// Classes
+VALUE cRAMDirectory;
+VALUE cIndexIn;
+VALUE cBufferedIndexIn;
+VALUE cFSIndexIn;
+VALUE cIndexOut;
+VALUE cBufferedIndexOut;
+VALUE cFSIndexOut;
+VALUE cRAMIndexOut;
+VALUE cRAMIndexIn;
+VALUE cTerm;
+VALUE cTermBuffer;
+VALUE cPriorityQueue;
+VALUE cSegmentMergeQueue;
+
 void
 Init_ferret_ext(void)
 {

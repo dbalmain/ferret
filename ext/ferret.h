@@ -43,29 +43,29 @@ typedef struct RAMFile {
 } RAMFile;
 
 // IDs
-extern ID frt_newobj;
+ID frt_newobj;
 
 // Modules
-extern VALUE mFerret;
-extern VALUE mStore;
-extern VALUE mIndex;
-extern VALUE mUtils;
-extern VALUE mStringHelper;
+VALUE mFerret;
+VALUE mStore;
+VALUE mIndex;
+VALUE mUtils;
+VALUE mStringHelper;
 
 // Classes
-extern VALUE cRAMDirectory;
-extern VALUE cIndexIn;
-extern VALUE cBufferedIndexIn;
-extern VALUE cFSIndexIn;
-extern VALUE cIndexOut;
-extern VALUE cBufferedIndexOut;
-extern VALUE cFSIndexOut;
-extern VALUE cRAMIndexOut;
-extern VALUE cRAMIndexIn;
-extern VALUE cTerm;
-extern VALUE cTermBuffer;
-extern VALUE cPriorityQueue;
-extern VALUE cSegmentMergeQueue;
+VALUE cRAMDirectory;
+VALUE cIndexIn;
+VALUE cBufferedIndexIn;
+VALUE cFSIndexIn;
+VALUE cIndexOut;
+VALUE cBufferedIndexOut;
+VALUE cFSIndexOut;
+VALUE cRAMIndexOut;
+VALUE cRAMIndexIn;
+VALUE cTerm;
+VALUE cTermBuffer;
+VALUE cPriorityQueue;
+VALUE cSegmentMergeQueue;
 
 // Ferret Inits
 extern void Init_indexio();
