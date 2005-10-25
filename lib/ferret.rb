@@ -22,7 +22,7 @@
 #++
 # :include: ../TUTORIAL
 module Ferret
-  VERSION = '0.1.2'
+  VERSION = '0.1.3'
 end
 
 require 'ferret/utils'
