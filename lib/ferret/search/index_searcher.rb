@@ -17,7 +17,7 @@ module Ferret::Search
       elsif arg.is_a?(Ferret::Store::Directory)
         @reader = IndexReader.open(arg)
       elsif arg.is_a?(String)
-        @dir = Ferret::Store::FSDirectory.open(arg)
+        @dir = Ferret::Store::FSDirectory.new(arg, true)
         @reader = IndexReader.open(@dir, true)
       else
         raise ArgumentError, "Unknown argument passed to initialize IndexReader"
