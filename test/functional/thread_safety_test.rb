@@ -14,7 +14,7 @@ class ThreadSafetyTest
 
   INDEX_DIR = File.expand_path(File.join(File.dirname(__FILE__), "index"))
   ANALYZER = Ferret::Analysis::Analyzer.new()
-  ITERATIONS = 1
+  ITERATIONS = 19
   @@searcher = nil
   
   def random(i)
@@ -46,6 +46,10 @@ class ThreadSafetyTest
     end
     
     writer.close()
+  rescue => e
+    puts e
+    puts e.backtrace
+    raise e
   end
 
   def run_search_thread(use_global)
@@ -66,6 +70,10 @@ class ThreadSafetyTest
         end
       end
     end
+  rescue => e
+    puts e
+    puts e.backtrace
+    raise e
   end
 
   def search_for(n, searcher)
