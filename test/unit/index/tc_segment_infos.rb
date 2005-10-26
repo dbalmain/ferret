@@ -63,7 +63,7 @@ class SegmentInfoTest < Test::Unit::TestCase
     assert_equal(si.name, "seg1")
     @dir.close()
     @dpath = File.dirname(__FILE__) + '/../../temp/fsdir'
-    @dir = Ferret::Store::FSDirectory.get_directory(@dpath, true)
+    @dir = Ferret::Store::FSDirectory.new(@dpath, true)
     si.name = "seg2"
     si.doc_count += 2
     si.directory = @dir

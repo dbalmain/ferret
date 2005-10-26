@@ -26,7 +26,7 @@ class FSStoreTest < Test::Unit::TestCase
   def setup
     @dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    @dir = FSDirectory.get_directory(@dpath, true)
+    @dir = FSDirectory.new(@dpath, true)
   end
 
   def teardown
@@ -39,12 +39,12 @@ class FSStoreTest < Test::Unit::TestCase
                          '/../../temp/cachetest')
     assert(! FSDirectory.directory_cache[dir_path],
            "this directory should not be cached yet") 
-    @dir1 = FSDirectory.get_directory(dir_path, true)
+    @dir1 = FSDirectory.new(dir_path, true)
     assert(FSDirectory.directory_cache[dir_path],
            "this directory should now be cached") 
     assert_equal(@dir1.ref_count, 1,
                  "There is one reference so the refcount should now be 1")
-    @dir2 = FSDirectory.get_directory(dir_path, true)
+    @dir2 = FSDirectory.new(dir_path, true)
     assert(@dir1 === @dir2,
            "The directory should be cached so the same directory object should have been returned")
     assert_equal(@dir1.ref_count, 2,

@@ -43,5 +43,12 @@ module Ferret::Search
       return buffer
     end
 
+    def eql?(o)
+      (@prefix == o.prefix and boost() == o.boost)
+    end
+
+    def hash()
+      boost().hash ^ @prefix.hash
+    end
   end
 end

@@ -31,6 +31,30 @@ module Ferret::Store
     # The lock dir is the directory where the file locks will be stored
     LOCK_DIR = nil
 
+    # Create a new directory from the path.
+    # path:: the path to the directory.
+    # create:: if true, create, or erase any existing contents.
+    def initialize(path, create)
+      super()
+      if create then FileUtils.mkdir_p(path) end
+      if not File.directory?(path) then
+        raise "There is no directory: #{path}. Use create = true to create one"
+      end
+      @dir = Dir.new(path)
+      # put the lock_dir here as well if no default exists.
+      if LOCK_DIR then
+        @lock_dir = Dir.new(LOCK_DIR) 
+      else
+        @lock_dir = Dir.new(path) 
+      end
+      @ref_count = 0
+    end
+
+    class <<FSDirectory
+      alias :allocate :new
+      protected :allocate
+    end
+
     # Returns the directory instance for the named location.
     #
     # Directories are cached, so that, for a given canonical path, the same
@@ -39,12 +63,12 @@ module Ferret::Store
     #
     # path:: the path to the directory.
     # create:: if true, create, or erase any existing contents.
-    def FSDirectory.get_directory(path, create=false)
+    def FSDirectory.new(path, create = false)
       dir = nil
       @@Directories.synchronize do
         dir = @@Directories[path]
         if not dir then
-          dir = FSDirectory.new(path, create)
+          dir = FSDirectory.allocate(path, create)
           @@Directories[path] = dir
         end
         dir.refresh if create
@@ -76,6 +100,7 @@ module Ferret::Store
     def refresh
       synchronize do
         # delete all the files
+        refresh_dir
         each do |fname|
           File.delete(dir_path(fname))
         end
@@ -161,7 +186,7 @@ module Ferret::Store
     # Closes the store.
     def close()
       @ref_count -= 1
-      if (@ref_count <=0) then
+      if (@ref_count <= 0) then
         @@Directories.synchronize do
           @@Directories.delete(@dir.path)
         end
@@ -242,20 +267,24 @@ module Ferret::Store
 
     # A file system input stream extending InputStream to read from the file system
     class FSIndexInput < BufferedIndexInput
-      attr_writer :is_clone
-      attr_reader :length
-      attr_reader :file
+      attr_accessor :is_clone
+      attr_reader   :length, :file
 
       def initialize(path)
         @file = File.open(path, "rb")
         @file.extend(MonitorMixin)
+        class <<@file
+          attr_accessor :ref_count
+        end
+        @file.ref_count = 1
         @length = File.size(path)
         @is_clone = false
         super()
       end
 
       def close
-        @file.close if not @is_clone
+        @file.ref_count -= 1
+        @file.close if @file.ref_count == 0
       end
 
       # We need to record if this is a clone so we know when to close the file.
@@ -264,6 +293,7 @@ module Ferret::Store
         fsii = super
         fsii.is_clone = true
         fsii.file.seek(@file.pos)
+        @file.ref_count += 1
         return fsii
       end
 
@@ -290,24 +320,6 @@ module Ferret::Store
     end
 
     private
-      # Create a new directory from the path.
-      # path:: the path to the directory.
-      # create:: if true, create, or erase any existing contents.
-      def initialize(path, create)
-        super()
-        if create then FileUtils.mkdir_p(path) end
-        if not File.directory?(path) then
-          raise "There is no directory: #{path}. Use create = true to create one"
-        end
-        @dir = Dir.new(path)
-        # put the lock_dir here as well if no default exists.
-        if LOCK_DIR then
-          @lock_dir = Dir.new(LOCK_DIR) 
-        else
-          @lock_dir = Dir.new(path) 
-        end
-        @ref_count = 0
-      end
 
       # Add the directory path to the file name for opening
       def dir_path(name)

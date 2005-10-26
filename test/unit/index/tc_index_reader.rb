@@ -597,7 +597,7 @@ class IndexReaderTest < Test::Unit::TestCase
   def test_ir_read_while_optimizing_on_disk()
     dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    fs_dir = Ferret::Store::FSDirectory.get_directory(dpath, true)
+    fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     docs = IndexTestHelper.prepare_ir_test_docs()

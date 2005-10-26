@@ -110,8 +110,10 @@ module Ferret::Index
 
     def close()
       @freq_stream.close()
+      @freq_stream = nil
       if (@skip_stream != nil)
         @skip_stream.close()
+        @skip_stream = nil
       end
       @parent = nil
     end

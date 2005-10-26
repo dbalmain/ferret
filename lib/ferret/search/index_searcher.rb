@@ -11,13 +11,20 @@ module Ferret::Search
     attr_accessor :similarity, :reader
 
     # Creates a searcher searching the index in the provided directory. 
+    #
+    # You need to pass one argument which should be one of the following:
+    #
+    #   * An index reader which the searcher will search
+    #   * A directory where the searcher will open an index reader to search
+    #   * A string which represents a path to the directory to be searched
+    #
     def initialize(arg)
       if arg.is_a?(IndexReader)
         @reader = arg
       elsif arg.is_a?(Ferret::Store::Directory)
-        @reader = IndexReader.open(arg)
+        @reader = IndexReader.open(arg, false)
       elsif arg.is_a?(String)
-        @dir = Ferret::Store::FSDirectory.new(arg, true)
+        @dir = Ferret::Store::FSDirectory.new(arg, false)
         @reader = IndexReader.open(@dir, true)
       else
         raise ArgumentError, "Unknown argument passed to initialize IndexReader"
@@ -73,12 +80,12 @@ module Ferret::Search
     # pass to this method. You can also pass a hash with one or more of the
     # following; {filter, num_docs, first_doc, sort}
     #
-    # query::    the query to run on the index
-    # filter::   filters docs from the search result
+    # query::     The query to run on the index
+    # filter::    filters docs from the search result
     # first_doc:: The index in the results of the first doc retrieved.
-    #    Default is 0
-    # num_docs:: The number of results returned. Default is 10
-    # sort::     an array of SortFields describing how to sort the results.
+    #             Default is 0
+    # num_docs::  The number of results returned. Default is 10
+    # sort::      An array of SortFields describing how to sort the results.
     def search(query, options = {})
       filter = options[:filter]
       first_doc = options[:first_doc]||0

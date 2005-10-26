@@ -26,7 +26,7 @@ module Ferret::Analysis
   #
   #   class LetterTokenizer < RegExpTokenizer
   #       def token_re()
-  #         /[a-zA-Z]+/
+  #         /[[:alpha:]]+/
   #       end
   #   end
   class RegExpTokenizer < Tokenizer
@@ -63,7 +63,7 @@ module Ferret::Analysis
     protected
       # returns the regular expression used to find the next token
       def token_re
-        /[a-zA-Z]+/
+        /[[:alpha:]]+/
       end
 
       # Called on each token to normalize it before it is added to the
@@ -75,13 +75,13 @@ module Ferret::Analysis
   
   # A LetterTokenizer is a tokenizer that divides text at non-letters.
   # That's to say, it defines tokens as maximal strings of adjacent letters,
-  # as defined by the regular expression _/[a-zA-Z]+/_.
+  # as defined by the regular expression _/[[:alpha:]]+/_.
   class LetterTokenizer < RegExpTokenizer
     protected
       # Collects only characters which satisfy the regular expression
-      # _/[a-zA-Z]+/_.
+      # _/[[:alpha:]]+/_.
       def token_re()
-        /[a-zA-Z]+/
+        /[[:alpha:]]+/
       end
   end
 

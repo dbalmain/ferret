@@ -54,6 +54,9 @@ module Index
     # NOTE:: all options are passed in a hash.
     #
     # dir::               the index directory
+    #
+    # == Options
+    # 
     # analyzer::          the analyzer to use. Defaults to StandardAnalyzer.
     # create::            +true+ to create the index or overwrite the existing
     #                     one +false+ to append to the existing index
@@ -62,13 +65,15 @@ module Index
     # close_dir::         This specifies whether you would this class to close
     #                     the index directory when this class is closed. The
     #                     default is false.
-    def initialize(dir, options = {})
+    def initialize(dir = nil, options = {})
       super()
       create = options[:create]||false
       create_if_missing = options[:create_if_missing]||false
 
-      if dir.instance_of?(String)
-        @directory = FSDirectory.get_directory(dir, create||create_if_missing)
+      if dir.nil?
+        @directory = Ferret::Store::RAMDirectory.new
+      elsif dir.is_a?(String)
+        @directory = Ferret::Store::FSDirectory.new(dir, create)
       else
         @directory = dir
       end

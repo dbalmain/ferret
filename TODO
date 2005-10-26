@@ -5,6 +5,9 @@ Send suggestions for this list to mailto:dbalmain@gmail.com
 === To Do
 
 * Add the ability to persist an in memory index to Ferret::Index::Index
+* Test threading
+* Compile a proper dummy executable
+* Make a dll for people on Windows
 
 === Done
 

@@ -5,6 +5,18 @@ module Ferret::Search
     # Expert: The total number of hits for the query.
     # See Hits#length()
     attr_accessor :score_docs, :total_hits, :fields
+    alias :size :total_hits
+
+    # iterate through each of the score docs, yielding the document number and
+    # the score. eg:
+    #
+    #   top_docs.each do |doc, score|
+    #     puts "Doc number #{doc} found with score of #{score}"}
+    #   end
+    #
+    def each
+      score_docs.each {|sd| yield(sd.doc, sd.score) }
+    end
 
     # Expert: Constructs a TopDocs.
     def initialize(total_hits, score_docs, fields = SortField::FIELD_SCORE) 

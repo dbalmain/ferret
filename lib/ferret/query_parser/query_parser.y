@@ -480,6 +480,10 @@ end
     end
   end
 
+  def QueryParser.parse(query, default_field = "*", options = {})
+    qp = QueryParser.new(default_field, options)
+    return qp.parse(query)
+  end
 
 ---- footer
 

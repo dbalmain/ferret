@@ -9,7 +9,7 @@ t = Time.new
 10.times do
   dpath = File.join(File.dirname(__FILE__),
                        'fsdir')
-  dir = Ferret::Store::FSDirectory.get_directory(dpath, true)
+  dir = Ferret::Store::FSDirectory.new(dpath, true)
 
   100.times do
     ostream = dir.create_output("rw_vint.test")

@@ -62,8 +62,11 @@ module Ferret::Index
         FieldOption.new("TERM_VECTOR_WITH_POSITION_OFFSET")
     end
     
-    # directory:: Directory where IndexReader files reside.
-    # segment_infos:: Used for write-l
+    # To create an IndexReader use the IndexReader.open method. This method
+    # should only be used by subclasses.
+    #
+    # directory::       Directory where IndexReader files reside.
+    # segment_infos::   Used for write-l
     # close_directory:: close the directory when the index reader is closed
     def initialize(directory, segment_infos = nil,
                    close_directory = false, directory_owner = false)
@@ -81,7 +84,24 @@ module Ferret::Index
     end
 
     # Returns an index reader to read the index in the directory
+    #
+    # directory::       This can either be a Directory object or you can pass
+    #                   nil (RamDirectory is created) or a path (FSDirectory
+    #                   is created). If you chose the second or third options,
+    #                   you should leave close_directory as true and infos as
+    #                   nil.
+    # close_directory:: True if you want the IndexReader to close the
+    #                   directory when the IndexReader is closed. You'll want
+    #                   to set this to false if other objects are using the
+    #                   same directory object.
+    # infos::           Expert: This can be used to read an different version
+    #                   of the index but should really be left alone.
     def IndexReader.open(directory, close_directory = true, infos = nil)
+      if directory.nil?
+        directory = Ferret::Store::RAMDirectory.new
+      elsif directory.is_a?(String)
+        directory = Ferret::Store::FSDirectory.new(directory, true)
+      end
       directory.synchronize do # in- & inter-process sync
         commit_lock = directory.make_lock(IndexWriter::COMMIT_LOCK_NAME)
         commit_lock.while_locked() do

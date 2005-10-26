@@ -79,7 +79,7 @@ module Ferret::Index
     def initialize(options = {})
       if options[:path]
         options[:create_if_missing] = true if options[:create_if_missing].nil? 
-        @dir = FSDirectory.new(options[:path], true)
+        @dir = FSDirectory.new(options[:path], options[:create])
         options[:close_dir] = true
       elsif options[:dir]
         @dir = options[:dir]
@@ -103,16 +103,19 @@ module Ferret::Index
 
     # Closes this index by closing its associated reader and writer objects.
     def close
-      if not @open
-        raise "tried to close an already closed directory"
-      end
-      @reader.close() if @reader
-      @writer.close() if @writer
-      @dir.close()
+      @dir.synchronize do
+        if not @open
+          raise "tried to close an already closed directory"
+        end
+        @reader.close() if @reader
+        @writer.close() if @writer
+        @dir.close()
 
-      @open = false
+        @open = false
+      end
     end
 
+=begin
     # Get the reader for this index.
     # NOTE:: This will close the writer from this index.
     def reader
@@ -133,6 +136,7 @@ module Ferret::Index
       ensure_writer_open()
       return @writer
     end
+=end
 
     # Adds a document to this index, using the provided analyzer instead of
     # the local analyzer if provided.  If the document contains more than
@@ -180,32 +184,34 @@ module Ferret::Index
     # You can also compress the data that you are storing or store term vectors with
     # the data. Read more about this in Ferret::Document::Field.
     def add_document(doc, analyzer = nil)
-      ensure_writer_open()
-      fdoc = nil
-      if doc.is_a?(String)
-        fdoc = Document.new
-        fdoc << Field.new(@default_field, doc,
-                          Field::Store::YES, Field::Index::TOKENIZED)
-      elsif doc.is_a?(Array)
-        fdoc = Document.new
-        doc.each() do |field|
-          fdoc << Field.new(@default_field, field,
+      @dir.synchronize do
+        ensure_writer_open()
+        fdoc = nil
+        if doc.is_a?(String)
+          fdoc = Document.new
+          fdoc << Field.new(@default_field, doc,
                             Field::Store::YES, Field::Index::TOKENIZED)
+        elsif doc.is_a?(Array)
+          fdoc = Document.new
+          doc.each() do |field|
+            fdoc << Field.new(@default_field, field,
+                              Field::Store::YES, Field::Index::TOKENIZED)
+          end
+        elsif doc.is_a?(Hash)
+          fdoc = Document.new
+          doc.each_pair() do |field, text|
+            fdoc << Field.new(field.to_s, text.to_s,
+                              Field::Store::YES, Field::Index::TOKENIZED)
+          end
+        elsif doc.is_a?(Document)
+          fdoc = doc
+        else
+          raise ArgumentError, "Unknown document type #{doc.class}"
         end
-      elsif doc.is_a?(Hash)
-        fdoc = Document.new
-        doc.each_pair() do |field, text|
-          fdoc << Field.new(field.to_s, text.to_s,
-                            Field::Store::YES, Field::Index::TOKENIZED)
-        end
-      elsif doc.is_a?(Document)
-        fdoc = doc
-      else
-        raise ArgumentError, "Unknown document type #{doc.class}"
-      end
-      @has_writes = true
+        @has_writes = true
 
-      @writer.add_document(fdoc, analyzer || @writer.analyzer)
+        @writer.add_document(fdoc, analyzer || @writer.analyzer)
+      end
     end
     alias :<< :add_document
 
@@ -220,17 +226,19 @@ module Ferret::Index
     # num_docs:: The number of results returned. Default is 10
     # sort::     an array of SortFields describing how to sort the results.
     def search(query, options = {})
-      ensure_searcher_open()
-      if query.is_a?(String)
-        if @qp.nil?
-          @qp = Ferret::QueryParser.new(@default_search_field, @options)
+      @dir.synchronize do
+        ensure_searcher_open()
+        if query.is_a?(String)
+          if @qp.nil?
+            @qp = Ferret::QueryParser.new(@default_search_field, @options)
+          end
+          # we need to set this ever time, in case a new field has been added
+          @qp.fields = @reader.get_field_names.to_a
+          query = @qp.parse(query)
         end
-        # we need to set this ever time, in case a new field has been added
-        @qp.fields = @reader.get_field_names.to_a
-        query = @qp.parse(query)
-      end
 
-      return @searcher.search(query, options)
+        return @searcher.search(query, options)
+      end
     end
 
     # See Index#search
@@ -253,14 +261,16 @@ module Ferret::Index
     # id:: The number of the document to retrieve, or the term used as the id
     #      for the document we wish to retrieve
     def doc(id)
-      ensure_reader_open()
-      if id.is_a?(String)
-        t = Term.new("id", id.to_s)
-        return @reader.get_document_with_term(t)
-      elsif id.is_a?(Term)
-        return @reader.get_document_with_term(id)
-      else
-        return @reader.get_document(id)
+      @dir.synchronize do
+        ensure_reader_open()
+        if id.is_a?(String)
+          t = Term.new("id", id.to_s)
+          return @reader.get_document_with_term(t)
+        elsif id.is_a?(Term)
+          return @reader.get_document_with_term(id)
+        else
+          return @reader.get_document(id)
+        end
       end
     end
     alias :[] :doc
@@ -271,28 +281,34 @@ module Ferret::Index
     #
     # id:: The number of the document to delete
     def delete(id)
-      ensure_reader_open()
-      if id.is_a?(String)
-        t = Term.new("id", id.to_s)
-        return @reader.delete_docs_with_term(t)
-      elsif id.is_a?(Term)
-        return @reader.delete_docs_with_term(id)
-      else
-        return @reader.delete(id)
+      @dir.synchronize do
+        ensure_reader_open()
+        if id.is_a?(String)
+          t = Term.new("id", id.to_s)
+          return @reader.delete_docs_with_term(t)
+        elsif id.is_a?(Term)
+          return @reader.delete_docs_with_term(id)
+        else
+          return @reader.delete(id)
+        end
       end
     end
 
     # Returns true if document +n+ has been deleted 
     def deleted?(n)
-      ensure_reader_open()
-      return @reader.deleted?(n) 
+      @dir.synchronize do 
+        ensure_reader_open()
+        return @reader.deleted?(n) 
+      end
     end
 
     # Returns true if any documents have been deleted since the index was last
     # flushed.
     def has_deletions?()
-      ensure_reader_open()
-      return @reader.has_deletions?
+      @dir.synchronize do
+        ensure_reader_open()
+        return @reader.has_deletions?
+      end
     end
     
     # Returns true if any documents have been added to the index since the
@@ -301,18 +317,34 @@ module Ferret::Index
       return @has_writes
     end
 
+    # Flushes all writes to the index. This will not optimize the index but it
+    # will make sure that all writes are written to it.
+    #
+    # NOTE: this is not necessary if you are only using this class. All writes
+    # will automatically flush when you perform an operation that reads the
+    # index.
+    def flush()
+      @dir.synchronize do
+        ensure_reader_open
+      end
+    end
+
     # optimizes the index. This should only be called when the index will no
     # longer be updated very often, but will be read a lot.
     def optimize()
-      ensure_writer_open()
-      @writer.optimize()
-      @modified = true
+      @dir.synchronize do
+        ensure_writer_open()
+        @writer.optimize()
+        @modified = true
+      end
     end
 
     # returns the number of documents in the index
     def size()
-      ensure_reader_open()
-      return @reader.num_docs()
+      @dir.synchronize do
+        ensure_reader_open()
+        return @reader.num_docs()
+      end
     end
 
     protected
