@@ -11,12 +11,12 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id610f79a13b', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d44076', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
-  attr_accessor :wild_lower
+  attr_writer :wild_lower
 
   def wild_lower?() @wild_lower end
 
@@ -374,7 +374,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id610f79a13
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id610f79a13b
+..end lib/ferret/query_parser/query_parser.y modeval..id9e08d44076
 
 ##### racc 1.4.4 generates ###
 

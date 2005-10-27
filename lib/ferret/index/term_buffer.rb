@@ -71,12 +71,10 @@ module Ferret::Index
     end
     alias :term :to_term
 
-    def clone() 
-      clone = TermBuffer.new()
-      clone.set!(self)
-      return clone
+    def initialize_copy(o)
+      set!(o)
     end
-    
+
     def text_str()
       @text[0,@text_length]
     end

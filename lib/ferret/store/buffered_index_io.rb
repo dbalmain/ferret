@@ -140,14 +140,13 @@ module Ferret::Store
     # Creates a clone of the BufferedIndexReader. Reading from a
     # BufferedIndexInput should not change the state (read position) in the
     # clone and vice-versa.
-    def clone() 
-      bii = super
-      bii.buffer = @buffer.clone if @buffer
-      return bii
+    def initialize_copy(o)
+      super
+      @buffer = o.buffer.clone
     end
 
-    attr_writer :buffer
-    protected :buffer=
+    attr_reader :buffer
+    protected :buffer
 
     private
 

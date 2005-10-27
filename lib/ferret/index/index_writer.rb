@@ -113,6 +113,8 @@ module Index
           end 
         end
       end
+
+      @info_stream = nil
     end
 
     # Flushes all changes to an index and closes all associated files.
@@ -130,11 +132,11 @@ module Index
 
     # Returns the number of documents currently in this index.
     def doc_count()
-      count = 0
       synchronize() do
+        count = 0
         @segment_infos.each { |si| count += si.doc_count() }
+        return count
       end
-      return count
     end
 
     # Adds a document to this index, using the provided analyzer instead of the

@@ -235,7 +235,6 @@ module Ferret::Store
       def initialize(name)
         @buffers = Array.new
         @mtime = Time.now
-        #@name = name
         @length = 0
       end
     end

@@ -127,7 +127,7 @@ end
 
   # true if you want to downcase wild card queries. This is set to try by
   # default.
-  attr_accessor :wild_lower
+  attr_writer :wild_lower
 
   def wild_lower?() @wild_lower end
 

@@ -64,13 +64,12 @@ module Ferret::Index
     protected :input, :input=, :term_buffer,
       :term_buffer=, :prev_buffer, :prev_buffer=
 
-    def clone() 
-      clone = super
-      clone.input = @input.clone
-      clone.term_info = @term_info.clone
-      clone.term_buffer = @term_buffer.clone
-      clone.prev_buffer = @prev_buffer.clone
-      return clone
+    def initialize_copy(o)
+      super
+      @input = o.input.clone
+      @term_info = o.term_info.clone
+      @term_buffer = o.term_buffer.clone
+      @prev_buffer = o.prev_buffer.clone
     end
 
     def seek(pointer, position, term, term_info)

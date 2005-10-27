@@ -35,6 +35,12 @@ module Ferret::Analysis
       @position_increment = pos_inc
     end
 
+    def eql?(o)
+      return (o.instance_of?(Token) and @start_offset == o.start_offset and
+              @end_offset == o.end_offset and @term_text = o.term_text)
+    end
+    alias :== :eql?
+
     # Tokens are sorted by the position in the text at which they occur, ie
     # the start_offset. If two tokens have the same start offset, (see
     # position_increment=) then, they are sorted by the end_offset and then

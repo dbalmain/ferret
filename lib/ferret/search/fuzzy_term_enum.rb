@@ -1,3 +1,5 @@
+require 'monitor'
+
 module Ferret::Search
   # Subclass of FilteredTermEnum for enumerating all terms that are similiar
   # to the specified filter term.
@@ -5,6 +7,8 @@ module Ferret::Search
   # Term enumerations are always ordered by Term.compareTo().  Each term in
   # the enumeration is greater than all that precede it.
   class FuzzyTermEnum < FilteredTermEnum 
+    include MonitorMixin
+
     include Ferret::Index
     attr_reader :end_enum
 
@@ -144,73 +148,75 @@ module Ferret::Search
     #    than the required threshold and 1.0 indicates that the text and
     #    target are identical
     def similarity(target) 
-      m = target.length
-      n = @text.length
+      synchronize do
+        m = target.length
+        n = @text.length
 
-      if (n == 0)  
-        # we don't have anything to compare.  That means if we just add the
-        # letters for m we get the new word
-        return (@prefix_length == 0) ? 0.0 : 1.0 - (m.to_f / @prefix_length)
-      end
-      if (m == 0) 
-        return (@prefix_length == 0) ? 0.0 : 1.0 - (n.to_f / @prefix_length)
-      end
-
-      max_distance = max_distance(m)
-
-      if (max_distance < (m-n).abs) 
-        #just adding the characters of m to n or vice-versa results in
-        #too many edits
-        #for example "pre" length is 3 and "prefixes" length is 8.  We can see that
-        #given this optimal circumstance, the edit distance cannot be less than 5.
-        #which is 8-3 or more precisesly Math.abs(3-8).
-        #if our maximum edit distance is 4, then we can discard this word
-        #without looking at it.
-        return 0.0
-      end
-
-      #let's make sure we have enough room in our array to do the distance calculations.
-      if (@d[0].length <= m) 
-        grow_distance_array(m)
-      end
-
-      # init matrix d
-      (n+1).times {|i| @d[i][0] = i}
-      (m+1).times {|j| @d[0][j] = j}
-      
-      # start computing edit distance
-      1.upto(n) do |i|
-        best_possible_edit_distance = m
-        s_i = @text[i-1]
-        1.upto(m) do |j|
-          if (s_i != target[j-1]) 
-            @d[i][j] = min(@d[i-1][j], @d[i][j-1], @d[i-1][j-1])+1
-          else 
-            @d[i][j] = min(@d[i-1][j]+1, @d[i][j-1]+1, @d[i-1][j-1])
-          end
-          if @d[i][j] < best_possible_edit_distance
-            best_possible_edit_distance = @d[i][j]
-          end
+        if (n == 0)  
+          # we don't have anything to compare.  That means if we just add the
+          # letters for m we get the new word
+          return (@prefix_length == 0) ? 0.0 : 1.0 - (m.to_f / @prefix_length)
+        end
+        if (m == 0) 
+          return (@prefix_length == 0) ? 0.0 : 1.0 - (n.to_f / @prefix_length)
         end
 
-        # After calculating row i, the best possible edit distance can be
-        # found by found by finding the smallest value in a given column.
-        # If the best_possible_edit_distance is greater than the max distance,
-        # abort.
-        if (i > max_distance and best_possible_edit_distance > max_distance)
-          # equal is okay, but not greater
-          # the closest the target can be to the text is just too far away.
-          # this target is leaving the party early.
+        max_distance = max_distance(m)
+
+        if (max_distance < (m-n).abs) 
+          #just adding the characters of m to n or vice-versa results in
+          #too many edits
+          #for example "pre" length is 3 and "prefixes" length is 8.  We can see that
+          #given this optimal circumstance, the edit distance cannot be less than 5.
+          #which is 8-3 or more precisesly Math.abs(3-8).
+          #if our maximum edit distance is 4, then we can discard this word
+          #without looking at it.
           return 0.0
         end
-      end
 
-      # this will return less than 0.0 when the edit distance is
-      # greater than the number of characters in the shorter word.
-      # but this was the formula that was previously used in FuzzyTermEnum,
-      # so it has not been changed (even though minimum_similarity must be
-      # greater than 0.0)
-      return 1.0 - (@d[n][m].to_f / (@prefix_length + (n < m ? n : m)))
+        #let's make sure we have enough room in our array to do the distance calculations.
+        if (@d[0].length <= m) 
+          grow_distance_array(m)
+        end
+
+        # init matrix d
+        (n+1).times {|i| @d[i][0] = i}
+        (m+1).times {|j| @d[0][j] = j}
+        
+        # start computing edit distance
+        1.upto(n) do |i|
+          best_possible_edit_distance = m
+          s_i = @text[i-1]
+          1.upto(m) do |j|
+            if (s_i != target[j-1]) 
+              @d[i][j] = min(@d[i-1][j], @d[i][j-1], @d[i-1][j-1])+1
+            else 
+              @d[i][j] = min(@d[i-1][j]+1, @d[i][j-1]+1, @d[i-1][j-1])
+            end
+            if @d[i][j] < best_possible_edit_distance
+              best_possible_edit_distance = @d[i][j]
+            end
+          end
+
+          # After calculating row i, the best possible edit distance can be
+          # found by found by finding the smallest value in a given column.
+          # If the best_possible_edit_distance is greater than the max distance,
+          # abort.
+          if (i > max_distance and best_possible_edit_distance > max_distance)
+            # equal is okay, but not greater
+            # the closest the target can be to the text is just too far away.
+            # this target is leaving the party early.
+            return 0.0
+          end
+        end
+
+        # this will return less than 0.0 when the edit distance is
+        # greater than the number of characters in the shorter word.
+        # but this was the formula that was previously used in FuzzyTermEnum,
+        # so it has not been changed (even though minimum_similarity must be
+        # greater than 0.0)
+        return 1.0 - (@d[n][m].to_f / (@prefix_length + (n < m ? n : m)))
+      end
     end
 
     # Grow the second dimension of the array, so that we can calculate the

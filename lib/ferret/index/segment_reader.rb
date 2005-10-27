@@ -39,6 +39,7 @@ module Ferret::Index
       @norms.extend(MonitorMixin)
       open_norms(cfs)
 
+      @tv_reader_orig = nil
       if @field_infos.has_vectors? then
         @tv_reader_orig = TermVectorsReader.new(cfs, @segment, @field_infos)
       end

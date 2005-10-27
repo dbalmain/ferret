@@ -158,7 +158,9 @@ module Ferret::Store
     # If a file already exists with the new name, then it is replaced.
     # This replacement should be atomic.
     def rename(from, to)
-      File.rename(dir_path(from), dir_path(to))
+      synchronize do
+        File.rename(dir_path(from), dir_path(to))
+      end
     end
 
 
@@ -185,10 +187,12 @@ module Ferret::Store
 
     # Closes the store.
     def close()
-      @ref_count -= 1
-      if (@ref_count <= 0) then
-        @@Directories.synchronize do
-          @@Directories.delete(@dir.path)
+      synchronize do
+        @ref_count -= 1
+        if (@ref_count <= 0) then
+          @@Directories.synchronize do
+            @@Directories.delete(@dir.path)
+          end
         end
       end
     end
@@ -290,12 +294,9 @@ module Ferret::Store
 
       # We need to record if this is a clone so we know when to close the file.
       # The file should only be closed when the original FSIndexInput is closed.
-      def clone()
-        fsii = super
-        fsii.is_clone = true
-        fsii.file.seek(@file.pos)
-        #@file.ref_count += 1
-        return fsii
+      def initialize_copy(o)
+        super
+        @is_clone = true
       end
 
       private

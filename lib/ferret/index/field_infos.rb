@@ -27,12 +27,6 @@ module Ferret
         end
       end
 
-      # Returns the number of fields that have been added to this field infos
-      # object.
-      def size
-        return @fi_array.size
-      end
-
       # Automatically adds all of the fields from the document if they haven't
       # been added already. Or it will update the values.
       def add_doc_fields(doc)

@@ -61,9 +61,9 @@ module Ferret
         @counter = 0
       end
 
-      def clone
-        clone = self.clone
-        self.each_index {|i| clone[i] = self[i].clone}
+      def initialize_copy(o)
+        super
+        o.each_index {|i| self[i] = o[i].clone}
       end
 
       def read(directory)

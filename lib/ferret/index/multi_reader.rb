@@ -127,14 +127,16 @@ module Ferret::Index
     end
 
     def get_norms_into(field, buf, offset)
-      bytes = @norms_cache[field]
-      if (bytes != nil)                            # cache hit
-        buf[offset ,@max_doc] = bytes[0, @max_doc]
-        return
-      end
+      synchronize do
+        bytes = @norms_cache[field]
+        if (bytes != nil)                            # cache hit
+          buf[offset ,@max_doc] = bytes[0, @max_doc]
+          return
+        end
 
-      @sub_readers.length.times do |i|
-        @sub_readers[i].get_norms_into(field, buf, offset + @starts[i])
+        @sub_readers.length.times do |i|
+          @sub_readers[i].get_norms_into(field, buf, offset + @starts[i])
+        end
       end
     end
 
@@ -292,7 +294,7 @@ module Ferret::Index
 
       while (true) 
         while @current.nil?
-          if @pointer < @readers.length # begin next segment
+          if @pointer < @readers.length # try next segment
             @base = @starts[@pointer]
             @current = term_docs(@pointer)
             @pointer += 1
