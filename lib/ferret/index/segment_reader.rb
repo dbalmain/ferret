@@ -37,6 +37,7 @@ module Ferret::Index
       @prox_stream = cfs.open_input(@segment + '.prx')
       @norms = {}
       @norms.extend(MonitorMixin)
+      @norms_dirty = false
       open_norms(cfs)
 
       @tv_reader_orig = nil
@@ -89,11 +90,12 @@ module Ferret::Index
 
 
     def SegmentReader.uses_compound_file?(si)
-      return si.dir.exists?(si.name + ".cfs")
+      return si.directory.exists?(si.name + ".cfs")
     end
     
     def SegmentReader.has_separate_norms?(si)
-      return (si.dir.list.select {|f| f =~ /^#{si.name}\.s/}).size > 0
+      si.directory.each {|f| return true if f =~ /^#{si.name}\.s/}
+      return false
     end
 
     def do_delete(doc_num) 

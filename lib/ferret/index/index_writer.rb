@@ -65,10 +65,13 @@ module Index
     # close_dir::         This specifies whether you would this class to close
     #                     the index directory when this class is closed. The
     #                     default is false.
+    # use_compound_file:: Use a compound file to store the index. This is
+    #                     slower than using multiple files but it prevents the
+    #                     too many files open error. This defaults to true.
     def initialize(dir = nil, options = {})
       super()
-      create = options[:create]||false
-      create_if_missing = options[:create_if_missing]||false
+      create = options[:create] || false
+      create_if_missing = options[:create_if_missing] || false
 
       if dir.nil?
         @directory = Ferret::Store::RAMDirectory.new
@@ -78,6 +81,7 @@ module Index
         @directory = dir
       end
       @close_dir = options[:close_dir] || false
+      @use_compound_file = (options[:use_compound_file] != false) # ie default true
       @analyzer = options[:analyzer] || Ferret::Analysis::StandardAnalyzer.new
       @merge_factor = DEFAULT_MERGE_FACTOR
       @min_merge_docs = DEFAULT_MIN_MERGE_DOCS

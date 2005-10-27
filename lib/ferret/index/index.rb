@@ -92,17 +92,20 @@ module Ferret::Index
         @dir = RAMDirectory.new
       end
 
-      @options = options
-      @writer = IndexWriter.new(@dir, options)
-      options[:analyzer] = @analyzer = @writer.analyzer
-      @has_writes = false
-      @reader = nil
-      @options.delete(:create) # only want to create the first time if at all
-      @close_dir = @options.delete(:close_dir) || false # we'll hold this here
-      @default_search_field = (@options[:default_search_field] || \
-                               @options[:default_field] || "*")
-      @default_field = @options[:default_field] || ""
-      @open = true
+      @dir.synchronize do
+        @options = options
+        @writer = IndexWriter.new(@dir, options)
+        options[:analyzer] = @analyzer = @writer.analyzer
+        @has_writes = false
+        @reader = nil
+        @options.delete(:create) # only want to create the first time if at all
+        @close_dir = @options.delete(:close_dir) || false # we'll hold this here
+        @default_search_field = (@options[:default_search_field] || \
+                                 @options[:default_field] || "*")
+        @default_field = @options[:default_field] || ""
+        @open = true
+        @qp = nil
+      end
     end
 
     # Closes this index by closing its associated reader and writer objects.
