@@ -256,7 +256,7 @@ module Index
               # make compound file visible for SegmentReaders
               @directory.rename(merged_name + ".tmp", merged_name + ".cfs")
               # delete now unused files of segment
-              delete_files(files_to_delete)
+              delete_files_and_write_undeletable(files_to_delete)
             end
           end
         end
@@ -421,7 +421,7 @@ module Index
               # make compound file visible for SegmentReaders
               @directory.rename(merged_name + ".tmp", merged_name + ".cfs")
               # delete now unused files of segment
-              delete_files(files_to_delete)
+              delete_files_and_write_undeletable(files_to_delete)
             end
           end
         end
@@ -466,6 +466,13 @@ module Index
 #          end
 ##############################################################################
 
+      end
+
+      def delete_files_and_write_undeletable(files)
+        deletable = []
+        try_to_delete_files(read_deleteable_files(), deletable) # try to delete deleteable
+        try_to_delete_files(files, deletable)     # try to delete our files
+        write_deleteable_files(deletable)    # note files we can't delete
       end
 
       def delete_files(file_names, dir)

@@ -92,7 +92,7 @@ module Ferret::Index
     end
 
     # Returns true iff a file with the given name exists.
-    def file_exists(name)
+    def exists?(name)
       return @entries.key?(name)
     end
 
@@ -113,7 +113,7 @@ module Ferret::Index
     def rename(from, to) raise(UnsupportedOperationError) end
 
     # Returns the length of a file in the directory.
-    def file_length(name)
+    def length(name)
       e = @entries[name]
       if (e == nil): raise(IOError, "File " + name + " does not exist") end
       return e.length
@@ -188,6 +188,9 @@ module Ferret::Index
   # data section, and a UTF String with that file's extension.
   class CompoundFileWriter
 
+    class StateError < Exception
+    end
+
     attr_reader :directory, :file_name
 
     # Create the compound stream in the specified file. The file name is the
@@ -203,16 +206,16 @@ module Ferret::Index
     # Add a source stream. _file_name_ is the string by which the 
     # sub-stream will be known in the compound stream.
     # 
-    # Throws:: IllegalStateError if this writer is closed
-    # Throws:: IllegalArgumentError if a file with the same name
+    # Throws:: StateError if this writer is closed
+    # Throws:: ArgumentError if a file with the same name
     #          has been added already
     def add_file(file_name)
       if @merged
-        raise(IllegalStateError, "Can't add extensions after merge has been called")
+        raise(StateError, "Can't add extensions after merge has been called")
       end
 
       if not @ids.add?(file_name)
-        raise(IllegalArgumentError, "File " + file + " already added")
+        raise(ArgumentError, "File #{file_name} already added")
       end
 
       entry = FileEntry.new(file_name)
@@ -224,16 +227,16 @@ module Ferret::Index
     # compound stream. After successful merge, the source files
     # are deleted.
     #
-    # Throws:: IllegalStateException if close() had been called before or
+    # Throws:: StateException if close() had been called before or
     #          if no file has been added to this object
     def close()
 
       if @merged
-        raise(IllegalStateException, "Merge already performed")
+        raise(StateException, "Merge already performed")
       end
 
       if @file_entries.empty?
-        raise(IllegalStateException, "No entries to merge have been defined")
+        raise(StateException, "No entries to merge have been defined")
       end
 
       @merged = true

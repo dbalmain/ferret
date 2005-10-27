@@ -61,24 +61,24 @@ module Ferret::Index
            
       cfs_writer = CompoundFileWriter.new(@directory, file_name)
 
-      files = Array.new(IndexFileNames::COMPOUND_EXTENSIONS.length + @field_infos.size)
+      files = []
       
       # Basic files
-      IndexFileNames::COMPOUND_EXTENSIONS.times do |i|
-        files << @segment + "." + IndexFileNames::COMPOUND_EXTENSIONS[i]
+      IndexFileNames::COMPOUND_EXTENSIONS.each do |ext|
+        files << "#{@segment}.#{ext}"
       end
 
       # Field norm files
       @field_infos.each_with_index do |fi, i|
         if (fi.indexed?) 
-          files << @segment + ".f#{i}"
+          files << "#{@segment}.f#{i}"
         end
       end
 
       # Vector files
       if @field_infos.has_vectors?
-        IndexFileNames::VECTOR_EXTENSIONS.length.times do |i|
-          files << @segment + "." + IndexFileNames::VECTOR_EXTENSIONS[i]
+        IndexFileNames::VECTOR_EXTENSIONS.each do |ext|
+          files << "#{@segment}.#{ext}"
         end
       end
 
