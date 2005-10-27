@@ -25,7 +25,7 @@ module Ferret::Index
       @starts = Array.new(@sub_readers.length + 1)    # build starts array
       @sub_readers.each_with_index do |sub_reader, i|
         @starts[i] = @max_doc
-        @max_doc += sub_reader.max_doc # compute maxDocs
+        @max_doc += sub_reader.max_doc # compute max_docs
 
         if @sub_readers[i].has_deletions?
           @has_deletions = true

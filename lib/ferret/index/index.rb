@@ -1,7 +1,11 @@
+require 'monitor'
+
 module Ferret::Index
   # This is a simplified interface to the index. See the TUTORIAL for more
   # information on how to use this class.
   class Index
+    include MonitorMixin
+
     include Ferret::Store
     include Ferret::Search
     include Ferret::Document
@@ -151,27 +155,28 @@ module Ferret::Index
     #   index << "This is a new document to be indexed"
     #   index << ["And here", "is another", "new document", "to be indexed"]
     # 
-    # But these are pretty simple documents. If this is all you want to index you
-    # could probably just use SimpleSearch. So let's give our documents some fields;
+    # But these are pretty simple documents. If this is all you want to index
+    # you could probably just use SimpleSearch. So let's give our documents
+    # some fields;
     # 
     #   index << {:title => "Programming Ruby", :content => "blah blah blah"}
     #   index << {:title => "Programming Ruby", :content => "yada yada yada"}
     # 
-    # Or if you are indexing data stored in a database, you'll probably want to
-    # store the id;
+    # Or if you are indexing data stored in a database, you'll probably want
+    # to store the id;
     # 
     #   index << {:id => row.id, :title => row.title, :date => row.date}
     # 
-    # The methods above while store all of the input data as well tokenizing and
-    # indexing it. Sometimes we won't want to tokenize (divide the string into
-    # tokens) the data. For example, we might want to leave the title as a complete
-    # string and only allow searchs for that complete string. Sometimes we won't
-    # want to store the data as it's already stored in the database so it'll be a
-    # waste to store it in the index. Or perhaps we are doing without a database and 
-    # using Ferret to store all of our data, in which case we might not want to
-    # index it. For example, if we are storing images in the index, we won't want to
-    # index them. All of this can be done using Ferret's Ferret::Document module.
-    # eg;
+    # The methods above while store all of the input data as well tokenizing
+    # and indexing it. Sometimes we won't want to tokenize (divide the string
+    # into tokens) the data. For example, we might want to leave the title as
+    # a complete string and only allow searchs for that complete string.
+    # Sometimes we won't want to store the data as it's already stored in the
+    # database so it'll be a waste to store it in the index. Or perhaps we are
+    # doing without a database and using Ferret to store all of our data, in
+    # which case we might not want to index it. For example, if we are storing
+    # images in the index, we won't want to index them. All of this can be
+    # done using Ferret's Ferret::Document module.  eg;
     # 
     #   include Ferret::Document
     #   doc = Document.new
@@ -181,8 +186,8 @@ module Ferret::Index
     #   doc << Field.new("image", row.image, Field::Store::YES, Field::Index::NO)
     #   index << doc
     # 
-    # You can also compress the data that you are storing or store term vectors with
-    # the data. Read more about this in Ferret::Document::Field.
+    # You can also compress the data that you are storing or store term
+    # vectors with the data. Read more about this in Ferret::Document::Field.
     def add_document(doc, analyzer = nil)
       @dir.synchronize do
         ensure_writer_open()
@@ -219,25 +224,15 @@ module Ferret::Index
     # pass to this method. You can also pass a hash with one or more of the
     # following; {filter, num_docs, first_doc, sort}
     #
-    # query::    the query to run on the index
-    # filter::   filters docs from the search result
-    # first_doc:: The index in the results of the first doc retrieved.
-    #   Default is 0
-    # num_docs:: The number of results returned. Default is 10
-    # sort::     an array of SortFields describing how to sort the results.
+    # query::      The query to run on the index
+    # filter::     Filters docs from the search result
+    # first_doc::  The index in the results of the first doc retrieved.
+    #              Default is 0
+    # num_docs::   The number of results returned. Default is 10
+    # sort::       An array of SortFields describing how to sort the results.
     def search(query, options = {})
       @dir.synchronize do
-        ensure_searcher_open()
-        if query.is_a?(String)
-          if @qp.nil?
-            @qp = Ferret::QueryParser.new(@default_search_field, @options)
-          end
-          # we need to set this ever time, in case a new field has been added
-          @qp.fields = @reader.get_field_names.to_a
-          query = @qp.parse(query)
-        end
-
-        return @searcher.search(query, options)
+        return do_search(query, options)
       end
     end
 
@@ -249,9 +244,14 @@ module Ferret::Index
     #     puts "hit document number #{doc} with a score of #{score}"
     #   end
     #
+    # returns:: The total number of hits.
     def search_each(query, options = {}) # :yield: doc, score
-      search(query, options).score_docs.each do |score_doc|
-        yield score_doc.doc, score_doc.score
+      @dir.synchronize do
+        hits = do_search(query, options)
+        hits.score_docs.each do |score_doc|
+          yield score_doc.doc, score_doc.score
+        end
+        return hits.total_hits
       end
     end
 
@@ -325,7 +325,11 @@ module Ferret::Index
     # index.
     def flush()
       @dir.synchronize do
-        ensure_reader_open
+        @reader.close if @reader
+        @writer.close if @writer
+        @reader = nil
+        @writer = nil
+        @searcher = nil
       end
     end
 
@@ -374,6 +378,21 @@ module Ferret::Index
         return if @searcher
         ensure_reader_open()
         @searcher = IndexSearcher.new(@reader)
+      end
+
+    private
+      def do_search(query, options)
+        ensure_searcher_open()
+        if query.is_a?(String)
+          if @qp.nil?
+            @qp = Ferret::QueryParser.new(@default_search_field, @options)
+          end
+          # we need to set this ever time, in case a new field has been added
+          @qp.fields = @reader.get_field_names.to_a
+          query = @qp.parse(query)
+        end
+
+        return @searcher.search(query, options)
       end
   end
 end

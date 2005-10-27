@@ -87,11 +87,11 @@ module Ferret::Search
       def next?
         return @scorer.next?
       end
-      def skip_to(doc_nr)
-        return @scorer.skip_to(doc_nr)
+      def skip_to(doc_num)
+        return @scorer.skip_to(doc_num)
       end
-      def explain(doc_nr)
-        return @scorer.explain(doc_nr)
+      def explain(doc_num)
+        return @scorer.explain(doc_num)
       end
     end
 
@@ -116,13 +116,13 @@ module Ferret::Search
       def initialize(parent_scorer, similarity)
         super(similarity)
         @parent_scorer = parent_scorer
-        @required_nr_matchers = parent_scorer.required_scorers.size
+        @required_num_matchers = parent_scorer.required_scorers.size
         @last_scored_doc = -1
       end
       def score
         if (@parent_scorer.doc() > @last_scored_doc)
           @last_scored_doc = @parent_scorer.doc()
-          @parent_scorer.coordinator.nr_matchers += @required_nr_matchers
+          @parent_scorer.coordinator.nr_matchers += @required_num_matchers
         end
 
         return super
@@ -132,7 +132,7 @@ module Ferret::Search
     def counting_conjunction_sum_scorer(required_scorers)
       # each scorer from the list counted as a single matcher
     
-      required_nr_matchers = required_scorers.size
+      required_num_matchers = required_scorers.size
       ccs = CountingConjunctionScorer.new(self, Similarity.default)
       @required_scorers.each do |scorer|
         ccs << scorer
@@ -239,13 +239,13 @@ module Ferret::Search
     # returns:: true if more matching documents may remain.
     def each_hit_up_to(max = MAX_DOCS) # :yields: doc, score
       # nil pointer exception when next? was not called before:
-      doc_nr = @counting_sum_scorer.doc()
-      while (doc_nr < max) 
-        yield(doc_nr, score())
+      doc_num = @counting_sum_scorer.doc()
+      while (doc_num < max) 
+        yield(doc_num, score())
         if not @counting_sum_scorer.next? 
           return false
         end
-        doc_nr = @counting_sum_scorer.doc()
+        doc_num = @counting_sum_scorer.doc()
       end
       return true
     end

@@ -145,11 +145,11 @@ module Ferret::Index
     # Optimized implementation. 
     def read(docs, freqs, start = 0)
       i = start
-      needed=docs.length
+      needed = docs.length
 
       while (i < needed and @count < @doc_freq) 
 
-        # manually inlined call to next() for speed
+        # manually inlined call to next?() for speed
         doc_code = @freq_stream.read_vint()
         @doc += doc_code >> 1              # shift off low bit
         if ((doc_code & 1) != 0)           # if low bit is set
@@ -157,6 +157,7 @@ module Ferret::Index
         else
           @freq = @freq_stream.read_vint() # else read freq
         end
+
         @count += 1
 
         if (@deleted_docs == nil or not @deleted_docs[@doc]) 
@@ -164,6 +165,8 @@ module Ferret::Index
           freqs[i] = @freq
           i += 1
         end
+
+        skipping_doc()
       end
       return i
     end

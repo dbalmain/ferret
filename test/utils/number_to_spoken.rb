@@ -9,7 +9,7 @@ class JapaneseTranslator
     # I also combine a digit with its group, such as 'gohyaku' rather
     # than 'go hyaku'; I just like reading it better that way.
 
-    DIGITS = %w(zero ichi ni san shi go roku shichi hachi kyu)
+    DIGITS = %w(zero ichi ni san yon go roku nana hachi kyu)
     GROUPS = %w(nothingtoseeheremovealong ju hyaku sen)
     MAN = 10000
 

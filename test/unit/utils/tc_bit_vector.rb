@@ -4,6 +4,14 @@ require File.dirname(__FILE__) + "/../../test_helper"
 class BitVectorTest < Test::Unit::TestCase
   include Ferret::Utils
 
+  def test_bignum_conversion()
+    j = 256
+    10.times do
+      j *= j
+      assert_equal(j, BitVector.string_to_bignum(BitVector.bignum_to_string(j)))
+    end
+  end
+
   def test_bv()
     bv = BitVector.new
     assert_equal(0, bv.count)

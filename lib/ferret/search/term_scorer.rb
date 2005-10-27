@@ -25,6 +25,8 @@ module Ferret::Search
       @weight = weight
       @term_docs = td
       @norms = norms
+      #XXX
+      @norms_size = @norms.size
       @weight_value = weight.value
 
       SCORE_CACHE_SIZE.times do |i|
@@ -85,8 +87,10 @@ module Ferret::Search
 
 
     # Advances to the next document matching the query.
-    # <br>The iterator over the matching documents is buffered using
+    # 
+    # The iterator over the matching documents is buffered using
     # TermDocEnum#read(int[],int[]).
+    #
     # returns:: true iff there is another document matching the query.
     def next?()
       @pointer += 1

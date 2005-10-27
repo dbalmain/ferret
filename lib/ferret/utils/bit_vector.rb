@@ -74,7 +74,7 @@ module Ferret::Utils
     def write(d, name)
       output = d.create_output(name)
       begin 
-        output.write_vint(@bits)
+        output.write_string(self.class.bignum_to_string(@bits))
       ensure 
         output.close()
       end
@@ -86,7 +86,7 @@ module Ferret::Utils
       bv = BitVector.new
       input = d.open_input(name)
       begin 
-        bv.bits = input.read_vint()
+        bv.bits = string_to_bignum(input.read_string())
       ensure 
         input.close()
       end
@@ -100,6 +100,24 @@ module Ferret::Utils
         i >>= 1
       end
       puts ""
+    end
+
+    # converts a BigNum into a string
+    def BitVector.bignum_to_string(num)
+      str = []
+      while (num > 0)
+        str << (num & 0xff)
+        num >>= 8
+      end
+      return str.pack("C*")
+    end
+
+    # converts a string into a bignum
+    def BitVector.string_to_bignum(str)
+      str = str.unpack("C*") 
+      num = 0
+      str.reverse.each {|c| num = ((num << 8) | c) }
+      return num
     end
   end
 end

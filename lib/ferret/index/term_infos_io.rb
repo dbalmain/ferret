@@ -214,7 +214,7 @@ module Ferret::Index
         term_enum = Thread.current["#{self.object_id}-term_enum"]
         if (term_enum == nil) 
           term_enum = terms()
-          @xterm_enum = Thread.current["#{self.object_id}-term_enum"] = term_enum 
+          Thread.current["#{self.object_id}-term_enum"] = term_enum 
         end
         return term_enum
       end

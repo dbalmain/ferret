@@ -246,9 +246,22 @@ module Index
           @directory.make_lock(COMMIT_LOCK_NAME).while_locked(COMMIT_LOCK_TIMEOUT) do
             @segment_infos.write(@directory) # commit changes
             delete_segments(segments_to_delete)
-            return nil
           end
         end
+
+        if @use_compound_file
+          files_to_delete = merger.create_compound_file(merged_name + ".tmp")
+          @directory.synchronize() do # in- & inter-process sync
+            @directory.make_lock(COMMIT_LOCK_NAME).while_locked(COMMIT_LOCK_TIMEOUT) do
+              # make compound file visible for SegmentReaders
+              @directory.rename(merged_name + ".tmp", merged_name + ".cfs")
+              # delete now unused files of segment
+              delete_files(files_to_delete)
+            end
+          end
+        end
+
+        optimize()
       end
     end
 
@@ -384,11 +397,10 @@ module Index
         merged_doc_count = merger.merge()
 
         if (@info_stream != nil)
-          @info_stream.print(" into " + merged_name + " (" + merged_doc_count.to_s + " docs)\n")
+          @info_stream.print(" into #{merged_name} (#{merged_doc_count.to_s} docs)\n")
         end
 
         (max_segment-1).downto(min_segment) {|i| @segment_infos.delete_at(i) }
-        #@segment_infos = @segment_infos[0,min_segment] + @segment_infos[max_segment...-1]
 
         @segment_infos << SegmentInfo.new(merged_name, merged_doc_count, @directory)
 
@@ -399,10 +411,21 @@ module Index
           @directory.make_lock(COMMIT_LOCK_NAME).while_locked(COMMIT_LOCK_TIMEOUT) do
             @segment_infos.write(@directory)     # commit before deleting
             delete_segments(segments_to_delete)  # delete now-unused segments
-            return nil
           end
         end
-        segments_to_delete.size.times {|i| segments_to_delete[i] = nil }
+
+        if @use_compound_file
+          files_to_delete = merger.create_compound_file(merged_name + ".tmp")
+          @directory.synchronize() do # in- & inter-process sync
+            @directory.make_lock(COMMIT_LOCK_NAME).while_locked(COMMIT_LOCK_TIMEOUT) do
+              # make compound file visible for SegmentReaders
+              @directory.rename(merged_name + ".tmp", merged_name + ".cfs")
+              # delete now unused files of segment
+              delete_files(files_to_delete)
+            end
+          end
+        end
+
       end
 
       # Some operating systems (e.g. Windows) don't permit a file to be

@@ -8,13 +8,15 @@ module Ferret::Search
     # Construct a +DisjunctionScorer+.
     # sub_scorers:: A collection of at least two subscorers.
     #
-    # minimum_nr_matchers:: The positive minimum number of subscorers that should
-    # match to match this query.
-    # <br>When +@minimum_nr_matchers+ is bigger than
-    # the number of +sub_scorers+,
-    # no matches will be produced.
-    # <br>When @minimum_nr_matchers equals the number of sub_scorers,
-    # it more efficient to use +ConjunctionScorer+.
+    # minimum_nr_matchers:: The positive minimum number of subscorers that
+    #                       should match to match this query.
+    #
+    #                       When +@minimum_nr_matchers+ is bigger than the number
+    #                       of +sub_scorers+,no matches will be produced.
+    # 
+    #                       When @minimum_nr_matchers equals the number of
+    #                       sub_scorers, it more efficient to use
+    #                       +ConjunctionScorer+.
     def initialize(sub_scorers, minimum_nr_matchers = 1) 
       super(nil)
       

@@ -273,18 +273,19 @@ module Ferret::Store
       def initialize(path)
         @file = File.open(path, "rb")
         @file.extend(MonitorMixin)
-        class <<@file
-          attr_accessor :ref_count
-        end
-        @file.ref_count = 1
+        #class <<@file
+        #  attr_accessor :ref_count
+        #end
+        #@file.ref_count = 1
         @length = File.size(path)
         @is_clone = false
         super()
       end
 
       def close
-        @file.ref_count -= 1
-        @file.close if @file.ref_count == 0
+        #@file.ref_count -= 1
+        #@file.close if @file.ref_count == 0
+        @file.close if not @is_clone
       end
 
       # We need to record if this is a clone so we know when to close the file.
@@ -293,7 +294,7 @@ module Ferret::Store
         fsii = super
         fsii.is_clone = true
         fsii.file.seek(@file.pos)
-        @file.ref_count += 1
+        #@file.ref_count += 1
         return fsii
       end
 
