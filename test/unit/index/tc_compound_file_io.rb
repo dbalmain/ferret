@@ -60,8 +60,8 @@ class CompoundFileReaderTest < Test::Unit::TestCase
     cfile.close()
     
     cfile_reader = CompoundFileReader.new(@dir, "cfile")
-    assert_equal(4, cfile_reader.file_length('file1'))
-    assert_equal(15, cfile_reader.file_length('file2'))
+    assert_equal(4, cfile_reader.length('file1'))
+    assert_equal(15, cfile_reader.length('file2'))
     file1 = cfile_reader.open_input('file1')
     file2 = cfile_reader.open_input('file2')
     assert_equal(20, file1.read_int())
