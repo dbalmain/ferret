@@ -115,8 +115,6 @@ module Ferret::Index
     def initialize(dir, seg, fis)
       super()
 
-      Thread.current["#{self.object_id}-term_enum"] = nil
-
       @directory = dir
       @segment = seg
       @field_infos = fis
@@ -134,8 +132,6 @@ module Ferret::Index
 
     def close()
       # clear this threads cache 
-      Thread.current["#{self.object_id}-term_enum"] = nil
-
       @orig_enum.close() if (@orig_enum != nil)
       @index_enum.close() if (@index_enum != nil)
     end
@@ -211,10 +207,30 @@ module Ferret::Index
     private
 
       def enum() 
-        term_enum = Thread.current["#{self.object_id}-term_enum"]
-        if (term_enum == nil) 
-          term_enum = terms()
-          Thread.current["#{self.object_id}-term_enum"] = term_enum 
+        #return @cached_term_enum ||= terms()
+        #
+        #term_enum = Thread.current["#{self.object_id}-#{@segment}-term_enum"]
+        #if (term_enum == nil) 
+        #  term_enum = terms()
+        #  Thread.current["#{self.object_id}-#{@segment}-term_enum"] = term_enum 
+        #end
+        #return term_enum
+        #
+        #te_cache = Thread.current["term_enum"]
+        #if (te_cache == nil) 
+        #  te_cache = Thread.current["term_enum"] = Ferret::Utils::WeakKeyHash.new
+        #end
+        #te_cache.synchronize do
+        #  term_enum = te_cache[self]
+        #  if term_enum == nil
+        #    term_enum = terms()
+        #    te_cache[self] = term_enum
+        #  end
+        #  return term_enum
+        #end
+        term_enum = Thread.current.get_local(self)
+        if term_enum.nil?
+          Thread.current.set_local(self, term_enum = terms())
         end
         return term_enum
       end

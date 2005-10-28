@@ -67,7 +67,9 @@ module Ferret::Index
     end
     
     def do_close()
-      Thread.current["#{self.object_id}-tv_reader"] = nil # clear the cache
+      # clear the cache
+      Thread.current["#{self.object_id}-#{@segment}-tv_reader"] = nil
+
       @fields_reader.close()
       @term_infos.close()
 
@@ -297,11 +299,28 @@ module Ferret::Index
     # in the Thread
     # returns:: TermVectorsReader
     def get_term_vectors_reader() 
-      #return @xtv_reader ||= @tv_reader_orig.clone()
-      tv_reader = Thread.current["#{self.object_id}-tv_reader"]
-      if (tv_reader == nil) 
+      #tv_reader = Thread.current["#{self.object_id}-#{@segment}-tv_reader"]
+      #if (tv_reader == nil) 
+      #  tv_reader = @tv_reader_orig.clone()
+      #  Thread.current["#{self.object_id}-#{@segment}-tv_reader"] = tv_reader
+      #end
+      #return tv_reader
+      #tvr_cache = Thread.current["tv_reader"]
+      #if (tvr_cache == nil) 
+      #  tvr_cache = Thread.current["tv_reader"] = Ferret::Utils::WeakKeyHash.new
+      #end
+      #tvr_cache.synchronize do
+      #  tv_reader = tvr_cache[self]
+      #  if tv_reader == nil
+      #    tv_reader = @tv_reader_orig.clone()
+      #    tvr_cache[self] = tv_reader
+      #  end
+      #  return tv_reader
+      #end
+      tv_reader = Thread.current.get_local(self)
+      if tv_reader.nil?
         tv_reader = @tv_reader_orig.clone()
-        Thread.current["#{self.object_id}-tv_reader"] = tv_reader
+        Thread.current.set_local(self, tv_reader)
       end
       return tv_reader
     end

@@ -17,18 +17,14 @@ class ThreadSafetyTest
   ITERATIONS = 19
   @@searcher = nil
   
-  def random(i)
-    (i * rand).to_i
-  end
-
   def run_index_thread(writer)
-    reopen_interval = 30 + random(60)
+    reopen_interval = 30 + rand(60)
 
     use_compound_file = false
     
     (400*ITERATIONS).times do |i|
       d = Document.new()
-      n = random(0xFFFFFFFF)
+      n = rand(0xFFFFFFFF)
       d << Field.new("id", n.to_s, Field::Store::YES, Field::Index::UNTOKENIZED)
       d << Field.new("contents", n.to_spoken, Field::Store::NO, Field::Index::TOKENIZED)
       puts("Adding #{n}")
@@ -53,14 +49,14 @@ class ThreadSafetyTest
   end
 
   def run_search_thread(use_global)
-    reopen_interval = 10 + random(20)
+    reopen_interval = 10 + rand(20)
 
     unless use_global
       searcher = IndexSearcher.new(INDEX_DIR)
     end
 
     (50*ITERATIONS).times do |i|
-      search_for(random(0xFFFFFFFF), (searcher.nil? ? @@searcher : searcher))
+      search_for(rand(0xFFFFFFFF), (searcher.nil? ? @@searcher : searcher))
       if (i%reopen_interval == 0) 
         if (searcher == nil) 
           @@searcher = IndexSearcher.new(INDEX_DIR)

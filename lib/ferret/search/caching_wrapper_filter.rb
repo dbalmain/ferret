@@ -14,7 +14,7 @@ module Ferret::Search
 
     def bits(reader)
       if (@cache == nil) 
-        @cache = Ferret::Utils::WeakKeyHash.new.extend(MonitorMixin)
+        @cache = Ferret::Utils::WeakKeyHash.new
       end
 
       @cache.synchronize() do # check cache

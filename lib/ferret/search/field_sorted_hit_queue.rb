@@ -83,7 +83,7 @@ module Ferret::Search
 
     # Internal cache of comparators. Similar to FieldCache, only
     # caches comparators instead of term values. 
-    @@comparators = Ferret::Utils::WeakKeyHash.new.extend(MonitorMixin)
+    @@comparators = Ferret::Utils::WeakKeyHash.new
 
     # Returns a comparator if it is in the cache. 
     def lookup(reader, field, sort_type, comproc) 

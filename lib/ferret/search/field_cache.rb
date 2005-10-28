@@ -1,5 +1,4 @@
 module Ferret::Search
-  require 'monitor'
 
   # Expert: The default cache implementation, storing all values in memory.
   # A WeakKeyHash is used for storage.
@@ -36,7 +35,7 @@ module Ferret::Search
     FLOAT_PARSER = lambda {|i| i.to_f}
 
     # The internal cache. Maps Entry to array of interpreted term values.
-    @@cache = Ferret::Utils::WeakKeyHash.new.extend(MonitorMixin)
+    @@cache = Ferret::Utils::WeakKeyHash.new
 
     # See if an object is in the cache. 
     def FieldCache.lookup(reader, field, sort_type) 

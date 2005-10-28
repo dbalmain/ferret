@@ -18,10 +18,6 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
                        :default_field => 'contents')
   end
    
-  def random(i)
-    (i * rand()).to_i
-  end
-
   def indexing_thread()
     ITERATIONS.times do
       choice = rand()
@@ -50,7 +46,7 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
 
   def do_delete_doc
     return if @index.size == 0
-    doc_num = random(@index.size)
+    doc_num = rand(@index.size)
     puts "Deleting #{doc_num} from index which has#{@index.has_deletions? ? "" : " no"} deletions"
     puts "document was already deleted" if (@index.deleted?(doc_num))
     @index.delete(doc_num)
@@ -58,7 +54,7 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
 
   def do_add_doc
     d = Document.new()
-    n = random(0xFFFFFFFF)
+    n = rand(0xFFFFFFFF)
     d << Field.new("id", n.to_s, Field::Store::YES, Field::Index::UNTOKENIZED)
     d << Field.new("contents", n.to_spoken, Field::Store::NO, Field::Index::TOKENIZED)
     puts("Adding #{n}")
@@ -66,7 +62,7 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
   end
   
   def do_search
-    n = random(0xFFFFFFFF)
+    n = rand(0xFFFFFFFF)
     puts("Searching for #{n}")
     hits = @index.search_each(n.to_spoken, :num_docs => 3) do |d, s|
       puts "Hit for #{n}: #{@index[d]["id"]} - #{s}"
