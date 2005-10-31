@@ -207,15 +207,6 @@ module Ferret::Index
     private
 
       def enum() 
-        #return @cached_term_enum ||= terms()
-        #
-        #term_enum = Thread.current["#{self.object_id}-#{@segment}-term_enum"]
-        #if (term_enum == nil) 
-        #  term_enum = terms()
-        #  Thread.current["#{self.object_id}-#{@segment}-term_enum"] = term_enum 
-        #end
-        #return term_enum
-        #
         #te_cache = Thread.current["term_enum"]
         #if (te_cache == nil) 
         #  te_cache = Thread.current["term_enum"] = Ferret::Utils::WeakKeyHash.new

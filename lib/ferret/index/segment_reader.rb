@@ -299,12 +299,6 @@ module Ferret::Index
     # in the Thread
     # returns:: TermVectorsReader
     def get_term_vectors_reader() 
-      #tv_reader = Thread.current["#{self.object_id}-#{@segment}-tv_reader"]
-      #if (tv_reader == nil) 
-      #  tv_reader = @tv_reader_orig.clone()
-      #  Thread.current["#{self.object_id}-#{@segment}-tv_reader"] = tv_reader
-      #end
-      #return tv_reader
       #tvr_cache = Thread.current["tv_reader"]
       #if (tvr_cache == nil) 
       #  tvr_cache = Thread.current["tv_reader"] = Ferret::Utils::WeakKeyHash.new
