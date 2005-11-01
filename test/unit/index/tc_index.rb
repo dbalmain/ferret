@@ -4,6 +4,7 @@ require File.dirname(__FILE__) + "/../../test_helper"
 class IndexTest < Test::Unit::TestCase
   include Ferret::Index
   include Ferret::Analysis
+  include Ferret::Store
 
   def setup()
     @qp = Ferret::QueryParser.new()
@@ -166,5 +167,83 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new(:path => fs_path, :create_if_missing => false)
     assert_equal(8, index.size)
     assert_equal("four", index[5]["field3"])
+  end
+
+  def test_merging_indexes
+    data = [
+      {"f" => "zero"},
+      {"f" => "one"},
+      {"f" => "two"}
+    ]
+    index1 = Index.new(:default_field => "f")
+    data.each {|doc| index1 << doc }
+    data = [
+      {"f" => "three"},
+      {"f" => "four"},
+      {"f" => "five"}
+    ]
+    index2 = Index.new(:default_field => "f")
+    data.each {|doc| index2 << doc }
+    data = [
+      {"f" => "six"},
+      {"f" => "seven"},
+      {"f" => "eight"}
+    ]
+    index3 = Index.new(:default_field => "f")
+    data.each {|doc| index3 << doc }
+
+    index = Index.new(:default_field => "f")
+    index.add_indexes(index1)
+    assert_equal(3, index.size)
+    assert_equal("zero", index[0]["f"])
+    index.add_indexes([index2, index3])
+    assert_equal(9, index.size)
+    assert_equal("zero", index[0]["f"])
+    assert_equal("eight", index[8]["f"])
+    index1.close
+    index2.close
+    index3.close
+    assert_equal("seven", index[7]["f"])
+    data = [
+      {"f" => "alpha"},
+      {"f" => "beta"},
+      {"f" => "charlie"}
+    ]
+    dir1 = RAMDirectory.new
+    index1 = Index.new(:dir => dir1, :default_field => "f")
+    data.each {|doc| index1 << doc }
+    index1.flush
+    data = [
+      {"f" => "delta"},
+      {"f" => "echo"},
+      {"f" => "foxtrot"}
+    ]
+    dir2 = RAMDirectory.new
+    index2 = Index.new(:dir => dir2, :default_field => "f")
+    data.each {|doc| index2 << doc }
+    index2.flush
+    data = [
+      {"f" => "golf"},
+      {"f" => "india"},
+      {"f" => "juliet"}
+    ]
+    dir3 = RAMDirectory.new
+    index3 = Index.new(:dir => dir3, :default_field => "f")
+    data.each {|doc| index3 << doc }
+    index3.flush
+
+    index.add_indexes(dir1)
+    assert_equal(12, index.size)
+    assert_equal("alpha", index[9]["f"])
+    index.add_indexes([dir2, dir3])
+    assert_equal(18, index.size)
+    assert_equal("juliet", index[17]["f"])
+    index1.close
+    dir1.close
+    index2.close
+    dir2.close
+    index3.close
+    dir3.close
+    assert_equal("golf", index[15]["f"])
   end
 end

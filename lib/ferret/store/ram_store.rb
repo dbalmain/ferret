@@ -99,7 +99,7 @@ module Ferret::Store
 
     def to_s
       str = "The files in this directory are: \n"
-      @files.each do |path,file|
+      @files.each do |path, file|
         str << path + " - " + file.size.to_s + "\n"
       end
       str
@@ -230,6 +230,7 @@ module Ferret::Store
       attr_accessor :mtime
       #attr_accessor :name
       attr_accessor :length
+      alias :size :length
 
 
       def initialize(name)

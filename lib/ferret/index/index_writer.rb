@@ -234,7 +234,7 @@ module Index
         merger = SegmentMerger.new(@directory, merged_name, @term_index_interval)
 
         if (@segment_infos.size() == 1) # add existing index, if any
-          s_reader = SegmentReader.new(@segment_infos[0])
+          s_reader = SegmentReader.get(@segment_infos[0])
           merger << s_reader
           segments_to_delete << s_reader
         end
@@ -243,7 +243,7 @@ module Index
           merger << reader
         end
 
-        doc_count = merger.merge!() # merge 'em
+        doc_count = merger.merge() # merge 'em
 
         @segment_infos.clear() # pop old infos & add new
         @segment_infos << SegmentInfo.new(merged_name, doc_count, @directory)

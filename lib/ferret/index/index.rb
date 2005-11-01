@@ -81,8 +81,8 @@ module Ferret::Index
     #                            :default_slop => 2)
     #   
     def initialize(options = {})
+      options[:create_if_missing] = true if options[:create_if_missing].nil? 
       if options[:path]
-        options[:create_if_missing] = true if options[:create_if_missing].nil? 
         @dir = FSDirectory.new(options[:path], options[:create])
         options[:close_dir] = true
       elsif options[:dir]
@@ -122,7 +122,6 @@ module Ferret::Index
       end
     end
 
-=begin
     # Get the reader for this index.
     # NOTE:: This will close the writer from this index.
     def reader
@@ -143,7 +142,7 @@ module Ferret::Index
       ensure_writer_open()
       return @writer
     end
-=end
+    protected :reader, :writer, :searcher
 
     # Adds a document to this index, using the provided analyzer instead of
     # the local analyzer if provided.  If the document contains more than
@@ -351,6 +350,41 @@ module Ferret::Index
       @dir.synchronize do
         ensure_reader_open()
         return @reader.num_docs()
+      end
+    end
+
+    # Merges all segments from an index or an array of indexes into this
+    # index. You can pass a single Index::Index, Index::Reader,
+    # Store::Directory or an array of any single one of these.
+    #
+    # This may be used to parallelize batch indexing. A large document
+    # collection can be broken into sub-collections. Each sub-collection can
+    # be indexed in parallel, on a different thread, process or machine and
+    # perhaps all in memory. The complete index can then be created by
+    # merging sub-collection indexes with this method.
+    #
+    # After this completes, the index is optimized.
+    def add_indexes(indexes)
+      @dir.synchronize do
+        indexes = [indexes].flatten   # make sure we have an array
+        return if indexes.size == 0 # nothing to do
+        if indexes[0].is_a?(Index)
+          readers = indexes.map {|index| index.reader }
+          indexes = readers
+        end
+
+        if indexes[0].is_a?(IndexReader)
+          ensure_reader_open
+          indexes.delete(@reader) # we don't want to merge with self
+          ensure_writer_open
+          @writer.add_indexes_readers(indexes)
+        elsif indexes[0].is_a?(Ferret::Store::Directory)
+          indexes.delete(@dir) # we don't want to merge with self
+          ensure_writer_open
+          @writer.add_indexes(indexes)
+        else
+          raise ArgumentError, "Unknown index type when trying to merge indexes"
+        end
       end
     end
 

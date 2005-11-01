@@ -31,6 +31,7 @@ module Ferret::Index
     def add(reader) 
       @readers << reader
     end
+    alias :<< :add
 
     # 
     # i:: The index of the reader to return
