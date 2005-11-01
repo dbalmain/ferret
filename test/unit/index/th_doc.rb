@@ -234,7 +234,7 @@ module IndexTestHelper
       doc.boost = i+1
 
       fields.each_pair do |field, text|
-        doc << Field.new(field, text, Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::NO, false, i+1)
+        doc << Field.new(field, text, Field::Store::YES, Field::Index::TOKENIZED, Field::TermVector::NO, false)
       end
       docs << doc
     end

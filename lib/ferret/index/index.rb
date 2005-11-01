@@ -81,6 +81,7 @@ module Ferret::Index
     #                            :default_slop => 2)
     #   
     def initialize(options = {})
+      super()
       options[:create_if_missing] = true if options[:create_if_missing].nil? 
       if options[:path]
         @dir = FSDirectory.new(options[:path], options[:create])
@@ -400,14 +401,15 @@ module Ferret::Index
     #
     # create::    True if you'd like to create the directory if it doesn't
     #             exist or copy over an existing directory. False if you'd
-    #             like to merge with the existing directory.
+    #             like to merge with the existing directory. This defaults to
+    #             false.
     def persist(directory, create = true)
       synchronize do
         flush
         old_dir = @dir
         if directory.is_a?(String)
           @dir = FSDirectory.new(directory, create)
-          options[:close_dir] = true
+          @options[:close_dir] = true
         elsif directory.is_a?(Ferret::Store::Directory)
           @dir = directory
         end

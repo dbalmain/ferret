@@ -256,13 +256,37 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new(:default_field => "f")
     data.each {|doc| index << doc }
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    index.persist(fs_path)
+    index.persist(fs_path, true)
     assert_equal(3, index.size)
-    assert_equal("zero", index.doc[0]["f"])
+    assert_equal("zero", index[0]["f"])
     index.close
 
-    index = Index.new(:path => fs_dir)
+    index = Index.new(:path => fs_path)
     assert_equal(3, index.size)
-    assert_equal("zero", index.doc[0]["f"])
+    assert_equal("zero", index[0]["f"])
+    index.close
+
+
+    data = [
+      {"f" => "romeo"},
+      {"f" => "sierra"},
+      {"f" => "tango"}
+    ]
+    index = Index.new(:default_field => "f")
+    data.each {|doc| index << doc }
+    assert_equal(3, index.size)
+    assert_equal("romeo", index[0]["f"])
+    dir = FSDirectory.new(fs_path, false)
+    index.persist(dir)
+    assert_equal(6, index.size)
+    assert_equal("zero", index[0]["f"])
+    assert_equal("romeo", index[3]["f"])
+    index.close
+
+    index = Index.new(:path => fs_path)
+    assert_equal(6, index.size)
+    assert_equal("zero", index[0]["f"])
+    assert_equal("romeo", index[3]["f"])
+    index.close
   end
 end
