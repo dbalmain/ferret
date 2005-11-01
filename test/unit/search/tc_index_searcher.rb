@@ -46,6 +46,12 @@ class IndexSearcherTest < Test::Unit::TestCase
     end
   end
 
+  def test_get_doc()
+    assert_equal(18, @is.max_doc)
+    assert_equal("20050930", @is.doc(0).values(:date))
+    assert_equal("cat1/sub2/subsub2", @is.doc(4)[:cat])
+  end
+
   def test_term_query
     tq = TermQuery.new(Term.new("field", "word2"));
     tq.boost = 100

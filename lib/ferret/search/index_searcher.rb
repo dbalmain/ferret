@@ -57,10 +57,10 @@ module Ferret::Search
     end
 
     # Expert: Returns the stored fields of document +i+.
-    # Called by HitCollector implementations.
+    #
     # See IndexReader#get_document
     def doc(i)
-      return @reader.document(i)
+      return @reader.get_document(i)
     end
 
     # Expert: Returns one greater than the largest possible document number.

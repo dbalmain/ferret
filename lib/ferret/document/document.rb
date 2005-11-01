@@ -69,13 +69,13 @@ module Ferret::Document
     # document has to be deleted from an index and a new changed version of
     # that document has to be added.
     def add_field(field)
-      (@fields[field.name] ||= []) << field
+      (@fields[field.name.to_s] ||= []) << field
     end
     alias :<< :add_field
 
     # Removes the first field of this name if it exists.
     def remove_field(name)
-      @fields[name].delete_at(0)
+      @fields[name.to_s].delete_at(0)
     end
 
     # Removes all fields with the given name from the document.
@@ -89,7 +89,7 @@ module Ferret::Document
     # this, a document has to be deleted from an index and a new changed
     # version of that document has to be added.
     def remove_fields(name)
-      @fields.delete(name)
+      @fields.delete(name.to_s)
     end
 
     # Returns the first field with the given name.
@@ -98,7 +98,7 @@ module Ferret::Document
     # name:: the name of the field
     # Return:: a _Field_ array
     def field(name)
-      @fields[name] ? @fields[name][0] : nil
+      @fields[name.to_s] ? @fields[name.to_s][0] : nil
     end
 
     # Returns an array of all fields with the given name.
@@ -107,7 +107,7 @@ module Ferret::Document
     # name:: the name of the field
     # Return:: a _Field_ array
     def fields(name)
-      @fields[name]
+      @fields[name.to_s]
     end
 
     # Returns an array of values of the field specified as the method
@@ -116,8 +116,8 @@ module Ferret::Document
     # name:: the name of the field
     # Return:: a _String_ of field values
     def values(name)
-      return nil if @fields[name].nil?
-      @fields[name].map {|f| f.data if not f.binary? }.join(" ")
+      return nil if @fields[name.to_s].nil?
+      @fields[name.to_s].map {|f| f.data if not f.binary? }.join(" ")
     end
     alias :[] :values
 
@@ -125,7 +125,7 @@ module Ferret::Document
     # field of that name then it will set the data in the first field of that
     # name.
     def []=(field_name, data)
-      field = field(field_name)
+      field = field(field_name.to_s)
       raise ArgumentError, "Field does not exist" unless field
       field.data = data
     end
@@ -137,16 +137,13 @@ module Ferret::Document
     # Return:: a _String_ of field values
     def binaries(name)
       binaries = []
-      @fields[name].each {|f| binaries << f.data if f.binary? }
+      @fields[name.to_s].each {|f| binaries << f.data if f.binary? }
       return binaries
     end
 
     # Prints the fields of a document for human consumption.#/
     def to_s()
-      field_str = ""
-      @fields.each_key { |name| field_str += name + " " }
-      field_str[-1] = ">"
-      return "Document<" + field_str
+      return "Document<#{@fields.keys.join(" ")}>"
     end
   end
 end
