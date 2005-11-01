@@ -388,6 +388,34 @@ module Ferret::Index
       end
     end
 
+    # This is a simple utility method for saving an in memory or RAM index to
+    # the file system. The same thing can be achieved by using the
+    # Index::Index#add_indexes method and you will have more options when
+    # creating the new index, however this is a simple way to turn a RAM index
+    # into a file system index.
+    #
+    # directory:: This can either be a Store::Directory object or a string
+    #             representing the path to the directory where you would
+    #             like to store the the index.
+    #
+    # create::    True if you'd like to create the directory if it doesn't
+    #             exist or copy over an existing directory. False if you'd
+    #             like to merge with the existing directory.
+    def persist(directory, create = true)
+      synchronize do
+        flush
+        old_dir = @dir
+        if directory.is_a?(String)
+          @dir = FSDirectory.new(directory, create)
+          options[:close_dir] = true
+        elsif directory.is_a?(Ferret::Store::Directory)
+          @dir = directory
+        end
+        ensure_writer_open
+        @writer.add_indexes([old_dir])
+      end
+    end
+
     protected
       def ensure_writer_open()
         raise "tried to use a closed index" if not @open

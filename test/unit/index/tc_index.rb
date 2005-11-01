@@ -246,4 +246,23 @@ class IndexTest < Test::Unit::TestCase
     dir3.close
     assert_equal("golf", index[15]["f"])
   end
+
+  def test_persist_index
+    data = [
+      {"f" => "zero"},
+      {"f" => "one"},
+      {"f" => "two"}
+    ]
+    index = Index.new(:default_field => "f")
+    data.each {|doc| index << doc }
+    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
+    index.persist(fs_path)
+    assert_equal(3, index.size)
+    assert_equal("zero", index.doc[0]["f"])
+    index.close
+
+    index = Index.new(:path => fs_dir)
+    assert_equal(3, index.size)
+    assert_equal("zero", index.doc[0]["f"])
+  end
 end
