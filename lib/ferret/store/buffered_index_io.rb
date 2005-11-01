@@ -142,7 +142,7 @@ module Ferret::Store
     # clone and vice-versa.
     def initialize_copy(o)
       super
-      @buffer = o.buffer.clone
+      @buffer = o.buffer.clone if o.buffer
     end
 
     attr_reader :buffer
