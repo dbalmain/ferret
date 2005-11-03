@@ -81,16 +81,17 @@ phrase "quick brown fox" in the content field. We'd write;
   end
 
 But "fast" has a pretty similar meaning to "quick" and we don't mind if the
-fox is a little red. So we could expand our search like this;
+fox is a little red. Also, the phrase could be in the title so we'll search
+there as well. So we could expand our search like this;
 
-  index.search_each('content:"quick|fast brown|red fox"') do |doc, score|
+  index.search_each('title|content:"quick|fast brown|red fox"') do |doc, score|
     puts "Document #{doc} found with a score of #{score}"
   end
 
 What if we want to find all documents entered on or after 5th of September,
-2005 with the words "ruby" or "rails" in it. We could type something like;
+2005 with the words "ruby" or "rails" in any field. We could type something like;
 
-  index.search_each('date:( >= 20050905) content:(ruby OR rails)') do |doc, score|
+  index.search_each('date:( >= 20050905) *:(ruby OR rails)') do |doc, score|
     puts "Document #{doc} found with a score of #{score}"
   end
 
