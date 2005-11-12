@@ -123,11 +123,14 @@ module Ferret::Document
 
     # Sets the data in field +field+ to +text+. If there is more than one
     # field of that name then it will set the data in the first field of that
-    # name.
+    # name. If there is no field of that name, then a new one will be created
     def []=(field_name, data)
       field = field(field_name.to_s)
-      raise ArgumentError, "Field does not exist" unless field
-      field.data = data
+      if field
+        field.data = data
+      else
+        add_field(Field.new(field_name.to_s, data))
+      end
     end
 
     # Returns an array of binaries of the field specified as the method

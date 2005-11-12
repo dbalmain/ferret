@@ -82,7 +82,11 @@ module Ferret::Index
     #   
     def initialize(options = {})
       super()
+
+      options[:default_search_field] &&= options[:default_search_field].to_s
+      options[:default_field] &&= options[:default_field].to_s
       options[:create_if_missing] = true if options[:create_if_missing].nil? 
+
       if options[:path]
         @dir = FSDirectory.new(options[:path], options[:create])
         options[:close_dir] = true
@@ -291,8 +295,25 @@ module Ferret::Index
           return @reader.delete_docs_with_term(t)
         elsif id.is_a?(Term)
           return @reader.delete_docs_with_term(id)
-        else
+        elsif id.is_a?(Integer)
           return @reader.delete(id)
+        else
+          raise ArgumentError, "Cannot delete for id of type #{id.class}"
+        end
+      end
+    end
+
+    # Delete all documents returned by the query.
+    # 
+    # query:: The query to find documents you wish to delete. Can either be a
+    #         string (in which case it is parsed by the standard query parser)
+    #         or an actual query object.
+    def query_delete(query)
+      @dir.synchronize do
+        ensure_searcher_open()
+        query = process_query(query)
+        @searcher.search_each(query) do |doc, score|
+          @reader.delete(doc)
         end
       end
     end
@@ -302,6 +323,72 @@ module Ferret::Index
       @dir.synchronize do 
         ensure_reader_open()
         return @reader.deleted?(n) 
+      end
+    end
+
+    # Update the document referenced by the document number +id+ if +id+ is an
+    # integer or all of the documents which have the term +id+ if +id+ is a
+    # term..
+    #
+    # id::      The number of the document to update. Can also be a string
+    #           representing the value in the +id+ field or a term to match.
+    # new_val:: The values we are updating. This can be a string in which case
+    #           the default field is updated, or it can be a hash, in which
+    #           case, all fields in the hash are updated. You can also pass a
+    #           full Document object but you must pass the doc_num as the id.
+    def update(id, new_val)
+      @dir.synchronize do
+        if id.is_a?(String)
+          query_update("id:#{id}", new_val)
+        elsif id.is_a?(Term)
+          query_update(TermQuery.new(id), new_val)
+        elsif id.is_a?(Integer)
+          ensure_reader_open()
+          document = doc(id)
+          if new_val.is_a?(Hash)
+            new_val.each_pair {|name, content| document[name] = content.to_s}
+          elsif new_val.is_a?(Document)
+            document = new_val
+          else
+            document[@options[:default_field]] = new_val.to_s
+          end          
+          @reader.delete(id)
+          ensure_writer_open()
+          @writer.add_document(document)
+        else
+          raise ArgumentError, "Cannot update for id of type #{id.class}"
+        end
+      end
+    end
+
+    # Update all the documents returned by the query.
+    #
+    # query::   The query to find documents you wish to update. Can either be
+    #           a string (in which case it is parsed by the standard query
+    #           parser) or an actual query object.
+    # new_val:: The values we are updating. This can be a string in which case
+    #           the default field is updated, or it can be a hash, in which
+    #           case, all fields in the hash are updated. If you want to pass
+    #           a full document see #update.
+    def query_update(query, new_val)
+      @dir.synchronize do
+        ensure_searcher_open()
+        docs_to_add = []
+        query = process_query(query)
+        @searcher.search_each(query) do |id, score|
+          document = doc(id)
+          if new_val.is_a?(Hash)
+            new_val.each_pair {|name, content| document[name] = content.to_s}
+          else
+            document[@options[:default_field]] = new_val.to_s
+          end
+          docs_to_add << document
+          @reader.delete(id)
+        end
+        ensure_writer_open()
+        docs_to_add.each do |document|
+          @writer.add_document(document)
+        end
       end
     end
 
@@ -456,6 +543,12 @@ module Ferret::Index
     private
       def do_search(query, options)
         ensure_searcher_open()
+        query = process_query(query)
+
+        return @searcher.search(query, options)
+      end
+
+      def process_query(query)
         if query.is_a?(String)
           if @qp.nil?
             @qp = Ferret::QueryParser.new(@default_search_field, @options)
@@ -464,8 +557,7 @@ module Ferret::Index
           @qp.fields = @reader.get_field_names.to_a
           query = @qp.parse(query)
         end
-
-        return @searcher.search(query, options)
+        return query
       end
   end
 end

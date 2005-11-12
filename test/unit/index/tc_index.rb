@@ -311,4 +311,84 @@ class IndexTest < Test::Unit::TestCase
     assert_equal(3, index.size)
     assert_equal("content3", index[2]["f"])
   end
+
+  def test_delete
+    data = [
+      {:id => 0, :cat => "/cat1/subcat1"},
+      {:id => 1, :cat => "/cat1/subcat2"},
+      {:id => 2, :cat => "/cat1/subcat2"},
+      {:id => 3, :cat => "/cat1/subcat3"},
+      {:id => 4, :cat => "/cat1/subcat4"},
+      {:id => 5, :cat => "/cat2/subcat1"},
+      {:id => 6, :cat => "/cat2/subcat2"},
+      {:id => 7, :cat => "/cat2/subcat3"},
+      {:id => 8, :cat => "/cat2/subcat4"},
+      {:id => 9, :cat => "/cat2/subcat5"},
+    ]
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
+    data.each {|doc| index << doc }
+    assert_equal(10, index.size)
+    assert_equal(1, index.search("id:9").size)
+    index.delete(9)
+    assert_equal(9, index.size)
+    assert_equal(0, index.search("id:9").size)
+    assert_equal(1, index.search("id:8").size)
+    index.delete("8")
+    assert_equal(8, index.size)
+    assert_equal(0, index.search("id:8").size)
+    assert_equal(5, index.search("cat:/cat1*").size)
+    index.query_delete("cat:/cat1*")
+    assert_equal(3, index.size)
+    assert_equal(0, index.search("cat:/cat1*").size)
+  end
+
+  def test_update
+    data = [
+      {:id => 0, :cat => "/cat1/subcat1", :content => "content0"},
+      {:id => 1, :cat => "/cat1/subcat2", :content => "content1"},
+      {:id => 2, :cat => "/cat1/subcat2", :content => "content2"},
+      {:id => 3, :cat => "/cat1/subcat3", :content => "content3"},
+      {:id => 4, :cat => "/cat1/subcat4", :content => "content4"},
+      {:id => 5, :cat => "/cat2/subcat1", :content => "content5"},
+      {:id => 6, :cat => "/cat2/subcat2", :content => "content6"},
+      {:id => 7, :cat => "/cat2/subcat3", :content => "content7"},
+      {:id => 8, :cat => "/cat2/subcat4", :content => "content8"},
+      {:id => 9, :cat => "/cat2/subcat5", :content => "content9"},
+    ]
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
+                      :default_field => :content)
+    data.each { |doc| index << doc }
+    assert_equal(10, index.size)
+    assert_equal("content5", index["5"][:content])
+    index.update(5, "content five")
+    assert_equal("content five", index["5"][:content])
+    assert_equal(nil, index["5"][:extra_content])
+    index.update("5", {:cat => "/cat1/subcat6",
+                       :content => "high five",
+                       :extra_content => "hello"})
+    assert_equal("hello", index["5"][:extra_content])
+    assert_equal("high five", index["5"][:content])
+    assert_equal("/cat1/subcat6", index["5"][:cat])
+    assert_equal("content9", index["9"][:content])
+    index.update(Term.new("content", "content9"), {:content => "content nine"})
+    assert_equal("content nine", index["9"][:content])
+    assert_equal("content0", index["0"][:content])
+    assert_equal(nil, index["0"][:extra_content])
+    document = index[0]
+    document[:content] = "content zero"
+    document[:extra_content] = "extra content"
+    index.update(0, document)
+    assert_equal("content zero", index["0"][:content])
+    assert_equal("extra content", index["0"][:extra_content])
+    assert_equal(nil, index["1"][:tag])
+    assert_equal(nil, index["2"][:tag])
+    assert_equal(nil, index["3"][:tag])
+    assert_equal(nil, index["4"][:tag])
+    index.query_update("id:<5 AND cat:>=/cat1/subcat2", {:tag => "cool"})
+    assert_equal("cool", index["1"][:tag])
+    assert_equal("cool", index["2"][:tag])
+    assert_equal("cool", index["3"][:tag])
+    assert_equal("cool", index["4"][:tag])
+    assert_equal(4, index.search("tag:cool").size)
+  end
 end
