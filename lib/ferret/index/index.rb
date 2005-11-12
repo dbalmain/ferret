@@ -432,7 +432,13 @@ module Ferret::Index
 
       def ensure_reader_open()
         raise "tried to use a closed index" if not @open
-        return if @reader
+        if @reader
+          if not @reader.latest?
+            @reader = IndexReader.open(@dir, false)
+          end
+          return
+        end
+
         if @writer
           @writer.close
           @writer = nil

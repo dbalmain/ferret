@@ -417,7 +417,6 @@ module IndexReaderCommon
     ir3.close()
   end
  
-
 end
 
 class SegmentReaderTest < Test::Unit::TestCase
@@ -617,6 +616,34 @@ class IndexReaderTest < Test::Unit::TestCase
 
     ir.close()
     fs_dir.close()
+  end
+
+  def test_latest()
+    dpath = File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir')
+    fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
+
+    iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
+    doc = Document.new
+    doc << Field.new("field", "content", Field::Store::YES, Field::Index::TOKENIZED)
+    iw << doc
+    iw.close()
+
+    ir = IndexReader.open(fs_dir, false)
+    assert(ir.latest?)
+
+    iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new())
+    doc = Document.new
+    doc << Field.new("field", "content2", Field::Store::YES, Field::Index::TOKENIZED)
+    iw << doc
+    iw.close()
+
+    assert(!ir.latest?)
+
+    ir.close()
+    ir = IndexReader.open(fs_dir, false)
+    assert(ir.latest?)
+    ir.close()
   end
 end
 

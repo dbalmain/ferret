@@ -5,6 +5,7 @@ class IndexTest < Test::Unit::TestCase
   include Ferret::Index
   include Ferret::Analysis
   include Ferret::Store
+  include Ferret::Document
 
   def setup()
     @qp = Ferret::QueryParser.new()
@@ -288,5 +289,26 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("zero", index[0]["f"])
     assert_equal("romeo", index[3]["f"])
     index.close
+  end
+
+  def test_auto_update_when_externally_modified()
+    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
+    index = Index.new(:path => fs_path, :default_field => "f", :create => true)
+    index << "document 1"
+    assert_equal(1, index.size)
+
+    index2 = Index.new(:path => fs_path, :default_field => "f")
+    assert_equal(1, index2.size)
+    index2 << "document 2"
+    assert_equal(2, index2.size)
+    assert_equal(2, index.size)
+
+    iw = IndexWriter.new(fs_path, :analyzer => WhiteSpaceAnalyzer.new())
+    doc = Document.new
+    doc << Field.new("f", "content3", Field::Store::YES, Field::Index::TOKENIZED)
+    iw << doc
+    iw.close()
+    assert_equal(3, index.size)
+    assert_equal("content3", index[2]["f"])
   end
 end

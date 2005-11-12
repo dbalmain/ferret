@@ -343,6 +343,12 @@ module Ferret::Index
         end
       end
     end
+
+    # Returns true if the reader is reading from the latest version of the
+    # index.
+    def latest?()
+      SegmentInfos.read_current_version(@directory) == @segment_infos.version()
+    end
     
     # Deletes the document numbered +doc_num+.  Once a document is deleted it
     # will not appear in TermDocEnum or TermPostitions enumerations.  Attempts to
