@@ -391,4 +391,41 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("cool", index["4"][:tag])
     assert_equal(4, index.search("tag:cool").size)
   end
+
+  def test_index_key
+    data = [
+      {:id => 0, :val => "one"},
+      {:id => 0, :val => "two"},
+      {:id => 1, :val => "three"},
+      {:id => 1, :val => "four"},
+    ]
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
+                      :key => "id")
+    data.each { |doc| index << doc }
+    assert_equal(2, index.size)
+    assert_equal("two", index[0][:val])
+    assert_equal("four", index[1][:val])
+  end
+
+  def test_index_multi_key
+    data = [
+      {:id => 0, :table => "product", :product => "tent"},
+      {:id => 0, :table => "location", :location => "first floor"},
+      {:id => 0, :table => "product", :product => "super tent"},
+      {:id => 0, :table => "location", :location => "second floor"},
+      {:id => 1, :table => "product", :product => "backback"},
+      {:id => 1, :table => "location", :location => "second floor"},
+      {:id => 1, :table => "location", :location => "first floor"},
+      {:id => 1, :table => "product", :product => "rucksack"},
+      {:id => 1, :table => "product", :product => "backpack"}
+    ]
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
+                      :key => ["id", "table"])
+    data.each { |doc| index << doc }
+    assert_equal(4, index.size)
+    assert_equal("super tent", index[0][:product])
+    assert_equal("second floor", index[1][:location])
+    assert_equal("backpack", index[3][:product])
+    assert_equal("first floor", index[2][:location])
+  end
 end

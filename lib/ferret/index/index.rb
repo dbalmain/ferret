@@ -68,6 +68,14 @@ module Ferret::Index
     #                        The default is true.
     # default_slop::         Set the default slop for phrase queries. This
     #                        defaults to 0.
+    # key::                  Expert: This should only be used if you really
+    #                        know what you are doing. Basically you can set a
+    #                        field or an array of fields to be the key for the
+    #                        index. So if you add a document with a same key
+    #                        as an existing document, the existing document will
+    #                        be replaced by the new object. This will slow
+    #                        down indexing so it should not be used if
+    #                        performance is a concern.
     # 
     # Some examples;
     #
@@ -86,6 +94,7 @@ module Ferret::Index
       options[:default_search_field] &&= options[:default_search_field].to_s
       options[:default_field] &&= options[:default_field].to_s
       options[:create_if_missing] = true if options[:create_if_missing].nil? 
+      @key = [options[:key]].flatten if options[:key]
 
       if options[:path]
         @dir = FSDirectory.new(options[:path], options[:create])
@@ -197,7 +206,6 @@ module Ferret::Index
     # vectors with the data. Read more about this in Ferret::Document::Field.
     def add_document(doc, analyzer = nil)
       @dir.synchronize do
-        ensure_writer_open()
         fdoc = nil
         if doc.is_a?(String)
           fdoc = Document.new
@@ -220,8 +228,15 @@ module Ferret::Index
         else
           raise ArgumentError, "Unknown document type #{doc.class}"
         end
-        @has_writes = true
 
+        # delete existing documents with the same key
+        if @key
+          query = @key.map {|field| "+#{field}:#{fdoc[field]}" }.join(" ")
+          query_delete(query)
+        end
+
+        ensure_writer_open()
+        @has_writes = true
         @writer.add_document(fdoc, analyzer || @writer.analyzer)
       end
     end
@@ -335,7 +350,8 @@ module Ferret::Index
     # new_val:: The values we are updating. This can be a string in which case
     #           the default field is updated, or it can be a hash, in which
     #           case, all fields in the hash are updated. You can also pass a
-    #           full Document object but you must pass the doc_num as the id.
+    #           full Document object, which will completely replace the
+    #           documents you remove.
     def update(id, new_val)
       @dir.synchronize do
         if id.is_a?(String)
@@ -368,8 +384,11 @@ module Ferret::Index
     #           parser) or an actual query object.
     # new_val:: The values we are updating. This can be a string in which case
     #           the default field is updated, or it can be a hash, in which
-    #           case, all fields in the hash are updated. If you want to pass
-    #           a full document see #update.
+    #           case, all fields in the hash are updated. You can also pass a
+    #           full Document object, which will completely replace the
+    #           documents you remove. You should be careful when passing a
+    #           whole document to be sure that your query will return one and
+    #           only result.
     def query_update(query, new_val)
       @dir.synchronize do
         ensure_searcher_open()
@@ -379,6 +398,8 @@ module Ferret::Index
           document = doc(id)
           if new_val.is_a?(Hash)
             new_val.each_pair {|name, content| document[name] = content.to_s}
+          elsif new_val.is_a?(Document)
+            document = new_val
           else
             document[@options[:default_field]] = new_val.to_s
           end
