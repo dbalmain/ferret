@@ -37,13 +37,15 @@ class FieldTest < Test::Unit::TestCase
     assert_equal(false, f.store_offsets?)
     assert_equal(false, f.store_positions?)
     assert_equal(false, f.binary?)
+    assert_equal("stored/compressed,indexed,tokenized,<name:value>", f.to_s)
   end
 
   def test_set_store()
-    f = Field.new("name", "value", Field::Store::COMPRESS, Field::Index::TOKENIZED)
+    f = Field.new("name", nil, Field::Store::COMPRESS, Field::Index::TOKENIZED)
     f.stored = Field::Store::NO
     assert_equal(false, f.stored?)
     assert_equal(false, f.compressed?)
+    assert_equal("indexed,tokenized,<name:>", f.to_s)
   end
 
   def test_set_index()
@@ -51,6 +53,7 @@ class FieldTest < Test::Unit::TestCase
     f.index = Field::Index::NO
     assert_equal(false, f.indexed?)
     assert_equal(false, f.tokenized?)
+    assert_equal("stored/compressed,<name:value>", f.to_s)
   end
 
   def test_set_term_vector()
@@ -59,6 +62,7 @@ class FieldTest < Test::Unit::TestCase
     assert_equal(true, f.store_term_vector?)
     assert_equal(true, f.store_offsets?)
     assert_equal(true, f.store_positions?)
+    assert_equal("stored/compressed,indexed,tokenized,store_term_vector,tv_offset,tv_position,<name:value>", f.to_s)
   end
 
   def test_new_binary_field()
@@ -76,5 +80,6 @@ class FieldTest < Test::Unit::TestCase
     assert_equal(false, f.store_offsets?)
     assert_equal(false, f.store_positions?)
     assert_equal(true, f.binary?)
+    assert_equal("stored/uncompressed,binary,<name:#{bin}>", f.to_s)
   end
 end

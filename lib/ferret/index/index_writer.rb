@@ -83,11 +83,11 @@ module Index
       @close_dir = options[:close_dir] || false
       @use_compound_file = (options[:use_compound_file] != false) # ie default true
       @analyzer = options[:analyzer] || Ferret::Analysis::StandardAnalyzer.new
-      @merge_factor = DEFAULT_MERGE_FACTOR
-      @min_merge_docs = DEFAULT_MIN_MERGE_DOCS
-      @max_merge_docs = DEFAULT_MAX_MERGE_DOCS
-      @max_field_length = DEFAULT_MAX_FIELD_LENGTH
-      @term_index_interval = DEFAULT_TERM_INDEX_INTERVAL
+      @merge_factor = options[:merge_factor] || DEFAULT_MERGE_FACTOR
+      @min_merge_docs = options[:min_merge_docs] || DEFAULT_MIN_MERGE_DOCS
+      @max_merge_docs = options[:max_merge_docs] || DEFAULT_MAX_MERGE_DOCS
+      @max_field_length = options[:max_field_length] || DEFAULT_MAX_FIELD_LENGTH
+      @term_index_interval = options[:term_index_interval] || DEFAULT_TERM_INDEX_INTERVAL
 
       @similarity = Search::Similarity.default
       @segment_infos = SegmentInfos.new()

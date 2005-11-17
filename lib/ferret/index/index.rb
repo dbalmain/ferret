@@ -76,6 +76,11 @@ module Ferret::Index
     #                        be replaced by the new object. This will slow
     #                        down indexing so it should not be used if
     #                        performance is a concern.
+    # use_compound_file::    Uses a compound file to store the index. This
+    #                        prevents an error being raised for having too
+    #                        many files open at the same time. The default is
+    #                        true but performance is better if this is set to
+    #                        false.
     # 
     # Some examples;
     #

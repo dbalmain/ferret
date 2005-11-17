@@ -277,28 +277,15 @@ module Ferret::Document
       str = ""
       if (@stored)
         str << "stored"
-        @str << @compressed ? "/compressed," : "/uncompressed,"
+        str << (@compressed ? "/compressed," : "/uncompressed,")
       end
-      if (@indexed) then str << "indexed," end
-      if (@tokenized) then str << "tokenized," end
-      if (@store_term_vector) then str << "store_term_vector," end
-      if (@store_offset)
-        str << "term_vector_offsets,"
-      end
-      if (@store_position)
-        str << "term_vector_position,"
-      end 
-      if (@binary) then str << "binary," end
-
-      str << '<'
-      str << @name
-      str << ':'
-
-      if (@data != null)
-        str << @data.to_s
-      end
-
-      str << '>'
+      str << "indexed," if (@indexed)
+      str << "tokenized," if (@tokenized)
+      str << "store_term_vector," if (@store_term_vector)
+      str << "tv_offset," if (@store_offset)
+      str << "tv_position," if (@store_position)
+      str << "binary," if (@binary)
+      str << "<#{@name}:#{data}>"
     end  
   end
 end
