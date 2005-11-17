@@ -46,6 +46,15 @@ class IndexSearcherTest < Test::Unit::TestCase
     end
   end
 
+  def check_docs(query, options, expected=[])
+    top_docs = @is.search(query, options)
+    docs = top_docs.score_docs
+    assert_equal(expected.length, docs.length)
+    docs.length.times do |i|
+      assert_equal(expected[i], docs[i].doc)
+    end
+  end
+
   def test_get_doc()
     assert_equal(18, @is.max_doc)
     assert_equal("20050930", @is.doc(0).values(:date))
@@ -59,11 +68,31 @@ class IndexSearcherTest < Test::Unit::TestCase
 
     tq = TermQuery.new(Term.new("field", "word1"));
     top_docs = @is.search(tq)
-    #puts top_docs.score_docs
     assert_equal(@documents.size, top_docs.total_hits)
     assert_equal(10, top_docs.score_docs.size)
     top_docs = @is.search(tq, {:num_docs => 20})
     assert_equal(@documents.size, top_docs.score_docs.size)
+  end
+
+
+  def test_first_doc
+    tq = TermQuery.new(Term.new("field", "word1"));
+    tq.boost = 100
+    top_docs = @is.search(tq, {:num_docs => 100})
+    expected = []
+    top_docs.score_docs.each do |score_doc|
+      expected << score_doc.doc
+    end
+
+    assert_raise(ArgumentError) { @is.search(tq, {:first_doc => -1}) }
+    assert_raise(ArgumentError) { @is.search(tq, {:num_docs => 0}) }
+    assert_raise(ArgumentError) { @is.search(tq, {:num_docs => -1}) }
+
+    check_docs(tq, {:num_docs => 8, :first_doc => 0}, expected[0,8])
+    check_docs(tq, {:num_docs => 3, :first_doc => 1}, expected[1,3])
+    check_docs(tq, {:num_docs => 6, :first_doc => 2}, expected[2,6])
+    check_docs(tq, {:num_docs => 2, :first_doc => expected.length}, [])
+    check_docs(tq, {:num_docs => 2, :first_doc => expected.length + 100}, [])
   end
 
   def test_boolean_query

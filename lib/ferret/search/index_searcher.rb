@@ -90,10 +90,15 @@ module Ferret::Search
       filter = options[:filter]
       first_doc = options[:first_doc]||0
       num_docs = options[:num_docs]||10
+      max_size = first_doc + num_docs
       sort = options[:sort]
 
-      if (num_docs <= 0)  # nil might be returned from hq.top() below.
+      if (num_docs <= 0)
         raise ArgumentError, "num_docs must be > 0 to run a search"
+      end
+
+      if (first_doc < 0)
+        raise ArgumentError, "first_doc must be >= 0 to run a search"
       end
 
       scorer = query.weight(self).scorer(@reader)
@@ -104,33 +109,32 @@ module Ferret::Search
       bits = (filter.nil? ? nil : filter.bits(@reader))
       if (sort)
         fields = sort.is_a?(Array) ? sort : sort.fields
-        hq = FieldSortedHitQueue.new(@reader, fields, num_docs + first_doc)
+        hq = FieldSortedHitQueue.new(@reader, fields, max_size)
       else
-        hq = HitQueue.new(num_docs + first_doc)
+        hq = HitQueue.new(max_size)
       end
       total_hits = 0
       min_score = 0.0
       scorer.each_hit() do |doc, score|
         if score > 0.0 and (bits.nil? or bits.get(doc)) # skip docs not in bits
           total_hits += 1
-          if hq.size < num_docs or score >= min_score 
+          if hq.size < max_size or score >= min_score 
             hq.insert(ScoreDoc.new(doc, score))
             min_score = hq.top.score # maintain min_score
           end
         end
       end
 
-      score_docs = Array.new(hq.size)
+      score_docs = []
       if (hq.size > first_doc)
-        score_docs = Array.new(hq.size - first_doc)
-        first_doc.times { hq.pop }
-        (hq.size - 1).downto(0) do |i|
-          score_docs[i] = hq.pop
+        if (hq.size - first_doc) < num_docs 
+          num_docs = hq.size - first_doc
         end
-      else
-        score_docs = []
-        hq.clear
+        num_docs.times do
+          score_docs.unshift(hq.pop)
+        end
       end
+      hq.clear
 
       return TopDocs.new(total_hits, score_docs)
     end
