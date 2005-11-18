@@ -100,7 +100,7 @@ module Ferret::Index
       if directory.nil?
         directory = Ferret::Store::RAMDirectory.new
       elsif directory.is_a?(String)
-        directory = Ferret::Store::FSDirectory.new(directory, true)
+        directory = Ferret::Store::FSDirectory.new(directory, false)
       end
       directory.synchronize do # in- & inter-process sync
         commit_lock = directory.make_lock(IndexWriter::COMMIT_LOCK_NAME)
