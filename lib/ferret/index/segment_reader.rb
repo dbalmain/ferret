@@ -16,16 +16,16 @@ module Ferret::Index
       @segment = info.name
 
       @cfs_reader = nil
-      cfs = directory
+      dir = directory
       if directory.exists?(@segment + '.cfs') then
         @cfs_reader = CompoundFileReader.new(directory, @segment + '.cfs')
-        cfs = @cfs_reader
+        dir = @cfs_reader
       end
 
-      @field_infos = FieldInfos.new(cfs, @segment + '.fnm')
-      @fields_reader = FieldsReader.new(cfs, @segment, @field_infos)
+      @field_infos = FieldInfos.new(dir, @segment + '.fnm')
+      @fields_reader = FieldsReader.new(dir, @segment, @field_infos)
 
-      @term_infos = TermInfosReader.new(cfs, @segment, @field_infos)
+      @term_infos = TermInfosReader.new(dir, @segment, @field_infos)
       @deleted_docs = nil
       @deleted_docs_dirty = false
       if SegmentReader.has_deletions?(info) then
@@ -33,16 +33,16 @@ module Ferret::Index
           Ferret::Utils::BitVector.read(directory, @segment + '.del')
       end
 
-      @freq_stream = cfs.open_input(@segment + '.frq')
-      @prox_stream = cfs.open_input(@segment + '.prx')
+      @freq_stream = dir.open_input(@segment + '.frq')
+      @prox_stream = dir.open_input(@segment + '.prx')
       @norms = {}
       @norms.extend(MonitorMixin)
       @norms_dirty = false
-      open_norms(cfs)
+      open_norms(dir)
 
       @tv_reader_orig = nil
       if @field_infos.has_vectors? then
-        @tv_reader_orig = TermVectorsReader.new(cfs, @segment, @field_infos)
+        @tv_reader_orig = TermVectorsReader.new(dir, @segment, @field_infos)
       end
     end
 

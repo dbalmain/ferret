@@ -107,10 +107,10 @@ module Ferret::Index
     end
 
     # Not implemented
-    def delete(name) raise(UnsupportedOperationError) end
+    def remove(name) raise(NotImplementedError) end
 
     # Not implemented
-    def rename(from, to) raise(UnsupportedOperationError) end
+    def rename(from, to) raise(NotImplementedError) end
 
     # Returns the length of a file in the directory.
     def length(name)
@@ -120,10 +120,10 @@ module Ferret::Index
     end
 
     # Not implemented
-    def create_output(name) raise(UnsupportedOperationError) end
+    def create_output(name) raise(NotImplementedError) end
 
     # Not implemented
-    def make_lock(name) raise(UnsupportedOperationError) end
+    def make_lock(name) raise(NotImplementedError) end
 
     # Implementation of an IndexInput that reads from a portion of the
     # compound file.
@@ -206,8 +206,8 @@ module Ferret::Index
     # Add a source stream. _file_name_ is the string by which the 
     # sub-stream will be known in the compound stream.
     # 
-    # Throws:: StateError if this writer is closed
-    # Throws:: ArgumentError if a file with the same name
+    # Raises:: StateError if this writer is closed
+    # Raises:: ArgumentError if a file with the same name
     #          has been added already
     def add_file(file_name)
       if @merged
@@ -253,7 +253,7 @@ module Ferret::Index
         # Remember the positions of directory entries so that we can
         # adjust the offsets later
         @file_entries.each do |fe|
-          fe.directory_offset = os.pos()
+          fe.dir_offset = os.pos()
           os.write_long(0)  # for now
           os.write_string(fe.file_name)
         end
@@ -267,7 +267,7 @@ module Ferret::Index
 
         # Write the data offsets into the directory of the compound stream
         @file_entries.each do |fe|
-          os.seek(fe.directory_offset)
+          os.seek(fe.dir_offset)
           os.write_long(fe.data_offset)
         end
 
@@ -292,15 +292,7 @@ module Ferret::Index
     private
 
       # Internal class for holding a file
-      class FileEntry
-
-        attr_accessor :file_name, :directory_offset, :data_offset
-
-        def initialize(file_name)
-          @file_name = file_name
-        end
-
-      end
+      FileEntry = Struct.new(:file_name, :dir_offset, :data_offset)
 
       # Copy the contents of the file with specified extension into the
       # provided output stream. Use a buffer for moving data
@@ -324,9 +316,9 @@ module Ferret::Index
           # Verify that remainder is 0
           if (remainder != 0)
             raise(IOError,
-              "Non-zero remainder length after copying: " + remainder.to_s +
-                " (id: " + source.file_name + ", length: " + length.to_s +
-                ", buffer size: " + Ferret::Store::BUFFER_SIZE.to_s + ")")
+              "Non-zero remainder length after copying: #{remainder} " +
+              "(id: #{source.file_name}, length: #{length}, buffer size: " +
+              " #{Ferret::Store::BUFFER_SIZE})")
           end
 
           # Verify that the output length diff is equal to original file
@@ -334,8 +326,8 @@ module Ferret::Index
           diff = end_ptr - start_ptr
           if (diff != length)
             raise(IOError,
-              "Difference in the output file offsets " + diff.to_s +
-                " does not match the original file length " + length.to_s)
+              "Difference in the output file offsets #{diff}" +
+              " does not match the original file length #{length}")
           end
 
         ensure
