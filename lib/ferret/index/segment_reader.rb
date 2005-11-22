@@ -17,7 +17,8 @@ module Ferret::Index
 
       @cfs_reader = nil
       dir = directory
-      if directory.exists?(@segment + '.cfs') then
+      #if directory.exists?(@segment + '.cfs') then
+      if SegmentReader.uses_compound_file?(info)
         @cfs_reader = CompoundFileReader.new(directory, @segment + '.cfs')
         dir = @cfs_reader
       end
@@ -128,9 +129,9 @@ module Ferret::Index
       @field_infos.each_with_index do |fi, i|
         if (fi.indexed?)
           if @cfs_reader.nil?
-            name = @segment + ".f" + i.to_s
+            name = "#{@segment}.f#{i}"
           else
-            name = @segment + ".s" + i.to_s
+            name = "#{@segment}.s#{i}"
           end
           if (@directory.exists?(name))
             file_names << name

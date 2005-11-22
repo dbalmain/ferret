@@ -81,6 +81,18 @@ module Ferret::Index
     #                        many files open at the same time. The default is
     #                        true but performance is better if this is set to
     #                        false.
+    # handle_parse_errors::  Set this to true if you want the QueryParser to
+    #                        degrade gracefully on errors. If the query parser
+    #                        fails to parse this query, it will try to parse
+    #                        it as a straight boolean query on the default
+    #                        field ignoring all query punctuation. If this
+    #                        fails, it will return an empty TermQuery. If you
+    #                        use this and you need to know why your query
+    #                        isn't working you can use the Query#to_s method
+    #                        on the query returned to see what is happening to
+    #                        your query.  This defualts to true. If you set it
+    #                        to false a QueryParseException is raised on a
+    #                        query parse error.
     # 
     # Some examples;
     #
@@ -91,7 +103,8 @@ module Ferret::Index
     #
     #   index = Index::Index.new(:dir => directory,
     #                            :close_dir => false
-    #                            :default_slop => 2)
+    #                            :default_slop => 2,
+    #                            :handle_parse_errors => false)
     #   
     def initialize(options = {})
       super()
@@ -122,6 +135,7 @@ module Ferret::Index
         @default_search_field = (@options[:default_search_field] || \
                                  @options[:default_field] || "*")
         @default_field = @options[:default_field] || ""
+        @options[:handle_parse_errors] = true if @options[:handle_parse_errors].nil?
         @open = true
         @qp = nil
       end

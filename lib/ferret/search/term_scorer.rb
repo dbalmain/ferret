@@ -25,8 +25,6 @@ module Ferret::Search
       @weight = weight
       @term_docs = td
       @norms = norms
-      #XXX
-      @norms_size = @norms.size
       @weight_value = weight.value
 
       SCORE_CACHE_SIZE.times do |i|

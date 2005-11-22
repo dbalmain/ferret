@@ -242,17 +242,29 @@ module Ferret
     #
     # === Options
     #
-    # analyzer::      The analyzer is used to break phrases up into terms and
-    #                 to turn terms in tokens recognized in the index.
-    #                 Analysis::Analyzer is the default
-    # occur_default:: Set to either BooleanClause::Occur::SHOULD (default)
-    #                 or BooleanClause::Occur::MUST to specify the default
-    #                 Occur operator.
-    # wild_lower::    Set to false if you don't want the terms in fuzzy and
-    #                 wild queries to be set to lower case. You should do this
-    #                 if your analyzer doesn't downcase. The default is true.
-    # default_slop::  Set the default slop for phrase queries. This defaults
-    #                 to 0.
+    # analyzer::            The analyzer is used to break phrases up into
+    #                       terms and to turn terms in tokens recognized in
+    #                       the index.  Analysis::Analyzer is the default
+    # occur_default::       Set to either BooleanClause::Occur::SHOULD
+    #                       (default) or BooleanClause::Occur::MUST to specify
+    #                       the default Occur operator.
+    # wild_lower::          Set to false if you don't want the terms in fuzzy
+    #                       and wild queries to be set to lower case. You
+    #                       should do this if your analyzer doesn't downcase.
+    #                       The default is true.
+    # default_slop::        Set the default slop for phrase queries. This
+    #                       defaults to 0.
+    # handle_parse_errors:: Set this to true if you want the QueryParser to
+    #                       degrade gracefully on errors. If the query parser
+    #                       fails to parse this query, it will try to parse it
+    #                       as a straight boolean query on the default field
+    #                       ignoring all query punctuation. If this fails, it
+    #                       will return an empty TermQuery. If you use this
+    #                       and you need to know why your query isn't working
+    #                       you can use the Query#to_s method on the query
+    #                       returned to see what is happening to your query.
+    #                       This defualts to false, in which case a
+    #                       QueryParseException is thrown.
     def initialize(default_field = "", options = {})
     end
 
@@ -263,10 +275,10 @@ module Ferret
 
     # Set to false if you don't want the terms in fuzzy and wild queries to be
     # set to lower case. You should do this if your analyzer doesn't downcase.
-    def wild_lower()
+    def wild_lower=()
     end
 
-    # Returns the value of wild_lower. See #wild_lower.
+    # Returns the value of wild_lower. See #wild_lower=.
     def wild_lower?()
     end
 
@@ -276,7 +288,25 @@ module Ferret
     # if you'd like to do your own query string cleaning.
     def clean_string(str)
     end
+
+    # The exception thrown when there is an error parsing the query string.
+    # This also holds the Racc::ParseError that was thrown in case you want to
+    # investigate why a query won't parse.
+    class QueryParseException < Exception
+      attr_reader :parse_error
+
+      # Create a new QueryParseException
+      #
+      # error::       An error string describing the query that failed
+      # parse_error:: The actual parse error that was thrown by Racc. It is a
+      #               Racc::ParseError object.
+      def initialize(error, parse_error)
+        super(error)
+        @parse_error = parse_error
+      end
+    end
   end
+
 end
 
 require 'ferret/query_parser/query_parser.tab.rb'

@@ -94,10 +94,10 @@ module Index
       @ram_directory = Ferret::Store::RAMDirectory.new()
 
       # Make sure that the lock is released when this object is destroyed
-      define_finalizer(self, proc { |id| @write_lock.release() if @write_lock})
    
       @write_lock = @directory.make_lock(WRITE_LOCK_NAME)
       @write_lock.obtain(WRITE_LOCK_TIMEOUT) # obtain write lock
+      define_finalizer(@write_lock, proc { |id| @write_lock.release() if @write_lock})
 
       @directory.synchronize() do # in- & inter-process sync
         @directory.make_lock(COMMIT_LOCK_NAME).while_locked(COMMIT_LOCK_TIMEOUT) do

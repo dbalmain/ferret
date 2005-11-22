@@ -11,15 +11,8 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d44076', 'lib/ferret/query_parser/query_parser.y', 126
-  attr_accessor :default_field, :fields
-
-  # true if you want to downcase wild card queries. This is set to try by
-  # default.
-  attr_writer :wild_lower
-
-  def wild_lower?() @wild_lower end
-
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd43492', 'lib/ferret/query_parser/query_parser.y', 126
+  attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
     @yydebug = true
@@ -32,6 +25,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d4407
     @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
     @default_slop = options[:default_slop] || 0
     @fields = options[:fields]||[]
+    @handle_parse_errors = options[:handle_parse_errors] || false
   end
 
   RESERVED = {
@@ -50,6 +44,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d4407
   EWCHR = %q,:()\[\]{}!+"~^\-\|<>\=,
 
   def parse(str)
+    orig_str = str
     str = clean_string(str)
     str.strip!
     @q = []
@@ -82,10 +77,24 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d4407
       end
       str = $'
     end
-    @q.push [ false, '$' ]
+    if @q.empty?
+      return TermQuery.new(Term.new(@default_field, ""))
+    end
+
+    @q.push([ false, '$' ])
     #p @q
 
-    do_parse
+    begin
+      query = do_parse
+    rescue Racc::ParseError => e
+      if @handle_parse_errors
+        @field = @default_field
+        query = _get_bad_query(orig_str)
+      else
+        raise QueryParseException.new("Could not parse #{str}", e)
+      end
+    end
+    return query
   end
 
   def next_token
@@ -158,6 +167,25 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d4407
     new_str << ?" if quote_open
     br_stack.each { |b| new_str << ?) }
     return new_str.pack("c*")  
+  end
+
+  def get_bad_query(field, str)
+    tokens = []
+    stream = @analyzer.token_stream(field, str)
+    while token = stream.next
+      tokens << token
+    end
+    if tokens.length == 0
+      return TermQuery.new(Term.new(field, ""))
+    elsif tokens.length == 1
+      return TermQuery.new(Term.new(field, tokens[0].term_text))
+    else
+      bq = BooleanQuery.new()
+      tokens.each do |token|
+        bq << BooleanClause.new(TermQuery.new(Term.new(field, token.term_text)))
+      end
+      return bq
+    end
   end
 
   def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
@@ -374,7 +402,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id9e08d4407
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id9e08d44076
+..end lib/ferret/query_parser/query_parser.y modeval..id81dbd43492
 
 ##### racc 1.4.4 generates ###
 
@@ -893,7 +921,8 @@ if __FILE__ == $0
 
   parser = Ferret::QueryParser.new("default",
                                    :fields => ["f1", "f2", "f3"],
-                                   :analyzer => Ferret::Analysis::StandardAnalyzer.new)
+                                   :analyzer => Ferret::Analysis::StandardAnalyzer.new,
+                                   :handle_parse_errors => true)
 
   $stdin.each do |line|
     query = parser.parse(line)

@@ -5,6 +5,7 @@ class QueryParserTest < Test::Unit::TestCase
   def test_strings()
     parser = Ferret::QueryParser.new("xxx", :fields => ["f1", "f2", "f3"])
     pairs = [
+      ['', ''],
       ['word', 'word'],
       ['field:word', 'field:word'],
       ['"word1 word2 word3"', '"word word word"'],
@@ -92,8 +93,8 @@ class QueryParserTest < Test::Unit::TestCase
       ['"onewordphrase"', 'onewordphrase']
     ]
       
-    pairs.each do |pair|
-      assert_equal(pair[1], parser.parse(pair[0]).to_s(parser.default_field))
+    pairs.each do |query_str, expected|
+      assert_equal(expected, parser.parse(query_str).to_s(parser.default_field))
     end
   end
 
@@ -105,8 +106,32 @@ class QueryParserTest < Test::Unit::TestCase
       ['key:(1234)', 'key:1234']
     ]
       
-    pairs.each do |pair|
-      assert_equal(pair[1], parser.parse(pair[0]).to_s(parser.default_field))
+    pairs.each do |query_str, expected|
+      assert_equal(expected, parser.parse(query_str).to_s(parser.default_field))
+    end
+  end
+  
+  def do_test_query_parse_exception_raised(str)
+    parser = Ferret::QueryParser.new("xxx", :fields => ["f1", "f2", "f3"])
+    assert_raise(Ferret::QueryParser::QueryParseException) do
+      parser.parse(str)
+    end
+  end
+
+  
+  def test_bad_queries
+    parser = Ferret::QueryParser.new("xxx", :fields => ["f1", "f2"],
+                                            :handle_parse_errors => true)
+
+    pairs = [
+      ['(*word', 'word'],
+      ['()*&)(*^&*(', ''],
+      ['()*&one)(*two(*&"', 'one two']
+    ]
+      
+    pairs.each do |query_str, expected|
+      do_test_query_parse_exception_raised(query_str)
+      assert_equal(expected, parser.parse(query_str).to_s(parser.default_field))
     end
   end
 end
