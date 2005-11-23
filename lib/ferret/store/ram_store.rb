@@ -25,7 +25,7 @@ module Ferret::Store
     # returns an array of strings, one for each file in the directory
     def each()
       @files.each do |path, file|
-        next if file =~ Regexp.new('^rubylock-')
+        next if file =~ /#{LOCK_PREFIX}/
         yield file
       end
     end
@@ -89,7 +89,7 @@ module Ferret::Store
 
     # Construct a Lock.
     def make_lock(name) 
-      RAMLock.new("rubylock-" + name, self)
+      RAMLock.new(LOCK_PREFIX + name, self)
     end
 
 

@@ -330,7 +330,7 @@ module Ferret::Store
 
       # returns the lock prefix for this directory
       def lock_prefix
-        'ferret-' + Digest::MD5.hexdigest(@dir.path)
+        LOCK_PREFIX + Digest::MD5.hexdigest(@dir.path)
       end
 
       # Unfortunately, on Windows, Dir does not refresh when rewind is called

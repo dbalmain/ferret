@@ -14,6 +14,8 @@ module Ferret::Store
   # called _open_input_ If there is a risk of simultaneous modifications of
   # the files then locks should be used. See Lock to find out how.
   class Directory
+    LOCK_PREFIX = "ferret-"
+
     # returns an array of strings, one for each file in the directory
     def each # :yeilds: file_name
       raise NotImplementedError

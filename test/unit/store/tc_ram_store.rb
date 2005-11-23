@@ -15,7 +15,7 @@ class RAMStoreTest < Test::Unit::TestCase
 
   def test_ramlock
     name = "lfile"
-    lfile = "rubylock-" + name
+    lfile = Ferret::Store::Directory::LOCK_PREFIX + name
     assert(! @dir.exists?(lfile),
            "There should be no lock file")
     lock = @dir.make_lock(name)
