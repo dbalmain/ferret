@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd43492', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e23', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -82,8 +82,8 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd4349
     end
 
     @q.push([ false, '$' ])
-    #p @q
 
+    query = nil
     begin
       query = do_parse
     rescue Racc::ParseError => e
@@ -199,7 +199,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd4349
       tokens << token
     end
     if tokens.length == 0
-      return nil
+      return TermQuery.new(Term.new(field, ""))
     elsif tokens.length == 1
       return TermQuery.new(Term.new(field, tokens[0].term_text))
     else
@@ -221,7 +221,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd4349
         return FuzzyQuery.new(Term.new(field, token.term_text))
       end
     else
-      return nil
+      return TermQuery.new(Term.new(field, ""))
     end
   end
 
@@ -402,7 +402,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id81dbd4349
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id81dbd43492
+..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e23
 
 ##### racc 1.4.4 generates ###
 

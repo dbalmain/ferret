@@ -193,8 +193,8 @@ end
     end
 
     @q.push([ false, '$' ])
-    #p @q
 
+    query = nil
     begin
       query = do_parse
     rescue Racc::ParseError => e
@@ -310,7 +310,7 @@ end
       tokens << token
     end
     if tokens.length == 0
-      return nil
+      return TermQuery.new(Term.new(field, ""))
     elsif tokens.length == 1
       return TermQuery.new(Term.new(field, tokens[0].term_text))
     else
@@ -332,7 +332,7 @@ end
         return FuzzyQuery.new(Term.new(field, token.term_text))
       end
     else
-      return nil
+      return TermQuery.new(Term.new(field, ""))
     end
   end
 

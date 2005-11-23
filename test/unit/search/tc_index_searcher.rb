@@ -66,6 +66,9 @@ class IndexSearcherTest < Test::Unit::TestCase
     tq.boost = 100
     check_hits(tq, [1,4,8])
 
+    tq = TermQuery.new(Term.new("field", "2342"));
+    check_hits(tq, [])
+
     tq = TermQuery.new(Term.new("field", ""));
     check_hits(tq, [])
 

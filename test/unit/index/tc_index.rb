@@ -8,7 +8,6 @@ class IndexTest < Test::Unit::TestCase
   include Ferret::Document
 
   def setup()
-    @qp = Ferret::QueryParser.new()
   end
 
   def tear_down()
@@ -81,7 +80,7 @@ class IndexTest < Test::Unit::TestCase
       {"def_field" => "one two"},
       {"def_field" => "two", :field2 => "three", "field3" => "four"},
       {"def_field" => "one multi2"},
-      {"def_field" => "two", :field2 => "three multi2", "field3" => "five multi"}
+      {"def_field" => "two", :field2 => "this three multi2", "field3" => "five multi"}
     ]
     data.each {|doc| index << doc }
     q = "one AND two"
@@ -110,6 +109,7 @@ class IndexTest < Test::Unit::TestCase
     doc["field2"] = "dave"
     index << doc
     check_results(index, q, [6, 7])
+    check_results(index, "*:this", [])
     assert_equal(8, index.size)
     assert_equal("dave", index[7]["field2"])
     index.optimize
