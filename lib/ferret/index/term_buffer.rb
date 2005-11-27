@@ -2,21 +2,21 @@ module Ferret::Index
   class TermBuffer
     include Comparable
 
-    attr_reader :text, :text_length, :field
+    attr_reader :text_buf, :text_length, :field
 
     def initialize
-      @text = String.new
+      @text_buf = String.new
       @text_length = -1
       @field = nil
     end
 
     def hash()
-      return @text.hash + @field.hash
+      return text.hash + @field.hash
     end
 
     def <=>(other) 
       if (@field == other.field)
-        return text_str <=> other.text_str
+        return text <=> other.text
       end
       @field <=> other.field
     end
@@ -27,7 +27,7 @@ module Ferret::Index
       length = input.read_vint()
       total_length = start + length
       @text_length = total_length
-      input.read_chars(@text, start, length)
+      input.read_chars(@text_buf, start, length)
       @field = field_infos[input.read_vint()].name
     end
 
@@ -38,8 +38,8 @@ module Ferret::Index
       end
 
       # copy text into the buffer
-      @text_length = term.text.length
-      @text = term.text.clone
+      @text_buf = term.text.clone
+      @text_length = @text_buf.length
 
       @field = term.field
       @term = term
@@ -47,14 +47,15 @@ module Ferret::Index
 
     def set!(other) 
       @text_length = other.text_length
-      @text = other.text.clone if other.text
+      @text_buf = other.text_buf.clone if other.text_buf
       @field = other.field
       @term = other.term
     end
+    alias :initialize_copy :set!
 
     def reset() 
       @field = nil
-      @text = String.new
+      @text_buf = ""
       @text_length = 0
       @term = nil
     end
@@ -65,18 +66,14 @@ module Ferret::Index
       end
 
       if @term.nil?
-        @term = Term.new(@field, @text[0,@text_length].to_s)
+        @term = Term.new(@field, @text_buf[0,@text_length].to_s)
       end
       return @term
     end
     alias :term :to_term
 
-    def initialize_copy(o)
-      set!(o)
-    end
-
-    def text_str()
-      @text[0,@text_length]
+    def text()
+      @text_buf[0,@text_length]
     end
 
     def to_s()

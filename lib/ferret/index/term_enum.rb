@@ -33,7 +33,7 @@ module Ferret
       #
       # Behaves as if written:
       #
-      #   def skip_to(target_term)
+      #   def skip_to(target)
       #     while (target > term)
       #       if (!next()) return false
       #     end
@@ -41,7 +41,7 @@ module Ferret
       #   end
       #
       # Some implementations are considerably more efficient than that.
-      def skip_to(term)
+      def skip_to(target)
         while (target > term)
           return false if not next?
         end

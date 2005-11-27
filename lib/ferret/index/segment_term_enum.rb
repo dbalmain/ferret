@@ -61,8 +61,7 @@ module Ferret::Index
     
     #attr_accessors for the clone method
     attr_accessor :input, :term_buffer, :prev_buffer
-    protected :input, :input=, :term_buffer,
-      :term_buffer=, :prev_buffer, :prev_buffer=
+    protected :input, :input=, :prev_buffer, :prev_buffer=
 
     def initialize_copy(o)
       super
@@ -83,7 +82,7 @@ module Ferret::Index
     # Increments the enumeration to the next element.  True if one exists.
     def next?
       @position += 1
-      if (@position > @size - 1) 
+      if (@position >= @size) 
         @term_buffer.reset()
         return false
       end

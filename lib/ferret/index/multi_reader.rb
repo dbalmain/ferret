@@ -220,14 +220,14 @@ module Ferret::Index
     def next?()
       top = @queue.top()
       if (top == nil) 
-        @term = nil
+        @term_buffer = nil
         return false
       end
 
-      @term = top.term
+      @term = top.term_buffer.term
       @doc_freq = 0
 
-      while top and @term == top.term
+      while top and @term == top.term_buffer
         @queue.pop()
         @doc_freq += top.term_enum.doc_freq() # increment freq
         if (top.next?)
@@ -239,6 +239,10 @@ module Ferret::Index
       end
       return true
     end
+
+    #def term()
+    #  @term_buffer.term if @term_buffer
+    #end
 
     def close()
       @queue.close()

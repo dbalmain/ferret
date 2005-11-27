@@ -35,6 +35,13 @@ module Ferret::Analysis
       @position_increment = pos_inc
     end
 
+    def set!(txt, so, eo)
+      @term_text = txt
+      @start_offset = so
+      @end_offset = eo
+      self
+    end
+
     def eql?(o)
       return (o.instance_of?(Token) and @start_offset == o.start_offset and
               @end_offset == o.end_offset and @term_text = o.term_text)

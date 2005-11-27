@@ -455,7 +455,7 @@ module Index
         write_deleteable_files(deletable) # note files we can't delete
         # This is a great time to start the garbage collector as all of our
         # ram files have just become free
-        GC.start
+        #GC.start
 
 ##############################################################################
 #          objs = {}

@@ -10,10 +10,9 @@
 void
 frt_term_free(void *p)
 {
-	Term *term;
-	term = (Term *)p;
-	free((void *)(term->field));
-	free((void *)(term->text));
+	Term *term = (Term *)p;
+	free(term->field);
+	free(term->text);
 	free(p);
 }
 
@@ -21,9 +20,9 @@ static VALUE
 frt_term_alloc(VALUE klass)
 {
 	Term *term;
-	term = (Term *)ALLOC(Term);
-	term->field = (char *)ALLOC_N(char, 1);
-	term->text = (char *)ALLOC_N(char, 1);
+	term = ALLOC(Term);
+	term->field = ALLOC_N(char, 1);
+	term->text = ALLOC_N(char, 1);
 	
 	VALUE rbuffer = Data_Wrap_Struct(klass, NULL, frt_term_free, term);
 	return rbuffer;
@@ -122,38 +121,6 @@ frt_term_to_s(VALUE self)
 	return rb_str_new(res, tlen + flen + 1 );
 }
 
-VALUE 
-frt_term_compare_to(VALUE self, VALUE rother)
-{
-	int comp, size, mylen, olen;
-	Term *term, *other;
-	Data_Get_Struct(self, Term, term);
-	Data_Get_Struct(rother, Term, other);
-	
-	mylen = term->flen;
-	olen = other->flen;
-	size = mylen >= olen ? olen : mylen;
-	comp = memcmp(term->field, other->field, size);
-	if(comp == 0){
-		if(mylen == olen){
-			mylen = term->tlen;
-			olen = other->tlen;
-			size = mylen >= olen ? olen : mylen;
-			comp = memcmp(term->text, other->text, size);
-			if(comp == 0 && mylen != olen)
-				comp = mylen > olen ? 1 : -1;
-		} else
-			comp = mylen > olen ? 1 : -1;
-	}
-  /*
-	comp = strcmp(term->field, other->field);
-	if(comp == 0)
-		comp = strcmp(term->text, other->text);
-  */
-	return INT2FIX(comp);
-}
-
-/* keep in synch with fuction above */
 int
 frt_term_compare_to_int(VALUE self, VALUE rother)
 {
@@ -218,13 +185,11 @@ frt_term_eq(VALUE self, VALUE rother)
 }
 
 
-/*
 static VALUE
 frt_term_compare_to(VALUE self, VALUE other)
 {
 	return INT2FIX(frt_term_compare_to_int(self, other));
 }
-*/
 
 static VALUE
 frt_term_hash(VALUE self)

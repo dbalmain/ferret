@@ -186,10 +186,12 @@ module Ferret::Index
         match_size = 0     # pop matching terms
         match[match_size] = @queue.pop
         match_size += 1
-        term = match[0].term
+        #term = match[0].term
+        term_buffer = match[0].term_buffer
         top = @queue.top
 
-        while top and term == top.term
+        #while top and term == top.term
+        while top and term_buffer == top.term_buffer
           match[match_size] = @queue.pop
           match_size += 1
           top = @queue.top
@@ -227,7 +229,7 @@ module Ferret::Index
       if (df > 0) 
         # add an enbegin to the dictionary with pointers to prox and freq files
         @term_info.set_values!(df, freq_pointer, prox_pointer, (skip_pointer - freq_pointer))
-        @term_infos_writer.add(smis[0].term, @term_info)
+        @term_infos_writer.add(smis[0].term_buffer.term, @term_info)
       end
     end
 

@@ -143,7 +143,7 @@ module Ferret::Index
     #           stored for the specified document.
     # raises:: IOError if index cannot be accessed
     #
-    # See Field.TermVector
+    # See Field::TermVector
     def get_term_vectors(doc_number)
       raise NotImplementedError
     end
@@ -161,7 +161,7 @@ module Ferret::Index
     # returns:: term vector May be nil if field does not exist in the specified
     #           document or term vector was not stored.
     # raises:: IOError if index cannot be accessed
-    # See Field.TermVector
+    # See Field::TermVector
     def get_term_vector(doc_number, field)
       raise NotImplementedError
     end
@@ -228,7 +228,15 @@ module Ferret::Index
     # every document.  This is used by the search code to score documents.
     # 
     # See Field#boost
-    def get_norms(field, bytes=nil, offset=nil)
+    def get_norms(field)
+      raise NotImplementedError
+    end
+
+    # Read norms into a pre-allocated array. This is used as an optimization
+    # of get_norms.
+    # 
+    # See Field#boost
+    def get_norms_into(field, bytes, offset)
       raise NotImplementedError
     end
 

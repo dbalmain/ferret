@@ -40,7 +40,7 @@ frt_rf_alloc(VALUE klass)
   rf->buffers[0] = buf;
   rf->bufcnt = 1;
   rf->length = 0;
-  rf->mtime = rb_funcall(rb_cTime, frt_newobj, 0);
+  rf->mtime = rb_funcall(rb_cTime, id_new, 0);
 
   VALUE rrf = Data_Wrap_Struct(klass, frt_rf_mark, frt_rf_free, rf);
   return rrf;
@@ -133,7 +133,7 @@ frt_rio_flush_buffer(VALUE self, VALUE rsrc, VALUE rlen)
   if (pointer > rf->length)
     rf->length = pointer;
 
-  rf->mtime = rb_funcall(rb_cTime, frt_newobj, 0);
+  rf->mtime = rb_funcall(rb_cTime, id_new, 0);
   return Qnil;
 }
 
@@ -167,7 +167,7 @@ frt_rio_close(VALUE self)
 	VALUE file = rb_iv_get(self, "file");
   RAMFile *rf;
 	Data_Get_Struct(file, RAMFile, rf);
-  rf->mtime = rb_funcall(rb_cTime, frt_newobj, 0);
+  rf->mtime = rb_funcall(rb_cTime, id_new, 0);
   rb_call_super(0, NULL);
   return Qnil;
 }

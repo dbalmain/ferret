@@ -192,6 +192,7 @@ module Ferret::Store
         if (@ref_count <= 0) then
           @@Directories.synchronize do
             @@Directories.delete(@dir.path)
+            close_internal
           end
         end
       end
@@ -347,6 +348,9 @@ module Ferret::Store
         @lock_dir = tmp
       end
 
+      # This method is only used by the c extension to free the directory
+      def close_internal
+      end
     #end private
   end
 end

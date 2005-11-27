@@ -36,6 +36,7 @@ module Ferret::Analysis
     # input:: must have a read(count) method which returns an array or string
     #         of _count_ chars.
     def initialize(input)
+      #@token_buffer = Token.new("", 0, 0)
       if input.is_a? String
         @ss = StringScanner.new(input)
       else
@@ -53,6 +54,7 @@ module Ferret::Analysis
         return nil
       end
 
+      #return @token_buffer.set!(normalize(term), term_start, term_end)
       return Token.new(normalize(term), term_start, term_end)
     end
 

@@ -27,12 +27,12 @@ typedef struct PriorityQueue {
 	int size;
 } PriorityQueue;
 
-typedef struct TermBuffer {
-	char *field;
-	char *text;
-	int flen;
-	int tlen;
-} TermBuffer;
+typedef struct TermInfo {
+  int doc_freq;
+  long freq_pointer;
+  long prox_pointer;
+  int skip_offset;
+} TermInfo;
 
 typedef struct RAMFile {
   void  **buffers;
@@ -43,13 +43,16 @@ typedef struct RAMFile {
 } RAMFile;
 
 /* IDs */
-extern ID frt_newobj;
+extern ID id_new;
+extern ID id_size;
+extern ID id_iv_size;
 
 /* Modules */
 extern VALUE mFerret;
 extern VALUE mStore;
 extern VALUE mIndex;
 extern VALUE mUtils;
+extern VALUE mAnalysis;
 extern VALUE mStringHelper;
 
 /* Classes */
@@ -64,15 +67,22 @@ extern VALUE cRAMIndexOut;
 extern VALUE cRAMIndexIn;
 extern VALUE cTerm;
 extern VALUE cTermBuffer;
+extern VALUE cTermInfo;
+extern VALUE cToken;
 extern VALUE cPriorityQueue;
 extern VALUE cSegmentMergeQueue;
+extern VALUE cTermEnum;
+extern VALUE cSegmentTermEnum;
 
 /* Ferret Inits */
 extern void Init_indexio();
 extern void Init_term();
-extern void Init_priority_queue();
+extern void Init_term_info();
 extern void Init_term_buffer();
+extern void Init_priority_queue();
+extern void Init_token();
 extern void Init_segment_merge_queue();
+extern void Init_segment_term_enum();
 extern void Init_ram_directory();
 extern void Init_string_helper();
 
@@ -82,4 +92,7 @@ extern unsigned long long frt_read_vint(VALUE self);
 extern void frt_read_chars(VALUE self, char *buf, int offset, int len);
 extern void frt_write_bytes(VALUE self, byte_t *buf, int len);
 extern int frt_term_compare_to_int(VALUE self, VALUE rother);
+extern VALUE frt_termbuffer_init_copy(VALUE self, VALUE rother);
+extern VALUE frt_termbuffer_read(VALUE self, VALUE input, VALUE info);
+
 #endif

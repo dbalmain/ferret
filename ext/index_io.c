@@ -12,23 +12,18 @@ void
 frt_indexbuffer_free(void *p)
 {
   IndexBuffer *my_buf = (IndexBuffer *)p;
-  free((void *)my_buf->buffer);
+  free(my_buf->buffer);
   free(p);
 }
 
 static VALUE
 frt_indexbuffer_alloc(VALUE klass)
 {
-  byte_t *buffer;
   IndexBuffer *my_buf;
 
-  my_buf = (IndexBuffer *)ALLOC(IndexBuffer);
-  buffer = (byte_t *)ALLOC_N(byte_t, BUFFER_SIZE);
-
-  my_buf->start = 0;
-  my_buf->pos = 0;
-  my_buf->len = 0;
-  my_buf->buffer = buffer;
+  my_buf = ALLOC(IndexBuffer);
+  MEMZERO(my_buf, IndexBuffer, 1);
+  my_buf->buffer = ALLOC_N(byte_t, BUFFER_SIZE);
 
   return Data_Wrap_Struct(klass, NULL, frt_indexbuffer_free, my_buf);
 }
@@ -263,7 +258,7 @@ static VALUE
 frt_indexin_read_string(VALUE self)
 {
   int length = (int)frt_read_vint(self);
-  char *str = (char *)ALLOC_N(char, length);
+  char *str = ALLOC_N(char, length);
 
   frt_read_chars(self, str, 0, length);
 

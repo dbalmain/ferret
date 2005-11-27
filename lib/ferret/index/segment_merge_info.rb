@@ -1,13 +1,14 @@
 module Ferret
   module Index
     class SegmentMergeInfo 
-      attr_reader :term, :term_enum, :reader, :postings, :doc_map, :base
+      attr_reader :term_enum, :reader,
+        :postings, :doc_map, :base, :term_buffer
 
       def initialize(base, term_enum, reader)
         @base = base
         @reader = reader
         @term_enum = term_enum
-        @term = term_enum.term()
+        @term_buffer = term_enum.term_buffer
         @postings = @reader.term_positions()
 
         # build array which maps document numbers around deletions 
@@ -27,13 +28,7 @@ module Ferret
       end
 
       def next?
-        if @term_enum.next?
-          @term = @term_enum.term
-          return true
-        else 
-          @term = nil
-          return false
-        end
+        @term_enum.next?
       end
 
       def close()

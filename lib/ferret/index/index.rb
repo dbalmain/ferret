@@ -34,7 +34,8 @@ module Ferret::Index
     #                        used when you add a simple string to the index
     #                        using #add_document. This will also be used for
     #                        default_search_field unless you set it
-    #                        explicitly.
+    #                        explicitly. The default for this value is the
+    #                        empty string "".
     # default_search_field:: This specifies the field or fields that will be 
     #                        searched by the query parser. You can use a
     #                        string to specify one field, eg, "title". Or you

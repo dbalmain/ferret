@@ -21,10 +21,6 @@ module Ferret::Index
       @skip_offset = so
     end
 
-    def copy_of()
-      TermInfo.new(doc_freq, freq_pointer, prox_pointer, skip_offset)
-    end
-
     def ==(o)
       return false if !o.instance_of?(TermInfo)
       @doc_freq == o.doc_freq &&
@@ -35,7 +31,7 @@ module Ferret::Index
     alias eql? ==
 
     def to_s()
-      "TermInfo:df=#{@doc_freq}:fp=#{@freq_pointer}:pp=#{@prox_pointer}:so=#{@skip_offset}"
+      "TermInfo:df=#{doc_freq}:fp=#{freq_pointer}:pp=#{prox_pointer}:so=#{skip_offset}"
     end
   end
 end
