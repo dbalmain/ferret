@@ -14,7 +14,7 @@ frt_termbuffer_free(void *p)
 	Term *tb;
 	tb = (Term *)p;
 	free(tb->text);
-	free(tb->field);
+	//free(tb->field);
 	free(p);
 }
 
@@ -66,7 +66,7 @@ frt_termbuffer_reset(VALUE self)
 {
   GET_TB;
 
-  free(tb->field);
+  //free(tb->field);
   free(tb->text);
   MEMZERO(tb, Term, 1);
 
@@ -78,7 +78,7 @@ frt_termbuffer_to_term(VALUE self)
 {
   GET_TB;
 
-	if(tb->field == NULL) {
+	if (tb->field == NULL) {
 		return Qnil;
   } else {
     VALUE field = rb_str_new(tb->field, tb->flen);
@@ -165,11 +165,12 @@ frt_termbuffer_init_copy(VALUE self, VALUE rother)
 	flen = term->flen;
 	
   REALLOC_N(tb->text, char, tlen+1);
-  REALLOC_N(tb->field, char, flen+1);
+  //REALLOC_N(tb->field, char, flen+1);
 	tb->flen = flen;
 	tb->tlen = tlen;
 	MEMCPY(tb->text, term->text, char, tlen);
-	MEMCPY(tb->field, term->field, char, flen);
+	//MEMCPY(tb->field, term->field, char, flen);
+  tb->field = term->field;
 
 	return Qnil;
 }
@@ -192,9 +193,10 @@ frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
   field = rb_funcall(info, id_field_name, 1, fnum);
   flen = RSTRING(field)->len;
   
-  REALLOC_N(tb->field, char, flen+1);
+  //REALLOC_N(tb->field, char, flen+1);
   
-  MEMCPY(tb->field, RSTRING(field)->ptr, char, flen);
+  //MEMCPY(tb->field, RSTRING(field)->ptr, char, flen);
+  tb->field = RSTRING(field)->ptr;
 
   tb->flen = flen;
   tb->tlen = tlen;
