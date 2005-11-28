@@ -198,6 +198,8 @@ module Ferret::Index
     private
 
       def write_field()
+        ($cnt||=0)
+        puts $cnt += 1
         # remember where this field is written
         @current_field.tvf_pointer = @tvf.pos
         

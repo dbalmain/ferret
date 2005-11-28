@@ -15,13 +15,20 @@ frt_term_free(void *p)
 	free(p);
 }
 
+void
+frt_term_mark(void *p)
+{
+	Term *term = (Term *)p;
+  rb_gc_mark(term->field);
+}
+
 static VALUE
 frt_term_alloc(VALUE klass)
 {
 	Term *term = ALLOC(Term);
   MEMZERO(term, Term, 1);
   term->field = Qnil;
-	return Data_Wrap_Struct(klass, NULL, frt_term_free, term);
+	return Data_Wrap_Struct(klass, frt_term_mark, frt_term_free, term);
 }
 
 #define GET_TERM Term *term; Data_Get_Struct(self, Term, term)

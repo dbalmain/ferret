@@ -16,13 +16,20 @@ frt_termbuffer_free(void *p)
 	free(p);
 }
 
+void
+frt_termbuffer_mark(void *p)
+{
+	Term *tb = (Term *)p;
+  rb_gc_mark(tb->field);
+}
+
 static VALUE
 frt_termbuffer_alloc(VALUE klass)
 {
 	Term *tb = ALLOC(Term);
   MEMZERO(tb, Term, 1);
   tb->field = Qnil;
-	return Data_Wrap_Struct(klass, NULL, frt_termbuffer_free, tb);
+	return Data_Wrap_Struct(klass, frt_termbuffer_mark, frt_termbuffer_free, tb);
 }
 
 static VALUE
