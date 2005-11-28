@@ -252,6 +252,8 @@ module Ferret::Index
 
       # Returns the offset of the greatest index entry which is less than or
       # equal to term.
+      #
+      # This method is rewritten in the C extension.
       def get_index_offset(term) 
         lo = 0            # binary search @index_terms[]
         hi = @index_terms.length - 1

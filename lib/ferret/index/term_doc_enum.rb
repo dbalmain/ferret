@@ -73,13 +73,16 @@ module Ferret::Index
       if t.instance_of?(Term)
         ti = parent.term_infos[t]
       elsif t.is_a?(TermEnum)
+        ti = t.term_info()
+        # The following is being done in the Java version. I don't think it's
+        # necessary.
         # use comparison of fieldinfos to verify that term enum (t) belongs to the
         # same segment as this SegmentTermDocEnum
-        if (t.instance_of?(SegmentTermEnum) and t.field_infos == parent.field_infos)
-          ti = t.term_info()
-        else                                          # punt case
-          ti = parent.term_infos[t.term]
-        end
+        #if (t.instance_of?(SegmentTermEnum) and t.field_infos == parent.field_infos)
+        #  ti = t.term_info()
+        #else                                          # punt case
+        #  ti = parent.term_infos[t.term]
+        #end
       elsif t.is_a? TermInfo # this one is easy. That's exactly what we're looking for
         ti = t
       else

@@ -15,11 +15,9 @@ module Ferret::Index
 
       @term_buffer = TermBuffer.new()
       @prev_buffer = TermBuffer.new()
-      @scratch = nil # used for scanning
       @term_info = TermInfo.new()
 
       @index_pointer = 0
-      @format_m1skip_interval = nil
 
       first_int = @input.read_int()
 
@@ -92,6 +90,7 @@ module Ferret::Index
       @term_buffer.read(@input, @field_infos)
 
       @term_info.doc_freq = @input.read_vint()          # read doc freq
+      puts "doc_freq = #{@term_info.doc_freq}"
       @term_info.freq_pointer += @input.read_vlong()    # read freq pointer
       @term_info.prox_pointer += @input.read_vlong()    # read prox pointer
       
@@ -116,13 +115,8 @@ module Ferret::Index
       return true
     end
 
-    # Optimized scan, without allocating new terms. 
     def scan_to(term)
-      if (@scratch == nil)
-        @scratch = TermBuffer.new()
-      end
-      @scratch.term = term
-      while (@scratch > @term_buffer and next?) do
+      while (term > @term_buffer and next?) do
       end
     end
 

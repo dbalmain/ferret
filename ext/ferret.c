@@ -2,6 +2,7 @@
 
 /* IDs */
 ID id_new;
+ID id_close;
 ID id_size;
 ID id_iv_size;
 
@@ -31,12 +32,14 @@ VALUE cPriorityQueue;
 VALUE cSegmentMergeQueue;
 VALUE cSegmentTermEnum;
 VALUE cTermEnum;
+VALUE cTermInfosReader;
 
 void
 Init_ferret_ext(void)
 {
   /* IDs */
 	id_new = rb_intern("new");
+	id_close = rb_intern("close");
 	id_size = rb_intern("size");
 	id_iv_size = rb_intern("@size");
 
@@ -55,6 +58,7 @@ Init_ferret_ext(void)
   Init_term();
   Init_term_buffer();
   Init_term_info();
+  Init_term_infos_reader();
   Init_token();
   Init_priority_queue();
   Init_segment_merge_queue();

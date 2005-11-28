@@ -1,6 +1,7 @@
 #include "ferret.h"
 
 ID id_field_name;
+ID id_field_array;
 
 /****************************************************************************
  *
@@ -73,7 +74,7 @@ frt_termbuffer_reset(VALUE self)
 	return Qnil;
 }
 
-static VALUE
+VALUE
 frt_termbuffer_to_term(VALUE self)
 {
   GET_TB;
@@ -81,36 +82,19 @@ frt_termbuffer_to_term(VALUE self)
 	if(NIL_P(tb->field)) {
 		return Qnil;
   } else {
-    VALUE text = rb_str_new(tb->text, tb->tlen);
-    return rb_funcall(cTerm, id_new, 2, tb->field, text);
+    VALUE args[2];
+    args[0] = tb->field;
+    args[1] = rb_str_new(tb->text, tb->tlen);
+    return rb_class_new_instance(2, args, cTerm);
 	}
 }
 
 int 
 frt_termbuffer_compare_to_int(VALUE self, VALUE rother)
 {
-	int comp, size, my_len, o_len;
   GET_TB;
-	Term *other;
-	Data_Get_Struct(rother, Term, other);
-	
-	my_len = RSTRING(tb->field)->len;
-	o_len = RSTRING(other->field)->len;
-	size = my_len >= o_len ? o_len : my_len;
-	comp = memcmp(RSTRING(tb->field)->ptr, RSTRING(other->field)->ptr, size);
-	if(comp == 0){
-		if(my_len == o_len) {
-			my_len = tb->tlen;
-			o_len = other->tlen;
-			size = my_len >= o_len ? o_len : my_len;
-			comp = memcmp(tb->text, other->text, size);
-			if(comp == 0 && my_len != o_len)
-				comp = my_len > o_len ? 1 : -1;
-		} else {
-			comp = my_len > o_len ? 1 : -1;
-    }
-	}
-	return comp;
+	Term *other; Data_Get_Struct(rother, Term, other);
+  return frt_term_cmp(tb, other);
 }
 
 VALUE
@@ -155,21 +139,21 @@ VALUE
 frt_termbuffer_init_copy(VALUE self, VALUE rother)
 {
   GET_TB;
-  Term *term;
-	Data_Get_Struct(rother, Term, term);
+  Term *tb_other;
+	Data_Get_Struct(rother, Term, tb_other);
 
-	int tlen = term->tlen;
+	int tlen = tb_other->tlen;
   REALLOC_N(tb->text, char, tlen+1);
 	tb->tlen = tlen;
-	MEMCPY(tb->text, term->text, char, tlen);
+	MEMCPY(tb->text, tb_other->text, char, tlen);
 
-	tb->field = term->field;
+	tb->field = tb_other->field;
 
 	return Qnil;
 }
 
 VALUE
-frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
+frt_termbuffer_read(VALUE self, VALUE rinput, VALUE rfield_infos)
 {
 	GET_TB;
   IndexBuffer *input; Data_Get_Struct(rinput, IndexBuffer, input);
@@ -181,8 +165,14 @@ frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
   REALLOC_N(tb->text, char, tlen+1);
 	
 	frt_read_chars(rinput, tb->text, start, length);
-  fnum = INT2FIX(frt_read_vint(rinput, input));
-  tb->field = rb_funcall(info, id_field_name, 1, fnum);
+  fnum = frt_read_vint(rinput, input);
+  if (fnum < 0) {
+    tb->field = rb_str_new("", 0);
+  } else {
+    tb->field = rb_ivar_get(
+        rb_ary_entry(rb_ivar_get(rfield_infos, id_field_array), fnum),
+        id_field_name);
+  }
   
   tb->tlen = tlen;
 	return Qnil;
@@ -206,7 +196,8 @@ frt_termbuffer_hash(VALUE self)
 void 
 Init_term_buffer(void) {
   /* IDs */
-	id_field_name = rb_intern("name");
+	id_field_name = rb_intern("@name");
+	id_field_array = rb_intern("@fi_array");
 
 	/* TermBuffer */
 	cTermBuffer = rb_define_class_under(mIndex, "TermBuffer", rb_cObject);

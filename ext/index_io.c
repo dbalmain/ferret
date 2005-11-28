@@ -147,7 +147,7 @@ frt_indexin_read_bytes(VALUE self, VALUE rbuf, VALUE roffset, VALUE rlen)
   return frt_read_bytes(self, rbuf, offset, len);
 }
 
-static VALUE
+VALUE
 frt_indexin_seek(VALUE self, VALUE rpos)
 {
   GET_MY_BUF;
@@ -165,7 +165,7 @@ frt_indexin_seek(VALUE self, VALUE rpos)
   return Qnil;
 }
 
-static VALUE
+VALUE
 frt_indexin_read_int(VALUE self)
 {
   GET_MY_BUF;
@@ -175,7 +175,7 @@ frt_indexin_read_int(VALUE self)
                    (long)frt_read_byte(self, my_buf));
 }
 
-static VALUE
+VALUE
 frt_indexin_read_long(VALUE self)
 {
   GET_MY_BUF;

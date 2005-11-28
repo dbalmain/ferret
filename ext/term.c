@@ -106,23 +106,21 @@ frt_term_to_s(VALUE self)
 	return rb_str_new(res, tlen + flen + 1 );
 }
 
-int
-frt_term_compare_to_int(VALUE self, VALUE rother)
+inline int
+frt_term_cmp(Term *t1, Term *t2)
 {
-  GET_TERM;
-	Term *other; Data_Get_Struct(rother, Term, other);
 	int comp, size, my_len, o_len;
 		
-	my_len = RSTRING(term->field)->len;
-	o_len = RSTRING(other->field)->len;
+	my_len = RSTRING(t1->field)->len;
+	o_len = RSTRING(t2->field)->len;
 	size = my_len >= o_len ? o_len : my_len;
-	comp = memcmp(RSTRING(term->field)->ptr, RSTRING(other->field)->ptr, size);
+	comp = memcmp(RSTRING(t1->field)->ptr, RSTRING(t2->field)->ptr, size);
 	if(comp == 0){
 		if(my_len == o_len) {
-			my_len = term->tlen;
-			o_len = other->tlen;
+			my_len = t1->tlen;
+			o_len = t2->tlen;
 			size = my_len >= o_len ? o_len : my_len;
-			comp = memcmp(term->text, other->text, size);
+			comp = memcmp(t1->text, t2->text, size);
 			if(comp == 0 && my_len != o_len)
 				comp = my_len > o_len ? 1 : -1;
 		} else {
@@ -130,6 +128,14 @@ frt_term_compare_to_int(VALUE self, VALUE rother)
     }
 	}
 	return comp;
+}
+
+int
+frt_term_compare_to_int(VALUE self, VALUE rother)
+{
+  GET_TERM;
+	Term *other; Data_Get_Struct(rother, Term, other);
+  return frt_term_cmp(term, other);
 }
 
 VALUE
