@@ -11,7 +11,6 @@ void
 frt_term_free(void *p)
 {
 	Term *term = (Term *)p;
-	free(term->field);
 	free(term->text);
 	free(p);
 }
@@ -19,31 +18,22 @@ frt_term_free(void *p)
 static VALUE
 frt_term_alloc(VALUE klass)
 {
-	Term *term;
-	term = ALLOC(Term);
-	term->field = ALLOC_N(char, 1);
-	term->text = ALLOC_N(char, 1);
-	
-	VALUE rbuffer = Data_Wrap_Struct(klass, NULL, frt_term_free, term);
-	return rbuffer;
+	Term *term = ALLOC(Term);
+  MEMZERO(term, Term, 1);
+  term->field = Qnil;
+	return Data_Wrap_Struct(klass, NULL, frt_term_free, term);
 }
 
+#define GET_TERM Term *term; Data_Get_Struct(self, Term, term)
 VALUE 
 frt_term_set(VALUE self, VALUE rfield, VALUE rtext)
 {
-	Term *term;
-	int flen = RSTRING(rfield)->len;
-	int tlen = RSTRING(rtext)->len;
- 	char *field = RSTRING(rfield)->ptr;
- 	char *text = RSTRING(rtext)->ptr;
-	Data_Get_Struct(self, Term, term);
+  GET_TERM;
 
-	REALLOC_N(term->field, char, flen + 1);
+  int tlen = RSTRING(rtext)->len;
+  term->field = rfield;
 	REALLOC_N(term->text, char, tlen + 1);
-	
-	MEMCPY(term->field, field, char, flen);
-	MEMCPY(term->text, text, char, tlen);
-	term->flen = flen;
+	MEMCPY(term->text, RSTRING(rtext)->ptr, char, tlen);
 	term->tlen = tlen;
 	
 	return Qnil;
@@ -59,18 +49,16 @@ frt_term_init(VALUE self, VALUE rfield, VALUE rtext)
 static VALUE 
 frt_term_get_text(VALUE self)
 {
-	Term *term;
-	Data_Get_Struct(self, Term, term);
+  GET_TERM;
 	return rb_str_new(term->text, term->tlen);
 }
 
 static VALUE 
 frt_term_set_text(VALUE self, VALUE rtext)
 {
-	Term *term;
+  GET_TERM;
 	int tlen = RSTRING(rtext)->len;
  	char *text = RSTRING(rtext)->ptr;
-	Data_Get_Struct(self, Term, term);
 
 	REALLOC_N(term->text, char, tlen + 1);
 	
@@ -83,39 +71,29 @@ frt_term_set_text(VALUE self, VALUE rtext)
 static VALUE 
 frt_term_get_field(VALUE self)
 {
-	Term *term;
-	Data_Get_Struct(self, Term, term);
-	return rb_str_new(term->field, term->flen);
+  GET_TERM;
+	return term->field;
 }
 
 static VALUE 
 frt_term_set_field(VALUE self, VALUE rfield)
 {
-	Term *term;
-	int flen = RSTRING(rfield)->len;
- 	char *field = RSTRING(rfield)->ptr;
-	Data_Get_Struct(self, Term, term);
-
-	REALLOC_N(term->field, char, flen + 1);
-	
-	MEMCPY(term->field, field, char, flen);
-	term->flen = flen;
-	
+  GET_TERM;
+  term->field = rfield;
 	return Qnil;
 }
 
 VALUE 
 frt_term_to_s(VALUE self)
 {
-	Term *term;
+  GET_TERM;
 	int tlen, flen;
-	Data_Get_Struct(self, Term, term);
 	tlen = term->tlen;
-	flen = term->flen;
+	flen = RSTRING(term->field)->len;
 	char res[flen + tlen + 1];
 	char delim[] = ":";
 	
-	MEMCPY(res, term->field, char, flen);
+	MEMCPY(res, StringValuePtr(term->field), char, flen);
 	MEMCPY(res + flen, delim, char, 1);
 	MEMCPY(res + flen + 1, term->text, char, tlen);
 	return rb_str_new(res, tlen + flen + 1 );
@@ -124,31 +102,26 @@ frt_term_to_s(VALUE self)
 int
 frt_term_compare_to_int(VALUE self, VALUE rother)
 {
-	int comp, size, mylen, olen;
-	Term *term, *other;
-	Data_Get_Struct(self, Term, term);
-	Data_Get_Struct(rother, Term, other);
-	
-	mylen = term->flen;
-	olen = other->flen;
-	size = mylen >= olen ? olen : mylen;
-	comp = memcmp(term->field, other->field, size);
+  GET_TERM;
+	Term *other; Data_Get_Struct(rother, Term, other);
+	int comp, size, my_len, o_len;
+		
+	my_len = RSTRING(term->field)->len;
+	o_len = RSTRING(other->field)->len;
+	size = my_len >= o_len ? o_len : my_len;
+	comp = memcmp(RSTRING(term->field)->ptr, RSTRING(other->field)->ptr, size);
 	if(comp == 0){
-		if(mylen == olen){
-			mylen = term->tlen;
-			olen = other->tlen;
-			size = mylen >= olen ? olen : mylen;
+		if(my_len == o_len) {
+			my_len = term->tlen;
+			o_len = other->tlen;
+			size = my_len >= o_len ? o_len : my_len;
 			comp = memcmp(term->text, other->text, size);
-			if(comp == 0 && mylen != olen)
-				comp = mylen > olen ? 1 : -1;
-		} else
-			comp = mylen > olen ? 1 : -1;
+			if(comp == 0 && my_len != o_len)
+				comp = my_len > o_len ? 1 : -1;
+		} else {
+			comp = my_len > o_len ? 1 : -1;
+    }
 	}
-  /*
-	comp = strcmp(term->field, other->field);
-	if(comp == 0)
-		comp = strcmp(term->text, other->text);
-  */
 	return comp;
 }
 
@@ -194,10 +167,9 @@ frt_term_compare_to(VALUE self, VALUE other)
 static VALUE
 frt_term_hash(VALUE self)
 {
-	Term *term;
-	Data_Get_Struct(self, Term, term);
+  GET_TERM;
   return INT2FIX(frt_hash(term->text, term->tlen) +
-      frt_hash(term->field, term->flen));
+      frt_hash(RSTRING(term->field)->ptr, RSTRING(term->field)->len));
 }
 
 /****************************************************************************

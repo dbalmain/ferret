@@ -11,25 +11,18 @@ ID id_field_name;
 void
 frt_termbuffer_free(void *p)
 {
-	Term *tb;
-	tb = (Term *)p;
+	Term *tb = (Term *)p;
 	free(tb->text);
-	free(tb->field);
 	free(p);
 }
 
 static VALUE
 frt_termbuffer_alloc(VALUE klass)
 {
-	Term *tb;
-	tb = ALLOC(Term);
-	tb->text = NULL;
-	tb->field = NULL;
-	tb->tlen = 0;
-	tb->flen = 0;
-
-	VALUE rbuffer = Data_Wrap_Struct(klass, NULL, frt_termbuffer_free, tb);
-	return rbuffer;
+	Term *tb = ALLOC(Term);
+  MEMZERO(tb, Term, 1);
+  tb->field = Qnil;
+	return Data_Wrap_Struct(klass, NULL, frt_termbuffer_free, tb);
 }
 
 static VALUE
@@ -58,7 +51,7 @@ static VALUE
 frt_termbuffer_get_field_name(VALUE self)
 {
   GET_TB;
-  return rb_str_new(tb->field, tb->flen);
+  return tb->field;
 }
 
 static VALUE
@@ -66,9 +59,9 @@ frt_termbuffer_reset(VALUE self)
 {
   GET_TB;
 
-  free(tb->field);
   free(tb->text);
   MEMZERO(tb, Term, 1);
+  tb->field = Qnil;
 
 	return Qnil;
 }
@@ -78,12 +71,11 @@ frt_termbuffer_to_term(VALUE self)
 {
   GET_TB;
 
-	if(tb->field == NULL) {
+	if(NIL_P(tb->field)) {
 		return Qnil;
   } else {
-    VALUE field = rb_str_new(tb->field, tb->flen);
     VALUE text = rb_str_new(tb->text, tb->tlen);
-    return rb_funcall(cTerm, id_new, 2, field, text);
+    return rb_funcall(cTerm, id_new, 2, tb->field, text);
 	}
 }
 
@@ -95,10 +87,10 @@ frt_termbuffer_compare_to_int(VALUE self, VALUE rother)
 	Term *other;
 	Data_Get_Struct(rother, Term, other);
 	
-	my_len = tb->flen;
-	o_len = other->flen;
+	my_len = RSTRING(tb->field)->len;
+	o_len = RSTRING(other->field)->len;
 	size = my_len >= o_len ? o_len : my_len;
-	comp = memcmp(tb->field, other->field, size);
+	comp = memcmp(RSTRING(tb->field)->ptr, RSTRING(other->field)->ptr, size);
 	if(comp == 0){
 		if(my_len == o_len) {
 			my_len = tb->tlen;
@@ -157,19 +149,14 @@ frt_termbuffer_init_copy(VALUE self, VALUE rother)
 {
   GET_TB;
   Term *term;
-	int tlen, flen;
-	
 	Data_Get_Struct(rother, Term, term);
 
-	tlen = term->tlen;
-	flen = term->flen;
-	
+	int tlen = term->tlen;
   REALLOC_N(tb->text, char, tlen+1);
-  REALLOC_N(tb->field, char, flen+1);
-	tb->flen = flen;
 	tb->tlen = tlen;
 	MEMCPY(tb->text, term->text, char, tlen);
-	MEMCPY(tb->field, term->field, char, flen);
+
+	tb->field = term->field;
 
 	return Qnil;
 }
@@ -179,8 +166,7 @@ frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
 {
 	GET_TB;
   IndexBuffer *input; Data_Get_Struct(rinput, IndexBuffer, input);
-	int tlen, flen, start, length;
-	VALUE field, fnum;
+	int tlen, start, length, fnum;
 	
 	start = frt_read_vint(rinput, input);
 	length = frt_read_vint(rinput, input);
@@ -189,14 +175,8 @@ frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
 	
 	frt_read_chars(rinput, tb->text, start, length);
   fnum = INT2FIX(frt_read_vint(rinput, input));
-  field = rb_funcall(info, id_field_name, 1, fnum);
-  flen = RSTRING(field)->len;
+  tb->field = rb_funcall(info, id_field_name, 1, fnum);
   
-  REALLOC_N(tb->field, char, flen+1);
-  
-  MEMCPY(tb->field, RSTRING(field)->ptr, char, flen);
-
-  tb->flen = flen;
   tb->tlen = tlen;
 	return Qnil;
 }
@@ -206,7 +186,7 @@ frt_termbuffer_hash(VALUE self)
 {
   GET_TB;
   return INT2FIX(frt_hash(tb->text, tb->tlen) +
-      frt_hash(tb->field, tb->flen));
+      frt_hash(RSTRING(tb->field)->ptr, RSTRING(tb->field)->len));
 }
 
 /****************************************************************************

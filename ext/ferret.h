@@ -15,9 +15,8 @@ typedef struct IndexBuffer {
 } IndexBuffer;
 
 typedef struct Term {
-	char *field;
+	VALUE field;
 	char *text;
-	int  flen;
 	int  tlen;
 } Term;
 
