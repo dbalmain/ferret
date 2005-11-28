@@ -88,7 +88,7 @@ extern void Init_string_helper();
 
 /* External functions */
 extern int frt_hash(register char *p, register int len);
-extern unsigned long long frt_read_vint(VALUE self);
+extern unsigned long long frt_read_vint(VALUE self, IndexBuffer *my_buf);
 extern void frt_read_chars(VALUE self, char *buf, int offset, int len);
 extern void frt_write_bytes(VALUE self, byte_t *buf, int len);
 extern int frt_term_compare_to_int(VALUE self, VALUE rother);

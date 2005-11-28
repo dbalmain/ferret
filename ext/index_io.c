@@ -28,22 +28,21 @@ frt_indexbuffer_alloc(VALUE klass)
   return Data_Wrap_Struct(klass, NULL, frt_indexbuffer_free, my_buf);
 }
 
+#define GET_MY_BUF IndexBuffer *my_buf; Data_Get_Struct(self, IndexBuffer, my_buf)
 static VALUE
 frt_indexin_init_copy(VALUE self, VALUE orig)
 {
+  GET_MY_BUF;
   IndexBuffer *orig_buf;
-  IndexBuffer *my_buf;
   int len;
   if (self == orig)
     return self;
 
-  Data_Get_Struct(self, IndexBuffer, my_buf);
   Data_Get_Struct(orig, IndexBuffer, orig_buf);
 
   len = orig_buf->len;
   my_buf->len = len;
   my_buf->pos = orig_buf->pos;
-  my_buf->len = orig_buf->len;
   my_buf->start = orig_buf->start;
 
   MEMCPY(my_buf->buffer, orig_buf->buffer, byte_t, len);
@@ -54,12 +53,10 @@ frt_indexin_init_copy(VALUE self, VALUE orig)
 static VALUE
 frt_indexin_refill(VALUE self)
 {
-  IndexBuffer *my_buf;
+  GET_MY_BUF;
   long start;
   int stop, len_to_read;
   int input_len = FIX2INT(rb_funcall(self, frt_length, 0, NULL));
-
-  Data_Get_Struct(self, IndexBuffer, my_buf);
 
   start = my_buf->start + my_buf->pos;
   stop = start + BUFFER_SIZE;
@@ -86,23 +83,19 @@ frt_indexin_refill(VALUE self)
   return Qnil;
 }
 
-byte_t
-frt_read_byte(VALUE self)
+static inline byte_t
+frt_read_byte(VALUE self, IndexBuffer *my_buf)
 {
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
-
   if (my_buf->pos >= my_buf->len)
     frt_indexin_refill(self);
-
-  byte_t res = my_buf->buffer[my_buf->pos++];
-  return res;
+  return my_buf->buffer[my_buf->pos++];
 }
 
 static VALUE
 frt_indexin_read_byte(VALUE self)
 {
-  return INT2FIX(frt_read_byte(self));
+  GET_MY_BUF;
+  return INT2FIX(frt_read_byte(self, my_buf));
 }
   
 static VALUE
@@ -116,8 +109,9 @@ frt_indexin_pos(VALUE self)
 static VALUE
 frt_read_bytes(VALUE self, VALUE rbuffer, int offset, int len)
 {
+  GET_MY_BUF;
+
   int i;
-  IndexBuffer *my_buf;
   VALUE rbuf = StringValue(rbuffer);
 
   if (RSTRING(rbuf)->len < (offset + len)) {
@@ -126,15 +120,13 @@ frt_read_bytes(VALUE self, VALUE rbuffer, int offset, int len)
   if ((len + offset) < BUFFER_SIZE) {
     rb_str_modify(rbuf);
     for (i = offset; i < offset + len; i++) {
-      RSTRING(rbuf)->ptr[i] = frt_read_byte(self);
+      RSTRING(rbuf)->ptr[i] = frt_read_byte(self, my_buf);
     }
   } else {
     VALUE start = frt_indexin_pos(self);
     rb_funcall(self, frt_seek_internal, 1, start);
     rb_funcall(self, frt_read_internal, 3,
         rbuf, INT2FIX(offset), INT2FIX(len));
-
-    Data_Get_Struct(self, IndexBuffer, my_buf);
 
     my_buf->start = my_buf->start + len;
     my_buf->pos = 0;
@@ -158,9 +150,9 @@ frt_indexin_read_bytes(VALUE self, VALUE rbuf, VALUE roffset, VALUE rlen)
 static VALUE
 frt_indexin_seek(VALUE self, VALUE rpos)
 {
+  GET_MY_BUF;
+
   int pos = FIX2INT(rpos);
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
 
   if ((pos >= my_buf->start) && (pos < (my_buf->start + my_buf->len))) {
     my_buf->pos = pos - my_buf->start;  /* seek within buffer */
@@ -176,58 +168,62 @@ frt_indexin_seek(VALUE self, VALUE rpos)
 static VALUE
 frt_indexin_read_int(VALUE self)
 {
-  return LONG2NUM(((long)frt_read_byte(self) << 24) |
-                  ((long)frt_read_byte(self) << 16) |
-                  ((long)frt_read_byte(self) << 8) |
-                   (long)frt_read_byte(self));
+  GET_MY_BUF;
+  return LONG2NUM(((long)frt_read_byte(self, my_buf) << 24) |
+                  ((long)frt_read_byte(self, my_buf) << 16) |
+                  ((long)frt_read_byte(self, my_buf) << 8) |
+                   (long)frt_read_byte(self, my_buf));
 }
 
 static VALUE
 frt_indexin_read_long(VALUE self)
 {
-  return LL2NUM(((long long)frt_read_byte(self) << 56) |
-                ((long long)frt_read_byte(self) << 48) |
-                ((long long)frt_read_byte(self) << 40) |
-                ((long long)frt_read_byte(self) << 32) |
-                ((long long)frt_read_byte(self) << 24) |
-                ((long long)frt_read_byte(self) << 16) |
-                ((long long)frt_read_byte(self) << 8) |
-                 (long long)frt_read_byte(self));
+  GET_MY_BUF;
+  return LL2NUM(((long long)frt_read_byte(self, my_buf) << 56) |
+                ((long long)frt_read_byte(self, my_buf) << 48) |
+                ((long long)frt_read_byte(self, my_buf) << 40) |
+                ((long long)frt_read_byte(self, my_buf) << 32) |
+                ((long long)frt_read_byte(self, my_buf) << 24) |
+                ((long long)frt_read_byte(self, my_buf) << 16) |
+                ((long long)frt_read_byte(self, my_buf) << 8) |
+                 (long long)frt_read_byte(self, my_buf));
 }
 
 static VALUE
 frt_indexin_read_uint(VALUE self)
 {
-  return ULONG2NUM(((unsigned long)frt_read_byte(self) << 24) |
-                   ((unsigned long)frt_read_byte(self) << 16) |
-                   ((unsigned long)frt_read_byte(self) << 8) |
-                    (unsigned long)frt_read_byte(self));
+  GET_MY_BUF;
+  return ULONG2NUM(((unsigned long)frt_read_byte(self, my_buf) << 24) |
+                   ((unsigned long)frt_read_byte(self, my_buf) << 16) |
+                   ((unsigned long)frt_read_byte(self, my_buf) << 8) |
+                    (unsigned long)frt_read_byte(self, my_buf));
 }
 
 static VALUE
 frt_indexin_read_ulong(VALUE self)
 {
-  return ULL2NUM(((unsigned long long)frt_read_byte(self) << 56) |
-                 ((unsigned long long)frt_read_byte(self) << 48) |
-                 ((unsigned long long)frt_read_byte(self) << 40) |
-                 ((unsigned long long)frt_read_byte(self) << 32) |
-                 ((unsigned long long)frt_read_byte(self) << 24) |
-                 ((unsigned long long)frt_read_byte(self) << 16) |
-                 ((unsigned long long)frt_read_byte(self) << 8) |
-                  (unsigned long long)frt_read_byte(self));
+  GET_MY_BUF;
+  return ULL2NUM(((unsigned long long)frt_read_byte(self, my_buf) << 56) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 48) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 40) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 32) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 24) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 16) |
+                 ((unsigned long long)frt_read_byte(self, my_buf) << 8) |
+                  (unsigned long long)frt_read_byte(self, my_buf));
 }
 
 unsigned long long
-frt_read_vint(VALUE self)
+frt_read_vint(VALUE self, IndexBuffer *my_buf)
 {
   register unsigned long long i, b;
   register int shift = 7;
 
-  b = frt_read_byte(self);
+  b = frt_read_byte(self, my_buf);
   i = b & 0x7F; /* 0x7F = 0b01111111 */
   
   while ((b & 0x80) != 0) {/* 0x80 = 0b10000000 */
-    b = frt_read_byte(self);
+    b = frt_read_byte(self, my_buf);
     i |= (b & 0x7F) << shift;
     shift += 7;
   }
@@ -238,26 +234,29 @@ frt_read_vint(VALUE self)
 static VALUE
 frt_indexin_read_vint(VALUE self)
 {
-  return ULL2NUM(frt_read_vint(self));
+  GET_MY_BUF;
+  return ULL2NUM(frt_read_vint(self, my_buf));
 }
 
 void
 frt_read_chars(VALUE self, char* buffer, int off, int len) 
 {
+  GET_MY_BUF;
 	/* byte_t b, b1, b2; */
 	int end, i;
 
 	end = off + len;
 
 	for(i = off; i < end; i++) {
-		buffer[i] = frt_read_byte(self);
+		buffer[i] = frt_read_byte(self, my_buf);
   }
 }
 
 static VALUE
 frt_indexin_read_string(VALUE self)
 {
-  int length = (int)frt_read_vint(self);
+  GET_MY_BUF;
+  int length = (int)frt_read_vint(self, my_buf);
   char *str = ALLOC_N(char, length);
 
   frt_read_chars(self, str, 0, length);
@@ -274,8 +273,7 @@ frt_indexin_read_string(VALUE self)
 static VALUE
 frt_indexout_flush(VALUE self)
 {
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
+  GET_MY_BUF;
 
   rb_funcall(self, frt_flush_buffer, 2,
       rb_str_new((char *)my_buf->buffer, BUFFER_SIZE), INT2FIX(my_buf->pos));
@@ -289,8 +287,7 @@ frt_indexout_flush(VALUE self)
 static VALUE
 frt_write_byte(VALUE self, byte_t b)
 {
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
+  GET_MY_BUF;
 
   my_buf->buffer[my_buf->pos++] = b;
 
@@ -331,16 +328,14 @@ frt_indexout_write_bytes(VALUE self, VALUE rbuffer, VALUE rlen)
 static VALUE
 frt_indexout_pos(VALUE self)
 {
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
+  GET_MY_BUF;
   return INT2FIX(my_buf->start + my_buf->pos);
 }
 
 static VALUE
 frt_indexout_seek(VALUE self, VALUE pos)
 {
-  IndexBuffer *my_buf;
-  Data_Get_Struct(self, IndexBuffer, my_buf);
+  GET_MY_BUF;
 
   frt_indexout_flush(self);
   my_buf->start = FIX2INT(pos);

@@ -175,19 +175,20 @@ frt_termbuffer_init_copy(VALUE self, VALUE rother)
 }
 
 VALUE
-frt_termbuffer_read(VALUE self, VALUE input, VALUE info)
+frt_termbuffer_read(VALUE self, VALUE rinput, VALUE info)
 {
 	GET_TB;
+  IndexBuffer *input; Data_Get_Struct(rinput, IndexBuffer, input);
 	int tlen, flen, start, length;
 	VALUE field, fnum;
 	
-	start = frt_read_vint(input);
-	length = frt_read_vint(input);
+	start = frt_read_vint(rinput, input);
+	length = frt_read_vint(rinput, input);
 	tlen = start + length;
   REALLOC_N(tb->text, char, tlen+1);
 	
-	frt_read_chars(input, tb->text, start, length);
-  fnum = INT2FIX(frt_read_vint(input));
+	frt_read_chars(rinput, tb->text, start, length);
+  fnum = INT2FIX(frt_read_vint(rinput, input));
   field = rb_funcall(info, id_field_name, 1, fnum);
   flen = RSTRING(field)->len;
   
