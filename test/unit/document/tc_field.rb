@@ -15,6 +15,7 @@ class FieldTest < Test::Unit::TestCase
     assert_equal("TOKENIZED", Field::Index::TOKENIZED.to_s)
     assert_equal("UNTOKENIZED", Field::Index::UNTOKENIZED.to_s)
     assert_equal("NO", Field::Index::NO.to_s)
+    assert_equal("NO_NORMS", Field::Index::NO_NORMS.to_s)
   end
 
   def test_term_vector()
@@ -36,6 +37,7 @@ class FieldTest < Test::Unit::TestCase
     assert_equal(false, f.store_term_vector?)
     assert_equal(false, f.store_offsets?)
     assert_equal(false, f.store_positions?)
+    assert_equal(false, f.omit_norms?)
     assert_equal(false, f.binary?)
     assert_equal("stored/compressed,indexed,tokenized,<name:value>", f.to_s)
   end
@@ -53,7 +55,13 @@ class FieldTest < Test::Unit::TestCase
     f.index = Field::Index::NO
     assert_equal(false, f.indexed?)
     assert_equal(false, f.tokenized?)
+    assert_equal(false, f.omit_norms?)
     assert_equal("stored/compressed,<name:value>", f.to_s)
+    f.index = Field::Index::NO_NORMS
+    assert_equal(true, f.indexed?)
+    assert_equal(false, f.tokenized?)
+    assert_equal(true, f.omit_norms?)
+    assert_equal("stored/compressed,indexed,omit_norms,<name:value>", f.to_s)
   end
 
   def test_set_term_vector()
@@ -79,6 +87,7 @@ class FieldTest < Test::Unit::TestCase
     assert_equal(false, f.store_term_vector?)
     assert_equal(false, f.store_offsets?)
     assert_equal(false, f.store_positions?)
+    assert_equal(false, f.omit_norms?)
     assert_equal(true, f.binary?)
     assert_equal("stored/uncompressed,binary,<name:#{bin}>", f.to_s)
   end

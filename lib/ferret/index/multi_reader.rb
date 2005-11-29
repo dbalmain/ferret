@@ -110,12 +110,20 @@ module Ferret::Index
       return hi
     end
 
+    def has_norms?(field)
+      @sub_readers.each {|reader| return true if reader.has_norms?(field)}
+      return false
+    end
+  
+    def fake_norms()
+      return @ones ||= SegmentReader.create_fake_norms(max_doc())
+    end
+
     def get_norms(field)
       synchronize do
         bytes = @norms_cache[field]
-        if (bytes != nil)
-          return bytes    # cache hit
-        end
+        return bytes if bytes
+        return fake_norms if not has_norms?(field)
 
         bytes = " " * @max_doc
         @sub_readers.length.times do |i|
@@ -129,7 +137,9 @@ module Ferret::Index
     def get_norms_into(field, buf, offset)
       synchronize do
         bytes = @norms_cache[field]
-        if (bytes != nil)                            # cache hit
+        bytes = fake_norms() if (bytes.nil? and not has_norms?(field))
+
+        if (bytes)                       # cache hit
           buf[offset ,@max_doc] = bytes[0, @max_doc]
           return
         end

@@ -71,6 +71,12 @@ module Ferret::Document
     # field string
     def store_offsets?() return @store_offset end
 
+    # True if the norms are not stored for this field. No norms means that
+    # index-time boosting and field length normalization will be disabled.
+    # The benefit is less memory usage as norms take up one byte per indexed
+    # field for every document in the index.
+    def omit_norms?() return @omit_norms end
+    
     class Store < Ferret::Utils::Parameter
       # Store the original field value in the index in a compressed form.
       # This is useful for long documents and for binary valued fields.
@@ -101,6 +107,13 @@ module Ferret::Document
       # searched.  As no analyzer is used the value will be stored as a
       # single term. This is useful for unique Ids like product numbers.
       UNTOKENIZED = Index.new("UNTOKENIZED")
+
+      # Index the field's value without an Analyzer, and disable the storing
+      # of norms.  No norms means that index-time boosting and field length
+      # normalization will be disabled.  The benefit is less memory usage as
+      # norms take up one byte per indexed field for every document in the
+      # index.
+      NO_NORMS = Index.new("NO_NORMS");
     end
 
     class TermVector < Ferret::Utils::Parameter
@@ -174,13 +187,14 @@ module Ferret::Document
     end
 
     def stored=(stored)
-      if (stored == Store::YES)
+      case stored
+      when Store::YES
         @stored = true
         @compressed = false
-      elsif (stored == Store::COMPRESS)
+      when Store::COMPRESS
         @stored = true
         @compressed = true
-      elsif (stored == Store::NO)
+      when Store::NO
         @stored = false
         @compressed = false
       else
@@ -189,38 +203,45 @@ module Ferret::Document
     end
 
     def index=(index)
-      if (index == Index::NO)
+      @omit_norms = false
+      case index
+      when Index::NO
         @indexed = false
         @tokenized = false
-      elsif (index == Index::TOKENIZED)
+      when Index::TOKENIZED
         @indexed = true
         @tokenized = true
-      elsif (index == Index::UNTOKENIZED)
+      when Index::UNTOKENIZED
         @indexed = true
         @tokenized = false
+      when Index::NO_NORMS
+        @indexed = true
+        @tokenized = false
+        @omit_norms = true
       else
         raise "unknown stored parameter " + index.to_s
       end
     end
 
     def store_term_vector=(store_term_vector)
-      if (store_term_vector == TermVector::NO)
+      case store_term_vector
+      when TermVector::NO
         @store_term_vector = false
         @store_position = false
         @store_offset = false
-      elsif (store_term_vector == TermVector::YES)
+      when TermVector::YES
         @store_term_vector = true
         @store_position = false
         @store_offset = false
-      elsif (store_term_vector == TermVector::WITH_POSITIONS)
+      when TermVector::WITH_POSITIONS
         @store_term_vector = true
         @store_position = true
         @store_offset = false
-      elsif (store_term_vector == TermVector::WITH_OFFSETS)
+      when TermVector::WITH_OFFSETS
         @store_term_vector = true
         @store_position = false
         @store_offset = true
-      elsif (store_term_vector == TermVector::WITH_POSITIONS_OFFSETS)
+      when TermVector::WITH_POSITIONS_OFFSETS
         @store_term_vector = true
         @store_position = true
         @store_offset = true
@@ -284,6 +305,7 @@ module Ferret::Document
       str << "store_term_vector," if (@store_term_vector)
       str << "tv_offset," if (@store_offset)
       str << "tv_position," if (@store_position)
+      str << "omit_norms," if (@omit_norms)
       str << "binary," if (@binary)
       str << "<#{@name}:#{data}>"
     end  

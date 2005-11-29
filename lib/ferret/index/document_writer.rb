@@ -92,9 +92,10 @@ module Ferret::Index
 
           length = @field_lengths[field_number]     # length of field
           position = @field_positions[field_number] # position in field
+          position += @analyzer.position_increment_gap(field_name) if length > 0
           offset = @field_offsets[field_number]     # offset field
 
-          if field_info.indexed? 
+          if field_info.indexed?
             if not field.tokenized? # un-tokenized field
               string_value = field.string_value
               if field_info.store_offsets?
@@ -261,7 +262,7 @@ module Ferret::Index
 
       def write_norms(segment)
         @field_infos.each_with_index do |fi, i|
-          if fi.indexed?
+          if fi.indexed? and not fi.omit_norms?
             norm = @field_boosts[i] * @similarity.length_norm(fi.name, @field_lengths[i])
             norms = @directory.create_output(segment + ".f" + i.to_s)
             begin 

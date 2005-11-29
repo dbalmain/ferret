@@ -127,7 +127,7 @@ module Ferret::Index
       end
 
       @field_infos.each_with_index do |fi, i|
-        if (fi.indexed?)
+        if (fi.indexed? and not fi.omit_norms?)
           if @cfs_reader.nil?
             name = "#{@segment}.f#{i}"
           else
@@ -228,10 +228,22 @@ module Ferret::Index
       return field_set
     end
 
+    def has_norms?(field)
+      return @norms.has_key?(field)
+    end
+  
+    def SegmentReader.create_fake_norms(size)
+      Array.new(size, 1).pack("C*")
+    end
+  
+    def fake_norms()
+      return @ones ||= SegmentReader.create_fake_norms(max_doc())
+    end
+
     def get_norms(field)
       synchronize do
         norm = @norms[field]
-        if (norm == nil)               # not an indexed field
+        if (norm == nil)               # not an indexed field or omit norms
           return nil
         end
         if (norm.bytes == nil)         # value not yet read
@@ -258,7 +270,10 @@ module Ferret::Index
     def get_norms_into(field, bytes, offset)
       synchronize do
         norm = @norms[field]
-        return if (norm == nil) # use zeros in array
+        if (norm.nil?) 
+          bytes[offset, max_doc()] = fake_norms[0, max_doc()]
+          return
+        end
 
         if (norm.bytes != nil) # can copy from cache
           bytes[offset, max_doc()] = norm.bytes[0, max_doc()]
@@ -277,7 +292,7 @@ module Ferret::Index
 
     def open_norms(cfs_dir)
       @field_infos.each do |fi|
-        if (fi.indexed?) 
+        if (fi.indexed? and not fi.omit_norms?)
           # look first if there are separate norms in compound format
           file_name = @segment + ".s" + fi.number.to_s
           d = @directory

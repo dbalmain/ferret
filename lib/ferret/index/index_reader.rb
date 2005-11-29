@@ -223,7 +223,14 @@ module Ferret::Index
     def has_deletions?()
       raise NotImplementedError
     end
-    
+
+    # Returns true if there are norms stored for this field.
+    def has_norms?(field)
+      # backward compatible implementation.
+      # SegmentReader has an efficient implementation.
+      return (get_norms(field) != nil)
+    end
+   
     # Returns the byte-encoded normalization factor for the named field of
     # every document.  This is used by the search code to score documents.
     # 

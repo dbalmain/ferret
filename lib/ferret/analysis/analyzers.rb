@@ -17,6 +17,24 @@ module Ferret::Analysis
     def token_stream(field, string)
       return LowerCaseTokenizer.new(string)
     end
+
+    # Invoked before indexing a Field instance if
+    # terms have already been added to that field.  This allows custom
+    # analyzers to place an automatic position increment gap between
+    # Field instances using the same field name.  The default value
+    # position increment gap is 0.  With a 0 position increment gap and
+    # the typical default token position increment of 1, all terms in a field,
+    # including across Field instances, are in successive positions, allowing
+    # exact PhraseQuery matches, for instance, across Field instance boundaries.
+    #
+    # field_name::             Field name being indexed.
+    # position_increment_gap:: added to the next token emitted from
+    #                          #token_stream(String,Reader)
+    #
+    def position_increment_gap(field_name)
+      return 0
+    end
+
   end
 
   # An Analyzer that uses WhiteSpaceTokenizer.

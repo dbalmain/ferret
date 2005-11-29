@@ -35,7 +35,8 @@ module Ferret
               field.indexed?,
               field.store_term_vector?,
               field.store_positions?,
-              field.store_offsets?)
+              field.store_offsets?,
+              field.omit_norms?)
         end
       end
       alias :<< :add_doc_fields
@@ -45,9 +46,11 @@ module Ferret
                     indexed = true,
                     store_term_vector = false,
                     store_position = false,
-                    store_offset = false)
+                    store_offset = false,
+                    omit_norms = false)
         names.each do |name|
-          add(name, indexed, store_term_vector, store_position, store_offset)
+          add(name, indexed, store_term_vector, store_position,
+              store_offset, omit_norms)
         end
       end
 
@@ -65,10 +68,12 @@ module Ferret
               indexed = true,
               store_term_vector = false,
               store_position = false,
-              store_offset = false)
+              store_offset = false,
+              omit_norms = false)
         fi = @fi_hash[name]
         if (fi == nil)
-          fi = add_internal(name, indexed, store_term_vector, store_position, store_offset)
+          fi = add_internal(name, indexed, store_term_vector, store_position,
+                            store_offset, omit_norms)
         else
           if (fi.indexed? != indexed)
             fi.indexed = true             # once indexed, always index
@@ -81,6 +86,9 @@ module Ferret
           end
           if (fi.store_offsets? != store_offset)
             fi.store_offset = true   # once vector, always vector
+          end
+          if (fi.omit_norms? != omit_norms)
+            fi.omit_norms = false   # once norms are stored, always store norms
           end
         end
         return fi
@@ -174,7 +182,9 @@ module Ferret
             store_term_vector = (bits & STORE_TERM_VECTOR) != 0
             store_position = (bits & STORE_POSITION) != 0
             store_offset = (bits & STORE_OFFSET) != 0
-            add_internal(name, indexed, store_term_vector, store_position, store_offset)
+            omit_norms = (bits & OMIT_NORMS) != 0
+            add_internal(name, indexed, store_term_vector, store_position,
+                         store_offset, omit_norms)
           end
         end
 
@@ -183,15 +193,18 @@ module Ferret
         STORE_TERM_VECTOR = 0x2;
         STORE_POSITION = 0x4;
         STORE_OFFSET = 0x8;
+        OMIT_NORMS = 0x10;
 
         def add_internal(name, indexed, store_term_vector,
                          store_position = false,
-                         store_offset = false)
+                         store_offset = false,
+                         omit_norms = false)
           fi = FieldInfo.new(name, indexed,
                              @fi_array.size(),
                              store_term_vector,
                              store_position,
-                             store_offset)
+                             store_offset,
+                             omit_norms)
           @fi_array << fi
           @fi_hash[name] = fi
           return fi
@@ -211,13 +224,17 @@ module Ferret
           if (fi.store_offsets?)
             bits |= STORE_OFFSET
           end
+          if (fi.omit_norms?)
+            bits |= OMIT_NORMS
+          end
           return bits
         end
     end
 
     class FieldInfo
       attr_accessor :name, :number
-      attr_writer :indexed, :store_term_vector, :store_offset, :store_position
+      attr_writer :indexed, :store_term_vector, :store_offset,
+        :store_position, :omit_norms
 
       def indexed?()
         return @indexed
@@ -230,23 +247,32 @@ module Ferret
       def store_offsets?()
         return @store_offset
       end
+
       def store_positions?()
         return @store_position
       end
 
-      def set!(indexed, store_term_vector, store_position, store_offset)
+      def omit_norms?()
+        return @omit_norms
+      end
+
+      def set!(indexed, store_term_vector, store_position,
+               store_offset, omit_norms)
         @indexed = indexed
         @store_term_vector = store_term_vector
         @store_position = store_position
         @store_offset = store_offset
+        @omit_norms = omit_norms
       end
 
       def initialize(name, indexed, number, store_term_vector,
                      store_position = false,
-                     store_offset = false)
+                     store_offset = false,
+                     omit_norms = false)
         @name = name
         @number = number
-        set!(indexed, store_term_vector, store_position, store_offset)
+        set!(indexed, store_term_vector, store_position,
+             store_offset, omit_norms)
       end
     end
   end

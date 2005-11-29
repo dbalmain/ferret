@@ -55,10 +55,16 @@ module Ferret::Index
           end
         else 
           store = Field::Store::YES
-          if fi.indexed? and tokenize
-            index = Field::Index::TOKENIZED
-          elsif fi.indexed? and not tokenize
-            index = Field::Index::UNTOKENIZED
+          if fi.indexed?
+            if tokenize
+              index = Field::Index::TOKENIZED
+            else
+              if fi.omit_norms?
+                index = Field::Index::NO_NORMS
+              else
+                index = Field::Index::UNTOKENIZED
+              end
+            end
           else
             index = Field::Index::NO
           end

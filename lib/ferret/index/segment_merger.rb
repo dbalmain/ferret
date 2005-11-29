@@ -71,7 +71,7 @@ module Ferret::Index
 
       # Field norm files
       @field_infos.each_with_index do |fi, i|
-        if (fi.indexed?) 
+        if (fi.indexed? and not fi.omit_norms?) 
           files << "#{@segment}.f#{i}"
         end
       end
@@ -94,6 +94,21 @@ module Ferret::Index
       return files
     end
 
+    def add_indexed(reader, field_infos, field_names,
+                    store_term_vectors,
+                    store_position_with_term_vector,
+                    store_offset_with_term_vector)
+      field_names.each do |field|
+        field_infos.add(field, true,
+                        store_term_vectors,
+                        store_position_with_term_vector,
+                        store_offset_with_term_vector,
+                        !reader.has_norms?(field))
+      end
+    end
+    private :add_indexed
+  
+
     # 
     # returns:: The number of documents in all of the readers
     # raises:: IOError
@@ -101,11 +116,11 @@ module Ferret::Index
       @field_infos = FieldInfos.new()      # merge field names
       doc_count = 0
       @readers.each do |reader|
-        @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION_OFFSET), true, true, true, true)
-        @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION), true, true, true, false)
-        @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_OFFSET), true, true, false, true)
-        @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR), true, true, false, false)
-        @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::INDEXED), true, false, false, false)
+        add_indexed(reader, @field_infos, reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION_OFFSET), true, true, true)
+        add_indexed(reader, @field_infos, reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_POSITION), true, true, false)
+        add_indexed(reader, @field_infos, reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR_WITH_OFFSET), true, false, true)
+        add_indexed(reader, @field_infos, reader.get_field_names(IndexReader::FieldOption::TERM_VECTOR), true, false, false)
+        add_indexed(reader, @field_infos, reader.get_field_names(IndexReader::FieldOption::INDEXED), false, false, false)
         @field_infos.add_fields(reader.get_field_names(IndexReader::FieldOption::UNINDEXED), false)
       end
       @field_infos.write_to_dir(@directory, @segment + ".fnm")
@@ -246,7 +261,7 @@ module Ferret::Index
       reset_skip()
       n.times do |i|
         smi = smis[i]
-        postings = smi.postings
+        postings = smi.positions
         base = smi.base
         doc_map = smi.doc_map
   
@@ -317,7 +332,7 @@ module Ferret::Index
 
     def merge_norms()
       @field_infos.each_with_index do |fi, i|
-        if (fi.indexed?) 
+        if (fi.indexed? and not fi.omit_norms?) 
           output = @directory.create_output(@segment + ".f" + i.to_s)
           begin 
             @readers.each do |reader|
