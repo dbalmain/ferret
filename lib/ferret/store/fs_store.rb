@@ -207,6 +207,12 @@ module Ferret::Store
       # pass the name of the file that we are going to lock
       def initialize(lock_file)
         @lock_file = lock_file
+        #@clean = FSLock.make_finalizer(lock_file)
+        @clean = lambda { File.delete(lock_file) rescue nil}
+      end
+
+      def FSLock.make_finalizer(lock_file)
+        lambda { File.delete(lock_file) rescue nil}
       end
 
       # obtain the lock on the data source 
@@ -216,7 +222,8 @@ module Ferret::Store
           begin
             # create a file if none exists. If one already exists
             # then someone beat us to the lock so return false
-            File.open(@lock_file, File::WRONLY|File::EXCL|File::CREAT) {|f|}
+            File.open(@lock_file, File::WRONLY|File::EXCL|File::CREAT)
+            ObjectSpace.define_finalizer(self, @clean)
             return true
           rescue SystemCallError
             # lock was not obtained so sleep for timeout then try again.
@@ -224,7 +231,7 @@ module Ferret::Store
           end
         end
         # lock could not be obtained so raise an exception
-        raise "could not obtain lock: " + @lock_file.to_s
+        raise "could not obtain lock: #{@lock_file}"
       end 
 
       # Release the lock on the data source. Returns true if successful.
@@ -232,6 +239,7 @@ module Ferret::Store
         return if FSDirectory.locks_disabled?
         begin
           File.delete(@lock_file)
+          ObjectSpace.undefine_finalizer(self)
         rescue SystemCallError
           # maybe we tried to release a lock that wasn't locked. This
           # isn't critical so just return false
@@ -247,7 +255,8 @@ module Ferret::Store
       end
     end
 
-    # A file system output stream extending OutputStream to read from the file system
+    # A file system output stream extending OutputStream to read from the file
+    # system
     class FSIndexOutput < BufferedIndexOutput
       def initialize(path)
         super()

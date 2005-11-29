@@ -18,7 +18,21 @@ module Ferret::Analysis
     ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
     P          = /[_\/.,-]/
     HASDIGIT   = /\w*\d\w*/
+    TOKEN_RE   = /[[:alpha:]]+(('[[:alpha:]]+)+
+                              |\.([[:alpha:]]\.)+
+                              |(@|\&)\w+([-.]\w+)*
+                              )
+                 |\w+(([\-._]\w+)*\@\w+([-.]\w+)+
+                     |#{P}#{HASDIGIT}(#{P}\w+#{P}#{HASDIGIT})*(#{P}\w+)?
+                     |(\.\w+)+
+                     |
+                     )
+                 /x
 
+    ACRONYM_WORD    = /^#{ACRONYM}$/
+    APOSTROPHE_WORD = /^#{APOSTROPHE}$/
+    DOT             = /\./
+    APOSTROPHE_S    = /'[sS]$/
     protected
 
       # Collects only characters which are not spaces tabs or carraige returns
@@ -27,24 +41,15 @@ module Ferret::Analysis
         # This is a simplified version of the original Lucene standard
         # tokenizer.  I think it works better. I hope so anyway. Any way to
         # do this more neatly?
-        /[[:alpha:]]+(('[[:alpha:]]+)+
-                     |\.([[:alpha:]]\.)+
-                     |(@|\&)\w+([-.]\w+)*
-                     )
-        |\w+(([\-._]\w+)*\@\w+([-.]\w+)+
-            |#{P}#{HASDIGIT}(#{P}\w+#{P}#{HASDIGIT})*(#{P}\w+)?
-            |(\.\w+)+
-            |
-            )
-        /x
+        TOKEN_RE
       end
 
       # stem the 's and remove the '.'s from acronyms
       def normalize(str)
-        if str =~ /^#{ACRONYM}$/
-          str.gsub!(/\./, '')
-        elsif str =~ /^#{APOSTROPHE}$/
-          str.gsub!(/'[sS]$/, '')
+        if str =~ ACRONYM_WORD
+          str.gsub!(DOT, '')
+        elsif str =~ APOSTROPHE_WORD
+          str.gsub!(APOSTROPHE_S, '')
         end
         str
       end

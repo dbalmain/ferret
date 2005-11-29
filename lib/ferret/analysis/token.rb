@@ -44,7 +44,7 @@ module Ferret::Analysis
 
     def eql?(o)
       return (o.instance_of?(Token) and @start_offset == o.start_offset and
-              @end_offset == o.end_offset and @term_text = o.term_text)
+              @end_offset == o.end_offset and @term_text == o.term_text)
     end
     alias :== :eql?
 

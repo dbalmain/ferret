@@ -69,7 +69,6 @@ module Ferret::Search
     end
 
     def score()
-      #puts("scoring #{@first.doc}")
       raw = similarity().tf(@freq) * @value      # raw score
       return raw * Similarity.decode_norm(@norms[@first.doc])  # normalize
     end

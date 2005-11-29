@@ -64,8 +64,9 @@ module Ferret::Analysis
 
     protected
       # returns the regular expression used to find the next token
+      TOKEN_RE = /[[:alpha:]]+/
       def token_re
-        /[[:alpha:]]+/
+        TOKEN_RE
       end
 
       # Called on each token to normalize it before it is added to the
@@ -82,8 +83,9 @@ module Ferret::Analysis
     protected
       # Collects only characters which satisfy the regular expression
       # _/[[:alpha:]]+/_.
-      def token_re()
-        /[[:alpha:]]+/
+      TOKEN_RE = /[[:alpha:]]+/
+      def token_re
+        TOKEN_RE
       end
   end
 
@@ -102,8 +104,9 @@ module Ferret::Analysis
   class WhiteSpaceTokenizer < RegExpTokenizer
     protected
       # Collects only characters which are not spaces tabs or carraige returns
-      def token_re()
-        /\S+/
+      TOKEN_RE = /\S+/
+      def token_re
+        TOKEN_RE
       end
   end
 end

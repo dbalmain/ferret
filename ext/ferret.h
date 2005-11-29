@@ -72,6 +72,7 @@ extern VALUE mStore;
 extern VALUE mIndex;
 extern VALUE mUtils;
 extern VALUE mAnalysis;
+extern VALUE mSearch;
 extern VALUE mStringHelper;
 
 /* Classes */
@@ -93,6 +94,8 @@ extern VALUE cSegmentMergeQueue;
 extern VALUE cTermEnum;
 extern VALUE cTermInfosReader;
 extern VALUE cSegmentTermEnum;
+extern VALUE cSimilarity;
+extern VALUE cDefaultSimilarity;
 
 /* Ferret Inits */
 extern void Init_indexio();
@@ -106,6 +109,7 @@ extern void Init_segment_merge_queue();
 extern void Init_segment_term_enum();
 extern void Init_ram_directory();
 extern void Init_string_helper();
+extern void Init_similarity();
 
 /* External functions */
 extern int frt_hash(register char *p, register int len);

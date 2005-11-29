@@ -7,6 +7,7 @@
  ****************************************************************************/
 
 ID id_tk_text, id_tk_pos_inc, id_tk_start_offset, id_tk_end_offset, id_tk_type;
+ID id_tk_pos_inc_set;
 
 static VALUE
 frt_token_pos_inc (VALUE self, VALUE pI)
@@ -39,6 +40,23 @@ frt_token_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
+static VALUE
+frt_token_eql(VALUE self, VALUE other)
+{
+  if (!rb_respond_to(other, id_tk_pos_inc_set))
+    return Qfalse;
+  VALUE rself_text = rb_ivar_get(self, id_tk_text);
+  VALUE rother_text = rb_ivar_get(other, id_tk_text);
+  char *self_text = StringValuePtr(rself_text);
+  char *other_text = StringValuePtr(rother_text);
+  if (rb_ivar_get(self, id_tk_start_offset) == rb_ivar_get(other, id_tk_start_offset) &&
+      rb_ivar_get(self, id_tk_end_offset) == rb_ivar_get(other, id_tk_end_offset) &&
+      (strcmp(self_text, other_text) == 0))
+    return Qtrue;
+  else
+    return Qfalse;
+}
+
 /****************************************************************************
  *
  * Init Function
@@ -54,12 +72,16 @@ Init_token(void)
   id_tk_end_offset = rb_intern("@end_offset");
   id_tk_type = rb_intern("@type");
   id_tk_pos_inc = rb_intern("@position_increment");
+  id_tk_pos_inc_set = rb_intern("position_increment=");
+
 
   /* IndexWriter */
   cToken = rb_define_class_under(mAnalysis, "Token", rb_cObject);
 
   rb_define_method(cToken, "initialize",   frt_token_init, -1);
 	rb_define_method(cToken, "position_increment=", frt_token_pos_inc, 1);
+	rb_define_method(cToken, "==", frt_token_eql, 1);
+	rb_define_method(cToken, "eql", frt_token_eql, 1);
 	
 	rb_define_attr(cToken, "term_text", 1, 1);
 	rb_define_attr(cToken, "position_increment", 1, 0);

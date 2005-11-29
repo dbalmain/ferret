@@ -39,13 +39,13 @@ module Ferret::Search
       end
       mantissa = b & 0x07           # 0x07 =  7 = 0b00000111
       exponent = (b >> 3) & 0x1F    # 0x1f = 31 = 0b00011111
-      return [0,0,(mantissa << 5),(exponent+48)].pack("cccc").unpack("f")[0]
+      return [0,0,(mantissa << 5),(exponent+48)].pack("cccc").unpack("e")[0]
     end
 
     def Similarity.float_to_byte(f) 
       if (f <= 0.0) then return 0 end
 
-      bits = [f].pack("f").unpack("cccc")
+      bits = [f].pack("e").unpack("cccc")
       mantissa = (bits[2] & 0xEf) >> 5 
       exponent = (bits[3] - 48)
 

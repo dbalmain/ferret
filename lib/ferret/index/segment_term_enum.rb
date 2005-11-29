@@ -90,7 +90,6 @@ module Ferret::Index
       @term_buffer.read(@input, @field_infos)
 
       @term_info.doc_freq = @input.read_vint()          # read doc freq
-      puts "doc_freq = #{@term_info.doc_freq}"
       @term_info.freq_pointer += @input.read_vlong()    # read freq pointer
       @term_info.prox_pointer += @input.read_vlong()    # read prox pointer
       
