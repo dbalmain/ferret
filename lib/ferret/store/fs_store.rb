@@ -222,7 +222,7 @@ module Ferret::Store
           begin
             # create a file if none exists. If one already exists
             # then someone beat us to the lock so return false
-            File.open(@lock_file, File::WRONLY|File::EXCL|File::CREAT)
+            File.open(@lock_file, File::WRONLY|File::EXCL|File::CREAT) {|f|}
             ObjectSpace.define_finalizer(self, @clean)
             return true
           rescue SystemCallError
