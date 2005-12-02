@@ -31,10 +31,11 @@ frt_dsim_tf(VALUE self, VALUE freq)
 static VALUE
 frt_dsim_idf(VALUE self, VALUE rdoc_freq, VALUE rnum_docs)
 {
+  int doc_freq;
   int num_docs = FIX2INT(rnum_docs);
   if (num_docs == 0) return rb_float_new(0.0);
 
-  int doc_freq = FIX2INT(rdoc_freq);
+  doc_freq = FIX2INT(rdoc_freq);
   return rb_float_new(log((double)num_docs/(double)(doc_freq+1)) + 1.0);
 }
 
@@ -47,12 +48,12 @@ frt_dsim_idf(VALUE self, VALUE rdoc_freq, VALUE rnum_docs)
 void
 Init_similarity(void)
 {
-	/* Similarity */
+  VALUE cDefaultSimilarity;
+  /* Similarity */
   cSimilarity = rb_define_class_under(mSearch, "Similarity", rb_cObject);
-  VALUE cDefaultSimilarity =
-    rb_define_class_under(mSearch, "DefaultSimilarity", cSimilarity);
+  cDefaultSimilarity = rb_define_class_under(mSearch, "DefaultSimilarity", cSimilarity);
 
-	//rb_define_singleton_method(cSimilarity, "byte_to_float", frt_sim_c_byte_to_float, 1);
-	rb_define_method(cDefaultSimilarity, "tf", frt_dsim_tf, 1);
-	rb_define_method(cDefaultSimilarity, "idf", frt_dsim_idf, 2);
+  //rb_define_singleton_method(cSimilarity, "byte_to_float", frt_sim_c_byte_to_float, 1);
+  rb_define_method(cDefaultSimilarity, "tf", frt_dsim_tf, 1);
+  rb_define_method(cDefaultSimilarity, "idf", frt_dsim_idf, 2);
 }

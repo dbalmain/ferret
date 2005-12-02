@@ -32,9 +32,9 @@ frt_indexbuffer_alloc(VALUE klass)
 static VALUE
 frt_indexin_init_copy(VALUE self, VALUE orig)
 {
-  GET_MY_BUF;
   IndexBuffer *orig_buf;
   int len;
+  GET_MY_BUF;
   if (self == orig)
     return self;
 
@@ -53,10 +53,11 @@ frt_indexin_init_copy(VALUE self, VALUE orig)
 static VALUE
 frt_indexin_refill(VALUE self)
 {
-  GET_MY_BUF;
   long start;
+  VALUE rStr;
   int stop, len_to_read;
   int input_len = FIX2INT(rb_funcall(self, frt_length, 0, NULL));
+  GET_MY_BUF;
 
   start = my_buf->start + my_buf->pos;
   stop = start + BUFFER_SIZE;
@@ -69,7 +70,7 @@ frt_indexin_refill(VALUE self)
     rb_raise(rb_eEOFError, "IndexInput: Read past End of File");
   }
 
-  VALUE rStr = rb_str_new((char *)my_buf->buffer, BUFFER_SIZE);
+  rStr = rb_str_new((char *)my_buf->buffer, BUFFER_SIZE);
   rb_funcall(self, frt_read_internal, 3,
       rStr, INT2FIX(0), INT2FIX(len_to_read));
 
@@ -109,10 +110,10 @@ frt_indexin_pos(VALUE self)
 static VALUE
 frt_read_bytes(VALUE self, VALUE rbuffer, int offset, int len)
 {
-  GET_MY_BUF;
-
   int i;
   VALUE rbuf = StringValue(rbuffer);
+
+  GET_MY_BUF;
 
   if (RSTRING(rbuf)->len < (offset + len)) {
     rb_str_resize(rbuf, offset + len);
@@ -150,9 +151,9 @@ frt_indexin_read_bytes(VALUE self, VALUE rbuf, VALUE roffset, VALUE rlen)
 VALUE
 frt_indexin_seek(VALUE self, VALUE rpos)
 {
-  GET_MY_BUF;
-
   int pos = FIX2INT(rpos);
+
+  GET_MY_BUF;
 
   if ((pos >= my_buf->start) && (pos < (my_buf->start + my_buf->len))) {
     my_buf->pos = pos - my_buf->start;  /* seek within buffer */
@@ -241,23 +242,27 @@ frt_indexin_read_vint(VALUE self)
 void
 frt_read_chars(VALUE self, char* buffer, int off, int len) 
 {
+  /* byte_t b, b1, b2; */
+  int end, i;
+
   GET_MY_BUF;
-	/* byte_t b, b1, b2; */
-	int end, i;
 
-	end = off + len;
+  end = off + len;
 
-	for(i = off; i < end; i++) {
-		buffer[i] = frt_read_byte(self, my_buf);
+
+  for(i = off; i < end; i++) {
+      buffer[i] = frt_read_byte(self, my_buf);
   }
 }
 
 static VALUE
 frt_indexin_read_string(VALUE self)
 {
+  int length;
+  char *str;
   GET_MY_BUF;
-  int length = (int)frt_read_vint(self, my_buf);
-  char *str = ALLOC_N(char, length);
+  length = (int)frt_read_vint(self, my_buf);
+  str = ALLOC_N(char, length);
 
   frt_read_chars(self, str, 0, length);
 

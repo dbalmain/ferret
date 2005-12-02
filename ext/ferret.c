@@ -41,10 +41,10 @@ void
 Init_ferret_ext(void)
 {
   /* IDs */
-	id_new = rb_intern("new");
-	id_close = rb_intern("close");
-	id_size = rb_intern("size");
-	id_iv_size = rb_intern("@size");
+  id_new = rb_intern("new");
+  id_close = rb_intern("close");
+  id_size = rb_intern("size");
+  id_iv_size = rb_intern("@size");
 
   /* Modules */
   mFerret = rb_define_module("Ferret");

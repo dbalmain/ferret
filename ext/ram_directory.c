@@ -33,6 +33,7 @@ frt_rf_alloc(VALUE klass)
 {
   RAMFile *rf;
   byte_t *buf;
+  VALUE rrf;
 
   rf = ALLOC(RAMFile);
   buf = ALLOC_N(byte_t, BUFFER_SIZE);
@@ -42,7 +43,7 @@ frt_rf_alloc(VALUE klass)
   rf->length = 0;
   rf->mtime = rb_funcall(rb_cTime, id_new, 0);
 
-  VALUE rrf = Data_Wrap_Struct(klass, frt_rf_mark, frt_rf_free, rf);
+  rrf = Data_Wrap_Struct(klass, frt_rf_mark, frt_rf_free, rf);
   return rrf;
 }
 
@@ -81,9 +82,9 @@ frt_rio_init(VALUE self, VALUE ramfile)
 static VALUE
 frt_rio_length(VALUE self)
 {
-	VALUE file = rb_ivar_get(self, id_file);
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
   return INT2FIX(rf->length);
 }
 
@@ -103,10 +104,11 @@ frt_rio_flush_buffer(VALUE self, VALUE rsrc, VALUE rlen)
   int len = FIX2INT(rlen);
   /* char *src = StringValuePtr(rsrc); */
   int pointer = FIX2INT(rb_ivar_get(self, id_pointer));
+  byte_t *buffer;
  
-	VALUE file = rb_ivar_get(self, id_file);
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
 
   buffer_number = (int)(pointer / BUFFER_SIZE);
   buffer_offset = pointer % BUFFER_SIZE;
@@ -115,7 +117,7 @@ frt_rio_flush_buffer(VALUE self, VALUE rsrc, VALUE rlen)
 
   frt_extend_buffer_if_necessary(rf, buffer_number);
 
-  byte_t *buffer = rf->buffers[buffer_number];
+  buffer = rf->buffers[buffer_number];
   MEMCPY(buffer + buffer_offset, RSTRING(rsrc)->ptr, byte_t, bytes_to_copy);
   
   if (bytes_to_copy < len) {
@@ -150,9 +152,9 @@ frt_rio_seek(VALUE self, VALUE rpos)
 static VALUE
 frt_rio_reset(VALUE self)
 {
-	VALUE file = rb_ivar_get(self, id_file);
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
 
   rb_funcall(self, seek, 1, INT2FIX(0));
 
@@ -163,9 +165,9 @@ frt_rio_reset(VALUE self)
 static VALUE
 frt_rio_close(VALUE self)
 {
-	VALUE file = rb_ivar_get(self, id_file);
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
   rf->mtime = rb_funcall(rb_cTime, id_new, 0);
   rb_call_super(0, NULL);
   return Qnil;
@@ -175,14 +177,15 @@ static VALUE
 frt_rio_write_to(VALUE self, VALUE routput)
 {
   int i, len;
-	VALUE file = rb_ivar_get(self, id_file);
+  int last_buffer_number, last_buffer_offset; 
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
 
   rb_funcall(self, flush, 0);
 
-  int last_buffer_number = (int)(rf->length / BUFFER_SIZE);
-  int last_buffer_offset = rf->length % BUFFER_SIZE;
+  last_buffer_number = (int)(rf->length / BUFFER_SIZE);
+  last_buffer_offset = rf->length % BUFFER_SIZE;
 
   for (i = 0; i < rf->bufcnt; i++) {
     len = ((i == last_buffer_number) ? last_buffer_offset : BUFFER_SIZE);
@@ -209,19 +212,15 @@ frt_rii_init(VALUE self, VALUE ramfile)
 static VALUE
 frt_rii_length(VALUE self)
 {
-	VALUE file = rb_ivar_get(self, id_file);
+  VALUE file = rb_ivar_get(self, id_file);
   RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
+  Data_Get_Struct(file, RAMFile, rf);
   return INT2FIX(rf->length);
 }
 
 static VALUE
 frt_rii_read_internal(VALUE self, VALUE rb, VALUE roffset, VALUE rlen)
 {
-	VALUE file = rb_ivar_get(self, id_file);
-  RAMFile *rf;
-	Data_Get_Struct(file, RAMFile, rf);
-
   int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
   int offset = FIX2INT(roffset);
   int len = FIX2INT(rlen);
@@ -231,6 +230,10 @@ frt_rii_read_internal(VALUE self, VALUE rb, VALUE roffset, VALUE rlen)
   byte_t *buffer;
   byte_t *b = (byte_t *)StringValuePtr(rb);
   
+  VALUE file = rb_ivar_get(self, id_file);
+  RAMFile *rf;
+  Data_Get_Struct(file, RAMFile, rf);
+
   while (remainder > 0) {
     buffer_number = (int)(start / BUFFER_SIZE);
     buffer_offset = start % BUFFER_SIZE;
@@ -274,6 +277,7 @@ frt_rii_close(VALUE self)
 void
 Init_ram_directory(void)
 {
+  VALUE cDirectory, cRAMFile;
   /* IDs */
   flush = rb_intern("flush");
   seek = rb_intern("seek");
@@ -281,11 +285,11 @@ Init_ram_directory(void)
   id_pointer = rb_intern("@pointer");
 
   /* RAMDirectory */
-  VALUE cDirectory = rb_define_class_under(mStore, "Directory", rb_cObject);
+  cDirectory = rb_define_class_under(mStore, "Directory", rb_cObject);
   cRAMDirectory = rb_define_class_under(mStore, "RAMDirectory", cDirectory);
 
   /* RAMFile */
-  VALUE cRAMFile = rb_define_class_under(cRAMDirectory, "RAMFile", rb_cObject);
+  cRAMFile = rb_define_class_under(cRAMDirectory, "RAMFile", rb_cObject);
   rb_define_alloc_func(cRAMFile, frt_rf_alloc);
 
   /* Methods */

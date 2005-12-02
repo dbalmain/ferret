@@ -31,7 +31,7 @@ void
 Init_segment_merge_queue(void)
 {
   /* SegmentMergeQueue */
-	cSegmentMergeQueue = rb_define_class_under(mIndex, "SegmentMergeQueue", cPriorityQueue);
+  cSegmentMergeQueue = rb_define_class_under(mIndex, "SegmentMergeQueue", cPriorityQueue);
 
-	rb_define_method(cSegmentMergeQueue, "less_than", frt_smq_less_than, 2);
+  rb_define_method(cSegmentMergeQueue, "less_than", frt_smq_less_than, 2);
 }

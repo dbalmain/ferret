@@ -15,15 +15,15 @@ typedef struct IndexBuffer {
 } IndexBuffer;
 
 typedef struct Term {
-	VALUE field;
-	char *text;
-	int  tlen;
+  VALUE field;
+  char *text;
+  int  tlen;
 } Term;
 
 typedef struct PriorityQueue {
-	VALUE *heap;
-	int len;
-	int size;
+  VALUE *heap;
+  int len;
+  int size;
 } PriorityQueue;
 
 typedef struct TermInfo {

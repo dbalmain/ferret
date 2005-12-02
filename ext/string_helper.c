@@ -35,8 +35,8 @@ frt_sh_string_difference(VALUE self, VALUE rstr1, VALUE rstr2)
 void
 Init_string_helper(void)
 {
-	/* StringHelper */
+  /* StringHelper */
   mStringHelper = rb_define_module_under(mUtils, "StringHelper");
 
-	rb_define_method(mStringHelper, "string_difference", frt_sh_string_difference, 2);
+  rb_define_method(mStringHelper, "string_difference", frt_sh_string_difference, 2);
 }

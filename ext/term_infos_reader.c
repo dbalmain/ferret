@@ -10,12 +10,14 @@ static ID frt_id_index_terms;
 static VALUE
 frt_tir_get_index_offset(VALUE self, VALUE rterm)
 {
-  Term *term, *tmp_term; Data_Get_Struct(rterm, Term, term);
   VALUE index_terms = rb_ivar_get(self, frt_id_index_terms);
 
   register int lo = 0;            // binary search @index_terms[]
   register int hi = RARRAY(index_terms)->len - 1;
   register int mid, delta;
+
+  Term *term, *tmp_term; 
+  Data_Get_Struct(rterm, Term, term);
 
   while (hi >= lo) {
     mid = (lo + hi) >> 1;
@@ -46,7 +48,7 @@ Init_term_infos_reader(void)
   frt_id_index_terms = rb_intern("@index_terms");
 
   /* TermInfosReader */
-	cTermInfosReader = rb_define_class_under(mIndex, "TermInfosReader", rb_cObject);
+  cTermInfosReader = rb_define_class_under(mIndex, "TermInfosReader", rb_cObject);
 
-	rb_define_method(cTermInfosReader, "get_index_offset", frt_tir_get_index_offset, 1);
+  rb_define_method(cTermInfosReader, "get_index_offset", frt_tir_get_index_offset, 1);
 }

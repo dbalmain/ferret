@@ -10,24 +10,24 @@
 void
 frt_ti_free(void *p)
 {
-	free(p);
+  free(p);
 }
 
 static VALUE
 frt_ti_alloc(VALUE klass)
 {
-	TermInfo *ti = (TermInfo *)ALLOC(TermInfo);
-	VALUE rbuffer = Data_Wrap_Struct(klass, NULL, frt_ti_free, ti);
-	return rbuffer;
+  TermInfo *ti = (TermInfo *)ALLOC(TermInfo);
+  VALUE rbuffer = Data_Wrap_Struct(klass, NULL, frt_ti_free, ti);
+  return rbuffer;
 }
 
 #define GET_TI TermInfo *ti; Data_Get_Struct(self, TermInfo, ti)
 inline VALUE 
 frt_ti_set(int argc, VALUE *argv, VALUE self)
 {
+  VALUE df, fp, pp, so;
   GET_TI;
   MEMZERO(ti, TermInfo, 1);
-  VALUE df, fp, pp, so;
   rb_scan_args(argc, argv, "04", &df, &fp, &pp, &so);
   switch (argc) {
     case 4:
@@ -41,32 +41,34 @@ frt_ti_set(int argc, VALUE *argv, VALUE self)
     case 0:
       break;
   }
-	return Qnil;
+  return Qnil;
 }
 
 static VALUE 
 frt_ti_init(int argc, VALUE *argv, VALUE self)
 {
   frt_ti_set(argc, argv, self);
-	return self;
+  return self;
 }
 
 static VALUE 
 frt_ti_init_copy(VALUE self, VALUE rother)
 {
+  TermInfo *other_ti; 
   GET_TI;
-  TermInfo *other_ti; Data_Get_Struct(rother, TermInfo, other_ti);
+  Data_Get_Struct(rother, TermInfo, other_ti);
   MEMCPY(ti, other_ti, TermInfo, 1);
-	return self;
+  return self;
 }
 
 static VALUE
 frt_ti_eql(VALUE self, VALUE rother)
 {
-  if (NIL_P(rother)) return Qfalse;
+  TermInfo *other_ti; 
   GET_TI;
-  TermInfo *other_ti; Data_Get_Struct(rother, TermInfo, other_ti);
-	return (MEMCMP(ti, other_ti, TermInfo, 1) == 0) ? Qtrue : Qfalse;
+  if (NIL_P(rother)) return Qfalse;
+  Data_Get_Struct(rother, TermInfo, other_ti);
+  return (MEMCMP(ti, other_ti, TermInfo, 1) == 0) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -139,20 +141,20 @@ void
 Init_term_info(void)
 {
   /* TermInfo */
-	cTermInfo = rb_define_class_under(mIndex, "TermInfo", rb_cObject);
-	rb_define_alloc_func(cTermInfo, frt_ti_alloc);
+  cTermInfo = rb_define_class_under(mIndex, "TermInfo", rb_cObject);
+  rb_define_alloc_func(cTermInfo, frt_ti_alloc);
 
-	rb_define_method(cTermInfo, "initialize", frt_ti_init, -1);
-	rb_define_method(cTermInfo, "set_values!", frt_ti_set, -1);
-	rb_define_method(cTermInfo, "initialize_copy", frt_ti_init_copy, 1);
-	rb_define_method(cTermInfo, "set!", frt_ti_init_copy, 1);
-	rb_define_method(cTermInfo, "==", frt_ti_eql, 1);
-	rb_define_method(cTermInfo, "doc_freq", frt_ti_get_df, 0);
-	rb_define_method(cTermInfo, "doc_freq=", frt_ti_set_df, 1);
-	rb_define_method(cTermInfo, "freq_pointer", frt_ti_get_fp, 0);
-	rb_define_method(cTermInfo, "freq_pointer=", frt_ti_set_fp, 1);
-	rb_define_method(cTermInfo, "prox_pointer", frt_ti_get_pp, 0);
-	rb_define_method(cTermInfo, "prox_pointer=", frt_ti_set_pp, 1);
-	rb_define_method(cTermInfo, "skip_offset", frt_ti_get_so, 0);
-	rb_define_method(cTermInfo, "skip_offset=", frt_ti_set_so, 1);
+  rb_define_method(cTermInfo, "initialize", frt_ti_init, -1);
+  rb_define_method(cTermInfo, "set_values!", frt_ti_set, -1);
+  rb_define_method(cTermInfo, "initialize_copy", frt_ti_init_copy, 1);
+  rb_define_method(cTermInfo, "set!", frt_ti_init_copy, 1);
+  rb_define_method(cTermInfo, "==", frt_ti_eql, 1);
+  rb_define_method(cTermInfo, "doc_freq", frt_ti_get_df, 0);
+  rb_define_method(cTermInfo, "doc_freq=", frt_ti_set_df, 1);
+  rb_define_method(cTermInfo, "freq_pointer", frt_ti_get_fp, 0);
+  rb_define_method(cTermInfo, "freq_pointer=", frt_ti_set_fp, 1);
+  rb_define_method(cTermInfo, "prox_pointer", frt_ti_get_pp, 0);
+  rb_define_method(cTermInfo, "prox_pointer=", frt_ti_set_pp, 1);
+  rb_define_method(cTermInfo, "skip_offset", frt_ti_get_so, 0);
+  rb_define_method(cTermInfo, "skip_offset=", frt_ti_set_so, 1);
 }

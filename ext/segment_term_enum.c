@@ -8,14 +8,14 @@
 void
 frt_ste_free(void *p)
 {
-	SegmentTermEnum *ste = (SegmentTermEnum *)p;
+  SegmentTermEnum *ste = (SegmentTermEnum *)p;
   free(ste->ti);
-	free(p);
+  free(p);
 }
 void
 frt_ste_mark(void *p)
 {
-	SegmentTermEnum *ste = (SegmentTermEnum *)p;
+  SegmentTermEnum *ste = (SegmentTermEnum *)p;
   rb_gc_mark(ste->input);
   rb_gc_mark(ste->field_infos);
   rb_gc_mark(ste->rtb_curr);
@@ -25,15 +25,16 @@ frt_ste_mark(void *p)
 static VALUE
 frt_ste_alloc(VALUE klass)
 {
-	SegmentTermEnum *ste = ALLOC(SegmentTermEnum);
+  SegmentTermEnum *ste = ALLOC(SegmentTermEnum);
   MEMZERO(ste, SegmentTermEnum, 1);
-	return Data_Wrap_Struct(klass, frt_ste_mark, frt_ste_free, ste);
+  return Data_Wrap_Struct(klass, frt_ste_mark, frt_ste_free, ste);
 }
 
 #define GET_STE SegmentTermEnum *ste; Data_Get_Struct(self, SegmentTermEnum, ste)
 static VALUE
 frt_ste_init(VALUE self, VALUE input, VALUE field_infos, VALUE is_index)
 {
+  int first_int;
   GET_STE;
   ste->is_index = RTEST(is_index);
   ste->input = input;
@@ -48,7 +49,7 @@ frt_ste_init(VALUE self, VALUE input, VALUE field_infos, VALUE is_index)
   MEMZERO(ste->ti, TermInfo, 1);
   ste->index_pointer = 0;
 
-  int first_int = FIX2INT(frt_indexin_read_int(input));
+  first_int = FIX2INT(frt_indexin_read_int(input));
 
   if (first_int >= 0) {
     // original-format file, without explicit format version number
@@ -84,8 +85,9 @@ frt_ste_init(VALUE self, VALUE input, VALUE field_infos, VALUE is_index)
 static VALUE
 frt_ste_init_copy(VALUE self, VALUE rother)
 {
+  SegmentTermEnum *other; 
   GET_STE;
-  SegmentTermEnum *other; Data_Get_Struct(rother, SegmentTermEnum, other);
+  Data_Get_Struct(rother, SegmentTermEnum, other);
   MEMCPY(ste, other, SegmentTermEnum, 1);
   ste->rtb_curr = rb_obj_clone(other->rtb_curr);
   Data_Get_Struct(ste->rtb_curr, Term, ste->tb_curr);
@@ -101,6 +103,7 @@ frt_ste_init_copy(VALUE self, VALUE rother)
 static VALUE
 frt_ste_seek(VALUE self, VALUE pointer, VALUE position, VALUE term, VALUE term_info)
 {
+  TermInfo *ti; 
   GET_STE;
 
   frt_indexin_seek(ste->input, pointer);
@@ -111,7 +114,7 @@ frt_ste_seek(VALUE self, VALUE pointer, VALUE position, VALUE term, VALUE term_i
   MEMZERO(ste->tb_prev, Term, 1);
   ste->tb_prev->field = Qnil;
 
-  TermInfo *ti; Data_Get_Struct(term_info, TermInfo, ti);
+  Data_Get_Struct(term_info, TermInfo, ti);
   MEMCPY(ste->ti, ti, TermInfo, 1);
   return Qnil;
 }
@@ -119,10 +122,12 @@ frt_ste_seek(VALUE self, VALUE pointer, VALUE position, VALUE term, VALUE term_i
 static VALUE
 frt_ste_next(VALUE self)
 {
+  IndexBuffer *zzbuf; 
+  TermInfo *ti;
   GET_STE;
   ste->position++;
 
-  IndexBuffer *zzbuf; Data_Get_Struct(ste->input, IndexBuffer, zzbuf);
+  Data_Get_Struct(ste->input, IndexBuffer, zzbuf);
 
   if (ste->position >= ste->size) {
     free(ste->tb_curr->text);
@@ -134,7 +139,7 @@ frt_ste_next(VALUE self)
   frt_termbuffer_init_copy(ste->rtb_prev, ste->rtb_curr);
   frt_termbuffer_read(ste->rtb_curr, ste->input, ste->field_infos);
   
-  TermInfo *ti = ste->ti;
+  ti = ste->ti;
   ti->doc_freq = frt_read_vint(ste->input, zzbuf);         // read doc freq
   ti->freq_pointer += frt_read_vint(ste->input, zzbuf);    // read freq pointer
   ti->prox_pointer += frt_read_vint(ste->input, zzbuf);    // read prox pointer
@@ -162,8 +167,9 @@ frt_ste_next(VALUE self)
 static VALUE
 frt_ste_scan_to(VALUE self, VALUE rterm)
 {
+  Term *term;
   GET_STE;
-  Term *term; Data_Get_Struct(rterm, Term, term); 
+  Data_Get_Struct(rterm, Term, term); 
   while (frt_term_cmp(term, ste->tb_curr) > 0 && frt_ste_next(self) == Qtrue)
     ;
   return Qnil;
@@ -193,9 +199,11 @@ frt_ste_get_prev(VALUE self)
 static VALUE
 frt_ste_get_term_info(VALUE self)
 {
+  VALUE rti;
+  TermInfo *ti;
   GET_STE;
-  VALUE rti = rb_obj_alloc(cTermInfo);
-  TermInfo *ti; Data_Get_Struct(rti, TermInfo, ti);
+  rti = rb_obj_alloc(cTermInfo);
+  Data_Get_Struct(rti, TermInfo, ti);
   MEMCPY(ti, ste->ti, TermInfo, 1);
   return rti;
 }
@@ -203,8 +211,9 @@ frt_ste_get_term_info(VALUE self)
 static VALUE
 frt_ste_set_term_info(VALUE self, VALUE rti)
 {
+  TermInfo *ti; 
   GET_STE;
-  TermInfo *ti; Data_Get_Struct(rti, TermInfo, ti);
+  Data_Get_Struct(rti, TermInfo, ti);
   MEMCPY(ste->ti, ti, TermInfo, 1);
   return Qnil;
 }
@@ -289,27 +298,27 @@ void
 Init_segment_term_enum(void)
 {
   /* SegmentTermEnum */
-	cSegmentTermEnum = rb_define_class_under(mIndex, "SegmentTermEnum", cTermEnum);
-	rb_define_alloc_func(cSegmentTermEnum, frt_ste_alloc);
+  cSegmentTermEnum = rb_define_class_under(mIndex, "SegmentTermEnum", cTermEnum);
+  rb_define_alloc_func(cSegmentTermEnum, frt_ste_alloc);
 
-	rb_define_method(cSegmentTermEnum, "initialize", frt_ste_init, 3);
-	rb_define_method(cSegmentTermEnum, "initialize_copy", frt_ste_init_copy, 1);
-	rb_define_method(cSegmentTermEnum, "next?", frt_ste_next, 0);
-	rb_define_method(cSegmentTermEnum, "seek", frt_ste_seek, 4);
-	rb_define_method(cSegmentTermEnum, "scan_to", frt_ste_scan_to, 1);
-	rb_define_method(cSegmentTermEnum, "term", frt_ste_get_term, 0);
-	rb_define_method(cSegmentTermEnum, "term_buffer", frt_ste_get_term_buffer, 0);
-	rb_define_method(cSegmentTermEnum, "prev", frt_ste_get_prev, 0);
-	rb_define_method(cSegmentTermEnum, "term_info", frt_ste_get_term_info, 0);
-	rb_define_method(cSegmentTermEnum, "term_info=", frt_ste_set_term_info, 1);
-	rb_define_method(cSegmentTermEnum, "doc_freq", frt_ste_get_doc_freq, 0);
-	rb_define_method(cSegmentTermEnum, "freq_pointer", frt_ste_get_freq_pointer, 0);
-	rb_define_method(cSegmentTermEnum, "prox_pointer", frt_ste_get_prox_pointer, 0);
-	rb_define_method(cSegmentTermEnum, "close", frt_ste_close, 0);
-	rb_define_method(cSegmentTermEnum, "field_infos", frt_ste_get_field_infos, 0);
-	rb_define_method(cSegmentTermEnum, "size", frt_ste_get_size, 0);
-	rb_define_method(cSegmentTermEnum, "position", frt_ste_get_position, 0);
-	rb_define_method(cSegmentTermEnum, "index_pointer", frt_ste_get_index_pointer, 0);
-	rb_define_method(cSegmentTermEnum, "index_interval", frt_ste_get_index_interval, 0);
-	rb_define_method(cSegmentTermEnum, "skip_interval", frt_ste_get_skip_interval, 0);
+  rb_define_method(cSegmentTermEnum, "initialize", frt_ste_init, 3);
+  rb_define_method(cSegmentTermEnum, "initialize_copy", frt_ste_init_copy, 1);
+  rb_define_method(cSegmentTermEnum, "next?", frt_ste_next, 0);
+  rb_define_method(cSegmentTermEnum, "seek", frt_ste_seek, 4);
+  rb_define_method(cSegmentTermEnum, "scan_to", frt_ste_scan_to, 1);
+  rb_define_method(cSegmentTermEnum, "term", frt_ste_get_term, 0);
+  rb_define_method(cSegmentTermEnum, "term_buffer", frt_ste_get_term_buffer, 0);
+  rb_define_method(cSegmentTermEnum, "prev", frt_ste_get_prev, 0);
+  rb_define_method(cSegmentTermEnum, "term_info", frt_ste_get_term_info, 0);
+  rb_define_method(cSegmentTermEnum, "term_info=", frt_ste_set_term_info, 1);
+  rb_define_method(cSegmentTermEnum, "doc_freq", frt_ste_get_doc_freq, 0);
+  rb_define_method(cSegmentTermEnum, "freq_pointer", frt_ste_get_freq_pointer, 0);
+  rb_define_method(cSegmentTermEnum, "prox_pointer", frt_ste_get_prox_pointer, 0);
+  rb_define_method(cSegmentTermEnum, "close", frt_ste_close, 0);
+  rb_define_method(cSegmentTermEnum, "field_infos", frt_ste_get_field_infos, 0);
+  rb_define_method(cSegmentTermEnum, "size", frt_ste_get_size, 0);
+  rb_define_method(cSegmentTermEnum, "position", frt_ste_get_position, 0);
+  rb_define_method(cSegmentTermEnum, "index_pointer", frt_ste_get_index_pointer, 0);
+  rb_define_method(cSegmentTermEnum, "index_interval", frt_ste_get_index_interval, 0);
+  rb_define_method(cSegmentTermEnum, "skip_interval", frt_ste_get_skip_interval, 0);
 }
