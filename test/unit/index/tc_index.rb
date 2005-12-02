@@ -129,28 +129,39 @@ class IndexTest < Test::Unit::TestCase
   def test_ram_index
     index = Index.new(:default_field => "def_field")
     do_test_index_with_array(index)
+    index.close
+
     index = Index.new(:default_field => "def_field")
     do_test_index_with_hash(index)
+    index.close
+
     index = Index.new(:default_field => "def_field")
     do_test_index_with_doc_array(index)
+    index.close
   end
 
   def test_fs_index
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    `rm -rf #{File.join(fs_path, "*")}`
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     assert_raise(Errno::ENOENT) {Index.new(:path => fs_path, :create_if_missing => false, :default_field => "def_field")}
     index = Index.new(:path => fs_path, :default_field => "def_field")
     do_test_index_with_array(index)
-    `rm -rf #{File.join(fs_path, "*")}`
-    index = Index.new(:path => fs_path, :create => true, :default_field => "def_field")
+    index.close
+
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
+    index = Index.new(:path => fs_path, :default_field => "def_field")
     do_test_index_with_hash(index)
-    index = Index.new(:path => fs_path, :create => true, :default_field => "def_field")
+    index.close
+
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
+    index = Index.new(:path => fs_path, :default_field => "def_field")
     do_test_index_with_doc_array(index)
+    index.close
   end
 
   def test_fs_index_is_persistant
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    `rm -rf #{File.join(fs_path, "*")}`
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     data = [
       {"def_field" => "one two", :id => "me"},
       {"def_field" => "one", :field2 => "three"},
@@ -165,9 +176,11 @@ class IndexTest < Test::Unit::TestCase
     data.each {|doc| index << doc }
     assert_equal(8, index.size)
     index.close
+
     index = Index.new(:path => fs_path, :create_if_missing => false)
     assert_equal(8, index.size)
     assert_equal("four", index[5]["field3"])
+    index.close
   end
 
   def test_merging_indexes
@@ -246,6 +259,7 @@ class IndexTest < Test::Unit::TestCase
     index3.close
     dir3.close
     assert_equal("golf", index[15]["f"])
+    index.close
   end
 
   def test_persist_index
@@ -310,6 +324,7 @@ class IndexTest < Test::Unit::TestCase
     iw.close()
     assert_equal(3, index.size)
     assert_equal("content3", index[2]["f"])
+    index.close
   end
 
   def test_delete
@@ -340,6 +355,7 @@ class IndexTest < Test::Unit::TestCase
     index.query_delete("cat:/cat1*")
     assert_equal(3, index.size)
     assert_equal(0, index.search("cat:/cat1*").size)
+    index.close
   end
 
   def test_update
@@ -390,6 +406,7 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("cool", index["3"][:tag])
     assert_equal("cool", index["4"][:tag])
     assert_equal(4, index.search("tag:cool").size)
+    index.close
   end
 
   def test_index_key
@@ -405,6 +422,7 @@ class IndexTest < Test::Unit::TestCase
     assert_equal(2, index.size)
     assert_equal("two", index[0][:val])
     assert_equal("four", index[1][:val])
+    index.close
   end
 
   def test_index_multi_key
@@ -427,11 +445,12 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("second floor", index[1][:location])
     assert_equal("backpack", index[3][:product])
     assert_equal("first floor", index[2][:location])
+    index.close
   end
 
   def test_auto_flush
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    `rm -rf #{File.join(fs_path, "*")}`
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     data = %q(one two three four five six seven eight nine ten eleven twelve)
     index1 = Index.new(:path => fs_path, :auto_flush => true)
     index2 = Index.new(:path => fs_path, :auto_flush => true)
@@ -443,5 +462,7 @@ class IndexTest < Test::Unit::TestCase
     rescue Exception => e
       assert(false, "This should not cause an error when auto flush has been set")
     end
+    index1.close
+    index2.close
   end
 end
