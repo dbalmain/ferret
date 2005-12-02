@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e5', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id6e7f6ac20b', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -54,7 +54,6 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e
       when /\A\s+/
         ;
       when /\A([#{EWCHR}]|[*?](?=:))/
-        puts ">>" + $&
         @q.push [ RESERVED[$&]||$&, $& ]
       when /\A(\&\&|\|\|)/
         @q.push [ RESERVED[$&], $& ]
@@ -88,8 +87,6 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e
     begin
       query = do_parse
     rescue Racc::ParseError => e
-      puts "fuck"
-      puts e
       if @handle_parse_errors
         @field = @default_field
         query = _get_bad_query(orig_str)
@@ -405,7 +402,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e5
+..end lib/ferret/query_parser/query_parser.y modeval..id6e7f6ac20b
 
 ##### racc 1.4.4 generates ###
 

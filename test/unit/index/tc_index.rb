@@ -428,4 +428,20 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("backpack", index[3][:product])
     assert_equal("first floor", index[2][:location])
   end
+
+  def test_auto_flush
+    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
+    `rm -rf #{File.join(fs_path, "*")}`
+    data = %q(one two three four five six seven eight nine ten eleven twelve)
+    index1 = Index.new(:path => fs_path, :auto_flush => true)
+    index2 = Index.new(:path => fs_path, :auto_flush => true)
+    begin
+      data.each do |doc|
+        index1 << doc
+        index2 << doc
+      end
+    rescue Exception => e
+      assert(false, "This should not cause an error when auto flush has been set")
+    end
+  end
 end

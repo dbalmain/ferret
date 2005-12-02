@@ -124,7 +124,7 @@ class QueryParserTest < Test::Unit::TestCase
                                             :handle_parse_errors => true)
 
     pairs = [
-      ['(*word', 'word'],
+      ['::*word', 'word'],
       ['()*&)(*^&*(', ''],
       ['()*&one)(*two(*&"', 'one two']
     ]

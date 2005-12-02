@@ -94,13 +94,20 @@ module Ferret::Index
     #                        your query.  This defualts to true. If you set it
     #                        to false a QueryParseException is raised on a
     #                        query parse error.
+    # auto_flush::           Set this option to true if you want the index
+    #                        automatically flushed every time you do a write
+    #                        (includes delete) to the index. This is useful if
+    #                        you have multiple processes accessing the index
+    #                        and you don't want lock errors. This is set to
+    #                        false by default.
     # 
     # Some examples;
     #
     #   index = Index::Index.new(:analyzer => WhiteSpaceAnalyzer.new())
     #
     #   index = Index::Index.new(:path => '/path/to/index',
-    #                            :create_if_missing => false)
+    #                            :create_if_missing => false,
+    #                            :auto_flush => true)
     #
     #   index = Index::Index.new(:dir => directory,
     #                            :close_dir => false
@@ -127,12 +134,15 @@ module Ferret::Index
 
       @dir.synchronize do
         @options = options
-        @writer = IndexWriter.new(@dir, options)
+        @writer = IndexWriter.new(@dir, options) # create the index if need be
         options[:analyzer] = @analyzer = @writer.analyzer
+        @writer.close
+        @writer = nil
         @has_writes = false
         @reader = nil
         @options.delete(:create) # only want to create the first time if at all
         @close_dir = @options.delete(:close_dir) || false # we'll hold this here
+        @auto_flush = @options[:auto_flush] || false
         @default_search_field = (@options[:default_search_field] || \
                                  @options[:default_field] || "*")
         @default_field = @options[:default_field] || ""
@@ -258,6 +268,7 @@ module Ferret::Index
         ensure_writer_open()
         @has_writes = true
         @writer.add_document(fdoc, analyzer || @writer.analyzer)
+        flush() if @auto_flush
       end
     end
     alias :<< :add_document
@@ -335,6 +346,7 @@ module Ferret::Index
         else
           raise ArgumentError, "Cannot delete for id of type #{id.class}"
         end
+        flush() if @auto_flush
       end
     end
 
@@ -350,6 +362,7 @@ module Ferret::Index
         @searcher.search_each(query) do |doc, score|
           @reader.delete(doc)
         end
+        flush() if @auto_flush
       end
     end
 
@@ -394,6 +407,7 @@ module Ferret::Index
         else
           raise ArgumentError, "Cannot update for id of type #{id.class}"
         end
+        flush() if @auto_flush
       end
     end
 
@@ -430,6 +444,7 @@ module Ferret::Index
         docs_to_add.each do |document|
           @writer.add_document(document)
         end
+        flush() if @auto_flush
       end
     end
 
@@ -533,7 +548,7 @@ module Ferret::Index
     #             false.
     def persist(directory, create = true)
       synchronize do
-        flush
+        flush()
         old_dir = @dir
         if directory.is_a?(String)
           @dir = FSDirectory.new(directory, create)
