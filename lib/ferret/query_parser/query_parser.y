@@ -164,11 +164,11 @@ end
       case str
       when /\A\s+/
         ;
-      when /\A[#{ECHR}]/
+      when /\A([#{EWCHR}]|[*?](?=:))/
         @q.push [ RESERVED[$&]||$&, $& ]
       when /\A(\&\&|\|\|)/
         @q.push [ RESERVED[$&], $& ]
-      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
+      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])*[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
         str = $'
         unescaped = $&.gsub(/\\(?!\\)/,"")
         @q.push [ :WILD_STRING, unescaped ]

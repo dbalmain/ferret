@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e23', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e5', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -53,11 +53,12 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e2
       case str
       when /\A\s+/
         ;
-      when /\A[#{ECHR}]/
+      when /\A([#{EWCHR}]|[*?](?=:))/
+        puts ">>" + $&
         @q.push [ RESERVED[$&]||$&, $& ]
       when /\A(\&\&|\|\|)/
         @q.push [ RESERVED[$&], $& ]
-      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])+[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
+      when /\A(\\[#{ECHR}]|[^\s#{ECHR}])*[?*](\\[#{EWCHR}]|[^\s#{EWCHR}])*/
         str = $'
         unescaped = $&.gsub(/\\(?!\\)/,"")
         @q.push [ :WILD_STRING, unescaped ]
@@ -87,6 +88,8 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e2
     begin
       query = do_parse
     rescue Racc::ParseError => e
+      puts "fuck"
+      puts e
       if @handle_parse_errors
         @field = @default_field
         query = _get_bad_query(orig_str)
@@ -402,7 +405,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e2
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id69c41d1e23
+..end lib/ferret/query_parser/query_parser.y modeval..idf684e419e5
 
 ##### racc 1.4.4 generates ###
 

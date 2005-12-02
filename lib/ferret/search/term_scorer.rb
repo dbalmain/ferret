@@ -17,8 +17,8 @@ module Ferret::Search
       super(similarity)
 
       @doc = 0
-      @docs = Array.new(32, 0) # buffered doc numbers
-      @freqs = Array.new(32, 0) # buffered term freqs
+      @docs = Array.new(SCORE_CACHE_SIZE, 0) # buffered doc numbers
+      @freqs = Array.new(SCORE_CACHE_SIZE, 0) # buffered term freqs
       @pointer = @pointer_max = 0;
       @score_cache = Array.new(SCORE_CACHE_SIZE)
 
