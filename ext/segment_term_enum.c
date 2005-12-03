@@ -35,6 +35,7 @@ static VALUE
 frt_ste_init(VALUE self, VALUE input, VALUE field_infos, VALUE is_index)
 {
   int first_int;
+  VALUE rsize;
   GET_STE;
   ste->is_index = RTEST(is_index);
   ste->input = input;
@@ -63,7 +64,8 @@ frt_ste_init(VALUE self, VALUE input, VALUE field_infos, VALUE is_index)
   } else {
     // we have a format version number
     ste->format = first_int;
-    ste->size = FIX2INT(frt_indexin_read_long(input));  // read the size
+    rsize = frt_indexin_read_long(input);
+    ste->size = NUM2INT(rsize);  // read the size
     
     if (ste->format == -1) {
       if (!ste->is_index) {

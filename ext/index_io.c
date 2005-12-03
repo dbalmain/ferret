@@ -170,10 +170,10 @@ VALUE
 frt_indexin_read_int(VALUE self)
 {
   GET_MY_BUF;
-  return LONG2NUM(((long)frt_read_byte(self, my_buf) << 24) |
-                  ((long)frt_read_byte(self, my_buf) << 16) |
-                  ((long)frt_read_byte(self, my_buf) << 8) |
-                   (long)frt_read_byte(self, my_buf));
+  return LONG2NUM(((int)frt_read_byte(self, my_buf) << 24) |
+                  ((int)frt_read_byte(self, my_buf) << 16) |
+                  ((int)frt_read_byte(self, my_buf) << 8) |
+                   (int)frt_read_byte(self, my_buf));
 }
 
 VALUE
@@ -194,10 +194,10 @@ static VALUE
 frt_indexin_read_uint(VALUE self)
 {
   GET_MY_BUF;
-  return ULONG2NUM(((unsigned long)frt_read_byte(self, my_buf) << 24) |
-                   ((unsigned long)frt_read_byte(self, my_buf) << 16) |
-                   ((unsigned long)frt_read_byte(self, my_buf) << 8) |
-                    (unsigned long)frt_read_byte(self, my_buf));
+  return ULONG2NUM(((unsigned int)frt_read_byte(self, my_buf) << 24) |
+                   ((unsigned int)frt_read_byte(self, my_buf) << 16) |
+                   ((unsigned int)frt_read_byte(self, my_buf) << 8) |
+                    (unsigned int)frt_read_byte(self, my_buf));
 }
 
 static VALUE
