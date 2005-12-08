@@ -459,6 +459,12 @@ class IndexTest < Test::Unit::TestCase
         index1 << doc
         index2 << doc
       end
+      5.times do |i|
+        index1.delete(i)
+        index2.delete(i + 5)
+      end
+      index1.optimize
+      index2 << "thirteen"
     rescue Exception => e
       assert(false, "This should not cause an error when auto flush has been set")
     end

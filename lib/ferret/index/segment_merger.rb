@@ -242,7 +242,7 @@ module Ferret::Index
       skip_pointer = write_skip()
 
       if (df > 0) 
-        # add an enbegin to the dictionary with pointers to prox and freq files
+        # add an entry to the dictionary with pointers to prox and freq files
         @term_info.set_values!(df, freq_pointer, prox_pointer, (skip_pointer - freq_pointer))
         @term_infos_writer.add(smis[0].term_buffer.term, @term_info)
       end

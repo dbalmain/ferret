@@ -335,18 +335,20 @@ module Ferret::Index
     # id:: The number of the document to delete
     def delete(id)
       @dir.synchronize do
+        cnt = 0
         ensure_reader_open()
         if id.is_a?(String)
           t = Term.new("id", id.to_s)
-          return @reader.delete_docs_with_term(t)
+          cnt = @reader.delete_docs_with_term(t)
         elsif id.is_a?(Term)
-          return @reader.delete_docs_with_term(id)
+          cnt = @reader.delete_docs_with_term(id)
         elsif id.is_a?(Integer)
-          return @reader.delete(id)
+          cnt = @reader.delete(id)
         else
           raise ArgumentError, "Cannot delete for id of type #{id.class}"
         end
         flush() if @auto_flush
+        return cnt
       end
     end
 
@@ -485,7 +487,7 @@ module Ferret::Index
       @dir.synchronize do
         ensure_writer_open()
         @writer.optimize()
-        @modified = true
+        flush()
       end
     end
 

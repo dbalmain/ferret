@@ -93,7 +93,7 @@ module Ferret::Search
     # Repeat until at least the minimum number of subscorers match on the same
     # document and all subscorers are after that document or are exhausted.
     # 
-    # On enbegin the +@scorer_queue+ has at least +@minimum_nr_matchers+
+    # On entry the +@scorer_queue+ has at least +@minimum_nr_matchers+
     # available. At least the scorer with the minimum document number will be advanced.
     # returns:: true iff there is a match.
     # 
