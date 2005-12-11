@@ -85,7 +85,7 @@ module Ferret::Search
               term = term_enum.term
               break if (term.field != field)
               termval = parser.call(term.text)
-              term_docs.seek(term_enum)
+              term_docs.seek(term)
               while term_docs.next? 
                 index[term_docs.doc] = termval
               end
@@ -141,7 +141,7 @@ module Ferret::Search
               end
               str_map[t] = term.text
 
-              term_docs.seek(term_enum)
+              term_docs.seek(term)
               while term_docs.next?
                 str_index[term_docs.doc] = t
               end
