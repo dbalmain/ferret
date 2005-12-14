@@ -139,9 +139,6 @@ class IndexSearcherTest < Test::Unit::TestCase
     pq << t1 << t2 << t3
     check_hits(pq, [1])
 
-    pq.slop = 4
-    check_hits(pq, [1,16,17])
-
     pq = PhraseQuery.new()
     pq << t1
     pq.add(t3, 2)
@@ -153,6 +150,23 @@ class IndexSearcherTest < Test::Unit::TestCase
     pq.slop = 4
     check_hits(pq, [1,11,14,16,17])
   end
+
+  def test_multi_phrase_query()
+    pq = MultiPhraseQuery.new()
+    t1 = Term.new("field", "quick")
+    t2 = Term.new("field", "brown")
+    t3 = Term.new("field", "fox")
+    pq << t1
+    pq << t2
+    pq << t3
+    check_hits(pq, [1])
+
+    t1b = Term.new("field", "fast")
+    pq.add(t1b, 0)
+    check_hits(pq, [1, 8])
+  end
+
+
 
   def test_range_query()
     rq = RangeQuery.new("date", "20051006", "20051010", true, true)

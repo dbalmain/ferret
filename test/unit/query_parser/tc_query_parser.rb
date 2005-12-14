@@ -17,6 +17,7 @@ class QueryParserTest < Test::Unit::TestCase
       ['field:"one <> <> <> three <>"', 'field:"one <> <> <> three"'],
       ['field:"one <> <> <> three|four|five <>"', 'field:"one <> <> <> three|four|five"'],
       ['field:"one|two three|four|five six|seven"', 'field:"one|two three|four|five six|seven"'],
+      ['contents:"testing|trucks"', 'contents:"testing|trucks"'],
       ['[aaa bbb]', '[aaa bbb]'],
       ['{aaa bbb]', '{aaa bbb]'],
       ['field:[aaa bbb}', 'field:[aaa bbb}'],

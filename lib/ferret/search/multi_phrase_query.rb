@@ -47,8 +47,12 @@ module Ferret::Search
         end
       end
 
-      @term_arrays << terms
-      @positions << position
+      if i = @positions.index(position)
+        term_arrays[i] += terms
+      else
+        @term_arrays << terms
+        @positions << position
+      end
     end
     alias :<< :add
     
@@ -167,10 +171,10 @@ module Ferret::Search
         terms = @term_arrays[0]
         bq = BooleanQuery.new(true)
         terms.each do |term|
-          bq.add(TermQuery.new(term), BooleanClause::Occur::SHOULD)
+          bq.add_query(TermQuery.new(term), BooleanClause::Occur::SHOULD)
         end
         bq.boost = boost()
-        return boq
+        return bq
       else 
         return self
       end
