@@ -231,10 +231,7 @@ module Ferret::Search
     # m:: the length of the "other value"
     # returns:: the maximum levenshtein distance that we care about
     def max_distance(m) 
-      if (m >= @max_distances.length)
-        @max_distances[m] = calculate_max_distance(m)
-      end
-      return @max_distances[m]
+      return @max_distances[m] ||= calculate_max_distance(m)
     end
 
     def initialize_max_distances() 

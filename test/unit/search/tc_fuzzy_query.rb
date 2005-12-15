@@ -47,6 +47,8 @@ class FuzzyQueryTest < Test::Unit::TestCase
     add_doc("abbbb", iw)
     add_doc("bbbbb", iw)
     add_doc("ddddd", iw)
+    add_doc("ddddddddddddddddddddd", iw) # test max_distances problem
+    add_doc("aaaaaaaaaaaaaaaaaaaaaaa", iw) # test max_distances problem
     #iw.optimize()
     iw.close()
 
@@ -55,6 +57,7 @@ class FuzzyQueryTest < Test::Unit::TestCase
 
     fq = FuzzyQuery.new(Term.new("field", "aaaaa"), FuzzyQuery.default_min_similarity, 5)
 
+    do_prefix_test(is, "aaaaaaaaaaaaaaaaaaaaaa", 1, [8])
     do_prefix_test(is, "aaaaa", 0, [0,1,2])
     do_prefix_test(is, "aaaaa", 1, [0,1,2])
     do_prefix_test(is, "aaaaa", 2, [0,1,2])
