@@ -62,7 +62,7 @@ module Ferret::Search
     # comparator:: a proc used to compare two values from the index. You can
     #    also give this value to the SortType object that you pass.
     def initialize(name = nil, args= {})
-      @name = name
+      @name = name.to_s if name
       @sort_type = args[:sort_type]||SortType::AUTO
       @reverse = args[:reverse]||false
       @comparator = args[:comparator]||@sort_type.comparator

@@ -3,6 +3,7 @@ require File.dirname(__FILE__) + "/../../test_helper"
 
 class IndexTest < Test::Unit::TestCase
   include Ferret::Index
+  include Ferret::Search
   include Ferret::Analysis
   include Ferret::Store
   include Ferret::Document
@@ -445,6 +446,42 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("second floor", index[1][:location])
     assert_equal("backpack", index[3][:product])
     assert_equal("first floor", index[2][:location])
+    index.close
+  end
+
+  def test_sortby_date
+    data = [
+      {:content => "one", :date => "20051023"},
+      {:content => "two", :date => "19530315"},
+      {:content => "three four", :date => "19390912"},
+      {:content => "one", :date => "19770905"},
+      {:content => "two", :date => "19810831"},
+      {:content => "three", :date => "19790531"},
+      {:content => "one", :date => "19770725"},
+      {:content => "two", :date => "19751226"},
+      {:content => "three", :date => "19390912"}
+    ]
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
+    data.each { |doc|
+      document = Document.new
+      doc.each_pair do |key, value|
+        document << Field.new(key.to_s, value, Field::Store::YES, Field::Index::TOKENIZED)
+      end
+      index << document
+    }
+    sf_date = SortField.new("date", {:sort_type => SortField::SortType::STRING})
+    top_docs = index.search("one", :sort => [sf_date, SortField::FIELD_SCORE])
+    assert_equal(3, top_docs.size)
+    assert_equal("19770725", index[top_docs.score_docs[0].doc][:date])
+    assert_equal("19770905", index[top_docs.score_docs[1].doc][:date])
+    assert_equal("20051023", index[top_docs.score_docs[2].doc][:date])
+    top_docs = index.search("one two three four",
+                            :sort => [sf_date, SortField::FIELD_SCORE])
+    assert_equal("19390912", index[top_docs.score_docs[0].doc][:date])
+    assert_equal("three four", index[top_docs.score_docs[0].doc][:content])
+    assert_equal("19390912", index[top_docs.score_docs[1].doc][:date])
+    assert_equal("three", index[top_docs.score_docs[1].doc][:content])
+    assert_equal("19530315", index[top_docs.score_docs[2].doc][:date])
     index.close
   end
 
