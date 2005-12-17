@@ -575,27 +575,28 @@ module Ferret::Index
         @writer = IndexWriter.new(@dir, @options)
       end
 
+      # returns the new reader if one is opened
       def ensure_reader_open()
         raise "tried to use a closed index" if not @open
         if @reader
           if not @reader.latest?
-            @reader = IndexReader.open(@dir, false)
+            return @reader = IndexReader.open(@dir, false)
           end
-          return
+        else
+          if @writer
+            @writer.close
+            @writer = nil
+          end
+          return @reader = IndexReader.open(@dir, false)
         end
-
-        if @writer
-          @writer.close
-          @writer = nil
-        end
-        @reader = IndexReader.open(@dir, false)
+        return false
       end
 
       def ensure_searcher_open()
         raise "tried to use a closed index" if not @open
-        return if @searcher
-        ensure_reader_open()
-        @searcher = IndexSearcher.new(@reader)
+        if ensure_reader_open() or not @searcher
+          @searcher = IndexSearcher.new(@reader)
+        end
       end
 
     private

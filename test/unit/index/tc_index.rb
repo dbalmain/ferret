@@ -317,12 +317,16 @@ class IndexTest < Test::Unit::TestCase
     index2 << "document 2"
     assert_equal(2, index2.size)
     assert_equal(2, index.size)
+    top_docs = index.search("content3")
+    assert_equal(0, top_docs.size)
 
     iw = IndexWriter.new(fs_path, :analyzer => WhiteSpaceAnalyzer.new())
     doc = Document.new
     doc << Field.new("f", "content3", Field::Store::YES, Field::Index::TOKENIZED)
     iw << doc
     iw.close()
+    top_docs = index.search("content3")
+    assert_equal(1, top_docs.size)
     assert_equal(3, index.size)
     assert_equal("content3", index[2]["f"])
     index.close
