@@ -81,6 +81,7 @@ module Ferret::Search
                    reverse = false)
       fields = [fields] unless fields.is_a?(Array)
       @fields = fields
+      fields = fields.map {|field| field.is_a?(Symbol) ? field.to_s : field}
       if fields[0].is_a?(String)
         @fields = fields.map do |field|
           SortField.new(field, {:sort_type => SortField::SortType::AUTO,

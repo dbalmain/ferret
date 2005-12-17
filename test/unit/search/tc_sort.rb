@@ -32,14 +32,14 @@ class SortTest < Test::Unit::TestCase
   end
 
   def test_multi_fields()
-    sf1 = SortField.new("field", {:sort_type => SortField::SortType::INT,
+    sf1 = SortField.new("field", {:sort_type => SortField::SortType::INTEGER,
                                   :reverse => true})
     sf2 = SortField::FIELD_SCORE
     sf3 = SortField::FIELD_DOC
     s = Sort.new([sf1, sf2, sf3])
 
     assert_equal(3, s.fields.size)
-    assert_equal(SortField::SortType::INT, s.fields[0].sort_type)
+    assert_equal(SortField::SortType::INTEGER, s.fields[0].sort_type)
     assert_equal("field", s.fields[0].name)
     assert(s.fields[0].reverse?)
     assert_equal(SortField::FIELD_SCORE, s.fields[1])

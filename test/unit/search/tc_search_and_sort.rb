@@ -56,16 +56,16 @@ class SearchAndSortTest < Test::Unit::TestCase
     do_test_top_docs(is, q, [0,1,2,3,4,5,6,7,8,9], [SortField::FIELD_DOC])
 
     ## int
-    sf_int = SortField.new("int", {:sort_type => SortField::SortType::INT})
+    sf_int = SortField.new("int", {:sort_type => SortField::SortType::INTEGER, :reverse => true})
     do_test_top_docs(is, q, [0,1,6,5,9,4,8,2,7,3], [sf_int])
     do_test_top_docs(is, q, [0,1,6,5,9,8,4,7,2,3], [sf_int, SortField::FIELD_SCORE])
-    sf_int = SortField.new("int", {:sort_type => SortField::SortType::INT, :reverse => true})
+    sf_int = SortField.new("int", {:sort_type => SortField::SortType::INTEGER})
     do_test_top_docs(is, q, [3,2,7,4,8,5,9,1,6,0], [sf_int])
 
     ## float
-    sf_float = SortField.new("float", {:sort_type => SortField::SortType::FLOAT})
-    do_test_top_docs(is, q, [8,7,5,3,1,0,2,4,6,9], Sort.new([sf_float, SortField::FIELD_SCORE]))
     sf_float = SortField.new("float", {:sort_type => SortField::SortType::FLOAT, :reverse => true})
+    do_test_top_docs(is, q, [8,7,5,3,1,0,2,4,6,9], Sort.new([sf_float, SortField::FIELD_SCORE]))
+    sf_float = SortField.new("float", {:sort_type => SortField::SortType::FLOAT})
     do_test_top_docs(is, q, [9,6,4,2,0,1,3,5,7,8], Sort.new([sf_float, SortField::FIELD_SCORE]))
 
     ## str
@@ -74,11 +74,11 @@ class SearchAndSortTest < Test::Unit::TestCase
 
     ## auto
     do_test_top_docs(is, q, [0,9,1,8,2,7,3,6,4,5], Sort.new("string"))
-    do_test_top_docs(is, q, [0,1,6,5,9,4,8,2,7,3], Sort.new(["int"]))
-    do_test_top_docs(is, q, [8,7,5,3,1,0,2,4,6,9], Sort.new("float"))
-    do_test_top_docs(is, q, [9,6,4,2,0,1,3,5,7,8], Sort.new("float", true))
-    do_test_top_docs(is, q, [0,1,6,9,5,8,4,2,7,3], Sort.new(["int", "string"]))
-    do_test_top_docs(is, q, [3,7,2,4,8,5,9,6,1,0], Sort.new(["int", "string"], true))
+    do_test_top_docs(is, q, [3,2,7,4,8,5,9,1,6,0], Sort.new(["int"]))
+    do_test_top_docs(is, q, [9,6,4,2,0,1,3,5,7,8], Sort.new("float"))
+    do_test_top_docs(is, q, [8,7,5,3,1,0,2,4,6,9], Sort.new("float", true))
+    do_test_top_docs(is, q, [0,6,1,5,9,4,8,7,2,3], Sort.new(["int", "string"], true))
+    do_test_top_docs(is, q, [3,2,7,8,4,9,5,1,6,0], Sort.new(["int", "string"]))
   end
 
   LENGTH = SortField::SortType.new("length", lambda{|str| str.length})
@@ -87,11 +87,12 @@ class SearchAndSortTest < Test::Unit::TestCase
   def test_special_sorts
     is = IndexSearcher.new(@dir)
     q = TermQuery.new(Term.new("search", "findall"))
-    sf = SortField.new("float", {:sort_type => LENGTH})
+    sf = SortField.new("float", {:sort_type => LENGTH, :reverse => true})
     do_test_top_docs(is, q, [9,6,4,8,2,7,0,5,1,3], [sf])
-    sf = SortField.new("float", {:sort_type => LENGTH_MODULO})
+    sf = SortField.new("float", {:sort_type => LENGTH_MODULO, :reverse => true})
     do_test_top_docs(is, q, [1,3,6,4,8,2,7,0,5,9], [sf])
     sf = SortField.new("float", {:sort_type => LENGTH,
+                                 :reverse => true,
                                  :comparator => lambda{|i,j| (j%4) <=> (i%4)}})
     do_test_top_docs(is, q, [0,5,9,2,7,4,8,1,3,6], [sf])
   end

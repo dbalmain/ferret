@@ -469,8 +469,9 @@ class IndexTest < Test::Unit::TestCase
       end
       index << document
     }
-    sf_date = SortField.new("date", {:sort_type => SortField::SortType::STRING})
-    top_docs = index.search("one", :sort => [sf_date, SortField::FIELD_SCORE])
+    sf_date = SortField.new("date", {:sort_type => SortField::SortType::INTEGER})
+    #top_docs = index.search("one", :sort => [sf_date, SortField::FIELD_SCORE])
+    top_docs = index.search("one", :sort => Sort.new("date"))
     assert_equal(3, top_docs.size)
     assert_equal("19770725", index[top_docs.score_docs[0].doc][:date])
     assert_equal("19770905", index[top_docs.score_docs[1].doc][:date])

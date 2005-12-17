@@ -6,7 +6,7 @@ module Ferret::Search
     RELEVANCE = ScoreDocComparator.new() 
     class <<RELEVANCE
       def compare(i, j) 
-        return -(i.score <=> j.score)
+        return j.score <=> i.score
       end
       def sort_value(i) 
         return i.score
@@ -74,7 +74,7 @@ module Ferret::Search
       @sort_type = sort_type
     end
 
-    def compare(j, i) 
+    def compare(i, j) 
       return @index[i.doc] <=> @index[j.doc]
     end
     def sort_value(i) 
@@ -90,7 +90,7 @@ module Ferret::Search
       super(index, sort_type)
       @comparator = comparator
     end
-    def compare(j, i) 
+    def compare(i, j) 
       return @comparator.call(@index[i.doc], @index[j.doc])
     end
   end

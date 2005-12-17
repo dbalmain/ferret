@@ -2,8 +2,8 @@ module Ferret::Search
   # Abstract base class for sorting hits returned by a Query.
   # 
   # This class should only be used if the other SortField types (SCORE, DOC,
-  # STRING, INT, FLOAT) do not provide an adequate sorting.  It maintains an
-  # internal cache of values which could be quite large.  The cache is an
+  # STRING, INTEGER, FLOAT) do not provide an adequate sorting.  It maintains
+  # an internal cache of values which could be quite large.  The cache is an
   # array of Comparable, one for each document in the index.  There is a
   # distinct Comparable for each unique term in the field - if some documents
   # have the same term in the field, the cache array will have entries which

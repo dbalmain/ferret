@@ -37,7 +37,7 @@ module Ferret::Search
 
       # Sort using term values as encoded Integers.  Sort values are Integer
       # and lower values are at the front. 
-      INT = SortType.new("int", lambda{|str| str.to_i})
+      INTEGER = SortType.new("int", lambda{|str| str.to_i})
 
       # Sort using term values as encoded Floats.  Sort values are Float and
       # lower values are at the front. 

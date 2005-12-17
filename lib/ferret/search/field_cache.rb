@@ -192,7 +192,7 @@ module Ferret::Search
             termtext = term.text.strip
 
             if (termtext == termtext.to_i.to_s)
-              index = get_index(reader, field, SortField::SortType::INT)
+              index = get_index(reader, field, SortField::SortType::INTEGER)
             elsif (termtext == termtext.to_f.to_s or termtext == "%f"%termtext.to_f)
               index = get_index(reader, field, SortField::SortType::FLOAT)
             else

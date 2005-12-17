@@ -173,7 +173,7 @@ module Ferret::Search
       if (index.is_a?(FieldCache::StringIndex))
         return StringFieldComparator.new(index)
       elsif (index[0].is_a?(Integer)) 
-        return SimpleFieldComparator.new(index, SortField::SortType::INT)
+        return SimpleFieldComparator.new(index, SortField::SortType::INTEGER)
       elsif (index[0].is_a?(Float)) 
         return SimpleFieldComparator.new(index, SortField::SortType::FLOAT)
       else 
