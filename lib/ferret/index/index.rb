@@ -123,7 +123,11 @@ module Ferret::Index
       @key = [options[:key]].flatten if options[:key]
 
       if options[:path]
-        @dir = FSDirectory.new(options[:path], options[:create])
+        begin
+          @dir = FSDirectory.new(options[:path], options[:create])
+        rescue IOError => io
+          @dir = FSDirectory.new(options[:path], options[:create_if_missing])
+        end
         options[:close_dir] = true
       elsif options[:dir]
         @dir = options[:dir]

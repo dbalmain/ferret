@@ -23,10 +23,10 @@ module Ferret::Search
             term.text[0,prefix_length] != prefix_text)
             break
           end
-            tq = TermQuery.new(term)                        # found a match
-            tq.boost = boost()                              # set the boost
-            bq.add_query(tq, BooleanClause::Occur::SHOULD)  # add to query
-            #puts("added " + term)
+          tq = TermQuery.new(term)                        # found a match
+          tq.boost = boost()                              # set the boost
+          bq.add_query(tq, BooleanClause::Occur::SHOULD)  # add to query
+          #puts("added " + term)
         end while (enumerator.next?)
       ensure 
         enumerator.close()

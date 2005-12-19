@@ -4,6 +4,7 @@ module Ferret::Index
   # @author Anders Nielsen
   class MultipleTermDocPosEnum < TermDocEnum 
 
+    attr_accessor :doc, :freq
     class TermPositionsQueue < Ferret::Utils::PriorityQueue 
       def initialize(term_positions)
         super(term_positions.size)
@@ -74,14 +75,6 @@ module Ferret::Index
         end
       end
       return next?
-    end
-
-    def doc() 
-      return @doc
-    end
-
-    def freq() 
-      return @freq
     end
 
     def close()

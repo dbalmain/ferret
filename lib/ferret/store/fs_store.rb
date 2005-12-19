@@ -38,7 +38,7 @@ module Ferret::Store
       super()
       if create then FileUtils.mkdir_p(path) end
       if not File.directory?(path) then
-        raise "There is no directory: #{path}. Use create = true to create one"
+        raise IOError, "There is no directory: #{path}. Use create = true to create one"
       end
       @dir = Dir.new(path)
       # put the lock_dir here as well if no default exists.

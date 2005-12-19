@@ -123,16 +123,17 @@ module Ferret::Search
         query_expl = Explanation.new()
         query_expl.description = "query_weight(#{@query}), product of:"
 
-        boost_expl = Explanation.new(@query.boost(), "boost")
-        (query_expl << boost_expl) if (@query.boost() != 1.0)
-
+        boost = @query.boost()
+        if boost != 1.0
+          boost_expl = Explanation.new(boost, "boost")
+          query_expl << boost_expl
+        end
         query_expl << idf_expl
         
         query_norm_expl = Explanation.new(@query_norm,"query_norm")
         query_expl << query_norm_expl
         
-        query_expl.value =
-          boost_expl.value * idf_expl.value * query_norm_expl.value
+        query_expl.value = boost * @idf * @query_norm
 
         result << query_expl
        

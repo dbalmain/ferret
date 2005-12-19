@@ -127,7 +127,7 @@ module Ferret::Search
         query_norm_expl = Explanation.new(@query_norm, "query_norm")
         query_expl << query_norm_expl
         
-        query_expl.value = boost * @idf * query_norm_expl.value
+        query_expl.value = boost * @idf * @query_norm
 
         result << query_expl
        
@@ -150,15 +150,12 @@ module Ferret::Search
         field_expl << field_norm_expl
 
         field_expl.value = tf_expl.value * @idf * field_norm
-        
         result << field_expl
 
-        # combine them
-        result.value = query_expl.value * field_expl.value
-
-        if query_expl.value == 1.0
+        if (query_expl.value == 1.0)
           return field_expl
         else
+          result.value = query_expl.value * field_expl.value
           return result
         end
       end

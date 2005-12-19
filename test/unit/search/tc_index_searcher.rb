@@ -151,23 +151,6 @@ class IndexSearcherTest < Test::Unit::TestCase
     check_hits(pq, [1,11,14,16,17])
   end
 
-  def test_multi_phrase_query()
-    pq = MultiPhraseQuery.new()
-    t1 = Term.new("field", "quick")
-    t2 = Term.new("field", "brown")
-    t3 = Term.new("field", "fox")
-    pq << t1
-    pq << t2
-    pq << t3
-    check_hits(pq, [1])
-
-    t1b = Term.new("field", "fast")
-    pq.add(t1b, 0)
-    check_hits(pq, [1, 8])
-  end
-
-
-
   def test_range_query()
     rq = RangeQuery.new("date", "20051006", "20051010", true, true)
     check_hits(rq, [6,7,8,9,10])
@@ -226,7 +209,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     check_hits(wq, [4, 16])
   end
 
-  def test_prefix_query()
+  def test_multi_phrase_query()
     t11 = Term.new("field", "quick")
     t12 = Term.new("field", "fast")
     t21 = Term.new("field", "brown")
