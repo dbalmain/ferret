@@ -175,7 +175,7 @@ module Ferret::Document
       end
 
       # The name of the field (e.g., "date", "subject", "title", or "body")
-      @name = name
+      @name = name.to_s
 
       # the one and only data object for all different kind of field values
       @data = value

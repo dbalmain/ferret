@@ -453,6 +453,39 @@ class IndexTest < Test::Unit::TestCase
     index.close
   end
 
+  def test_index_multi_key_untokenized
+    data = [
+      {:id => 0, :table => "Product", :product => "tent"},
+      {:id => 0, :table => "location", :location => "first floor"},
+      {:id => 0, :table => "Product", :product => "super tent"},
+      {:id => 0, :table => "location", :location => "second floor"},
+      {:id => 1, :table => "Product", :product => "backback"},
+      {:id => 1, :table => "location", :location => "second floor"},
+      {:id => 1, :table => "location", :location => "first floor"},
+      {:id => 1, :table => "Product", :product => "rucksack"},
+      {:id => 1, :table => "Product", :product => "backpack"}
+    ]
+    index = Index.new(:analyzer => Analyzer.new,
+                      :key => ["id", "table"])
+    data.each do |dat|
+      doc = Document.new
+      dat.each_pair do |key, value|
+        if ([:id, :table].include?(key))
+          doc << Field.new(key, value, Field::Store::YES, Field::Index::UNTOKENIZED)
+        else
+          doc << Field.new(key, value, Field::Store::YES, Field::Index::TOKENIZED)
+        end
+      end
+      index << doc 
+    end
+    assert_equal(4, index.size)
+    assert_equal("super tent", index[0][:product])
+    assert_equal("second floor", index[1][:location])
+    assert_equal("backpack", index[3][:product])
+    assert_equal("first floor", index[2][:location])
+    index.close
+  end
+
   def test_sortby_date
     data = [
       {:content => "one", :date => "20051023"},

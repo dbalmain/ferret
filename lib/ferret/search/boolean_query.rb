@@ -82,7 +82,7 @@ module Ferret::Search
     # 
     # raises:: TooManyClauses if the new number of clauses exceeds the
     #          maximum clause number #max_clause_count()
-    def add_query(query, occur) 
+    def add_query(query, occur=BooleanClause::Occur::SHOULD) 
       add_clause(BooleanClause.new(query, occur))
     end
 
@@ -95,6 +95,7 @@ module Ferret::Search
       end
 
       @clauses << clause
+      self
     end
     alias :<< :add_clause
 

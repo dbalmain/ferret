@@ -76,7 +76,9 @@ module Ferret::Index
     #                        as an existing document, the existing document will
     #                        be replaced by the new object. This will slow
     #                        down indexing so it should not be used if
-    #                        performance is a concern.
+    #                        performance is a concern. You must make sure that
+    #                        your key/keys are either untokenized or that they
+    #                        are not broken up by the analyzer.
     # use_compound_file::    Uses a compound file to store the index. This
     #                        prevents an error being raised for having too
     #                        many files open at the same time. The default is
@@ -265,7 +267,10 @@ module Ferret::Index
 
         # delete existing documents with the same key
         if @key
-          query = @key.map {|field| "+#{field}:#{fdoc[field]}" }.join(" ")
+          query = @key.inject(BooleanQuery.new()) do |bq, field|
+            bq.add_query(TermQuery.new(Term.new(field, fdoc[field])), 
+                         BooleanClause::Occur::MUST)
+          end
           query_delete(query)
         end
 
