@@ -33,10 +33,11 @@ frt_term_alloc(VALUE klass)
 
 #define GET_TERM Term *term; Data_Get_Struct(self, Term, term)
 VALUE 
-frt_term_set(VALUE self, VALUE rfield, VALUE rtext)
+frt_term_set(VALUE self, VALUE rfield, VALUE urtext)
 {
   int tlen;
   GET_TERM;
+  VALUE rtext = StringValue(urtext);
 
   tlen = RSTRING(rtext)->len;
   term->field = rfield;
@@ -62,11 +63,13 @@ frt_term_get_text(VALUE self)
 }
 
 static VALUE 
-frt_term_set_text(VALUE self, VALUE rtext)
+frt_term_set_text(VALUE self, VALUE urtext)
 {
   int tlen;
   char *text;
   GET_TERM;
+  VALUE rtext = StringValue(urtext);
+
   tlen = RSTRING(rtext)->len;
   text = RSTRING(rtext)->ptr;
 
