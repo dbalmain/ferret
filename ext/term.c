@@ -37,7 +37,7 @@ frt_term_set(VALUE self, VALUE rfield, VALUE urtext)
 {
   int tlen;
   GET_TERM;
-  VALUE rtext = StringValue(urtext);
+  VALUE rtext = rb_obj_as_string(urtext);
 
   tlen = RSTRING(rtext)->len;
   term->field = rfield;
@@ -68,7 +68,7 @@ frt_term_set_text(VALUE self, VALUE urtext)
   int tlen;
   char *text;
   GET_TERM;
-  VALUE rtext = StringValue(urtext);
+  VALUE rtext = rb_obj_as_string(urtext);
 
   tlen = RSTRING(rtext)->len;
   text = RSTRING(rtext)->ptr;

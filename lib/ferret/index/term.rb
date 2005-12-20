@@ -19,7 +19,7 @@ module Ferret::Index
     # Constructs a Term with the given field and text
     def initialize(fld_name, txt)
       @field = fld_name
-      @text = txt
+      @text = txt.to_s
     end
 
     # Combines the hash() of the field and the text.
@@ -40,6 +40,10 @@ module Ferret::Index
     # Resets the field and text of a Term.
     def set!(fld_name, txt)
       initialize(fld_name, txt)
+    end
+
+    def text=(text)
+      @text = text.to_s
     end
 
     def to_s
