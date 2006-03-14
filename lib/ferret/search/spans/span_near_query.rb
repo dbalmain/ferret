@@ -49,7 +49,7 @@ module Ferret::Search::Spans
     def to_s(field = nil) 
       buffer = "span_near(["
       buffer << @clauses.map {|c| c.to_s(field)}.join(", ")
-      buffer << "], #{@stop}, #{@in_order})"
+      buffer << "], #{@slop}, #{@in_order})"
       return buffer
     end
 

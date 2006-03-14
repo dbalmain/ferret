@@ -7,8 +7,8 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
   include Ferret::Document
 
   INDEX_DIR = File.expand_path(File.join(File.dirname(__FILE__), "index"))
-  ITERATIONS = 100000
-  NUM_THREADS = 2
+  ITERATIONS = 100
+  NUM_THREADS = 10
   ANALYZER = Ferret::Analysis::Analyzer.new()
 
   def setup

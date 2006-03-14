@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id6e7f6ac20b', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e81', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -402,7 +402,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id6e7f6ac20
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id6e7f6ac20b
+..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e81
 
 ##### racc 1.4.4 generates ###
 
@@ -416,14 +416,14 @@ racc_reduce_table = [
  2, 28, :_reduce_6,
  2, 28, :_reduce_7,
  1, 28, :_reduce_8,
+ 1, 29, :_reduce_none,
+ 3, 29, :_reduce_10,
  1, 30, :_reduce_none,
- 3, 30, :_reduce_10,
- 1, 29, :_reduce_none,
- 3, 29, :_reduce_12,
- 1, 29, :_reduce_none,
- 1, 29, :_reduce_none,
- 1, 29, :_reduce_none,
- 1, 29, :_reduce_none,
+ 3, 30, :_reduce_12,
+ 1, 30, :_reduce_none,
+ 1, 30, :_reduce_none,
+ 1, 30, :_reduce_none,
+ 1, 30, :_reduce_none,
  1, 31, :_reduce_17,
  3, 31, :_reduce_18,
  2, 31, :_reduce_19,
@@ -461,15 +461,15 @@ racc_reduce_n = 48
 racc_shift_n = 78
 
 racc_action_table = [
-     8,    10,    60,    59,    75,    74,    50,    21,     2,    25,
-   -26,     7,     9,    41,    13,    15,    17,    19,     8,    10,
-     3,    43,    64,    26,   -26,    21,     2,    40,    38,     7,
-     9,    63,    13,    15,    17,    19,     8,    10,     3,    36,
-    46,    53,    37,    21,     2,    49,    34,     7,     9,    45,
+     8,    10,    67,    66,    75,    74,    50,    21,     2,    40,
+    25,     7,     9,    38,    13,    15,    17,    19,     8,    10,
+     3,    53,    46,    39,    26,    21,     2,    37,   -26,     7,
+     9,    45,    13,    15,    17,    19,     8,    10,     3,    43,
+    64,    49,   -26,    21,     2,    60,    59,     7,     9,    63,
     13,    15,    17,    19,    58,    57,     3,     8,    10,    31,
     33,    54,    55,    56,    21,     2,    44,    48,     7,     9,
-    61,    13,    15,    17,    19,    67,    66,     3,     8,    10,
-    31,    33,    62,    42,    65,    21,     2,    39,    30,     7,
+    61,    13,    15,    17,    19,    36,    62,     3,     8,    10,
+    31,    33,    34,    42,    65,    21,     2,    41,    30,     7,
      9,    70,    13,    15,    17,    19,     8,    10,     3,    71,
     72,    73,    24,    21,     2,    77,   nil,     7,     9,   nil,
     13,    15,    17,    19,    21,     2,     3,   nil,     7,     9,
@@ -480,61 +480,57 @@ racc_action_table = [
      3 ]
 
 racc_action_check = [
-     0,     0,    38,    38,    64,    64,    30,     0,     0,     6,
-    21,     0,     0,    17,     0,     0,     0,     0,     2,     2,
-     0,    21,    42,     6,    21,     2,     2,    17,    15,     2,
-     2,    42,     2,     2,     2,     2,    33,    33,     2,    13,
-    24,    34,    15,    33,    33,    28,    13,    33,    33,    24,
+     0,     0,    46,    46,    64,    64,    30,     0,     0,    17,
+     6,     0,     0,    15,     0,     0,     0,     0,     2,     2,
+     0,    34,    24,    17,     6,     2,     2,    15,    21,     2,
+     2,    24,     2,     2,     2,     2,    33,    33,     2,    21,
+    42,    28,    21,    33,    33,    38,    38,    33,    33,    42,
     33,    33,    33,    33,    37,    35,    33,    23,    23,    23,
     23,    35,    35,    35,    23,    23,    23,    26,    23,    23,
-    39,    23,    23,    23,    23,    46,    46,    23,    12,    12,
-    12,    12,    40,    19,    43,    12,    12,    16,    11,    12,
+    39,    23,    23,    23,    23,    13,    41,    23,    12,    12,
+    12,    12,    13,    19,    43,    12,    12,    18,    11,    12,
     12,    53,    12,    12,    12,    12,    31,    31,    12,    54,
     55,    56,     3,    31,    31,    72,   nil,    31,    31,   nil,
-    31,    31,    31,    31,    49,    49,    31,   nil,    49,    49,
-   nil,    49,    49,    49,    49,    25,    25,    49,   nil,    25,
-    25,   nil,    25,    25,    25,    25,     8,     8,    25,   nil,
-     8,     8,   nil,     8,     8,     8,     8,    10,    10,     8,
-   nil,    10,    10,   nil,    10,    10,    10,    10,   nil,   nil,
-    10 ]
+    31,    31,    31,    31,     8,     8,    31,   nil,     8,     8,
+   nil,     8,     8,     8,     8,    25,    25,     8,   nil,    25,
+    25,   nil,    25,    25,    25,    25,    10,    10,    25,   nil,
+    10,    10,   nil,    10,    10,    10,    10,    49,    49,    10,
+   nil,    49,    49,   nil,    49,    49,    49,    49,   nil,   nil,
+    49 ]
 
 racc_action_pointer = [
-    -3,   nil,    15,    92,   nil,   nil,     7,   nil,   126,   nil,
-   137,    88,    75,    29,   nil,    18,    78,     3,   nil,    73,
-   nil,     8,   nil,    54,    30,   115,    57,   nil,    43,   nil,
-     6,    93,   nil,    33,    28,    45,   nil,    44,   -19,    60,
-    72,   nil,    12,    74,   nil,   nil,    54,   nil,   nil,   104,
+    -3,   nil,    15,    92,   nil,   nil,     8,   nil,   104,   nil,
+   126,    88,    75,    65,   nil,     3,   nil,    -1,    78,    73,
+   nil,    26,   nil,    54,    12,   115,    57,   nil,    39,   nil,
+     6,    93,   nil,    33,     8,    45,   nil,    44,    24,    60,
+   nil,    66,    30,    74,   nil,   nil,   -19,   nil,   nil,   137,
    nil,   nil,   nil,    81,    89,    87,    82,   nil,   nil,   nil,
    nil,   nil,   nil,   nil,   -17,   nil,   nil,   nil,   nil,   nil,
    nil,   nil,    95,   nil,   nil,   nil,   nil,   nil ]
 
 racc_action_default = [
    -48,   -14,   -48,   -48,   -15,   -16,   -48,   -20,   -48,   -23,
-   -48,   -48,    -1,   -48,    -2,   -48,    -9,   -48,    -8,   -48,
+   -48,   -48,    -1,   -48,    -2,   -48,    -8,   -48,    -9,   -48,
    -11,   -17,   -13,   -48,   -48,   -48,   -48,    -6,   -48,    -7,
    -48,   -48,    -5,   -48,   -30,   -48,   -32,   -48,   -44,   -48,
-   -48,   -47,   -48,   -19,   -12,   -43,   -48,   -21,   -27,   -48,
+   -47,   -48,   -48,   -19,   -12,   -43,   -48,   -21,   -27,   -48,
     78,    -3,    -4,   -48,   -48,   -28,   -48,   -33,   -45,   -40,
-   -41,   -10,   -46,   -42,   -48,   -18,   -39,   -38,   -22,   -24,
+   -41,   -46,   -10,   -42,   -48,   -18,   -39,   -38,   -22,   -24,
    -31,   -35,   -48,   -34,   -37,   -36,   -25,   -29 ]
 
 racc_goto_table = [
-    27,    32,    29,    12,    68,    23,    11,    28,    76,    35,
-   nil,   nil,    32,   nil,   nil,   nil,   nil,    47,   nil,   nil,
-    51,   nil,    52,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,    69 ]
+    47,    32,    12,    27,    23,    29,    11,    68,    28,    76,
+    35,   nil,    32,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+    51,   nil,    52,   nil,    69 ]
 
 racc_goto_check = [
-     4,     3,     4,     2,    12,     2,     1,    13,    14,    15,
-   nil,   nil,     3,   nil,   nil,   nil,   nil,     4,   nil,   nil,
-     3,   nil,     3,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,     4 ]
+     5,     3,     2,     4,     2,     4,     1,    12,    13,    14,
+    15,   nil,     3,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
+     3,   nil,     3,   nil,     5 ]
 
 racc_goto_pointer = [
-   nil,     6,     3,   -11,    -8,   nil,   nil,   nil,   nil,   nil,
-   nil,   nil,   -43,    -2,   -61,    -4 ]
+   nil,     6,     2,   -11,    -5,   -25,   nil,   nil,   nil,   nil,
+   nil,   nil,   -40,    -1,   -60,    -3 ]
 
 racc_goto_default = [
    nil,   nil,   nil,    14,    16,    18,    20,    22,     1,     4,
@@ -617,8 +613,8 @@ Racc_token_to_s_table = [
 'top_query',
 'bool_query',
 'bool_clause',
-'query',
 'boosted_query',
+'query',
 'term_query',
 'field_query',
 'phrase_query',

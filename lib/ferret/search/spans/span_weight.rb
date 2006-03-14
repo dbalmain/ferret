@@ -6,7 +6,7 @@ module Ferret::Search::Spans
       @query = query
       @terms = query.terms()
 
-      @idf = @query.similarity(searcher).idf_phrase(@terms, searcher)
+      @idf = @similarity.idf_phrase(@terms, searcher)
     end
 
     attr_reader :query, :value

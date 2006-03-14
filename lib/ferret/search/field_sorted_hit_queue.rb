@@ -12,10 +12,10 @@ module Ferret::Search
 
     # Creates a hit queue sorted by the given list of fields.
     #
-    # reader::  Index to use.
+    # reader:: Index to use.
     # fields:: Field names, in priority order (highest priority first).
-    #          Cannot be +nil+ or empty.  size::  The number of hits to
-    #          retain.  Must be greater than zero.
+    #          Cannot be +nil+ or empty.
+    # size::   The number of hits to retain.  Must be greater than zero.
     # raises:: IOError
     def initialize(reader, fields, size)
       super(size)

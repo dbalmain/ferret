@@ -35,11 +35,11 @@ rule
                     add_default_clause(val[0], val[1])
                   }
                 ;
-  bool_clause   : REQ query
+  bool_clause   : REQ boosted_query
                   {
                     get_boolean_clause(val[1], BooleanClause::Occur::MUST)
                   }
-                | NOT query
+                | NOT boosted_query
                   {
                     get_boolean_clause(val[1], BooleanClause::Occur::MUST_NOT)
                   }

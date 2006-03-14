@@ -312,7 +312,7 @@ module Ferret::Store
       private
 
         def read_internal(b, offset, length)
-          @file.synchronize do
+          #@file.synchronize do
             position = pos()
             if position != @file.pos
               @file.seek(position)
@@ -322,7 +322,7 @@ module Ferret::Store
               raise EOFError, "Read past EOF in #{@file.path}"
             end
             b[offset, bytes.length] = bytes
-          end
+          #end
         end
 
         def seek_internal(pos)

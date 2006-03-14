@@ -54,7 +54,7 @@ module Ferret::Index
     #                        in-memory index which you'd like to read with
     #                        this class. If you want to create a new index,
     #                        you are better off passing in a path.
-    # close_dir::            This specifies whether you would this class to
+    # close_dir::            This specifies whether you want this class to
     #                        close the index directory when this class is
     #                        closed. This only has any meaning when you pass
     #                        in a directory object in the *dir* option, in
@@ -119,7 +119,6 @@ module Ferret::Index
     def initialize(options = {})
       super()
 
-      options[:default_search_field] &&= options[:default_search_field].to_s
       options[:default_field] &&= options[:default_field].to_s
       options[:create_if_missing] = true if options[:create_if_missing].nil? 
       @key = [options[:key]].flatten if options[:key]
@@ -407,7 +406,7 @@ module Ferret::Index
           document = doc(id)
           if new_val.is_a?(Hash)
             new_val.each_pair {|name, content| document[name] = content.to_s}
-          elsif new_val.is_a?(Document)
+          elsif new_val.is_a?(Ferret::Document::Document)
             document = new_val
           else
             document[@options[:default_field]] = new_val.to_s
@@ -487,6 +486,7 @@ module Ferret::Index
         @reader = nil
         @writer = nil
         @searcher = nil
+        @has_writes = false
       end
     end
 

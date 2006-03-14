@@ -4,7 +4,7 @@ class StandardAnalyzerTest < Test::Unit::TestCase
   include Ferret::Utils::StringHelper
   include Ferret::Analysis
 
-  def test_lettertokenizer()
+  def test_standard_analyzer()
     input = StringReader.new('D.Ba_l-n@gma-l.com AB&Sons Toys\'r\'us you\'re she\'s, #$%^$%*& job@dot I.B.M. the an AnD THEIR')
     sa = StandardAnalyzer.new()
     t = sa.token_stream("field", input)

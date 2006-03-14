@@ -56,16 +56,16 @@ module Ferret::Search
     # name:: Name of field to sort by.  Can be +nil+ if +sort_type+ is SCORE or
     #     DOC.
     #
-    # A hash with the followind values can also be supplied;
-    # sort_type:: Type of values in the terms.
-    # reverse:: True if natural order should be reversed.
-    # comparator:: a proc used to compare two values from the index. You can
-    #    also give this value to the SortType object that you pass.
-    def initialize(name = nil, args= {})
+    # An options hash with the followind values can also be supplied;
+    # sort_type::  Type of values in the terms.
+    # reverse::    True if natural order should be reversed.
+    # comparator:: A proc used to compare two values from the index. You can
+    #              also give this value to the SortType object that you pass.
+    def initialize(name = nil, options= {})
       @name = name.to_s if name
-      @sort_type = args[:sort_type]||SortType::AUTO
-      @reverse = args[:reverse]||false
-      @comparator = args[:comparator]||@sort_type.comparator
+      @sort_type = options[:sort_type]||SortType::AUTO
+      @reverse = options[:reverse]||false
+      @comparator = options[:comparator]||@sort_type.comparator
       if (@name == nil and @sort_type != SortType::DOC and
           @sort_type != SortType::SCORE)
         raise ArgumentError, "You must supply a field name for your sort field"

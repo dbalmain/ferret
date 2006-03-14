@@ -62,7 +62,7 @@ module Ferret::Search::Spans
           @length = finish() - start()      # compute new length
           @parent.total_length += @length   # add new length to total
 
-          if (@parent.max == nil or doc() > @parent.max.doc() or   # maintain max
+          if (@parent.max.nil? or doc() > @parent.max.doc() or   # maintain max
               (doc() == @parent.max.doc and finish() > @parent.max.finish))
             @parent.max = self
           end

@@ -252,14 +252,14 @@ module Ferret::Store
       # obtain the lock on the data source 
       def obtain(lock_timeout = 1) 
         MAX_ATTEMPTS.times do
-          @dir.synchronize do
+          #@dir.synchronize do
             # create a file if none exists. If one already exists
             # then someone beat us to the lock so return false
             if (! locked?) then
               @dir.create_output(@lock_file)
               return true
             end
-          end
+          #end
           # lock was not obtained so sleep for timeout then try again.
           sleep(lock_timeout)
         end
