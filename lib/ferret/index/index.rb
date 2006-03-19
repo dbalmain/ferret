@@ -32,10 +32,15 @@ module Ferret::Index
     #                        use the create_if_missing option.
     # default_field::        This specifies the default field that will be
     #                        used when you add a simple string to the index
-    #                        using #add_document. This will also be used for
-    #                        default_search_field unless you set it
+    #                        using #add_document or <<. This will also be used
+    #                        for default_search_field unless you set it
     #                        explicitly. The default for this value is the
-    #                        empty string "".
+    #                        string "id".
+    # id_field:              This field is as the field to search when doing
+    #                        searches on a term. For example, if you do a
+    #                        lookup by term "cat", ie index["cat"], this will
+    #                        be the field that is searched. This will default
+    #                        to default_field if not set.
     # default_search_field:: This specifies the field or fields that will be 
     #                        searched by the query parser. You can use a
     #                        string to specify one field, eg, "title". Or you
@@ -150,7 +155,8 @@ module Ferret::Index
         @auto_flush = @options[:auto_flush] || false
         @default_search_field = (@options[:default_search_field] || \
                                  @options[:default_field] || "*")
-        @default_field = @options[:default_field] || ""
+        @default_field = (@options[:default_field] || @options[:id_field] || "id").to_s
+        @id_field = (@options[:id_field] || @options[:default_field] || "id").to_s
         @options[:handle_parse_errors] = true if @options[:handle_parse_errors].nil?
         @open = true
         @qp = nil
@@ -325,7 +331,7 @@ module Ferret::Index
       @dir.synchronize do
         ensure_reader_open()
         if id.is_a?(String)
-          t = Term.new("id", id.to_s)
+          t = Term.new(@id_field, id.to_s)
           return @reader.get_document_with_term(t)
         elsif id.is_a?(Term)
           return @reader.get_document_with_term(id)
@@ -346,7 +352,7 @@ module Ferret::Index
         cnt = 0
         ensure_reader_open()
         if id.is_a?(String)
-          t = Term.new("id", id.to_s)
+          t = Term.new(@id_field, id.to_s)
           cnt = @reader.delete_docs_with_term(t)
         elsif id.is_a?(Term)
           cnt = @reader.delete_docs_with_term(id)

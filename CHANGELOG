@@ -1,0 +1,9 @@
+20060316:
+  * changed Token#term_text to Token#text
+  * changed Token#position_increment to Term#pos_inc
+  * changed order of args to Token.new. Now Term.new(text, start_offset,
+    end_offset, pos_inc=1, type="text"). NOTE: type does nothing.
+  * changed TermVectorOffsetInfo#start_offset to TermVectorOffsetInfo#start
+  * changed TermVectorOffsetInfo#end_offset to TermVectorOffsetInfo#end
+  * added :id_field option to Index::Index class.
+
