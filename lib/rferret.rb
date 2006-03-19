@@ -22,7 +22,7 @@
 #++
 # :include: ../TUTORIAL
 module Ferret
-  VERSION = '0.3.2'
+  VERSION = '0.9.0'
 end
 
 $ferret_pure_ruby = true
