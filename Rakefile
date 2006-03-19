@@ -215,8 +215,8 @@ end
 # Creating a release
 
 desc "Make a new release"
-task :prerelease => [:clobber, :all_tests, :parsers]
-task :package => [:prerelease]
+task :prerelease => [:all_tests, :clobber]
+task :package => [:prerelease] + EXT_SRC_DEST
 task :tag => [:prerelease]
 task :update_version => [:prerelease]
 task :release => [:tag, :update_version, :package] do
@@ -249,7 +249,7 @@ task :prerelease do
   end
 
   # Are all source files checked in?
-  data = `svn -q status`
+  data = `svn -q --ignore-externals status`
   unless data =~ /^$/
     fail "'svn -q status' is not clean ... do you have unchecked-in files?"
   end
