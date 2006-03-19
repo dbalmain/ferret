@@ -87,8 +87,10 @@ module Ferret::Search
           SortField.new(field, {:sort_type => SortField::SortType::AUTO,
                                 :reverse => reverse})
         end
-        @fields << SortField::FIELD_DOC if @fields.size == 1
       end
+      doc_sort_added = false
+      @fields.each {|f| doc_sort_added = true if f == SortField::FIELD_DOC }
+      @fields << SortField::FIELD_DOC if not doc_sort_added
     end
 
     # Represents sorting by computed relevance. Using this sort criteria returns

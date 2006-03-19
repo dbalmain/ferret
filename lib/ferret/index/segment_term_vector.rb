@@ -6,14 +6,14 @@ module Ferret::Index
     # to the terms in the array obtained from _terms_
     # method. Each location in the array contains the number of times this
     # term occurs in the document or the document field.
-    attr_reader :term_frequencies, :positions, :offsets
+    attr_reader :freqs, :positions, :offsets
 
     attr_reader :field, :terms
 
-    def initialize(field, terms, term_freqs, positions=nil, offsets=nil) 
+    def initialize(field, terms, freqs, positions=nil, offsets=nil) 
       @field = field
       @terms = terms
-      @term_frequencies = term_freqs
+      @freqs = freqs
       @positions = positions
       @offsets = offsets
     end
@@ -23,7 +23,7 @@ module Ferret::Index
       if @terms
         terms.each_with_index do |term, i|
           sb << ', ' if i > 0
-          sb << term + '/' + @term_frequencies[i].to_s
+          sb << term + '/' + @freqs[i].to_s
         end
       end
       sb << 'end'

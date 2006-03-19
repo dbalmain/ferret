@@ -9,7 +9,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/clean'
 require 'rake_utils/code_statistics'
-require 'lib/ferret'
+require 'lib/rferret'
 
 begin
   require 'rubygems'
@@ -30,18 +30,29 @@ def announce(msg='')
 end
 
 $VERBOSE = nil
-CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'])
-CLOBBER.include(FileList['**/*.so'], 'ext/Makefile')
+
+EXT = "ferret_ext.so"
+EXT_SRC = FileList["src/*/*.[ch]"]
+EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
+SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
 task :default => :all_tests
 desc "Run all tests"
-task :all_tests => [ :test_units, :test_functional ]
+task :all_tests => [ :test_runits, :test_cunits, :test_functional ]
 
 desc "Generate API documentation, and show coding stats"
 task :doc => [ :stats, :appdoc ]
 
-desc "run unit tests in test/unit"
-Rake::TestTask.new("test_units" => :parsers) do |t|
+desc "run unit tests in test/unit for pure ruby ferret"
+Rake::TestTask.new("test_runits" => :parsers) do |t|
+  t.ruby_opts = ["-r 'lib/rferret'"]
+  t.libs << "test/unit"
+  t.pattern = 'test/unit/ts_*.rb'
+  t.verbose = true
+end
+
+desc "run unit tests in test/unit for C ferret"
+Rake::TestTask.new("test_cunits" => :ext) do |t|
   t.libs << "test/unit"
   t.pattern = 'test/unit/t[cs]_*.rb'
   t.verbose = true
@@ -84,22 +95,31 @@ rd = Rake::RDocTask.new("appdoc") do |rdoc|
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
-EXT = "ferret_ext.so"
+EXT_SRC.each do |fn|
+  dest_fn = File.join("ext", File.basename(fn))
+  file dest_fn => fn do |t|
+    cp fn, dest_fn
+  end
+end
+
+CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'] + EXT_SRC_DEST)
+CLOBBER.include(FileList['**/*.so'], 'ext/Makefile')
 
 desc "Build the extension"
-task :ext => "ext/#{EXT}"
+task :ext => ["ext/#{EXT}"] + SRC
 
-file "ext/#{EXT}" => "ext/Makefile" do
+file "ext/#{EXT}" => ["ext/Makefile"] do
+  cp "ext/inc/lang.h", "ext/lang.h"
   sh "cd ext; make"
 end
 
-file "ext/Makefile" do
+file "ext/Makefile" => SRC do
   sh "cd ext; ruby extconf.rb"
 end
 
 # Make Parsers ---------------------------------------------------------------
 
-RACC_SRC = FileList["**/*.y"]
+RACC_SRC = FileList["lib/**/*.y"]
 RACC_OUT = RACC_SRC.collect { |fn| fn.sub(/\.y$/, '.tab.rb') }
 
 task :parsers => RACC_OUT
@@ -242,8 +262,8 @@ task :update_version => [:prerelease] do
     announce "No version change ... skipping version update"
   else
     announce "Updating Ferret version to #{PKG_VERSION}"
-    open("lib/ferret.rb") do |ferret_in|
-      open("lib/ferret.rb.new", "w") do |ferret_out|
+    open("lib/rferret.rb") do |ferret_in|
+      open("lib/rferret.rb.new", "w") do |ferret_out|
         ferret_in.each do |line|
           if line =~ /^  VERSION\s*=\s*/
             ferret_out.puts "  VERSION = '#{PKG_VERSION}'"
@@ -256,9 +276,9 @@ task :update_version => [:prerelease] do
     if ENV['RELTEST']
       announce "Release Task Testing, skipping commiting of new version"
     else
-      mv "lib/ferret.rb.new", "lib/ferret.rb"
+      mv "lib/rferret.rb.new", "lib/rferret.rb"
     end
-    sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/ferret.rb}
+    sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/rferret.rb}
   end
 end
 

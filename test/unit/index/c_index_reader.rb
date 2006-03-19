@@ -15,6 +15,47 @@ module IndexReaderCommon
 
     do_test_get_doc()
 
+    do_test_term_enum()
+  end
+
+  def do_test_term_enum()
+    te = @ir.terms
+
+    assert(te.next?)
+    assert_equal(Term.new("author", "Leo"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(te.next?)
+    assert_equal(Term.new("author", "Tolstoy"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(te.next?)
+    assert_equal(Term.new("body", "And"), te.term)
+    assert_equal(1, te.doc_freq)
+
+
+    assert(te.skip_to(Term.new("body", "Not")))
+    assert_equal(Term.new("body", "Not"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(te.next?)
+    assert_equal(Term.new("body", "Random"), te.term)
+    assert_equal(16, te.doc_freq)
+
+    assert(te.skip_to(Term.new("text", "which")))
+    assert(Term.new("text", "which"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(te.next?)
+    assert_equal(Term.new("title", "War And Peace"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(!te.next?)
+
+    te.close
+
+    te = @ir.terms_from(Term.new("body", "Not"))
+    assert_equal(Term.new("body", "Not"), te.term)
+    assert_equal(1, te.doc_freq)
+    assert(te.next?)
+    assert_equal(Term.new("body", "Random"), te.term)
+    assert_equal(16, te.doc_freq)
+    te.close
   end
 
   def do_test_term_doc_enum()
@@ -155,7 +196,7 @@ module IndexReaderCommon
 
     assert_equal("body", tv.field)
     assert_equal(["word1", "word2", "word3", "word4"], tv.terms)
-    assert_equal([3, 1, 4, 2], tv.term_frequencies)
+    assert_equal([3, 1, 4, 2], tv.freqs)
     assert_equal([[2, 4, 7], [3], [0, 5, 8, 9], [1,6]], tv.positions)
     assert_equal([[t(12,17), t(24,29), t(42,47)],
                   [t(18,23)],
@@ -489,15 +530,15 @@ class IndexReaderTest < Test::Unit::TestCase
     doc << Field.new("title", "this is the title DocField", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
     doc << Field.new("author", "this is the author field", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::WITH_POSITIONS_OFFSETS)
 
-    fis = FieldInfos.new()
-    fis << doc
-    assert_equal(4, fis.size)
+    #fis = FieldInfos.new()
+    #fis << doc
+    #assert_equal(4, fis.size)
 
-    fi = fis["tag"]
-    assert_equal(true, fi.indexed?)
-    assert_equal(true, fi.store_term_vector?)
-    assert_equal(true, fi.store_positions?)
-    assert_equal(true, fi.store_offsets?)
+    #fi = fis["tag"]
+    #assert_equal(true, fi.indexed?)
+    #assert_equal(true, fi.store_term_vector?)
+    #assert_equal(true, fi.store_positions?)
+    #assert_equal(true, fi.store_offsets?)
 
     iw << doc
     iw.close()
@@ -549,7 +590,7 @@ class IndexReaderTest < Test::Unit::TestCase
 
     assert_equal("body", tv.field)
     assert_equal(["word1", "word2", "word3", "word4"], tv.terms)
-    assert_equal([3, 1, 4, 2], tv.term_frequencies)
+    assert_equal([3, 1, 4, 2], tv.freqs)
     assert_equal([[2, 4, 7], [3], [0, 5, 8, 9], [1,6]], tv.positions)
     assert_equal([[t(12,17), t(24,29), t(42,47)],
                   [t(18,23)],

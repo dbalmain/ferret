@@ -1,20 +1,20 @@
 module Ferret::Index
   class TermVectorOffsetInfo 
-    attr_accessor :start_offset, :end_offset
+    attr_accessor :start, :end
 
-    def initialize(start_offset, end_offset) 
-      @end_offset = end_offset
-      @start_offset = start_offset
+    def initialize(start, endd) 
+      @end = endd
+      @start = start
     end
 
     def eql?(o) 
       return false if !o.instance_of?(TermVectorOffsetInfo)
-      @end_offset == o.end_offset and @start_offset == o.start_offset
+      @end == o.end and @start == o.start
     end
     alias :== :eql?
 
     def hash() 
-      29 * @start_offset + @end_offset
+      29 * @start + @end
     end
   end
 end

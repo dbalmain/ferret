@@ -145,7 +145,7 @@ module Ferret::Index
 
           vector.size.times do |j|
             add_term_internal(vector.terms[j],
-                              vector.term_frequencies[j],
+                              vector.freqs[j],
                               store_positions ? vector.positions[j] : nil,
                               store_offsets ? vector.offsets[j] : nil)
           end
@@ -247,11 +247,11 @@ module Ferret::Index
             # use delta encoding for offsets
             position = 0
             term.freq.times do |j|
-              @tvf.write_vint(term.offsets[j].start_offset - position)
+              @tvf.write_vint(term.offsets[j].start - position)
               #Save the diff between the two.
-              @tvf.write_vint(term.offsets[j].end_offset -
-                              term.offsets[j].start_offset)
-              position = term.offsets[j].end_offset()
+              @tvf.write_vint(term.offsets[j].end -
+                              term.offsets[j].start)
+              position = term.offsets[j].end()
             end
           end
         end

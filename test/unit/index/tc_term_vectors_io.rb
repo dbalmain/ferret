@@ -33,12 +33,12 @@ class TermVectorsIOTest < Test::Unit::TestCase
 
     assert_equal(2, tv.size)
     assert_equal("text1", tv.terms[0])
-    assert_equal(1, tv.term_frequencies[0])
+    assert_equal(1, tv.freqs[0])
     assert_equal(1, tv.positions[0][0])
     assert_equal(t(0,4), tv.offsets[0][0])
 
     assert_equal("text2", tv.terms[1])
-    assert_equal(2, tv.term_frequencies[1])
+    assert_equal(2, tv.freqs[1])
     assert_equal(3, tv.positions[1][0])
     assert_equal(t(5,10), tv.offsets[1][0])
     assert_equal(4, tv.positions[1][1])
@@ -77,7 +77,7 @@ class TermVectorsIOTest < Test::Unit::TestCase
 
     assert_equal(2, tv.size)
     assert_equal("word1", tv.terms[0])
-    assert_equal(3, tv.term_frequencies[0])
+    assert_equal(3, tv.freqs[0])
     assert_equal(1, tv.positions[0][0])
     assert_equal(5, tv.positions[0][1])
     assert_equal(8, tv.positions[0][2])
@@ -86,7 +86,7 @@ class TermVectorsIOTest < Test::Unit::TestCase
     assert_equal(t(45,50), tv.offsets[0][2])
 
     assert_equal("word2", tv.terms[1])
-    assert_equal(2, tv.term_frequencies[1])
+    assert_equal(2, tv.freqs[1])
     assert_equal(2, tv.positions[1][0])
     assert_equal(9, tv.positions[1][1])
     assert_equal(t(6,11), tv.offsets[1][0])

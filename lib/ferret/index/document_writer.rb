@@ -92,7 +92,7 @@ module Ferret::Index
 
           length = @field_lengths[field_number]     # length of field
           position = @field_positions[field_number] # position in field
-          position += @analyzer.position_increment_gap(field_name) if length > 0
+          position += @analyzer.pos_inc_gap(field_name) if length > 0
           offset = @field_offsets[field_number]     # offset field
 
           if field_info.indexed?
@@ -120,18 +120,18 @@ module Ferret::Index
               begin 
                 last_token = nil
                 while token = stream.next
-                  position += (token.position_increment - 1)
+                  position += (token.pos_inc - 1)
                   
                   if(field_info.store_offsets?())
                     add_position(field_name,
-                                 token.term_text(),
+                                 token.text(),
                                  position,
                                  TermVectorOffsetInfo.new(
                                    offset + token.start_offset(),
                                    offset + token.end_offset()))
                     position += 1
                   else
-                    add_position(field_name, token.term_text(), position, nil)
+                    add_position(field_name, token.text(), position, nil)
                     position += 1
                   end
                   

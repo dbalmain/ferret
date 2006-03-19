@@ -1,6 +1,6 @@
 module Ferret::Search
   # A query that matches all documents.
-  class MatchAllDocsQuery < Query 
+  class MatchAllQuery < Query 
 
     def initialize() 
       super
@@ -20,7 +20,7 @@ module Ferret::Search
       end
 
       def explain(doc) 
-        return Explanation.new(1.0, "MatchAllDocsQuery")
+        return Explanation.new(1.0, "MatchAllQuery")
       end
 
       def next? 
@@ -43,7 +43,7 @@ module Ferret::Search
       end
     end
 
-    class MatchAllDocsWeight < Weight 
+    class MatchAllWeight < Weight 
       attr_reader :query
       def initialize(query, searcher) 
         @query = query
@@ -71,7 +71,7 @@ module Ferret::Search
 
       def explain(reader, doc) 
         # explain query weight
-        query_expl = Explanation.new(1.0, "MatchAllDocsQuery")
+        query_expl = Explanation.new(1.0, "MatchAllQuery")
         boost_expl = Explanation.new(@query.boost, "boost")
         if (boost_expl.value != 1.0)
           query_expl << boost_expl
@@ -83,17 +83,17 @@ module Ferret::Search
     end
 
     def create_weight(searcher) 
-      return MatchAllDocsWeight.new(self, searcher)
+      return MatchAllWeight.new(self, searcher)
     end
 
     def to_s(field) 
-      buffer = "MatchAllDocsQuery"
+      buffer = "MatchAllQuery"
       buffer << "^#{boost}" if (boost() != 1.0) 
       return buffer
     end
 
     def eql?(o) 
-      return (o.instance_of?(MatchAllDocsQuery) and boost == o.boost)
+      return (o.instance_of?(MatchAllQuery) and boost == o.boost)
     end
     alias :== :eql?
 

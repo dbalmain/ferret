@@ -16,7 +16,10 @@ class IndexTest < Test::Unit::TestCase
 
   def check_results(index, query, expected)
     cnt = 0
+    #puts "#{query} - #{expected.inspect}"
+    #puts index.size
     index.search_each(query) do |doc, score|
+      #puts "doc-#{doc} score=#{score}"
       assert(expected.index(doc))
       cnt += 1
     end
@@ -136,7 +139,7 @@ class IndexTest < Test::Unit::TestCase
     do_test_index_with_hash(index)
     index.close
 
-    index = Index.new(:default_field => "def_field")
+    index = Index.new(:default_field => "def_field", :id_field => "id")
     do_test_index_with_doc_array(index)
     index.close
   end
@@ -144,7 +147,11 @@ class IndexTest < Test::Unit::TestCase
   def test_fs_index
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
-    assert_raise(Errno::ENOENT) {Index.new(:path => fs_path, :create_if_missing => false, :default_field => "def_field")}
+    assert_raise(StandardError) do
+      Index.new(:path => fs_path,
+                :create_if_missing => false,
+                :default_field => "def_field")
+    end
     index = Index.new(:path => fs_path, :default_field => "def_field")
     do_test_index_with_array(index)
     index.close
@@ -155,7 +162,9 @@ class IndexTest < Test::Unit::TestCase
     index.close
 
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
-    index = Index.new(:path => fs_path, :default_field => "def_field")
+    index = Index.new(:path => fs_path,
+                      :default_field => "def_field",
+                      :id_field => "id")
     do_test_index_with_doc_array(index)
     index.close
   end
@@ -377,7 +386,8 @@ class IndexTest < Test::Unit::TestCase
       {:id => 9, :cat => "/cat2/subcat5", :content => "content9"},
     ]
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
-                      :default_field => :content)
+                      :default_field => :content,
+                      :id_field => :id)
     data.each { |doc| index << doc }
     assert_equal(10, index.size)
     assert_equal("content5", index["5"][:content])
@@ -496,7 +506,7 @@ class IndexTest < Test::Unit::TestCase
       {:content => "three", :date => "19790531"},
       {:content => "one", :date => "19770725"},
       {:content => "two", :date => "19751226"},
-      {:content => "three", :date => "19390912"}
+      {:content => "four", :date => "19390912"}
     ]
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
     data.each { |doc|
@@ -518,8 +528,17 @@ class IndexTest < Test::Unit::TestCase
     assert_equal("19390912", index[top_docs.score_docs[0].doc][:date])
     assert_equal("three four", index[top_docs.score_docs[0].doc][:content])
     assert_equal("19390912", index[top_docs.score_docs[1].doc][:date])
-    assert_equal("three", index[top_docs.score_docs[1].doc][:content])
+    assert_equal("four", index[top_docs.score_docs[1].doc][:content])
     assert_equal("19530315", index[top_docs.score_docs[2].doc][:date])
+
+    top_docs = index.search("one two three four",
+                            :sort => [:date, :content])
+    assert_equal("19390912", index[top_docs.score_docs[0].doc][:date])
+    assert_equal("four", index[top_docs.score_docs[0].doc][:content])
+    assert_equal("19390912", index[top_docs.score_docs[1].doc][:date])
+    assert_equal("three four", index[top_docs.score_docs[1].doc][:content])
+    assert_equal("19530315", index[top_docs.score_docs[2].doc][:date])
+
     index.close
   end
 

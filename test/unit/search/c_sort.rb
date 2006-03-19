@@ -22,13 +22,14 @@ class SortTest < Test::Unit::TestCase
     assert_equal(SortField::FIELD_DOC, s.fields[1])
 
     s = Sort.new(["field1", "field2", "field3"])
-    assert_equal(3, s.fields.size)
+    assert_equal(4, s.fields.size)
     assert_equal(SortField::SortType::AUTO, s.fields[0].sort_type)
     assert_equal("field1", s.fields[0].name)
     assert_equal(SortField::SortType::AUTO, s.fields[1].sort_type)
     assert_equal("field2", s.fields[1].name)
     assert_equal(SortField::SortType::AUTO, s.fields[2].sort_type)
     assert_equal("field3", s.fields[2].name)
+    assert_equal(SortField::FIELD_DOC, s.fields[3])
   end
 
   def test_multi_fields()

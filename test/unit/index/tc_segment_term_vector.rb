@@ -17,7 +17,7 @@ class SegmentTermVectorTest < Test::Unit::TestCase
 
   def test_index_of()
     assert_equal(0, @stv.index_of("Apples"))
-    assert_equal(4, @stv.term_frequencies[@stv.index_of("Apples")])
+    assert_equal(4, @stv.freqs[@stv.index_of("Apples")])
   end
 
   def test_indexes_of()
@@ -56,7 +56,7 @@ class SegmentTermVectorWithPosOffsetsTest < Test::Unit::TestCase
 
   def test_index_of()
     assert_equal(0, @stv.index_of("Apples"))
-    assert_equal(4, @stv.term_frequencies[@stv.index_of("Apples")])
+    assert_equal(4, @stv.freqs[@stv.index_of("Apples")])
   end
 
   def test_indexes_of()

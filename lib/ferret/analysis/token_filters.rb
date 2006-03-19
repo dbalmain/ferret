@@ -24,7 +24,7 @@ module Ferret::Analysis
         return nil
       end
 
-      t.term_text = t.term_text.downcase()
+      t.text = t.text.downcase()
 
       return t
     end
@@ -50,7 +50,7 @@ module Ferret::Analysis
     def next()
       # return the first non-stop word found
       while token = @input.next()
-        return token if ! @stop_set.include?(token.term_text)
+        return token if ! @stop_set.include?(token.text)
       end
       return nil
     end
@@ -78,7 +78,7 @@ module Ferret::Analysis
       if (token == nil)
         return nil
       else
-        token.term_text = Stemmable.stem_porter(token.term_text)
+        token.text = Stemmable.stem_porter(token.text)
       end
       token
     end

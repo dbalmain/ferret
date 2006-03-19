@@ -30,8 +30,6 @@ class IndexWriterTest < Test::Unit::TestCase
   def test_add_document
     iw = IndexWriter.new(@dir, :analyzer => StandardAnalyzer.new(), :create => true)
     doc = IndexTestHelper.prepare_document()
-    infos = FieldInfos.new
-    infos << doc
     iw.add_document(doc)
     assert_equal(1, iw.doc_count)
     iw.close()
@@ -44,8 +42,6 @@ class IndexWriterTest < Test::Unit::TestCase
     iw.merge_factor = 3
     iw.min_merge_docs = 3
     docs = IndexTestHelper.prepare_book_list()
-    infos = FieldInfos.new
-    infos << docs[0]
     docs.each_with_index do |doc, i|
       #puts "Index doc " + i.to_s
       iw.add_document(doc)

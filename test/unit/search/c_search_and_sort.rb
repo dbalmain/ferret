@@ -81,19 +81,19 @@ class SearchAndSortTest < Test::Unit::TestCase
     do_test_top_docs(is, q, [3,2,7,8,4,9,5,1,6,0], Sort.new(["int", "string"]))
   end
 
-  LENGTH = SortField::SortType.new("length", lambda{|str| str.length})
-  LENGTH_MODULO = SortField::SortType.new("length_mod", lambda{|str| str.length},
-                                          lambda{|i, j| (i%4) <=> (j%4)})
-  def test_special_sorts
-    is = IndexSearcher.new(@dir)
-    q = TermQuery.new(Term.new("search", "findall"))
-    sf = SortField.new("float", {:sort_type => LENGTH, :reverse => true})
-    do_test_top_docs(is, q, [9,6,4,8,2,7,0,5,1,3], [sf])
-    sf = SortField.new("float", {:sort_type => LENGTH_MODULO, :reverse => true})
-    do_test_top_docs(is, q, [1,3,6,4,8,2,7,0,5,9], [sf])
-    sf = SortField.new("float", {:sort_type => LENGTH,
-                                 :reverse => true,
-                                 :comparator => lambda{|i,j| (j%4) <=> (i%4)}})
-    do_test_top_docs(is, q, [0,5,9,2,7,4,8,1,3,6], [sf])
-  end
+  #LENGTH = SortField::SortType.new("length", lambda{|str| str.length})
+  #LENGTH_MODULO = SortField::SortType.new("length_mod", lambda{|str| str.length},
+  #                                        lambda{|i, j| (i%4) <=> (j%4)})
+  #def test_special_sorts
+  #  is = IndexSearcher.new(@dir)
+  #  q = TermQuery.new(Term.new("search", "findall"))
+  #  sf = SortField.new("float", {:sort_type => LENGTH, :reverse => true})
+  #  do_test_top_docs(is, q, [9,6,4,8,2,7,0,5,1,3], [sf])
+  #  sf = SortField.new("float", {:sort_type => LENGTH_MODULO, :reverse => true})
+  #  do_test_top_docs(is, q, [1,3,6,4,8,2,7,0,5,9], [sf])
+  #  sf = SortField.new("float", {:sort_type => LENGTH,
+  #                               :reverse => true,
+  #                               :comparator => lambda{|i,j| (j%4) <=> (i%4)}})
+  #  do_test_top_docs(is, q, [0,5,9,2,7,4,8,1,3,6], [sf])
+  #end
 end

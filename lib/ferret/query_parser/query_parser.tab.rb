@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e81', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54ac', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -170,22 +170,23 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
   end
 
   def get_bad_query(field, str)
-    tokens = []
-    stream = @analyzer.token_stream(field, str)
-    while token = stream.next
-      tokens << token
-    end
-    if tokens.length == 0
-      return TermQuery.new(Term.new(field, ""))
-    elsif tokens.length == 1
-      return TermQuery.new(Term.new(field, tokens[0].term_text))
-    else
-      bq = BooleanQuery.new()
-      tokens.each do |token|
-        bq << BooleanClause.new(TermQuery.new(Term.new(field, token.term_text)))
-      end
-      return bq
-    end
+    get_term_query(field, str)
+    #tokens = []
+    #stream = @analyzer.token_stream(field, str)
+    #while token = stream.next
+    #  tokens << token
+    #end
+    #if tokens.length == 0
+    #  return TermQuery.new(Term.new(field, ""))
+    #elsif tokens.length == 1
+    #  return TermQuery.new(Term.new(field, tokens[0].text))
+    #else
+    #  bq = BooleanQuery.new()
+    #  tokens.each do |token|
+    #    bq << BooleanClause.new(TermQuery.new(Term.new(field, token.text)))
+    #  end
+    #  return bq
+    #end
   end
 
   def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
@@ -201,11 +202,11 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
     if tokens.length == 0
       return TermQuery.new(Term.new(field, ""))
     elsif tokens.length == 1
-      return TermQuery.new(Term.new(field, tokens[0].term_text))
+      return TermQuery.new(Term.new(field, tokens[0].text))
     else
       pq = PhraseQuery.new()
       tokens.each do |token|
-        pq.add(Term.new(field, token.term_text), nil, token.position_increment)
+        pq.add(Term.new(field, token.text), nil, token.pos_inc)
       end
       return pq
     end
@@ -216,9 +217,9 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
     stream = @analyzer.token_stream(field, word)
     if token = stream.next # only makes sense to look at one term for fuzzy
       if min_sim
-        return FuzzyQuery.new(Term.new(field, token.term_text), min_sim.to_f)
+        return FuzzyQuery.new(Term.new(field, token.text), min_sim.to_f)
       else
-        return FuzzyQuery.new(Term.new(field, token.term_text))
+        return FuzzyQuery.new(Term.new(field, token.text))
       end
     else
       return TermQuery.new(Term.new(field, ""))
@@ -254,8 +255,8 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
         tokens << token
       end
       tokens.each do |token|
-        pq.add(Term.new(field, token.term_text), nil,
-               token.position_increment + pos_inc)
+        pq.add(Term.new(field, token.text), nil,
+               token.pos_inc + pos_inc)
         pos_inc = 0
       end
     end
@@ -278,7 +279,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
         position.each do |word|
           stream = @analyzer.token_stream(field, word)
           if token = stream.next # only put one term per word
-            terms << Term.new(field, token.term_text)
+            terms << Term.new(field, token.text)
           end
         end
         mpq.add(terms, nil, pos_inc + 1) # must go at least one forward
@@ -290,8 +291,8 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
           tokens << token
         end
         tokens.each do |token|
-          mpq.add([Term.new(field, token.term_text)], nil,
-                 token.position_increment + pos_inc)
+          mpq.add([Term.new(field, token.text)], nil,
+                 token.pos_inc + pos_inc)
           pos_inc = 0
         end
       end
@@ -300,8 +301,15 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
   end
 
   def get_phrase_query(positions, slop = nil)
-    if positions.size == 1 and not positions[0].is_a?(Array)
-      return _get_term_query(positions[0])
+    if positions.size == 1 
+      if positions[0].is_a?(Array)
+        clauses = positions[0].map { |word|
+          BooleanClause.new(_get_term_query(word), BooleanClause::Occur::SHOULD)
+        }
+        return get_boolean_query(clauses)
+      else
+        return _get_term_query(positions[0])
+      end
     end
 
     multi_phrase = false
@@ -402,7 +410,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e8
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id5aa2f49e81
+..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54ac
 
 ##### racc 1.4.4 generates ###
 

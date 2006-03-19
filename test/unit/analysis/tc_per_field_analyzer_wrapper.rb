@@ -25,7 +25,7 @@ class PerFieldAnalyzerWrapperTest < Test::Unit::TestCase
     assert_equal(Token.new('My', 22, 24), t.next())
     assert_equal(Token.new('e-mail', 25, 31), t.next())
     assert_equal(Token.new("ADDRESS", 32, 39), t.next())
-    if ( token = t.next()): puts token.term_text end
+    if ( token = t.next()): puts token.text end
     assert(! t.next())
     input.reset()
     t = aw.token_stream("body", input)

@@ -1,6 +1,5 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 
-
 class TermTest < Test::Unit::TestCase
   include Ferret::Index
   def test_term()
@@ -16,7 +15,6 @@ class TermTest < Test::Unit::TestCase
     assert(term1 == term4)
     assert(term1.eql?(term4))
     term4.set!("field3", "text3")
-    assert(term1 != term4)
+    assert_not_equal(term1, term4)
   end
-
 end

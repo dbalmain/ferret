@@ -28,8 +28,8 @@ module Index
 
     WRITE_LOCK_TIMEOUT = 1
     COMMIT_LOCK_TIMEOUT = 10
-    WRITE_LOCK_NAME = "write.lock"
-    COMMIT_LOCK_NAME = "commit.lock"
+    WRITE_LOCK_NAME = "write"
+    COMMIT_LOCK_NAME = "commit"
     DEFAULT_MERGE_FACTOR = 10 
     DEFAULT_MIN_MERGE_DOCS = 10
     DEFAULT_MAX_MERGE_DOCS = 0x7fffffff

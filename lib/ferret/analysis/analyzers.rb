@@ -28,10 +28,10 @@ module Ferret::Analysis
     # exact PhraseQuery matches, for instance, across Field instance boundaries.
     #
     # field_name::             Field name being indexed.
-    # position_increment_gap:: added to the next token emitted from
+    # pos_inc_gap:: added to the next token emitted from
     #                          #token_stream(String,Reader)
     #
-    def position_increment_gap(field_name)
+    def pos_inc_gap(field_name)
       return 0
     end
 

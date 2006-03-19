@@ -27,8 +27,7 @@ module Ferret::Document
     # Documents returned from IndexReader#document(int) and
     # Hits#doc(int) may thus not have the same value present as when this field
     # was indexed.
-    attr_accessor :boost, :data
-
+    attr_accessor :boost, :data 
     attr_reader :name
 
     # True iff the value of the field is to be stored in the index for
@@ -160,16 +159,16 @@ module Ferret::Document
     # this field more important.
     def initialize(name,
                    value,
-                   stored = Store::YES,
+                   store = Store::YES,
                    index = Index::UNTOKENIZED,
-                   store_term_vector = TermVector::NO,
+                   term_vector = TermVector::NO,
                    binary = false,
                    boost = 1.0)
-      if (index == Index::NO and stored == Store::NO)
+      if (index == Index::NO and store == Store::NO)
         raise ArgumentError, "it doesn't make sense to have a field that " +
           "is neither indexed nor stored"
       end
-      if (index == Index::NO && store_term_vector != TermVector::NO)
+      if (index == Index::NO && term_vector != TermVector::NO)
         raise ArgumentError, "cannot store term vector information for a " +
           "field that is not indexed"
       end
@@ -179,15 +178,15 @@ module Ferret::Document
 
       # the one and only data object for all different kind of field values
       @data = value
-      self.stored = stored
+      self.store = store
       self.index = index
-      self.store_term_vector = store_term_vector
+      self.term_vector = term_vector
       @binary = binary
       @boost = boost
     end
 
-    def stored=(stored)
-      case stored
+    def store=(store)
+      case store
       when Store::YES
         @stored = true
         @compressed = false
@@ -198,7 +197,7 @@ module Ferret::Document
         @stored = false
         @compressed = false
       else
-        raise "unknown stored parameter " + stored.to_s
+        raise "unknown stored parameter " + store.to_s
       end
     end
 
@@ -223,8 +222,8 @@ module Ferret::Document
       end
     end
 
-    def store_term_vector=(store_term_vector)
-      case store_term_vector
+    def term_vector=(term_vector)
+      case term_vector
       when TermVector::NO
         @store_term_vector = false
         @store_position = false
@@ -303,11 +302,11 @@ module Ferret::Document
       str << "indexed," if (@indexed)
       str << "tokenized," if (@tokenized)
       str << "store_term_vector," if (@store_term_vector)
-      str << "tv_offset," if (@store_offset)
-      str << "tv_position," if (@store_position)
+      str << "store_offsets," if (@store_offset)
+      str << "store_positions," if (@store_position)
       str << "omit_norms," if (@omit_norms)
       str << "binary," if (@binary)
-      str << "<#{@name}:#{data}>"
+      str << "<#{@name}:#{@binary ? '=bin_data=' : data}>"
     end  
   end
 end

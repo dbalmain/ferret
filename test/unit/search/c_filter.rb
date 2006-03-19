@@ -51,7 +51,7 @@ class FilterTest < Test::Unit::TestCase
 
   def test_range_filter
     is = IndexSearcher.new(@dir)
-    q = MatchAllDocsQuery.new()
+    q = MatchAllQuery.new()
     rf = RangeFilter.new("int", "2", "6", true, true)
     do_test_top_docs(is, q, [2,3,4,5,6], rf)
     rf = RangeFilter.new("int", "2", "6", true, false)
@@ -79,7 +79,7 @@ class FilterTest < Test::Unit::TestCase
 
   def test_query_filter()
     is = IndexSearcher.new(@dir)
-    q = MatchAllDocsQuery.new()
+    q = MatchAllQuery.new()
     qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
     do_test_top_docs(is, q, [0,2,4,6,8], qf)
     # test again to test caching doesn't break it
@@ -88,26 +88,26 @@ class FilterTest < Test::Unit::TestCase
     do_test_top_docs(is, q, [1,3,5,7,9], qf)
   end
 
-  def test_caching_wrapper_filter
-    is = IndexSearcher.new(@dir)
-    q = MatchAllDocsQuery.new()
-    rf = RangeFilter.new("int", "2", "6", true, true)
-    cf = CachingWrapperFilter.new(rf)
-    #puts "about to test cache"
-    do_test_top_docs(is, q, [2,3,4,5,6], cf)
-    do_test_top_docs(is, q, [2,3,4,5,6], cf)
-    #puts "finished_testing_cache"
-  end
-
-  def test_filtered_query
-    is = IndexSearcher.new(@dir)
-    q = MatchAllDocsQuery.new()
-    rf = RangeFilter.new("int", "2", "6", true, true)
-    rq = FilteredQuery.new(q, rf)
-    qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
-    do_test_top_docs(is, rq, [2,4,6], qf)
-    query = FilteredQuery.new(rq, qf)
-    rf2 = RangeFilter.new_more("int", "3")
-    do_test_top_docs(is, query, [4,6], rf2)
-  end
+  #def test_filtered_query
+  #  is = IndexSearcher.new(@dir)
+  #  q = MatchAllQuery.new()
+  #  rf = RangeFilter.new("int", "2", "6", true, true)
+  #  rq = FilteredQuery.new(q, rf)
+  #  qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
+  #  do_test_top_docs(is, rq, [2,4,6], qf)
+  #  query = FilteredQuery.new(rq, qf)
+  #  rf2 = RangeFilter.new_more("int", "3")
+  #  do_test_top_docs(is, query, [4,6], rf2)
+  #end
+  #def test_filtered_query
+  #  is = IndexSearcher.new(@dir)
+  #  q = MatchAllQuery.new()
+  #  rf = RangeFilter.new("int", "2", "6", true, true)
+  #  rq = FilteredQuery.new(q, rf)
+  #  qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
+  #  do_test_top_docs(is, rq, [2,4,6], qf)
+  #  query = FilteredQuery.new(rq, qf)
+  #  rf2 = RangeFilter.new_more("int", "3")
+  #  do_test_top_docs(is, query, [4,6], rf2)
+  #end
 end

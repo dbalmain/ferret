@@ -92,6 +92,9 @@ module Ferret::Search
       num_docs = options[:num_docs]||10
       max_size = first_doc + num_docs
       sort = options[:sort]
+      if sort and not sort.kind_of?(Sort)
+        sort = Sort.new(sort)
+      end
 
       if (num_docs <= 0)
         raise ArgumentError, "num_docs must be > 0 to run a search"

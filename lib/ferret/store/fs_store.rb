@@ -182,7 +182,7 @@ module Ferret::Store
 
     # Construct a Lock.
     def make_lock(name) 
-      FSLock.new(@lock_dir.path + "/" + lock_prefix() + name)
+      FSLock.new(@lock_dir.path + "/" + lock_prefix() + name + ".lck")
     end
 
     # Closes the store.
@@ -285,7 +285,11 @@ module Ferret::Store
       attr_reader   :length, :file
 
       def initialize(path)
-        @file = File.open(path, "rb")
+        begin
+          @file = File.open(path, "rb")
+        rescue Errno::ENOENT => e
+          raise StandardError.new(e.message)
+        end
         @file.extend(MonitorMixin)
         #class <<@file
         #  attr_accessor :ref_count
@@ -340,7 +344,7 @@ module Ferret::Store
 
       # returns the lock prefix for this directory
       def lock_prefix
-        LOCK_PREFIX + Digest::MD5.hexdigest(@dir.path)
+        LOCK_PREFIX
       end
 
       # Unfortunately, on Windows, Dir does not refresh when rewind is called

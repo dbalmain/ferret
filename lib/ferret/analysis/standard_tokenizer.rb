@@ -64,7 +64,7 @@ if __FILE__ == $0
   $stdin.each do |line|
     stk = Ferret::Analysis::StandardTokenizer.new(line)
     while tk = stk.next()
-      puts "    <" + tk.term_text + "> from " + tk.start_offset.to_s + " to " + tk.end_offset.to_s
+      puts "    <" + tk.text + "> from " + tk.start_offset.to_s + " to " + tk.end_offset.to_s
     end
   end
 end

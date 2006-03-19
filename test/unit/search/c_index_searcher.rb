@@ -11,7 +11,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     @dir = RAMDirectory.new()
     iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     @documents = IndexTestHelper.prepare_search_docs()
-    @documents.each { |doc| iw << doc; }
+    @documents.each { |doc| iw << doc }
     iw.close()
     @is = IndexSearcher.new(@dir)
   end
@@ -62,20 +62,20 @@ class IndexSearcherTest < Test::Unit::TestCase
   end
 
   def test_term_query
-    tq = TermQuery.new(Term.new("field", "word2"));
+    tq = TermQuery.new(Term.new("field", "word2"))
     tq.boost = 100
     check_hits(tq, [1,4,8])
     #puts @is.explain(tq, 1)
     #puts @is.explain(tq, 4)
     #puts @is.explain(tq, 8)
 
-    tq = TermQuery.new(Term.new("field", "2342"));
+    tq = TermQuery.new(Term.new("field", "2342"))
     check_hits(tq, [])
 
-    tq = TermQuery.new(Term.new("field", ""));
+    tq = TermQuery.new(Term.new("field", ""))
     check_hits(tq, [])
 
-    tq = TermQuery.new(Term.new("field", "word1"));
+    tq = TermQuery.new(Term.new("field", "word1"))
     top_docs = @is.search(tq)
     assert_equal(@documents.size, top_docs.total_hits)
     assert_equal(10, top_docs.score_docs.size)
@@ -85,12 +85,12 @@ class IndexSearcherTest < Test::Unit::TestCase
 
 
   def test_first_doc
-    tq = TermQuery.new(Term.new("field", "word1"));
+    tq = TermQuery.new(Term.new("field", "word1"))
     tq.boost = 100
     top_docs = @is.search(tq, {:num_docs => 100})
     expected = []
-    top_docs.score_docs.each do |score_doc|
-      expected << score_doc.doc
+    top_docs.score_docs.each do |sd|
+      expected << sd.doc
     end
 
     assert_raise(ArgumentError) { @is.search(tq, {:first_doc => -1}) }

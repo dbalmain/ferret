@@ -18,25 +18,25 @@ module Ferret::Analysis
   # end_offset:: is equal to one greater than the position of the last
   #              character corresponding of this token Note that the
   #              difference between @end_offset and @start_offset may not be
-  #              equal to @term_text.length(), as the term text may have been
+  #              equal to @text.length(), as the term text may have been
   #              altered by a stemmer or some other filter.
   class Token
     include Comparable
-    attr_accessor :term_text
-    attr_reader :position_increment, :start_offset, :end_offset, :type
+    attr_accessor :text
+    attr_reader :pos_inc, :start_offset, :end_offset, :type
 
     # Constructs a Token with the given term text, and start & end offsets.
     # The type defaults to "word."
-    def initialize(txt, so, eo, typ="word", pos_inc=1)
-      @term_text = txt
+    def initialize(txt, so, eo, pos_inc=1, typ="word")
+      @text = txt
       @start_offset = so
       @end_offset = eo
       @type = typ # lexical type
-      @position_increment = pos_inc
+      @pos_inc = pos_inc
     end
 
     def set!(txt, so, eo)
-      @term_text = txt
+      @text = txt
       @start_offset = so
       @end_offset = eo
       self
@@ -44,20 +44,20 @@ module Ferret::Analysis
 
     def eql?(o)
       return (o.instance_of?(Token) and @start_offset == o.start_offset and
-              @end_offset == o.end_offset and @term_text == o.term_text)
+              @end_offset == o.end_offset and @text == o.text)
     end
     alias :== :eql?
 
     # Tokens are sorted by the position in the text at which they occur, ie
     # the start_offset. If two tokens have the same start offset, (see
-    # position_increment=) then, they are sorted by the end_offset and then
+    # pos_inc=) then, they are sorted by the end_offset and then
     # lexically by the token text.
     def <=>(o)
       r = @start_offset <=> o.start_offset
       return r if r != 0
       r = @end_offset <=> o.end_offset
       return r if r != 0
-      r = @term_text <=> o.term_text
+      r = @text <=> o.text
       return r
     end
 
@@ -82,17 +82,17 @@ module Ferret::Analysis
     #   words and also sets the increment to the number of stop words removed
     #   before each non-stop word.  Then exact phrase queries will only match
     #   when the terms occur with no intervening stop words.
-    def position_increment=(pos_inc)
+    def pos_inc=(pos_inc)
       if (pos_inc < 0)
         raise ArgumentError, "Increment must be zero or greater: " + pos_inc
       end
-      @position_increment = pos_inc
+      @pos_inc = pos_inc
     end
 
     # Returns a string representation of the token with all the attributes.
     def to_s
-      buf = "#{term_text}:#{start_offset}->#{end_offset}"
-      buf << "(pos_inc=#{@position_increment})" if (@position_increment != 1)
+      buf = "#{text}:#{start_offset}->#{end_offset}"
+      buf << "(pos_inc=#{@pos_inc})" if (@pos_inc != 1)
       buf << "(type=#{@type})" if (@type != "word")
       buf
     end

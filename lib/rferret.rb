@@ -25,16 +25,12 @@ module Ferret
   VERSION = '0.3.2'
 end
 
-# try and load the C extension but it isn't necessary.
-begin
-  require 'ferret_ext'
-rescue Exception => e 
-  require 'ferret/utils'
-  require 'ferret/document'
-  require 'ferret/stemmers'
-  require 'ferret/analysis'
-  require 'ferret/store'
-  require 'ferret/index'
-  require 'ferret/search'
-  require 'ferret/query_parser'
-end
+$ferret_pure_ruby = true
+require 'ferret/utils'
+require 'ferret/document'
+require 'ferret/stemmers'
+require 'ferret/analysis'
+require 'ferret/store'
+require 'ferret/index'
+require 'ferret/search'
+require 'ferret/query_parser'

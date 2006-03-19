@@ -113,7 +113,8 @@ module Ferret::Search
     def to_s(field = nil) 
       buffer = ""
       buffer << "#{@term.field}:" if @term.field != field
-      buffer << "#{@term.text}~#{minimum_similarity}"
+      buffer << "#{@term.text}~"
+      buffer << minimum_similarity.to_s if minimum_similarity != 0.5
       buffer << "^#{boost()}" if (boost() != 1.0) 
       return buffer
     end

@@ -89,7 +89,7 @@ module Ferret::Store
 
     # Construct a Lock.
     def make_lock(name) 
-      RAMLock.new(LOCK_PREFIX + name, self)
+      RAMLock.new(LOCK_PREFIX + name + ".lck", self)
     end
 
 
