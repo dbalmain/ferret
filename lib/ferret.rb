@@ -22,7 +22,7 @@
 #++
 # :include: ../TUTORIAL
 module Ferret
-  VERSION = '0.3.2'
+  VERSION = '0.9.0'
 end
 
 # try and load the C extension but it isn't necessary.

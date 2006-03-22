@@ -88,17 +88,17 @@ class FilterTest < Test::Unit::TestCase
     do_test_top_docs(is, q, [1,3,5,7,9], qf)
   end
 
-  #def test_filtered_query
-  #  is = IndexSearcher.new(@dir)
-  #  q = MatchAllQuery.new()
-  #  rf = RangeFilter.new("int", "2", "6", true, true)
-  #  rq = FilteredQuery.new(q, rf)
-  #  qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
-  #  do_test_top_docs(is, rq, [2,4,6], qf)
-  #  query = FilteredQuery.new(rq, qf)
-  #  rf2 = RangeFilter.new_more("int", "3")
-  #  do_test_top_docs(is, query, [4,6], rf2)
-  #end
+  def test_filtered_query
+    is = IndexSearcher.new(@dir)
+    q = MatchAllQuery.new()
+    rf = RangeFilter.new("int", "2", "6", true, true)
+    rq = FilteredQuery.new(q, rf)
+    qf = QueryFilter.new(TermQuery.new(Term.new("switch", "on")))
+    do_test_top_docs(is, rq, [2,4,6], qf)
+    query = FilteredQuery.new(rq, qf)
+    rf2 = RangeFilter.new_more("int", "3")
+    do_test_top_docs(is, query, [4,6], rf2)
+  end
   #def test_filtered_query
   #  is = IndexSearcher.new(@dir)
   #  q = MatchAllQuery.new()

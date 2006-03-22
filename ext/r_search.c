@@ -30,6 +30,7 @@ static VALUE cWildCardQuery;
 static VALUE cFuzzyQuery;
 static VALUE cMatchAllQuery;
 static VALUE cConstantScoreQuery;
+static VALUE cFilteredQuery;
 static VALUE cSpanTermQuery;
 static VALUE cSpanFirstQuery;
 static VALUE cSpanNearQuery;
@@ -320,6 +321,9 @@ frt_get_q(Query *q)
         break;
       case PREFIX_QUERY:
         self = MK_QUERY(cPrefixQuery, q);
+        break;
+      case FILTERED_QUERY:
+        self = MK_QUERY(cFilteredQuery, q);
         break;
       case SPAN_TERM_QUERY:
         self = MK_QUERY(cSpanTermQuery, q);
@@ -739,6 +743,34 @@ frt_csq_init(VALUE self, VALUE rfilter)
   q = csq_create(filter);
 
   Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
+  object_add(q, self);
+  return self;
+}
+
+/****************************************************************************
+ *
+ * FilteredQuery Methods
+ *
+ ****************************************************************************/
+
+static void
+frt_fqq_mark(void *p)
+{
+  FilteredQuery *fq = (FilteredQuery *)((Query *)p)->data;
+  frt_gc_mark(fq->query);
+  frt_gc_mark(fq->filter);
+}
+
+static VALUE
+frt_fqq_init(VALUE self, VALUE rquery, VALUE rfilter)
+{
+  Query *sq, *q;
+  Filter *f;
+  Data_Get_Struct(rquery, Query, sq);
+  Data_Get_Struct(rfilter, Filter, f);
+  q = fq_create(sq, f);
+  q->destroy_all = false;
+  Frt_Wrap_Struct(self, &frt_fqq_mark, &frt_q_free, q);
   object_add(q, self);
   return self;
 }
@@ -2171,6 +2203,12 @@ Init_search(void)
   rb_define_alloc_func(cConstantScoreQuery, frt_data_alloc);
 
   rb_define_method(cConstantScoreQuery, "initialize", frt_csq_init, 1);
+
+  /* FilteredQuery */
+  cFilteredQuery = rb_define_class_under(mSearch, "FilteredQuery", cQuery);
+  rb_define_alloc_func(cFilteredQuery, frt_data_alloc);
+
+  rb_define_method(cFilteredQuery, "initialize", frt_fqq_init, 2);
 
   /* SpanTermQuery */
   cSpanTermQuery = rb_define_class_under(mSpans, "SpanTermQuery", cQuery);

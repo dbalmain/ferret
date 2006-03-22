@@ -36,6 +36,9 @@ EXT_SRC = FileList["src/*/*.[ch]"]
 EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
 SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
+CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'])
+CLOBBER.include(FileList['**/*.so'], 'ext/Makefile')
+
 task :default => :all_tests
 desc "Run all tests"
 task :all_tests => [ :test_runits, :test_cunits, :test_functional ]
@@ -101,9 +104,6 @@ EXT_SRC.each do |fn|
     cp fn, dest_fn
   end
 end
-
-CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'] + EXT_SRC_DEST)
-CLOBBER.include(FileList['**/*.so'], 'ext/Makefile')
 
 desc "Build the extension"
 task :ext => ["ext/#{EXT}"] + SRC
@@ -216,7 +216,8 @@ end
 
 desc "Make a new release"
 task :prerelease => [:all_tests, :clobber]
-task :package => [:prerelease] + EXT_SRC_DEST
+task :repackage => EXT_SRC_DEST
+task :package => EXT_SRC_DEST
 task :tag => [:prerelease]
 task :update_version => [:prerelease]
 task :release => [:tag, :update_version, :package] do
@@ -257,22 +258,27 @@ task :prerelease do
   announce "No outstanding checkins found ... OK"
 end
 
+def reversion(fn)
+  open(fn) do |ferret_in|
+    open(fn + ".new", "w") do |ferret_out|
+      ferret_in.each do |line|
+        if line =~ /^  VERSION\s*=\s*/
+          ferret_out.puts "  VERSION = '#{PKG_VERSION}'"
+        else
+          ferret_out.puts line
+        end
+      end
+    end
+  end
+end
+
 task :update_version => [:prerelease] do
   if PKG_VERSION == CURRENT_VERSION
     announce "No version change ... skipping version update"
   else
     announce "Updating Ferret version to #{PKG_VERSION}"
-    open("lib/rferret.rb") do |ferret_in|
-      open("lib/rferret.rb.new", "w") do |ferret_out|
-        ferret_in.each do |line|
-          if line =~ /^  VERSION\s*=\s*/
-            ferret_out.puts "  VERSION = '#{PKG_VERSION}'"
-          else
-            ferret_out.puts line
-          end
-        end
-      end
-    end
+    reversion("lib/ferret.rb")
+    reversion("lib/rferret.rb")
     if ENV['RELTEST']
       announce "Release Task Testing, skipping commiting of new version"
     else

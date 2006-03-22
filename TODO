@@ -4,11 +4,12 @@ Send suggestions for this list to mailto:dbalmain@gmail.com
 
 === To Do
 
-* Add the ability to persist an in memory index to Ferret::Index::Index
 * Make a dll for people on Windows
+* pure ruby ConstantScoreQuery
 
 === Done
 
+* Add the ability to persist an in memory index to Ferret::Index::Index
 * Add UTF-8 support
 * Multi Field Query
 * Test threading
