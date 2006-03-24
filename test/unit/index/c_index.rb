@@ -432,7 +432,7 @@ class IndexTest < Test::Unit::TestCase
       {:id => 1, :val => "four"},
     ]
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
-                      :key => "id")
+                      :key => :id)
     data.each { |doc| index << doc }
     assert_equal(2, index.size)
     assert_equal("two", index[0][:val])
@@ -453,7 +453,7 @@ class IndexTest < Test::Unit::TestCase
       {:id => 1, :table => "product", :product => "backpack"}
     ]
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
-                      :key => ["id", "table"])
+                      :key => [:id, :table])
     data.each { |doc| index << doc }
     assert_equal(4, index.size)
     assert_equal("super tent", index[0][:product])
@@ -476,7 +476,7 @@ class IndexTest < Test::Unit::TestCase
       {:id => 1, :table => "Product", :product => "backpack"}
     ]
     index = Index.new(:analyzer => Analyzer.new,
-                      :key => ["id", "table"])
+                      :key => [:id, :table])
     data.each do |dat|
       doc = Document.new
       dat.each_pair do |key, value|

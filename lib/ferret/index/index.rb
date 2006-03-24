@@ -126,7 +126,7 @@ module Ferret::Index
 
       options[:default_field] &&= options[:default_field].to_s
       options[:create_if_missing] = true if options[:create_if_missing].nil? 
-      @key = [options[:key]].flatten if options[:key]
+      @key = [options[:key]].flatten.map {|k| k.to_s} if options[:key]
 
       if options[:path]
         begin
