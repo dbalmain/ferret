@@ -155,8 +155,17 @@ module Ferret::Index
         @auto_flush = @options[:auto_flush] || false
         @default_search_field = (@options[:default_search_field] || \
                                  @options[:default_field] || "*")
-        @default_field = (@options[:default_field] || @options[:id_field] || "id").to_s
-        @id_field = (@options[:id_field] || @options[:default_field] || "id").to_s
+        if (@options[:id_field].nil? and
+            @options[:default_field].nil? and
+            @key and @key.size == 1)
+          @default_field = @key[0]
+          @id_field = @key[0]
+        else
+          @default_field =
+            (@options[:default_field] || @options[:id_field] || "id").to_s
+          @id_field =
+            (@options[:id_field] || @options[:default_field] || "id").to_s
+        end
         @options[:handle_parse_errors] = true if @options[:handle_parse_errors].nil?
         @open = true
         @qp = nil
@@ -261,8 +270,13 @@ module Ferret::Index
         elsif doc.is_a?(Hash)
           fdoc = Document.new
           doc.each_pair() do |field, text|
-            fdoc << Field.new(field.to_s, text.to_s,
+            if @key and @key.index(field.to_s)
+              fdoc << Field.new(field.to_s, text.to_s,
+                              Field::Store::YES, Field::Index::UNTOKENIZED)
+            else
+              fdoc << Field.new(field.to_s, text.to_s,
                               Field::Store::YES, Field::Index::TOKENIZED)
+            end
           end
         elsif doc.is_a?(Document)
           fdoc = doc
@@ -330,7 +344,7 @@ module Ferret::Index
     def doc(id)
       @dir.synchronize do
         ensure_reader_open()
-        if id.is_a?(String)
+        if id.kind_of?(String) or id.kind_of?(Symbol)
           t = Term.new(@id_field, id.to_s)
           return @reader.get_document_with_term(t)
         elsif id.is_a?(Term)
@@ -404,7 +418,7 @@ module Ferret::Index
     def update(id, new_val)
       @dir.synchronize do
         if id.is_a?(String)
-          query_update("id:#{id}", new_val)
+          query_update("#{@id_field}:#{id}", new_val)
         elsif id.is_a?(Term)
           query_update(TermQuery.new(id), new_val)
         elsif id.is_a?(Integer)
@@ -576,6 +590,14 @@ module Ferret::Index
         ensure_writer_open
         @writer.add_indexes([old_dir])
       end
+    end
+
+    def to_s
+      buf = ""
+      (0...(size)).each do |i|
+        buf << self[i].to_s + "\n" if not deleted?(i)
+      end
+      buf
     end
 
     protected

@@ -193,6 +193,26 @@ class IndexTest < Test::Unit::TestCase
     index.close
   end
 
+  def test_key_used_for_id_field
+    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
+    Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
+    data = [
+      {:my_id => "one two", :id => "me"},
+      {:my_id => "one", :field2 => "three"},
+      {:my_id => "two"},
+      {:my_id => "one", :field2 => "four"},
+      {:my_id => "one two"},
+      {:my_id => "two", :field2 => "three", "field3" => "four"},
+      {:my_id => "one"},
+      {:my_id => "two", :field2 => "three", "field3" => "five"}
+    ]
+    index = Index.new(:path => fs_path, :key => :my_id)
+    data.each {|doc| index << doc }
+    assert_equal(3, index.size)
+    assert_equal("three", index[:two][:field2])
+    index.close
+  end
+
   def test_merging_indexes
     data = [
       {"f" => "zero"},

@@ -146,7 +146,7 @@ module Ferret::Document
 
     # Prints the fields of a document for human consumption.#/
     def to_s()
-      return "Document<#{@fields.keys.join(" ")}>"
+      return "Document{\n  #{@fields.values.join("\n  ")}\n}"
     end
   end
 end

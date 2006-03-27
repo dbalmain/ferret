@@ -1477,19 +1477,24 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     }
 
     /* other options */
+    if (Qnil != (rval = rb_hash_aref(roptions, rkey_key))) {
+      ind->key = frt_get_fields(rval);
+    }
     /* by default id_field and def_field are the same but they can differ */
     if (Qnil != (rval = rb_hash_aref(roptions, rid_field_key))) {
       ind->id_field = estrdup(RSTRING(rb_obj_as_string(rval))->ptr);
     } else if (Qnil != (rval = rb_hash_aref(roptions, rdefault_field_key))) {
       ind->id_field = estrdup(RSTRING(rb_obj_as_string(rval))->ptr);
+    } else if (ind->key && (ind->key->size == 1)) {
+      /* if neither are set and key has only one field then use that field */
+      ind->id_field = estrdup(ind->key->elems[0]);
+      ind->def_field = estrdup(ind->key->elems[0]);
     }
+
     if (Qnil != (rval = rb_hash_aref(roptions, rdefault_field_key))) {
       ind->def_field = estrdup(RSTRING(rb_obj_as_string(rval))->ptr);
     } else if (Qnil != (rval = rb_hash_aref(roptions, rid_field_key))) {
       ind->def_field = estrdup(RSTRING(rb_obj_as_string(rval))->ptr);
-    }
-    if (Qnil != (rval = rb_hash_aref(roptions, rkey_key))) {
-      ind->key = frt_get_fields(rval);
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rauto_flush_key))) {
       ind->auto_flush = RTEST(rval);
@@ -1516,15 +1521,27 @@ frt_ind_close(VALUE self)
   return Qnil;
 }
 
+typedef struct HashToDocArg {
+  Document *doc;
+  Index *ind;
+} HashToDocArg;
+
 static int
-frt_hash_to_doc_i(VALUE key, VALUE value, Document *doc)
+frt_hash_to_doc_i(VALUE key, VALUE value, HashToDocArg *htda)
 {
   VALUE rfield, rdata;
   if (key == Qundef) return ST_CONTINUE;
   rfield = rb_obj_as_string(key);
   rdata = rb_obj_as_string(value);
-  doc_add_field(doc, df_create(RSTRING(rfield)->ptr, estrdup(RSTRING(rdata)->ptr),
-        DF_STORE_YES, DF_INDEX_TOKENIZED, DF_TERM_VECTOR_NO));
+  if (htda->ind->key && hs_exists(htda->ind->key, RSTRING(rfield)->ptr)) {
+    doc_add_field(htda->doc, df_create(RSTRING(rfield)->ptr,
+          estrdup(RSTRING(rdata)->ptr),
+          DF_STORE_YES, DF_INDEX_UNTOKENIZED, DF_TERM_VECTOR_NO));
+  } else {
+    doc_add_field(htda->doc, df_create(RSTRING(rfield)->ptr,
+          estrdup(RSTRING(rdata)->ptr),
+          DF_STORE_YES, DF_INDEX_TOKENIZED, DF_TERM_VECTOR_NO));
+  }
   return ST_CONTINUE;
 }
 
@@ -1534,8 +1551,11 @@ frt_rdoc_to_doc(Index *ind, VALUE rdoc, bool *close_doc)
   Document *doc = NULL;
   VALUE rstr;
   int i;
+  HashToDocArg htda;
 
   switch (TYPE(rdoc)) {
+    case T_SYMBOL:
+      rdoc = rb_obj_as_string(rdoc);
     case T_STRING:
       doc = doc_create();
       *close_doc = true;
@@ -1553,9 +1573,10 @@ frt_rdoc_to_doc(Index *ind, VALUE rdoc, bool *close_doc)
       }
       break;
     case T_HASH:
-      doc = doc_create();
+      htda.doc = doc = doc_create();
+      htda.ind = ind;
       *close_doc = true;
-      rb_hash_foreach(rdoc, frt_hash_to_doc_i, (VALUE)doc);
+      rb_hash_foreach(rdoc, frt_hash_to_doc_i, (VALUE)&htda);
       break;
     case T_DATA:
       Data_Get_Struct(rdoc, Document, doc);
@@ -1595,6 +1616,8 @@ frt_get_query_i(Index *ind, VALUE rquery, bool *destroy_query)
   Query *q = NULL;
 
   switch (TYPE(rquery)) {
+    case T_SYMBOL:
+      rquery = rb_obj_as_string(rquery);
     case T_STRING:
       q = index_get_query(ind, RSTRING(rquery)->ptr);
       *destroy_query = true;
@@ -1669,6 +1692,8 @@ frt_ind_doc_i(VALUE self, VALUE rid)
     case T_FIXNUM:
       doc = index_get_doc(ind, FIX2INT(rid));
       break;
+    case T_SYMBOL:
+      rid = rb_obj_as_string(rid);
     case T_STRING:
       doc = index_get_doc_id(ind, RSTRING(rid)->ptr);
       break;
@@ -1698,6 +1723,8 @@ frt_ind_delete(VALUE self, VALUE rid)
     case T_FIXNUM:
       index_delete(ind, FIX2INT(rid));
       break;
+    case T_SYMBOL:
+      rid = rb_obj_as_string(rid);
     case T_STRING:
       index_delete_id(ind, RSTRING(rid)->ptr);
       break;
@@ -1719,6 +1746,8 @@ frt_ind_query_delete(VALUE self, VALUE rquery)
   Query *q;
   GET_IND;
   switch (TYPE(rquery)) {
+    case T_SYMBOL:
+      rquery = rb_obj_as_string(rquery);
     case T_STRING:
       index_delete_query_str(ind, RSTRING(rquery)->ptr, NULL);
       break;
@@ -1750,6 +1779,8 @@ frt_ind_get_doc_num_i(Index *ind, VALUE rid)
     case T_FIXNUM:
       doc_num = FIX2INT(rid);
       break;
+    case T_SYMBOL:
+      rid = rb_obj_as_string(rid);
     case T_STRING:
       t.field = ind->id_field;
       t.text = RSTRING(rid)->ptr;
@@ -1787,6 +1818,8 @@ frt_rdoc_update_doc(Index *ind, VALUE rdoc, Document *doc)
   VALUE rstr;
   Document *odoc;
   switch (TYPE(rdoc)) {
+    case T_SYMBOL:
+      rdoc = rb_obj_as_string(rdoc);
     case T_STRING:
       doc_delete_fields(doc, ind->def_field);
       doc_add_field(doc, df_create(ind->def_field, estrdup(RSTRING(rdoc)->ptr),
