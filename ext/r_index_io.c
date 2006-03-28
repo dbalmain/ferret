@@ -615,6 +615,7 @@ frt_iw_optimize(VALUE self)
 void
 frt_ir_free(void *p)
 {
+  object_del(p);
   ir_close((IndexReader *)p);
 }
 
@@ -645,6 +646,7 @@ frt_ir_init(int argc, VALUE *argv, VALUE self)
   }
   ir = ir_open(store, close_dir);
   Frt_Wrap_Struct(self, &frt_ir_mark, &frt_ir_free, ir);
+  object_add(ir, self);
   return self;
 }
 
@@ -705,6 +707,7 @@ static VALUE
 frt_ir_close(VALUE self)
 {
   GET_IR;
+  object_del(ir);
   Frt_Unwrap_Struct(self);
   ir_close(ir);
   return Qnil;

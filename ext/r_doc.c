@@ -48,7 +48,7 @@ frt_field_init(int argc, VALUE *argv, VALUE self)
     case 5: store_tv = FIX2INT(rstore_tv);
     case 4: indexed = FIX2INT(rindexed);
     case 3: stored = FIX2INT(rstored);
-    case 2:
+    default:
       rname = rb_obj_as_string(rname);
       rdata = rb_obj_as_string(rdata);
       break;
@@ -277,12 +277,12 @@ frt_doc_alloc(VALUE klass)
 VALUE
 frt_get_doc(Document *doc)
 {
-  VALUE rfield, self;
+  VALUE rfield, self = Qnil;
   DocField *df;
   int i;
   HshEntry *he;
 
-  if (!doc || (self = object_get(doc)) != Qnil) return Qnil;
+  if (!doc || (self = object_get(doc)) != Qnil) return self;
 
   doc->free_data = NULL;
   /* Set all fields to not free their data */
@@ -292,14 +292,18 @@ frt_get_doc(Document *doc)
       ((Array *)he->value)->free_elem = NULL;
     }
   }
+
+  self = Data_Wrap_Struct(cDocument, &frt_doc_mark, &frt_doc_free, doc);
+
+  /* This code must come after the above so that there is something to mark
+   * the doc fields when garbage collection starts. */
   for (i = 0; i < doc->dfcnt; i++) {
     df = doc->df_arr[i];
     rfield = Data_Wrap_Struct(cField, NULL, &frt_field_free, df);
     object_add(df, rfield);
   }
-  self = Data_Wrap_Struct(cDocument, &frt_doc_mark, &frt_doc_free, doc);
-  object_add(doc, self);
 
+  object_add(doc, self);
   return self;
 }
 

@@ -5,7 +5,11 @@
 
 extern VALUE cTerm;
 extern VALUE cDirectory;
+
 extern VALUE cIndexReader;
+extern void frt_ir_free(void *p);
+extern void frt_ir_mark(void *p);
+
 
 static VALUE cScoreDoc;
 static VALUE cTopDocs;
@@ -1259,31 +1263,36 @@ frt_is_mark(void *p)
   frt_gc_mark(sea->ir->store);
 }
 
+#define FRT_GET_IR(rir, ir) do {\
+  rir = Data_Wrap_Struct(cIndexReader, &frt_ir_mark, &frt_ir_free, ir);\
+  object_add(ir, rir);\
+} while (0)
+
 static VALUE
 frt_is_init(VALUE self, VALUE obj)
 {
   Store *store = NULL;
   IndexReader *ir = NULL;
   Searcher *sea;
-  bool close_ir = true;
   if (TYPE(obj) == T_STRING) {
     store = open_fs_store(StringValueCStr(obj));
     ir = ir_open(store, true);
+    FRT_GET_IR(obj, ir);
   } else {
     Check_Type(obj, T_DATA);
     if (rb_obj_is_kind_of(obj, cDirectory) == Qtrue) {
       Data_Get_Struct(obj, Store, store);
       ir = ir_open(store, false);
+      FRT_GET_IR(obj, ir);
     } else if (rb_obj_is_kind_of(obj, cIndexReader) == Qtrue) {
       Data_Get_Struct(obj, IndexReader, ir);
-      close_ir = false;
     } else {
       rb_raise(rb_eArgError, "Unknown type for argument to IndexSearcher.new");
     }
   }
 
   sea = sea_create(ir);
-  sea->close_ir = close_ir;
+  sea->close_ir = false;
   Frt_Wrap_Struct(self, &frt_is_mark, &frt_is_free, sea);
   return self;
 }
@@ -1297,6 +1306,13 @@ frt_is_close(VALUE self)
   Frt_Unwrap_Struct(self);
   sea->close(sea);
   return Qnil;
+}
+
+static VALUE
+frt_is_get_reader(VALUE self, VALUE rterm)
+{
+  GET_SEA;
+  return object_get(sea->ir);
 }
 
 static VALUE
@@ -2401,6 +2417,7 @@ Init_search(void)
 
   rb_define_method(cIndexSearcher, "initialize", frt_is_init, 1);
   rb_define_method(cIndexSearcher, "close", frt_is_close, 0);
+  rb_define_method(cIndexSearcher, "reader", frt_is_get_reader, 0);
   rb_define_method(cIndexSearcher, "doc_freq", frt_is_doc_freq, 1);
   rb_define_method(cIndexSearcher, "doc_freqs", frt_is_doc_freqs, 1);
   rb_define_method(cIndexSearcher, "doc", frt_is_doc, 1);
