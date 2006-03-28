@@ -280,23 +280,16 @@ frt_get_doc(Document *doc)
   VALUE rfield, self = Qnil;
   DocField *df;
   int i;
-  HshEntry *he;
 
   if (!doc || (self = object_get(doc)) != Qnil) return self;
 
   doc->free_data = NULL;
-  /* Set all fields to not free their data */
-  for (i = 0; i <= doc->fields->mask; i++) {
-    he = &doc->fields->table[i];
-    if (he->key != NULL && he->key != dummy_key) {
-      ((Array *)he->value)->free_elem = NULL;
-    }
-  }
-
   self = Data_Wrap_Struct(cDocument, &frt_doc_mark, &frt_doc_free, doc);
 
-  /* This code must come after the above so that there is something to mark
-   * the doc fields when garbage collection starts. */
+  /* We add all the document's fields to the ruby object space so that they
+   * can be retrieved in ruby later. This code must come after the above
+   * wrapper which puts the document in the ruby object space so that there is
+   * something to mark the doc fields when garbage collection starts. */
   for (i = 0; i < doc->dfcnt; i++) {
     df = doc->df_arr[i];
     rfield = Data_Wrap_Struct(cField, NULL, &frt_field_free, df);

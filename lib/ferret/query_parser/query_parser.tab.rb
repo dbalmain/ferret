@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54ac', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id43674a2d90', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -227,7 +227,11 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54a
   end
 
   def get_wild_query(field, regexp)
-    WildcardQuery.new(Term.new(field, regexp))
+    if (regexp =~ /^([^?*]*)\*$/)
+      return PrefixQuery.new(Term.new(field, $1))
+    else
+      return WildcardQuery.new(Term.new(field, regexp))
+    end
   end
 
   def add_multi_word(words, word)
@@ -410,7 +414,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54a
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id0396ae54ac
+..end lib/ferret/query_parser/query_parser.y modeval..id43674a2d90
 
 ##### racc 1.4.4 generates ###
 

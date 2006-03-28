@@ -600,6 +600,22 @@ module Ferret::Index
       buf
     end
 
+    # Returns an Explanation that describes how +doc+ scored against
+    # +query+.
+    # 
+    # This is intended to be used in developing Similarity implementations,
+    # and, for good performance, should not be displayed with every hit.
+    # Computing an explanation is as expensive as executing the query over the
+    # entire index.
+    def explain(query, doc)
+      synchronize do
+        ensure_searcher_open()
+        query = process_query(query)
+
+        return @searcher.explain(query, doc)
+      end
+    end
+
     protected
       def ensure_writer_open()
         raise "tried to use a closed index" if not @open

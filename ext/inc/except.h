@@ -63,9 +63,9 @@ extern xcontext_t *xtop_context;
 
 #define XCATCHALL break; default: xcontext.in_finally = 1;
 
+//fprintf(stderr,"Error occured in %s, %d: %s\n", __FILE__, __LINE__, __func__);
 #define RAISE(xexcode, xmsg) \
   do {\
-    fprintf(stderr,"Error occured in %s, %d: %s\n", __FILE__, __LINE__, __func__);\
     if (!xtop_context) {\
       eprintf(EXCEPTION_CODE, "Error: exception %d not handled: %s", xexcode, xmsg);\
     } else if (!xtop_context->in_finally) {\

@@ -119,6 +119,14 @@ class QueryParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_prefix_query
+    parser = Ferret::QueryParser.new("xxx", :fields => ["xxx"],
+                                     :analyzer => Ferret::Analysis::StandardAnalyzer.new)
+    assert_equal(Ferret::Search::PrefixQuery, parser.parse("asdg*").class)
+    assert_equal(Ferret::Search::WildcardQuery, parser.parse("a?dg*").class)
+    assert_equal(Ferret::Search::WildcardQuery, parser.parse("a*dg*").class)
+    assert_equal(Ferret::Search::WildcardQuery, parser.parse("adg*c").class)
+  end
   
   def test_bad_queries
     parser = Ferret::QueryParser.new("xxx", :fields => ["f1", "f2"],

@@ -338,7 +338,11 @@ end
   end
 
   def get_wild_query(field, regexp)
-    WildcardQuery.new(Term.new(field, regexp))
+    if (regexp =~ /^([^?*]*)\*$/)
+      return PrefixQuery.new(Term.new(field, $1))
+    else
+      return WildcardQuery.new(Term.new(field, regexp))
+    end
   end
 
   def add_multi_word(words, word)
