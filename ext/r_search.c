@@ -63,6 +63,7 @@ static VALUE rclose_dir_key;
 static VALUE rkey_key;
 static VALUE ruse_compound_file_key;
 static VALUE rauto_flush_key;
+static VALUE rcheck_latest_key;
 /* from r_qparser.c */
 extern VALUE rhandle_parse_errors_key;
 extern VALUE roccur_default_key;
@@ -427,6 +428,15 @@ frt_rq_init(VALUE self, VALUE rfield, VALUE rlterm, VALUE ruterm,
   Query *q;
   char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
   char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
+  if (!lterm && !uterm) 
+    rb_raise(rb_eArgError, "The bounds of a range should not both be nil");
+  if (RTEST(rincl) && !lterm) 
+    rb_raise(rb_eArgError, "The lower bound should not be nil if it is inclusive");
+  if (RTEST(rincu) && !uterm) 
+    rb_raise(rb_eArgError, "The upper bound should not be nil if it is inclusive");
+  if (uterm && lterm && (strcmp(uterm, lterm) < 0))
+    rb_raise(rb_eArgError, "The upper bound should greater than the lower bound."
+       " %s > %s", lterm, uterm);
   rfield = rb_obj_as_string(rfield);
   q = rq_create(RSTRING(rfield)->ptr, lterm, uterm, RTEST(rincl), RTEST(rincu));
   Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
@@ -441,6 +451,8 @@ frt_rq_new_more(VALUE klass, VALUE rfield, VALUE rlterm, VALUE rincl)
   VALUE self;
   rfield = rb_obj_as_string(rfield);
   char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
+  if (!lterm) 
+    rb_raise(rb_eArgError, "The lower term must not be nil in a more than query");
   q = rq_create_more(RSTRING(rfield)->ptr, lterm, RTEST(rincl));
   self = Data_Wrap_Struct(klass, NULL, &frt_q_free, q);
   object_add(q, self);
@@ -454,6 +466,8 @@ frt_rq_new_less(VALUE klass, VALUE rfield, VALUE ruterm, VALUE rincu)
   VALUE self;
   rfield = rb_obj_as_string(rfield);
   char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
+  if (!uterm) 
+    rb_raise(rb_eArgError, "The upper term must not be nil in a less than query");
   q = rq_create_less(RSTRING(rfield)->ptr, uterm, RTEST(rincu));
   self = Data_Wrap_Struct(klass, NULL, &frt_q_free, q);
   object_add(q, self);
@@ -964,6 +978,15 @@ frt_rf_init(VALUE self, VALUE rfield, VALUE rlterm, VALUE ruterm,
   Filter *f;
   char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
   char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
+  if (!lterm && !uterm) 
+    rb_raise(rb_eArgError, "The bounds of a range should not both be nil");
+  if (RTEST(rincl) && !lterm) 
+    rb_raise(rb_eArgError, "The lower bound should not be nil if it is inclusive");
+  if (RTEST(rincu) && !uterm) 
+    rb_raise(rb_eArgError, "The upper bound should not be nil if it is inclusive");
+  if (uterm && lterm && (strcmp(uterm, lterm) < 0))
+    rb_raise(rb_eArgError, "The upper bound should greater than the lower bound."
+       " %s > %s", lterm, uterm);
   rfield = rb_obj_as_string(rfield);
   f = rfilt_create(RSTRING(rfield)->ptr, lterm, uterm, RTEST(rincl), RTEST(rincu));
   Frt_Wrap_Struct(self, NULL, &frt_f_free, f);
@@ -980,6 +1003,8 @@ frt_rf_new_more(int argc, VALUE *argv, VALUE klass)
   rb_scan_args(argc, argv, "21", &rfield, &rlterm, &rincl);
   rfield = rb_obj_as_string(rfield);
   char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
+  if (!lterm) 
+    rb_raise(rb_eArgError, "The lower term must not be nil in a more than filter");
   f = rfilt_create(RSTRING(rfield)->ptr, lterm, NULL, rincl != Qfalse, false);
   self = Data_Wrap_Struct(klass, NULL, &frt_f_free, f);
   object_add(f, self);
@@ -995,6 +1020,8 @@ frt_rf_new_less(int argc, VALUE *argv, VALUE klass)
   rb_scan_args(argc, argv, "21", &rfield, &ruterm, &rincu);
   rfield = rb_obj_as_string(rfield);
   char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
+  if (!uterm) 
+    rb_raise(rb_eArgError, "The upper term must not be nil in a less than filter");
   f = rfilt_create(RSTRING(rfield)->ptr, NULL, uterm, false, rincu != Qfalse);
   self = Data_Wrap_Struct(klass, NULL, &frt_f_free, f);
   object_add(f, self);
@@ -1237,6 +1264,7 @@ frt_is_init(VALUE self, VALUE obj)
   Store *store = NULL;
   IndexReader *ir = NULL;
   Searcher *sea;
+  bool close_ir = true;
   if (TYPE(obj) == T_STRING) {
     store = open_fs_store(StringValueCStr(obj));
     ir = ir_open(store, true);
@@ -1247,12 +1275,14 @@ frt_is_init(VALUE self, VALUE obj)
       ir = ir_open(store, false);
     } else if (rb_obj_is_kind_of(obj, cIndexReader) == Qtrue) {
       Data_Get_Struct(obj, IndexReader, ir);
+      close_ir = false;
     } else {
       rb_raise(rb_eArgError, "Unknown type for argument to IndexSearcher.new");
     }
   }
 
   sea = sea_create(ir);
+  sea->close_ir = close_ir;
   Frt_Wrap_Struct(self, &frt_is_mark, &frt_is_free, sea);
   return self;
 }
@@ -1317,9 +1347,13 @@ frt_is_search_internal(Query *query, VALUE roptions, Searcher *sea)
   if (Qnil != roptions) {
     if (Qnil != (rval = rb_hash_aref(roptions, rfirst_doc_key))) {
       first_doc = FIX2INT(rval);
+      if (first_doc < 0)
+        rb_raise(rb_eArgError, ":first_doc must be >= 0");
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rnum_docs_key))) {
       num_docs = FIX2INT(rval);
+      if (num_docs <= 0)
+        rb_raise(rb_eArgError, ":num_docs must be > 0");
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rfilter_key))) {
       Data_Get_Struct(rval, Filter, filter);
@@ -1499,6 +1533,9 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     if (Qnil != (rval = rb_hash_aref(roptions, rauto_flush_key))) {
       ind->auto_flush = RTEST(rval);
     }
+    if (Qnil != (rval = rb_hash_aref(roptions, rcheck_latest_key))) {
+      ind->check_latest = RTEST(rval);
+    }
 
   } else {
     ind = index_create(NULL, NULL, NULL, true);
@@ -1629,7 +1666,7 @@ frt_get_query_i(Index *ind, VALUE rquery, bool *destroy_query)
       rb_raise(rb_eArgError, "Can only handle a String or a Query.");
       break;
   }
-  //printf(">>>>>%s<<<<<\n", q->to_s(q, "def_field"));
+  //printf(">>>>>%s<<<<<\n", q->to_s(q, "file_name"));
   return q;
 }
 
@@ -1659,19 +1696,22 @@ frt_ind_search_each(int argc, VALUE *argv, VALUE self)
   VALUE rquery, roptions, rtotal_hits;
   bool destroy_query = false;
   GET_IND;
+
+
   rb_scan_args(argc, argv, "11", &rquery, &roptions);
-  ensure_searcher_open(ind);
 
   rb_thread_critical = Qtrue;
 
+  ensure_searcher_open(ind);
+
   q = frt_get_query_i(ind, rquery, &destroy_query);
+  //printf(">>>>>%s<<<<<\n", q->to_s(q, "file_name"));
   td = frt_is_search_internal(q, roptions, ind->sea);
   if (destroy_query) q->destroy(q);
 
   rtotal_hits = INT2FIX(td->total_hits);
+
   for (i = 0; i < td->size; i++) {
-    if (index_is_deleted(ind, td->hits[i]->doc))
-      rb_raise(rb_eStandardError, "FFFFFFFAAAAARRRRRRRRKKKKKKKKKKKKKKK");
     rb_yield_values(2, INT2FIX(td->hits[i]->doc),
         rb_float_new(td->hits[i]->score));
   }
@@ -1679,6 +1719,7 @@ frt_ind_search_each(int argc, VALUE *argv, VALUE self)
   rb_thread_critical = 0;
 
   td_destroy(td);
+
   return rtotal_hits;
 }
 
@@ -2044,6 +2085,8 @@ frt_ind_persist(int argc, VALUE *argv, VALUE self)
     ind->close_store = true;
   }
 
+  if (!create && !ind->store->exists(ind->store, "segments")) create = true;
+
   if (create) {
     ind->iw = iw_open(ind->store, NULL, create, false, false);
     ind->iw->use_compound_file = ind->use_compound_file;
@@ -2108,6 +2151,7 @@ Init_search(void)
   ruse_compound_file_key    = ID2SYM(rb_intern("use_compound_file"));
   rhandle_parse_errors_key  = ID2SYM(rb_intern("handle_parse_errors"));
   rauto_flush_key           = ID2SYM(rb_intern("auto_flush"));
+  rcheck_latest_key         = ID2SYM(rb_intern("check_latest"));
 
   /* ids */
   rdefault_min_similarity_id = rb_intern("default_min_similarity");

@@ -110,7 +110,15 @@ task :ext => ["ext/#{EXT}"] + SRC
 
 file "ext/#{EXT}" => ["ext/Makefile"] do
   cp "ext/inc/lang.h", "ext/lang.h"
+  cp "ext/inc/except.h", "ext/except.h"
   sh "cd ext; make"
+end
+
+file "ext/lang.h" => ["ext/inc/lang.h"] do
+  cp "ext/inc/lang.h", "ext/lang.h"
+end
+file "ext/except.h" => ["ext/inc/except.h"] do
+  cp "ext/inc/except.h", "ext/except.h"
 end
 
 file "ext/Makefile" => SRC do

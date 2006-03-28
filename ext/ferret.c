@@ -1,4 +1,5 @@
 #include "ferret.h"
+#include "except.h"
 #include "hash.h"
 
 /* Object Map */
@@ -22,15 +23,16 @@ VALUE mSpans;
 /*
 */
 
+xcontext_t *xtop_context = NULL;
 
 unsigned int
-object_hash(const void *key)
+value_hash(const void *key)
 {
   return (unsigned int)key;
 }
 
 int
-object_eq(const void *key1, const void *key2)
+value_eq(const void *key1, const void *key2)
 {
   return key1 == key2;
 }
@@ -85,10 +87,43 @@ frt_deref_free(void *p)
 }
 
 void
+frt_thread_once(int *once_control, void (*init_routine) (void))
+{
+  if (*once_control) {
+    init_routine();
+    *once_control = 0;
+  }
+}
+
+void
+frt_thread_key_create(thread_key_t *key, void (*destr_function) (void *))
+{
+  *key = h_new(&value_hash, &value_eq, NULL, destr_function);
+}
+
+void
+frt_thread_key_delete(thread_key_t key)
+{
+  h_destroy(key);
+}
+
+void
+frt_thread_setspecific(thread_key_t key, const void *pointer)
+{
+  h_set(key, (void *)rb_thread_current(), (void *)pointer);
+}
+
+void *
+frt_thread_getspecific(thread_key_t key)
+{
+  return h_get(key, (void *)rb_thread_current());
+}
+
+void
 Init_ferret_ext(void)
 {
   /* initialize object map */
-  object_map = h_new(&object_hash, &object_eq, NULL, NULL);
+  object_map = h_new(&value_hash, &value_eq, NULL, NULL);
 
   /* IDs */
 	id_new = rb_intern("new");

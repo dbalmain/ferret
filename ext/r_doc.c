@@ -281,6 +281,7 @@ frt_get_doc(Document *doc)
   DocField *df;
   int i;
   HshEntry *he;
+
   if (!doc || (self = object_get(doc)) != Qnil) return Qnil;
 
   doc->free_data = NULL;
@@ -298,6 +299,7 @@ frt_get_doc(Document *doc)
   }
   self = Data_Wrap_Struct(cDocument, &frt_doc_mark, &frt_doc_free, doc);
   object_add(doc, self);
+
   return self;
 }
 

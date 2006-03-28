@@ -123,9 +123,23 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 frt_qp_parse(VALUE self, VALUE rstr)
 {
+  char *msg = NULL;
+  volatile VALUE rq;
   GET_QP;
   rstr = rb_obj_as_string(rstr);
-  return frt_get_q(qp_parse(qp, RSTRING(rstr)->ptr));
+  TRY
+    rq = frt_get_q(qp_parse(qp, RSTRING(rstr)->ptr));
+    break;
+  default:
+    msg = xcontext.msg;
+    HANDLED();
+  XENDTRY
+
+  if (msg) {
+    rb_raise(cQueryParseException, msg);
+  }
+  
+  return rq;
 }
 
 /****************************************************************************
