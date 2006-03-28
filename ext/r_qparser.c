@@ -9,6 +9,7 @@ VALUE rallow_any_fields_key;
 VALUE rwild_lower_key;
 VALUE roccur_default_key;
 VALUE rdefault_slop_key;
+VALUE rclean_str_key;
 VALUE ranalyzer_key;
 
 extern VALUE frt_get_analyzer(Analyzer *a);
@@ -103,6 +104,9 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
     if (Qnil != (rval = rb_hash_aref(roptions, rdefault_slop_key))) {
       qp->def_slop = FIX2INT(rval);
     }
+    if (Qnil != (rval = rb_hash_aref(roptions, rclean_str_key))) {
+      qp->clean_str = RTEST(rval);
+    }
     if (Qnil != (rval = rb_hash_aref(roptions, ranalyzer_key))) {
       Data_Get_Struct(rval, Analyzer, analyzer);
     }
@@ -157,6 +161,7 @@ Init_qparser(void)
   rwild_lower_key = ID2SYM(rb_intern("wild_lower"));
   roccur_default_key = ID2SYM(rb_intern("occur_default"));
   rdefault_slop_key = ID2SYM(rb_intern("default_slop"));
+  rclean_str_key = ID2SYM(rb_intern("clean_string"));
   ranalyzer_key = ID2SYM(rb_intern("analyzer"));
 
   /* QueryParser */

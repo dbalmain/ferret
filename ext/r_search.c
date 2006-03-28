@@ -69,6 +69,7 @@ extern VALUE rhandle_parse_errors_key;
 extern VALUE roccur_default_key;
 extern VALUE rwild_lower_key;
 extern VALUE rdefault_slop_key;
+extern VALUE rclean_str_key;
 extern VALUE rallow_any_fields_key;
 extern VALUE ranalyzer_key;
 
@@ -1502,6 +1503,9 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rdefault_slop_key))) {
       ind->qp->def_slop = FIX2INT(rval);
+    }
+    if (Qnil != (rval = rb_hash_aref(roptions, rclean_str_key))) {
+      ind->qp->clean_str = RTEST(rval);
     }
 
     /* IndexWriter options */
