@@ -1,6 +1,6 @@
 $:. << 'lib'
 # Some parts of this Rakefile where taken from Jim Weirich's Rakefile for
-# Rake. Other parts where stolen from the David Heinemeier Hansson's Rails
+# Rake. Other parts where taken from the David Heinemeier Hansson's Rails
 # Rakefile. Both are under MIT-LICENSE. Thanks to both for their excellent
 # projects.
 
@@ -32,12 +32,13 @@ end
 $VERBOSE = nil
 
 EXT = "ferret_ext.so"
-EXT_SRC = FileList["src/*/*.[ch]"]
+EXT_SRC = FileList["src/**/*.[ch]"]
+
 EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
 SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
 CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'])
-CLOBBER.include(FileList['**/*.so'], 'ext/Makefile')
+CLOBBER.include(FileList['**/*.so'], 'ext/Makefile', EXT_SRC_DEST)
 
 task :default => :all_tests
 desc "Run all tests"
@@ -57,7 +58,7 @@ end
 desc "run unit tests in test/unit for C ferret"
 Rake::TestTask.new("test_cunits" => :ext) do |t|
   t.libs << "test/unit"
-  t.pattern = 'test/unit/t[cs]_*.rb'
+  t.pattern = 'test/unit/ts_*.rb'
   t.verbose = true
 end
 
@@ -102,6 +103,15 @@ EXT_SRC.each do |fn|
   dest_fn = File.join("ext", File.basename(fn))
   file dest_fn => fn do |t|
     cp fn, dest_fn
+    if fn =~ /stemmer/
+      # flatten the directory structure for lib_stemmer
+      open(dest_fn) do |in_f|
+        open(dest_fn + ".out", "w") do |out_f|
+          in_f.each {|line| out_f.write(line.sub(/(#include ["<])[.a-z_\/]*\//) {"#{$1}"})}
+        end
+      end
+      mv dest_fn + ".out", dest_fn
+    end
   end
 end
 

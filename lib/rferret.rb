@@ -1,3 +1,4 @@
+$: << File.dirname(__FILE__)
 #--
 # Copyright (c) 2005 David Balmain
 #

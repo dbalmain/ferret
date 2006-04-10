@@ -373,6 +373,118 @@ frt_tq_init(VALUE self, VALUE rterm)
 
 /****************************************************************************
  *
+ * BooleanClause Methods
+ *
+ ****************************************************************************/
+
+static void
+frt_bc_mark(void *p)
+{
+  BooleanClause *bc = (BooleanClause *)p;
+  frt_gc_mark(bc->query);
+}
+
+static void
+frt_bc_free(void *p)
+{
+  BooleanClause *bc = (BooleanClause *)p;
+  object_del(bc);
+  free(bc);  
+}
+
+static VALUE
+frt_get_bc(BooleanClause *bc)
+{
+  VALUE self = Data_Wrap_Struct(cBooleanClause, &frt_bc_mark, &frt_bc_free, bc);
+  object_add(bc, self);
+  return self;
+}
+
+static VALUE
+frt_bc_init(int argc, VALUE *argv, VALUE self)
+{
+  BooleanClause *bc;
+  VALUE rquery, roccur;
+  unsigned int occur = BC_SHOULD;
+  Query *sub_q;
+  if (rb_scan_args(argc, argv, "11", &rquery, &roccur) == 2) {
+    occur = FIX2INT(roccur);
+  }
+  Data_Get_Struct(rquery, Query, sub_q);
+  bc = bc_create(sub_q, occur);
+  Frt_Wrap_Struct(self, &frt_bc_mark, &frt_bc_free, bc);
+  object_add(bc, self);
+  return self;
+}
+
+#define GET_BC BooleanClause *bc; Data_Get_Struct(self, BooleanClause, bc)
+static VALUE
+frt_bc_get_query(VALUE self)
+{
+  GET_BC;
+  return object_get(bc->query);
+}
+
+static VALUE
+frt_bc_set_query(VALUE self, VALUE rquery)
+{
+  GET_BC;
+  Data_Get_Struct(rquery, Query, bc->query);
+  return rquery;
+}
+
+static VALUE
+frt_bc_is_required(VALUE self)
+{
+  GET_BC;
+  return bc->is_required ? Qtrue : Qfalse;
+}
+
+static VALUE
+frt_bc_is_prohibited(VALUE self)
+{
+  GET_BC;
+  return bc->is_prohibited ? Qtrue : Qfalse;
+}
+
+static VALUE
+frt_bc_set_occur(VALUE self, VALUE roccur)
+{
+  GET_BC;
+  bc_set_occur(bc, FIX2INT(roccur));
+  return roccur;
+}
+
+static VALUE
+frt_bc_to_s(VALUE self)
+{
+  VALUE rstr;
+  char *qstr, *ostr = "", *str;
+  int len;
+  GET_BC;
+  qstr = bc->query->to_s(bc->query, "");
+  switch (bc->occur) {
+    case BC_SHOULD:
+      ostr = "Should";
+      break;
+    case BC_MUST:
+      ostr = "Must";
+      break;
+    case BC_MUST_NOT:
+      ostr = "Must Not";
+      break;
+  }
+  len = strlen(ostr) + strlen(qstr) + 2;
+  str = ALLOC_N(char, len);
+  sprintf(str, "%s:%s", ostr, qstr);
+  rstr = rb_str_new(str, len);
+  free(qstr);
+  free(str);
+  return rstr;
+}
+
+/****************************************************************************
+ *
  * BooleanQuery Methods
  *
  ****************************************************************************/
@@ -384,7 +496,7 @@ frt_bq_mark(void *p)
   Query *q = (Query *)p;
   BooleanQuery *bq = (BooleanQuery *)q->data;
   for (i = 0; i < bq->clause_cnt; i++) {
-    frt_gc_mark(bq->clauses[i]->query);
+    frt_gc_mark(bq->clauses[i]);
   }
 }
 
@@ -416,8 +528,17 @@ frt_bq_add_query(int argc, VALUE *argv, VALUE self)
     occur = FIX2INT(roccur);
   }
   Data_Get_Struct(rquery, Query, sub_q);
-  bq_add_query(q, sub_q, occur);
-  return Qnil;
+  return frt_get_bc(bq_add_query(q, sub_q, occur));
+}
+
+static VALUE
+frt_bq_add_clause(VALUE self, VALUE rclause)
+{
+  BooleanClause *bc;
+  GET_Q;
+  Data_Get_Struct(rclause, BooleanClause, bc);
+  bq_add_clause(q, bc);
+  return rclause;
 }
 
 /****************************************************************************
@@ -2216,19 +2337,29 @@ Init_search(void)
 
   rb_define_method(cTermQuery, "initialize", frt_tq_init, 1);
 
+  /* BooleanQueryOccur */
+  cBooleanClause = rb_define_class_under(mSearch, "BooleanClause", rb_cObject);
+  rb_define_alloc_func(cBooleanClause, frt_data_alloc);
+  
+  rb_define_method(cBooleanClause, "initialize", frt_bc_init, -1);
+  rb_define_method(cBooleanClause, "query", frt_bc_get_query, 0);
+  rb_define_method(cBooleanClause, "query=", frt_bc_set_query, 1);
+  rb_define_method(cBooleanClause, "required?", frt_bc_is_required, 0);
+  rb_define_method(cBooleanClause, "prohibited?", frt_bc_is_prohibited, 0);
+  rb_define_method(cBooleanClause, "occur=", frt_bc_set_occur, 1);
+  rb_define_method(cBooleanClause, "to_s", frt_bc_to_s, 0);
+
   /* BooleanQuery */
   cBooleanQuery = rb_define_class_under(mSearch, "BooleanQuery", cQuery);
   rb_define_alloc_func(cBooleanQuery, frt_data_alloc);
 
   rb_define_method(cBooleanQuery, "initialize", frt_bq_init, -1);
   rb_define_method(cBooleanQuery, "add_query", frt_bq_add_query, -1);
+  rb_define_method(cBooleanQuery, "add_clause", frt_bq_add_clause, 1);
 
   rb_define_const(cBooleanQuery, "MUST", INT2FIX(BC_MUST));
   rb_define_const(cBooleanQuery, "MUST_NOT", INT2FIX(BC_MUST_NOT));
   rb_define_const(cBooleanQuery, "SHOULD", INT2FIX(BC_SHOULD));
-
-  /* BooleanQueryOccur */
-  cBooleanClause = rb_define_class_under(mSearch, "BooleanClause", rb_cObject);
 
   /* BooleanQueryOccur */
   cBCOccur = rb_define_class_under(cBooleanClause, "Occur", cQuery);

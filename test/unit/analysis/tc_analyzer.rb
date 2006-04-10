@@ -2,10 +2,9 @@ require File.dirname(__FILE__) + "/../../test_helper"
 
 class AnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
-  include Ferret::Utils::StringHelper
 
   def test_analyzer()
-    input = StringReader.new('DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#@$')
+    input = 'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#@$'
     a = Analyzer.new()
     t = a.token_stream("fieldname", input)
     assert_equal(Token.new("dbalmain", 0, 8), t.next())

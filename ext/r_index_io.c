@@ -456,7 +456,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
 
     rval = rb_hash_aref(roptions, ranalyzer_key);
     if (rval == Qnil) {
-      analyzer = standard_analyzer_create();
+      analyzer = mb_standard_analyzer_create(true);
     } else {
       Data_Get_Struct(rval, Analyzer, analyzer);
       close_analyzer = false;
