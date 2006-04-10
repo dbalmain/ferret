@@ -57,6 +57,15 @@ object_add2(void *key, VALUE obj, const char *file, int line, const char *func)
 }
 
 void
+//object_set(void *key, VALUE obj)
+object_set2(void *key, VALUE obj, const char *file, int line, const char *func)
+{
+  //if (!h_get(object_map, key))
+    //printf("seting %d. now contains %d %s:%d:%s\n", (int)key, ++hash_cnt, file, line, func);
+  h_set(object_map, key, (void *)obj);
+}
+
+void
 //object_del(void *key)
 object_del2(void *key, const char *file, int line, const char *func)
 {
