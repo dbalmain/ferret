@@ -10,6 +10,11 @@ static VALUE cWhiteSpaceTokenizer;
 static VALUE cAsciiStandardTokenizer;
 static VALUE cStandardTokenizer;
 
+static VALUE cAsciiLowerCaseFilter;
+static VALUE cLowerCaseFilter;
+static VALUE cStopFilter;
+static VALUE cStemFilter;
+
 static VALUE cAnalyzer;
 static VALUE cAsciiLetterAnalyzer;
 static VALUE cLetterAnalyzer;
@@ -17,6 +22,7 @@ static VALUE cAsciiWhiteSpaceAnalyzer;
 static VALUE cWhiteSpaceAnalyzer;
 static VALUE cAsciiStandardAnalyzer;
 static VALUE cStandardAnalyzer;
+static VALUE cPerFieldAnalyzer;
 
 //static VALUE cRegexAnalyzer;
 static VALUE cTokenStream;
@@ -27,7 +33,30 @@ static ID id_clone;
 
 /****************************************************************************
  *
- * Token Methods
+ * Utility Methods
+ *
+ ****************************************************************************/
+
+static char **
+get_stopwords(VALUE rstop_words)
+{
+  char **stop_words;
+  int i, len;
+  VALUE rstr;
+  Check_Type(rstop_words, T_ARRAY);
+  len = RARRAY(rstop_words)->len;
+  stop_words = ALLOC_N(char *, RARRAY(rstop_words)->len + 1);
+  stop_words[len] = NULL;
+  for (i = 0; i < len; i++) {
+    rstr = rb_obj_as_string(RARRAY(rstop_words)->ptr[i]);
+    stop_words[i] = RSTRING(rstr)->ptr;
+  }
+  return stop_words;
+}
+
+/****************************************************************************
+ *
+ * token methods
  *
  ****************************************************************************/
 
@@ -67,6 +96,19 @@ get_token(Token *tk)
   token->end = tk->end;
   token->pos_inc = tk->pos_inc;
   return Data_Wrap_Struct(cToken, &frt_token_mark, &frt_token_free, token);
+}
+
+Token *
+frt_set_token(Token *tk, VALUE rt)
+{
+  RToken *rtk;
+
+  if (rt == Qnil) return NULL;
+
+  Data_Get_Struct(rt, RToken, rtk);
+  tk_set(tk, RSTRING(rtk->text)->ptr, RSTRING(rtk->text)->len,
+      rtk->start, rtk->end, rtk->pos_inc);
+  return tk;
 }
 
 #define GET_TK RToken *token; Data_Get_Struct(self, RToken, token);
@@ -165,15 +207,16 @@ static void
 frt_ts_mark(void *p)
 {
   TokenStream *ts = (TokenStream *)p;
-  frt_gc_mark(&ts->text);
-  if (ts->sub_ts) frt_gc_mark(ts->sub_ts);
+  if (ts->text) frt_gc_mark(&ts->text);
+  if (ts->sub_ts) frt_gc_mark(&ts->sub_ts);
 }
 
 static void
 frt_ts_free(void *p)
 {
   TokenStream *ts = (TokenStream *)p;
-  object_del(&ts->text);
+  if (object_get(&ts->text) != Qnil) object_del(&ts->text);
+  if (ts->sub_ts && (object_get(&ts->sub_ts) != Qnil)) object_del(&ts->sub_ts);
   object_del(ts);
   ts->destroy(ts);
 }
@@ -241,6 +284,61 @@ frt_ts_next(VALUE self)
 }
 
 /****************************************************************************
+ * CWrappedTokenStream
+ ****************************************************************************/
+
+void cwrts_destroy(void *p)
+{
+  TokenStream *ts = (TokenStream *)p;
+  free(ts->token);
+  free(ts);
+}
+
+Token *cwrts_next(TokenStream *ts)
+{
+  VALUE rts = (VALUE)ts->data;
+  VALUE rtoken = rb_funcall(rts, id_next, 0);
+  return frt_set_token(ts->token, rtoken);
+}
+
+void cwrts_reset(TokenStream *ts, char *text)
+{
+  VALUE rts = (VALUE)ts->data;
+  ts->t = ts->text = text;
+  rb_funcall(rts, id_reset, 1, rb_str_new2(text));
+}
+
+void cwrts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
+{
+  VALUE rorig_ts = (VALUE)orig_ts->data;
+  new_ts->data = (void *)rb_funcall(rorig_ts, id_clone, 0);
+}
+
+static TokenStream *
+get_cwrapped_rts(VALUE rts, bool *self_destroy) 
+{
+  TokenStream *ts;
+  switch (TYPE(rts)) {
+    case T_DATA:
+      Data_Get_Struct(rts, TokenStream, ts);
+      *self_destroy = true;
+      break;
+    default:
+      ts = ALLOC(TokenStream);
+      ts->token = ALLOC(Token);
+      ts->data = (void *)rts;
+      ts->next = &cwrts_next;
+      ts->reset = &cwrts_reset;
+      ts->clone_i = &cwrts_clone_i;
+      ts->destroy = &cwrts_destroy;
+      ts->sub_ts = NULL;
+      *self_destroy = false;
+      break;
+  }
+  return ts;
+}
+
+/****************************************************************************
  * Tokenizers
  ****************************************************************************/
 
@@ -292,43 +390,80 @@ frt_standard_tokenizer_init(VALUE self, VALUE rstr)
  * Filters
  ****************************************************************************/
 
-Token *cwrts_next(TokenStream *ts)
-{
-  VALUE rts = (VALUE)ts->data;
-  VALUE rtoken = rb_funcall(rts, id_next, 0);
-  Data_Get_Struct(rtoken, Token, ts->token);
-  return ts->token;
-}
 
-void cwrts_reset(TokenStream *ts, char *text)
+static VALUE
+frt_a_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
 {
-  ts->t = ts->text = text;
-  rb_funcall(rts, id_reset, 1, rb_str_new2(text));
-}
+  bool self_destroy;
+  TokenStream *ts = lowercase_filter_create(
+      get_cwrapped_rts(rsub_ts, &self_destroy));
+  ts->destroy_sub = !self_destroy;
+  object_add(&ts->sub_ts, rsub_ts);
 
-
-static TokenStream *
-get_cwrapped_rts(VALUE rts) 
-{
-  TokenStream *ts;
-  switch (TYPE(rts)) {
-    case T_DATA:
-      Data_Get_Struct(rts, TokenStream, ts);
-      break;
-    default:
-      ts = ALLOC(TokenStream *ts);
-      ts->data = (void *)rts;
-      ts->next = &cwrts_next;
-      rb_raise(rb_eArgError, "Unknown SortField Type");
-      break;
-  }
-  return ts;
+  Frt_Wrap_Struct(self, &frt_ts_mark, &frt_ts_free, ts);
+  object_add(ts, self);
+  return self;
 }
 
 static VALUE
 frt_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
 {
-  return get_wrapped_ts(self, rstr, mb_standard_tokenizer_create());
+  bool self_destroy;
+  TokenStream *ts = mb_lowercase_filter_create(
+      get_cwrapped_rts(rsub_ts, &self_destroy));
+  ts->destroy_sub = !self_destroy;
+  object_add(&ts->sub_ts, rsub_ts);
+
+  Frt_Wrap_Struct(self, &frt_ts_mark, &frt_ts_free, ts);
+  object_add(ts, self);
+  return self;
+}
+
+static VALUE
+frt_stop_filter_init(int argc, VALUE *argv, VALUE self) 
+{
+  VALUE rsub_ts, rstop_words;
+  bool self_destroy;
+  TokenStream *ts;
+  rb_scan_args(argc, argv, "11", &rsub_ts, &rstop_words);
+  if (rstop_words != Qnil) {
+    char **stop_words = get_stopwords(rstop_words);
+    ts = stop_filter_create_with_words(
+        get_cwrapped_rts(rsub_ts, &self_destroy), (const char **)stop_words);
+    free(stop_words);
+  } else {
+    ts = stop_filter_create(
+        get_cwrapped_rts(rsub_ts, &self_destroy));
+  }
+  ts->destroy_sub = !self_destroy;
+  object_add(&ts->sub_ts, rsub_ts);
+
+  Frt_Wrap_Struct(self, &frt_ts_mark, &frt_ts_free, ts);
+  object_add(ts, self);
+  return self;
+}
+
+static VALUE
+frt_stem_filter_init(int argc, VALUE *argv, VALUE self) 
+{
+  VALUE rsub_ts, ralgorithm, rcharenc;
+  char *algorithm = "english";
+  char *charenc = NULL;
+  bool self_destroy;
+  TokenStream *ts;
+  rb_scan_args(argc, argv, "12", &rsub_ts, &ralgorithm, &rcharenc);
+  switch (argc) {
+    case 3: charenc = RSTRING(rb_obj_as_string(rcharenc))->ptr;
+    case 2: algorithm = RSTRING(rb_obj_as_string(ralgorithm))->ptr;
+  }
+  ts = stem_filter_create(
+      get_cwrapped_rts(rsub_ts, &self_destroy), algorithm, charenc);
+  ts->destroy_sub = !self_destroy;
+  object_add(&ts->sub_ts, rsub_ts);
+
+  Frt_Wrap_Struct(self, &frt_ts_mark, &frt_ts_free, ts);
+  object_add(ts, self);
+  return self;
 }
 
 /****************************************************************************
@@ -336,6 +471,28 @@ frt_lowercase_filter_init(VALUE self, VALUE rsub_ts)
  * Analyzer Methods
  *
  ****************************************************************************/
+
+Analyzer *get_cwrapped_analyzer(ranalyzer)
+{
+  Analyzer *a = NULL;
+  switch (TYPE(ranalyzer)) {
+    case T_DATA:
+      Data_Get_Struct(ranalyzer, Analyzer, a);
+      break;
+    default:
+      printf("Oh RFuck\n");
+      //ts = ALLOC(TokenStream);
+      //ts->token = ALLOC(Token);
+      //ts->data = (void *)rts;
+      //ts->next = &cwrts_next;
+      //ts->reset = &cwrts_reset;
+      //ts->clone_i = &cwrts_clone_i;
+      //ts->destroy = &cwrts_destroy;
+      //ts->sub_ts = NULL;
+      break;
+  }
+  return a;
+}
 
 static void
 frt_analyzer_free(void *p)
@@ -416,23 +573,6 @@ frt_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-static char **
-get_stopwords(VALUE rstop_words)
-{
-  char **stop_words;
-  int i, len;
-  VALUE rstr;
-  Check_Type(rstop_words, T_ARRAY);
-  len = RARRAY(rstop_words)->len;
-  stop_words = ALLOC_N(char *, RARRAY(rstop_words)->len + 1);
-  stop_words[len] = NULL;
-  for (i = 0; i < len; i++) {
-    rstr = rb_obj_as_string(RARRAY(rstop_words)->ptr[i]);
-    stop_words[i] = RSTRING(rstr)->ptr;
-  }
-  return stop_words;
-}
-
 static VALUE
 get_rstopwords(const char **stop_words)
 {
@@ -487,6 +627,29 @@ frt_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
   object_add(a, self);
   return self;
 }
+
+/*** PerFieldAnalyzer ***/
+static VALUE
+frt_per_field_analyzer_init(VALUE self, VALUE ranalyzer)
+{
+  Analyzer *def = get_cwrapped_analyzer(ranalyzer);
+  Analyzer *a = per_field_analyzer_create(def, false);
+  Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+  object_add(a, self);
+  return self;
+}
+
+static VALUE
+frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
+{
+  Analyzer *pfa, *a;
+  Data_Get_Struct(self, Analyzer, pfa);
+  Data_Get_Struct(ranalyzer, Analyzer, a);
+
+  pfa_add_field(pfa, StringValuePtr(rfield), a);
+  return self;
+}
+
 
 /** RegexAnalyzer **/
 /*
@@ -658,6 +821,31 @@ Init_analysis(void)
       get_rstopwords(FULL_RUSSIAN_STOP_WORDS));
   rb_define_const(mAnalysis, "FULL_FINNISH_STOP_WORDS",
       get_rstopwords(FULL_FINNISH_STOP_WORDS));
+  
+  cAsciiLowerCaseFilter =
+    rb_define_class_under(mAnalysis, "AsciiLowerCaseFilter", cTokenStream);
+  rb_define_alloc_func(cAsciiLowerCaseFilter, frt_data_alloc);
+  rb_define_method(cAsciiLowerCaseFilter, "initialize",
+      frt_a_lowercase_filter_init, 1);
+
+  cLowerCaseFilter =
+    rb_define_class_under(mAnalysis, "LowerCaseFilter", cTokenStream);
+  rb_define_alloc_func(cLowerCaseFilter, frt_data_alloc);
+  rb_define_method(cLowerCaseFilter, "initialize",
+      frt_lowercase_filter_init, 1);
+
+  cStopFilter =
+    rb_define_class_under(mAnalysis, "StopFilter", cTokenStream);
+  rb_define_alloc_func(cStopFilter, frt_data_alloc);
+  rb_define_method(cStopFilter, "initialize",
+      frt_stop_filter_init, -1);
+
+  cStemFilter =
+    rb_define_class_under(mAnalysis, "StemFilter", cTokenStream);
+  rb_define_alloc_func(cStemFilter, frt_data_alloc);
+  rb_define_method(cStemFilter, "initialize",
+      frt_stem_filter_init, -1);
+
 
   /*************************/
   /*** * * Analyzers * * ***/
@@ -711,6 +899,17 @@ Init_analysis(void)
   rb_define_alloc_func(cStandardAnalyzer, frt_data_alloc);
   rb_define_method(cStandardAnalyzer, "initialize",
       frt_standard_analyzer_init, -1);
+
+  /*** * * PerFieldAnalyzer * * ***/
+  cPerFieldAnalyzer =
+    rb_define_class_under(mAnalysis, "PerFieldAnalyzer", cAnalyzer);
+  rb_define_alloc_func(cPerFieldAnalyzer, frt_data_alloc);
+  rb_define_method(cPerFieldAnalyzer, "initialize",
+      frt_per_field_analyzer_init, 1);
+  rb_define_method(cPerFieldAnalyzer, "add_field",
+      frt_per_field_analyzer_add_field, 2);
+  rb_define_method(cPerFieldAnalyzer, "[]=",
+      frt_per_field_analyzer_add_field, 2);
 
   /** RegexAnalyzer **/
   /*
