@@ -23,7 +23,7 @@ $: << File.dirname(__FILE__)
 #++
 # :include: ../TUTORIAL
 module Ferret
-  VERSION = '0.9.0'
+  VERSION = '0.9.1'
 end
 
 $ferret_pure_ruby = true
