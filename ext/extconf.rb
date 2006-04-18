@@ -4,6 +4,7 @@ if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
   begin
     `nmake`
     require 'mkmf'
+    $CFLAGS += " -fno-common"
     create_makefile("ferret_ext")
   rescue => error
     require 'fileutils'
@@ -11,5 +12,6 @@ if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
   end
 else
   require 'mkmf'
+  $CFLAGS += " -fno-common"
   create_makefile("ferret_ext")
 end

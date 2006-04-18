@@ -10,7 +10,7 @@ VALUE rwild_lower_key;
 VALUE roccur_default_key;
 VALUE rdefault_slop_key;
 VALUE rclean_str_key;
-VALUE ranalyzer_key;
+extern VALUE ranalyzer_key;
 
 extern VALUE frt_get_analyzer(Analyzer *a);
 extern VALUE frt_get_q(Query *q);

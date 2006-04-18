@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d05', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a1358', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -171,22 +171,6 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d0
 
   def get_bad_query(field, str)
     get_term_query(field, str) || BooleanQuery.new()
-    #tokens = []
-    #stream = @analyzer.token_stream(field, str)
-    #while token = stream.next
-    #  tokens << token
-    #end
-    #if tokens.length == 0
-    #  return TermQuery.new(Term.new(field, ""))
-    #elsif tokens.length == 1
-    #  return TermQuery.new(Term.new(field, tokens[0].text))
-    #else
-    #  bq = BooleanQuery.new()
-    #  tokens.each do |token|
-    #    bq << BooleanClause.new(TermQuery.new(Term.new(field, token.text)))
-    #  end
-    #  return bq
-    #end
   end
 
   def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
@@ -414,7 +398,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d0
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d05
+..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a1358
 
 ##### racc 1.4.4 generates ###
 
