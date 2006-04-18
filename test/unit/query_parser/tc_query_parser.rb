@@ -104,7 +104,9 @@ class QueryParserTest < Test::Unit::TestCase
                                      :analyzer => Ferret::Analysis::StandardAnalyzer.new)
     pairs = [
       ['key:1234', 'key:1234'],
-      ['key:(1234)', 'key:1234']
+      ['key:(1234 and Dave)', 'key:1234 key:dave'],
+      ['key:(1234)', 'key:1234'],
+      ['and the but they with', '']
     ]
       
     pairs.each do |query_str, expected|

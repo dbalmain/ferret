@@ -238,7 +238,7 @@ task :repackage => EXT_SRC_DEST
 task :package => EXT_SRC_DEST
 task :tag => [:prerelease]
 task :update_version => [:prerelease]
-task :release => [:tag, :update_version, :package] do
+task :release do #=> [:tag, :update_version, :package] do
   announce 
   announce "**************************************************************"
   announce "* Release #{PKG_VERSION} Complete."

@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id94697a9944', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d05', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -170,7 +170,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id94697a994
   end
 
   def get_bad_query(field, str)
-    get_term_query(field, str)
+    get_term_query(field, str) || BooleanQuery.new()
     #tokens = []
     #stream = @analyzer.token_stream(field, str)
     #while token = stream.next
@@ -200,7 +200,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id94697a994
       tokens << token
     end
     if tokens.length == 0
-      return TermQuery.new(Term.new(field, ""))
+      return nil
     elsif tokens.length == 1
       return TermQuery.new(Term.new(field, tokens[0].text))
     else
@@ -365,14 +365,14 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id94697a994
 
   def get_boolean_query(clauses)
     # possible that we got all nil clauses so check
-    return nil if clauses.nil?
+    bq = BooleanQuery.new()
+    return bq if clauses.nil?
     clauses.compact!
-    return nil if clauses.size == 0
+    return bq if clauses.size == 0
 
     if clauses.size == 1 and not clauses[0].prohibited?
       return clauses[0].query
     end
-    bq = BooleanQuery.new()
     clauses.each {|clause| bq << clause }
     return bq                
   end                        
@@ -414,7 +414,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id94697a994
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id94697a9944
+..end lib/ferret/query_parser/query_parser.y modeval..ideb72cf9d05
 
 ##### racc 1.4.4 generates ###
 

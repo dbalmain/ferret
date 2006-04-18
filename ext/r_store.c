@@ -91,7 +91,7 @@ frt_dir_free(void *p)
 {
   Store *store = (Store *)p;
   object_del(p);
-  store->close(store);
+  store_deref(store);
 }
 
 #define GET_STORE Store *store; Data_Get_Struct(self, Store, store)
@@ -99,10 +99,11 @@ static VALUE
 frt_dir_close(VALUE self)
 {
   /*
+   * No need to do anything here. Leave it do the garbage collector
   GET_STORE;
   Frt_Unwrap_Struct(self);
   object_del(store);
-  store->close(store);
+  store_deref(store);
   */
   return Qnil;
 }

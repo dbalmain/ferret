@@ -281,23 +281,7 @@ end
   end
 
   def get_bad_query(field, str)
-    get_term_query(field, str)
-    #tokens = []
-    #stream = @analyzer.token_stream(field, str)
-    #while token = stream.next
-    #  tokens << token
-    #end
-    #if tokens.length == 0
-    #  return TermQuery.new(Term.new(field, ""))
-    #elsif tokens.length == 1
-    #  return TermQuery.new(Term.new(field, tokens[0].text))
-    #else
-    #  bq = BooleanQuery.new()
-    #  tokens.each do |token|
-    #    bq << BooleanClause.new(TermQuery.new(Term.new(field, token.text)))
-    #  end
-    #  return bq
-    #end
+    get_term_query(field, str) || BooleanQuery.new()
   end
 
   def get_range_query(field, start_word, end_word, inc_upper, inc_lower)
@@ -311,7 +295,7 @@ end
       tokens << token
     end
     if tokens.length == 0
-      return TermQuery.new(Term.new(field, ""))
+      return nil
     elsif tokens.length == 1
       return TermQuery.new(Term.new(field, tokens[0].text))
     else
@@ -476,14 +460,14 @@ end
 
   def get_boolean_query(clauses)
     # possible that we got all nil clauses so check
-    return nil if clauses.nil?
+    bq = BooleanQuery.new()
+    return bq if clauses.nil?
     clauses.compact!
-    return nil if clauses.size == 0
+    return bq if clauses.size == 0
 
     if clauses.size == 1 and not clauses[0].prohibited?
       return clauses[0].query
     end
-    bq = BooleanQuery.new()
     clauses.each {|clause| bq << clause }
     return bq                
   end                        

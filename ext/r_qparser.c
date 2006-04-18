@@ -14,6 +14,7 @@ VALUE ranalyzer_key;
 
 extern VALUE frt_get_analyzer(Analyzer *a);
 extern VALUE frt_get_q(Query *q);
+extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
 
 /****************************************************************************
  *
@@ -84,7 +85,21 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
   if (argc > 0) {
     def_fields = frt_get_fields(rdef_field);
   }
-  qp = qp_create(all_fields, def_fields, NULL);
+
+  if (argc == 2) {
+    if (Qnil != (rval = rb_hash_aref(roptions, ranalyzer_key))) {
+      analyzer = frt_get_cwrapped_analyzer(rval);
+    }
+  }
+
+  if (!analyzer) {
+    analyzer = letter_analyzer_create(true);
+    /* make sure the analyzer will be disposed of when the QueryParser
+     * is garbage collected. */
+    rval = frt_get_analyzer(analyzer);
+  }
+
+  qp = qp_create(all_fields, def_fields, analyzer);
   qp->allow_any_fields = true;
   qp->clean_str = true;
   /* handle options */
@@ -107,17 +122,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
     if (Qnil != (rval = rb_hash_aref(roptions, rclean_str_key))) {
       qp->clean_str = RTEST(rval);
     }
-    if (Qnil != (rval = rb_hash_aref(roptions, ranalyzer_key))) {
-      Data_Get_Struct(rval, Analyzer, analyzer);
-    }
   }
-  if (!analyzer) {
-    analyzer = letter_analyzer_create(true);
-    /* make sure the analyzer will be disposed of when the QueryParser
-     * is garbage collected. */
-    rval = frt_get_analyzer(analyzer);
-  }
-  qp->analyzer = analyzer;
   Frt_Wrap_Struct(self, frt_qp_mark, frt_qp_free, qp);
   object_add(qp, self);
   return self;

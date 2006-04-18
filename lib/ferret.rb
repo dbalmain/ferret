@@ -29,7 +29,6 @@ end
 begin
   require 'ferret_ext'
 rescue Exception => e 
-  puts "\nfuck\n"
   require 'ferret/utils'
   require 'ferret/document'
   require 'ferret/stemmers'

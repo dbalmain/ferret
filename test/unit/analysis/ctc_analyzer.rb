@@ -399,3 +399,50 @@ class PerFieldAnalyzerTest < Test::Unit::TestCase
     assert(! t.next())
   end
 end
+
+module Ferret::Analysis
+  class StemmingStandardAnalyzer < StandardAnalyzer
+    def token_stream(field, text)
+      StemFilter.new(super)
+    end
+  end
+end
+
+class CustomAnalyzerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+
+  def test_custom_filter()
+    input = 'DBalmán@gmail.com is My e-mail and the Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    a = StemmingStandardAnalyzer.new()
+    t = a.token_stream("fieldname", input)
+    assert_equal(Token.new('dbalmán@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('www.google.com/result', 55, 84), t.next)
+    assert_equal(Token.new('tnt', 86, 91), t.next)
+    assert_equal(Token.new('123-1235-asd-1234', 93, 110), t.next)
+    assert_equal(Token.new('23', 111, 113), t.next)
+    assert_equal(Token.new('áägç', 117, 124), t.next)
+    assert_equal(Token.new('êëì', 126, 132), t.next)
+    assert_equal(Token.new('úøã', 134, 140), t.next)
+    assert_equal(Token.new('öîí', 142, 148), t.next)
+    assert(! t.next())
+    input = "Debate Debates DEBATED DEBating Debater";
+    t = a.token_stream("fieldname", input)
+    assert_equal(Token.new("debat", 0, 6), t.next)
+    assert_equal(Token.new("debat", 7, 14), t.next)
+    assert_equal(Token.new("debat", 15, 22), t.next)
+    assert_equal(Token.new("debat", 23, 31), t.next)
+    assert_equal(Token.new("debat", 32, 39), t.next)
+    assert(! t.next())
+    input = "Dêbate dêbates DÊBATED DÊBATing dêbater";
+    t = StemFilter.new(LowerCaseFilter.new(LetterTokenizer.new(input)), :english)
+    assert_equal(Token.new("dêbate", 0, 7), t.next)
+    assert_equal(Token.new("dêbate", 8, 16), t.next)
+    assert_equal(Token.new("dêbate", 17, 25), t.next)
+    assert_equal(Token.new("dêbate", 26, 35), t.next)
+    assert_equal(Token.new("dêbater", 36, 44), t.next)
+    assert(! t.next())
+  end
+end

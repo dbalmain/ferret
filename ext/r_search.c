@@ -85,6 +85,7 @@ extern void frt_set_term(VALUE rterm, Term *t);
 extern Term *frt_get_term(VALUE rterm);
 extern VALUE frt_get_analyzer(Analyzer *a);
 extern HashSet *frt_get_fields(VALUE rfields);
+extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
 
 /****************************************************************************
  *
@@ -1397,13 +1398,14 @@ frt_is_init(VALUE self, VALUE obj)
   Searcher *sea;
   if (TYPE(obj) == T_STRING) {
     store = open_fs_store(StringValueCStr(obj));
-    ir = ir_open(store, true);
+    ir = ir_open(store);
+    deref(store);
     FRT_GET_IR(obj, ir);
   } else {
     Check_Type(obj, T_DATA);
     if (rb_obj_is_kind_of(obj, cDirectory) == Qtrue) {
       Data_Get_Struct(obj, Store, store);
-      ir = ir_open(store, false);
+      ir = ir_open(store);
       FRT_GET_IR(obj, ir);
     } else if (rb_obj_is_kind_of(obj, cIndexReader) == Qtrue) {
       Data_Get_Struct(obj, IndexReader, ir);
@@ -1544,22 +1546,24 @@ extern inline void ensure_searcher_open(Index *self);
 extern inline void ensure_reader_open(Index *self);
 extern inline void ensure_writer_open(Index *self);
 
+/*
 static void
 frt_ind_free_store_i(Index *self)
 {
   VALUE rval;
   if (self->close_store && (Qnil != (rval = object_get(self->store)))) {
-    /* user passed close_dir option so unwrap it */
+    // user passed close_dir option so unwrap it 
     Frt_Unwrap_Struct(rval);
     object_del(self->store);
   }
 }
+*/
 
 static void
 frt_ind_free(void *p)
 {
   Index *self = (Index *)p;
-  frt_ind_free_store_i(self);
+  //frt_ind_free_store_i(self);
   object_del(self);
   index_destroy(self);
 }
@@ -1582,14 +1586,13 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     Store *store = NULL;
     Analyzer *analyzer = NULL;
     bool create = false;
-    bool close_store = false;
     HashSet *def_fields = NULL;
 
     if (Qnil != (rval = rb_hash_aref(roptions, rpath_key))) {
       rval = rb_obj_as_string(rval);
       /* TODO: create the directory if it is missing */
       store = open_fs_store(RSTRING(rval)->ptr);
-      close_store = true;
+      deref(store);
     } else if (Qnil != (rval = rb_hash_aref(roptions, rdir_key))) {
       Data_Get_Struct(rval, Store, store);
     }
@@ -1611,19 +1614,20 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (Qnil != (rval = rb_hash_aref(roptions, ranalyzer_key))) {
-      Data_Get_Struct(rval, Analyzer, analyzer);
+      analyzer = frt_get_cwrapped_analyzer(rval);
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rdefault_search_field_key))) {
       def_fields = frt_get_fields(rval);
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rclose_dir_key))) {
-      if (RTEST(rval) && !close_store) close_store = true;
+      /* No need to do anything here. Let the GC do the work. 
+       * if (RTEST(rval) && !close_store) close_store = true;
+       */
     }
     if (Qnil != (rval = rb_hash_aref(roptions, rdefault_field_key))) {
       if (!def_fields) def_fields = frt_get_fields(rval);
     }
     ind = index_create(store, analyzer, def_fields, create);
-    if (close_store) ind->close_store = close_store;
     
     /* QueryParser options */
     if (Qnil != (rval = rb_hash_aref(roptions, rhandle_parse_errors_key))) {
@@ -1692,7 +1696,7 @@ static VALUE
 frt_ind_close(VALUE self)
 {
   GET_IND;
-  frt_ind_free_store_i(ind);
+  //frt_ind_free_store_i(ind);
   Frt_Unwrap_Struct(self);
   object_del(ind);
   index_destroy(ind);
@@ -1778,8 +1782,7 @@ frt_ind_add_doc(int argc, VALUE *argv, VALUE self)
   doc = frt_rdoc_to_doc(ind, rdoc, &close_doc);
 
   if (argc == 2) {
-    Analyzer *analyzer;
-    Data_Get_Struct(ranalyzer, Analyzer, analyzer);
+    Analyzer *analyzer = frt_get_cwrapped_analyzer(ranalyzer);
     index_add_doc_a(ind, doc, analyzer);
   } else {
     index_add_doc(ind, doc);
@@ -2206,37 +2209,37 @@ static VALUE
 frt_ind_persist(int argc, VALUE *argv, VALUE self)
 {
   VALUE rdir, rcreate;
-  bool create, close_store;
+  bool create;
   Store *old_store;
   GET_IND;
 
   index_flush(ind);
-  frt_ind_free_store_i(ind);
+  //frt_ind_free_store_i(ind);
   old_store = ind->store;
-  close_store = ind->close_store;
 
   rb_scan_args(argc, argv, "11", &rdir, &rcreate);
   create = RTEST(rcreate);
 
   if (T_DATA == TYPE(rdir)) {
     Data_Get_Struct(rdir, Store, ind->store);
+    ref(ind->store);
   } else {
     rdir = rb_obj_as_string(rdir);
     ind->store = open_fs_store(RSTRING(rdir)->ptr);
-    ind->close_store = true;
   }
 
   if (!create && !ind->store->exists(ind->store, "segments")) create = true;
 
   if (create) {
-    ind->iw = iw_open(ind->store, NULL, create, false, false);
+    ind->iw = iw_open(ind->store, ind->analyzer, create);
+    ref(ind->analyzer);
     ind->iw->use_compound_file = ind->use_compound_file;
   }
 
   ensure_writer_open(ind);
   iw_add_indexes(ind->iw, &old_store, 1);
 
-  if (close_store) old_store->close(old_store);
+  store_deref(old_store);
 
   index_auto_flush_iw(ind);
 

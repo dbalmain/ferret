@@ -21,6 +21,7 @@ VALUE rterm_index_interval_key;
 
 extern void frt_set_term(VALUE rterm, Term *t);
 extern VALUE frt_get_rterm(char *field, char *text);
+extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
 
 /****************************************************************************
  *
@@ -426,7 +427,6 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
 {
   VALUE rdir, roptions, rval;
   bool close_dir = false;
-  bool close_analyzer = true;
   bool create = false;
   bool use_compound_file = true;
   Store *store;
@@ -458,8 +458,8 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
     if (rval == Qnil) {
       analyzer = mb_standard_analyzer_create(true);
     } else {
-      Data_Get_Struct(rval, Analyzer, analyzer);
-      close_analyzer = false;
+      analyzer = frt_get_cwrapped_analyzer(rval);
+      ref(analyzer);
     }
     create = RTEST(rb_hash_aref(roptions, rcreate_key));
     if (!create && RTEST(rb_hash_aref(roptions, rcreate_if_missing_key))) {
@@ -468,7 +468,8 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
       }
     }
   }
-  iw = iw_open(store, analyzer, create, close_dir, close_analyzer);
+  iw = iw_open(store, analyzer, create);
+  if (close_dir) store_deref(store);
   iw->use_compound_file = use_compound_file;
 
   SET_INT_ATTR(merge_factor);
@@ -630,21 +631,21 @@ static VALUE
 frt_ir_init(int argc, VALUE *argv, VALUE self)
 {
   VALUE rdir, rclose_dir;
-  bool close_dir = true;
+  //bool close_dir = false;
   Store *store = NULL;
   IndexReader *ir;
   switch (rb_scan_args(argc, argv, "11", &rdir, &rclose_dir)) {
-    case 2: close_dir = RTEST(rclose_dir);
+    case 2: //close_dir = RTEST(rclose_dir);
     case 1: 
       if (TYPE(rdir) == T_DATA) {
         store = DATA_PTR(rdir);
       } else {
         rdir = rb_obj_as_string(rdir);
         store = open_fs_store(RSTRING(rdir)->ptr);
-        close_dir = true;
+        deref(store);
       }
   }
-  ir = ir_open(store, close_dir);
+  ir = ir_open(store);
   Frt_Wrap_Struct(self, &frt_ir_mark, &frt_ir_free, ir);
   object_add(ir, self);
   return self;
