@@ -7,6 +7,7 @@ static HshTable *object_map;
 
 /* IDs */
 ID id_new;
+ID id_call;
 
 /* Modules */
 VALUE mFerret;
@@ -136,6 +137,7 @@ Init_ferret_ext(void)
 
   /* IDs */
 	id_new = rb_intern("new");
+	id_call = rb_intern("call");
 
   /* Modules */
   mFerret = rb_define_module("Ferret");

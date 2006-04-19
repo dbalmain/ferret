@@ -205,7 +205,7 @@ class StandardTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_standard_tokenizer()
-    input = 'DBalmán@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmán@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/res_345/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     t = StandardTokenizer.new(input)
     assert_equal(Token.new('DBalmán@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
@@ -214,7 +214,7 @@ class StandardTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('Address', 40, 47), t.next)
     assert_equal(Token.new('23', 49, 51), t.next)
-    assert_equal(Token.new('www.google.com/results', 55, 84), t.next)
+    assert_equal(Token.new('www.google.com/res_345', 55, 84), t.next)
     assert_equal(Token.new('TNT', 86, 91), t.next)
     assert_equal(Token.new('123-1235-ASD-1234', 93, 110), t.next)
     assert_equal(Token.new('23', 111, 113), t.next)
@@ -235,7 +235,7 @@ class StandardTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('address', 40, 47), t.next)
     assert_equal(Token.new('23', 49, 51), t.next)
-    assert_equal(Token.new('www.google.com/results', 55, 84), t.next)
+    assert_equal(Token.new('www.google.com/res_345', 55, 84), t.next)
     assert_equal(Token.new('tnt', 86, 91), t.next)
     assert_equal(Token.new('123-1235-asd-1234', 93, 110), t.next)
     assert_equal(Token.new('23', 111, 113), t.next)
@@ -243,6 +243,74 @@ class StandardTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('êëì', 126, 132), t.next)
     assert_equal(Token.new('úøã', 134, 140), t.next)
     assert_equal(Token.new('öîí', 142, 148), t.next)
+    assert(! t.next())
+  end
+end
+
+class RegExpTokenizerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+
+  ALPHA      = /[[:alpha:]_-]+/
+  APOSTROPHE = /#{ALPHA}('#{ALPHA})+/
+  ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
+  ACRONYM_WORD    = /^#{ACRONYM}$/
+  APOSTROPHE_WORD = /^#{APOSTROPHE}$/
+
+  def test_standard_tokenizer()
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
+    t = RegExpTokenizer.new(input)
+    assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('My', 22, 24), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('Address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http://www.google.com/RESULT_3.html', 55, 90), t.next)
+    assert_equal(Token.new('T.N.T.', 91, 97), t.next)
+    assert_equal(Token.new('123-1235-ASD-1234', 98, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('Rob\'s', 119, 124), t.next)
+    assert(! t.next())
+    t.text = "one_two three"
+    assert_equal(Token.new("one_two", 0, 7), t.next())
+    assert_equal(Token.new("three", 8, 13), t.next())
+    assert(! t.next())
+    t = LowerCaseFilter.new(RegExpTokenizer.new(input))
+    assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('my', 22, 24), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http://www.google.com/result_3.html', 55, 90), t.next)
+    assert_equal(Token.new('t.n.t.', 91, 97), t.next)
+    assert_equal(Token.new('123-1235-asd-1234', 98, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('rob\'s', 119, 124), t.next)
+    assert(! t.next())
+    t = RegExpTokenizer.new(input) do |str|
+      if str =~ ACRONYM_WORD
+        str.gsub!(/\./, '')
+      elsif str =~ APOSTROPHE_WORD
+        str.gsub!(/'[sS]$/, '')
+      end
+      str
+    end
+    t = LowerCaseFilter.new(t)
+    assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('my', 22, 24), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http://www.google.com/result_3.html', 55, 90), t.next)
+    assert_equal(Token.new('tnt', 91, 97), t.next)
+    assert_equal(Token.new('123-1235-asd-1234', 98, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('rob', 119, 124), t.next)
     assert(! t.next())
   end
 end

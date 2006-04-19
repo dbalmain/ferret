@@ -13,14 +13,15 @@ module Ferret::Analysis
   # addresses, phone numbers, etc.
 
   class StandardTokenizer < RegExpTokenizer
-    ALPHA      = /[[:alpha:]]+/
+    ALPHA      = /[[:alpha:]_-]+/
     APOSTROPHE = /#{ALPHA}('#{ALPHA})+/
     ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
     P          = /[_\/.,-]/
     HASDIGIT   = /\w*\d\w*/
-    TOKEN_RE   = /[[:alpha:]]+(('[[:alpha:]]+)+
-                              |\.([[:alpha:]]\.)+
+    TOKEN_RE   = /#{ALPHA}+(('#{ALPHA}+)
+                              |\.(#{ALPHA}\.)+
                               |(@|\&)\w+([-.]\w+)*
+                              |:\/\/\w+([-.\/]\w+)*
                               )
                  |\w+(([\-._]\w+)*\@\w+([-.]\w+)+
                      |#{P}#{HASDIGIT}(#{P}\w+#{P}#{HASDIGIT})*(#{P}\w+)?

@@ -167,7 +167,6 @@ Init_qparser(void)
   roccur_default_key = ID2SYM(rb_intern("occur_default"));
   rdefault_slop_key = ID2SYM(rb_intern("default_slop"));
   rclean_str_key = ID2SYM(rb_intern("clean_string"));
-  ranalyzer_key = ID2SYM(rb_intern("analyzer"));
 
   /* QueryParser */
   cQueryParser = rb_define_class_under(mFerret, "QueryParser", rb_cObject);

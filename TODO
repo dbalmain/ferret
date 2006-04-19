@@ -5,6 +5,7 @@ Send suggestions for this list to mailto:dbalmain@gmail.com
 === To Do
 
 * Make a dll for people on Windows
+* fix rb_obj_as_string to StringValue()
 * pure ruby ConstantScoreQuery
 
 === Done

@@ -1,3 +1,4 @@
+#include <regex.h>
 #include "ferret.h"
 #include "analysis.h"
 #include "locale.h"
@@ -9,6 +10,7 @@ static VALUE cAsciiWhiteSpaceTokenizer;
 static VALUE cWhiteSpaceTokenizer;
 static VALUE cAsciiStandardTokenizer;
 static VALUE cStandardTokenizer;
+static VALUE cRegExpTokenizer;
 
 static VALUE cAsciiLowerCaseFilter;
 static VALUE cLowerCaseFilter;
@@ -293,28 +295,32 @@ frt_ts_next(VALUE self)
  * CWrappedTokenStream
  ****************************************************************************/
 
-void cwrts_destroy(TokenStream *ts)
+static void
+cwrts_destroy(TokenStream *ts)
 {
   rb_hash_delete(object_space, (VALUE)ts->data);
   free(ts->token);
   free(ts);
 }
 
-Token *cwrts_next(TokenStream *ts)
+static Token *
+cwrts_next(TokenStream *ts)
 {
   VALUE rts = (VALUE)ts->data;
   VALUE rtoken = rb_funcall(rts, id_next, 0);
   return frt_set_token(ts->token, rtoken);
 }
 
-void cwrts_reset(TokenStream *ts, char *text)
+static void
+cwrts_reset(TokenStream *ts, char *text)
 {
   VALUE rts = (VALUE)ts->data;
   ts->t = ts->text = text;
   rb_funcall(rts, id_reset, 1, rb_str_new2(text));
 }
 
-void cwrts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
+static void
+cwrts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
 {
   VALUE rorig_ts = (VALUE)orig_ts->data;
   new_ts->data = (void *)rb_funcall(rorig_ts, id_clone, 0);
@@ -344,6 +350,156 @@ frt_get_cwrapped_rts(VALUE rts)
       break;
   }
   return ts;
+}
+
+/****************************************************************************
+ * RegExpTokenStream
+ ****************************************************************************/
+
+#define P "[_\\/.,-]"
+#define HASDIGIT "\\w*\\d\\w*"
+#define ALPHA "[-_[:alpha:]]"
+#define ALNUM "[-_[:alnum:]]"
+
+static char *token_re =
+  ALPHA "+(('" ALPHA "+)+|\\.(" ALPHA "\\.)+|"
+  "(@|\\&)\\w+([-.]\\w+)*|:\\/\\/" ALNUM "+([-.\\/]" ALNUM "+)*)?"
+  "|\\w+(([-._]\\w+)*\\@\\w+([-.]\\w+)+"
+    "|" P HASDIGIT "(" P "\\w+" P HASDIGIT ")*(" P "\\w+)?"
+    "|(\\.\\w+)+"
+    "|"
+  ")";
+static VALUE rtoken_re;
+
+typedef struct RegExpTokenStream {
+  VALUE rtext;
+  VALUE regex;
+  VALUE proc;
+  int curr_ind;  
+} RegExpTokenStream;
+
+static void
+frt_rets_free(TokenStream *ts)
+{
+  object_del(ts);
+  free(ts->data);
+  free(ts->token);
+  free(ts);
+}
+
+static void
+frt_rets_mark(TokenStream *ts)
+{
+  RegExpTokenStream *rets = (RegExpTokenStream *)ts->data;
+  rb_gc_mark(rets->rtext);
+  rb_gc_mark(rets->regex);
+  rb_gc_mark(rets->proc);
+}
+
+static VALUE
+frt_rets_set_text(VALUE self, VALUE rtext)
+{
+  TokenStream *ts;
+  RegExpTokenStream *rets;
+  Data_Get_Struct(self, TokenStream, ts);
+
+  StringValue(rtext);
+  rets = (RegExpTokenStream *)ts->data;
+  rets->rtext = rtext;
+  rets->curr_ind = 0;
+  
+  return rtext;
+}
+
+static VALUE
+frt_rets_get_text(VALUE self)
+{
+  TokenStream *ts;
+  RegExpTokenStream *rets;
+  Data_Get_Struct(self, TokenStream, ts);
+  rets = (RegExpTokenStream *)ts->data;
+  return rets->rtext;
+}
+
+static void
+rets_destroy(TokenStream *ts)
+{ }
+
+extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int, int,
+		     struct re_registers *);
+
+static Token *
+rets_next(TokenStream *ts)
+{
+  static struct re_registers regs;
+  int ret, beg, end;
+  RegExpTokenStream *rets = (RegExpTokenStream *)ts->data;
+  struct RString *rtext = RSTRING(rets->rtext);
+  Check_Type(rets->regex, T_REGEXP);
+  ret = ruby_re_search(RREGEXP(rets->regex)->ptr,
+                 rtext->ptr, rtext->len,
+                 rets->curr_ind, rtext->len - rets->curr_ind,
+                 &regs);
+
+  if (ret == -2) rb_raise(rb_eStandardError, "regexp buffer overflow");
+  if (ret < 0) {
+      /* not matched */
+      return NULL;
+  }
+  
+  beg = regs.beg[0];
+  rets->curr_ind = end = regs.end[0];
+  if (NIL_P(rets->proc)) {
+    return tk_set(ts->token, rtext->ptr + beg, end - beg, beg, end, 1);
+  } else {
+    VALUE rtok = rb_str_new(rtext->ptr + beg, end - beg);
+    rtok = rb_funcall(rets->proc, id_call, 1, rtok);
+    return tk_set(ts->token, RSTRING(rtok)->ptr, RSTRING(rtok)->len, beg, end, 1);
+  }
+}
+
+static void
+rets_reset(TokenStream *ts, char *text)
+{
+  RegExpTokenStream *rets = (RegExpTokenStream *)ts->data;
+  rets->rtext = rb_str_new2(text);
+  rets->curr_ind = 0;
+}
+
+void
+rets_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
+{
+  RegExpTokenStream *new_rets = ALLOC(RegExpTokenStream);
+  RegExpTokenStream *orig_rets = (RegExpTokenStream *)orig_ts->data;
+  memcpy(new_rets, orig_rets, sizeof(RegExpTokenStream));
+  new_ts->data = new_rets;
+}
+
+static VALUE
+frt_rets_init(int argc, VALUE *argv, VALUE self) 
+{
+  TokenStream *ts;
+  RegExpTokenStream *rets;
+
+  ts = ALLOC(TokenStream);
+  ts->reset = &rets_reset;
+  ts->next = &rets_next;
+  ts->clone_i = &rets_clone_i;
+  ts->destroy = &rets_destroy;
+  ts->token = ALLOC(Token);
+
+  rets = ALLOC_AND_ZERO_N(RegExpTokenStream, 1);
+  ts->data = rets;
+  rb_scan_args(argc, argv, "11&", &rets->rtext, &rets->regex, &rets->proc);
+  if (NIL_P(rets->regex)) {
+    rets->regex = rtoken_re;
+  } else {
+    Check_Type(rets->regex, T_REGEXP);
+  }
+
+  Frt_Wrap_Struct(self, &frt_rets_mark, &frt_rets_free, ts);
+  object_add(ts, self);
+  return self;
 }
 
 /****************************************************************************
@@ -828,6 +984,18 @@ Init_analysis(void)
   rb_define_alloc_func(cStandardTokenizer, frt_data_alloc);
   rb_define_method(cStandardTokenizer, "initialize",
       frt_standard_tokenizer_init, 1);
+
+  /*** * * RegExpTokenizer * * ***/
+  cRegExpTokenizer =
+    rb_define_class_under(mAnalysis, "RegExpTokenizer", cTokenStream);
+  rtoken_re = rb_reg_new(token_re, strlen(token_re), 0);
+  rb_define_const(cRegExpTokenizer, "REGEXP", rtoken_re);
+  rb_define_alloc_func(cRegExpTokenizer, frt_data_alloc);
+  rb_define_method(cRegExpTokenizer, "initialize",
+      frt_rets_init, -1);
+  rb_define_method(cRegExpTokenizer, "next", frt_ts_next, 0);
+  rb_define_method(cRegExpTokenizer, "text=", frt_rets_set_text, 1);
+  rb_define_method(cRegExpTokenizer, "text", frt_rets_get_text, 0);
 
   /***************/
   /*** Filters ***/
