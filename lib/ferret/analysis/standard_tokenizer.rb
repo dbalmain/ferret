@@ -18,7 +18,7 @@ module Ferret::Analysis
     ACRONYM    = /#{ALPHA}\.(#{ALPHA}\.)+/
     P          = /[_\/.,-]/
     HASDIGIT   = /\w*\d\w*/
-    TOKEN_RE   = /#{ALPHA}+(('#{ALPHA}+)
+    TOKEN_RE   = /#{ALPHA}+(('#{ALPHA}+)+
                               |\.(#{ALPHA}\.)+
                               |(@|\&)\w+([-.]\w+)*
                               |:\/\/\w+([-.\/]\w+)*

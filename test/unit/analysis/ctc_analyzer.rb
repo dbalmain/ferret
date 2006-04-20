@@ -400,6 +400,90 @@ class PerFieldAnalyzerTest < Test::Unit::TestCase
   end
 end
 
+class RegExpAnalyzerTest < Test::Unit::TestCase
+  include Ferret::Analysis
+
+  def test_reg_exp_analyzer()
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
+    a = RegExpAnalyzer.new()
+    t = a.token_stream('XXX', input)
+    t2 = a.token_stream('XXX', "one_Two three")
+    assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('my', 22, 24), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http://www.google.com/result_3.html', 55, 90), t.next)
+    assert_equal(Token.new('t.n.t.', 91, 97), t.next)
+    assert_equal(Token.new('123-1235-asd-1234', 98, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('rob\'s', 119, 124), t.next)
+    assert(! t.next())
+    t = t2
+    assert_equal(Token.new("one_two", 0, 7), t.next())
+    assert_equal(Token.new("three", 8, 13), t.next())
+    assert(! t.next())
+    a = RegExpAnalyzer.new(/\w{2,}/, false)
+    t = a.token_stream('XXX', input)
+    t2 = a.token_stream('XXX', "one Two three")
+    assert_equal(Token.new('DBalmain', 0, 8), t.next)
+    assert_equal(Token.new('gmail', 9, 14), t.next)
+    assert_equal(Token.new('com', 15, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('My', 22, 24), t.next)
+    assert_equal(Token.new('mail', 27, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('Address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http', 55, 59), t.next)
+    assert_equal(Token.new('www', 62, 65), t.next)
+    assert_equal(Token.new('google', 66, 72), t.next)
+    assert_equal(Token.new('com', 73, 76), t.next)
+    assert_equal(Token.new('RESULT_3', 77, 85), t.next)
+    assert_equal(Token.new('html', 86, 90), t.next)
+    assert_equal(Token.new('123', 98, 101), t.next)
+    assert_equal(Token.new('1235', 102, 106), t.next)
+    assert_equal(Token.new('ASD', 107, 110), t.next)
+    assert_equal(Token.new('1234', 111, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('Rob', 119, 122), t.next)
+    assert(! t.next())
+    assert_equal(Token.new("one", 0, 3), t2.next())
+    assert_equal(Token.new("Two", 4, 7), t2.next())
+    assert_equal(Token.new("three", 8, 13), t2.next())
+    assert(! t2.next())
+    a = RegExpAnalyzer.new() do |str|
+      if str =~ /^[[:alpha:]]\.([[:alpha:]]\.)+$/
+        str.gsub!(/\./, '')
+      elsif str =~ /'[sS]$/
+        str.gsub!(/'[sS]$/, '')
+      end
+      str
+    end
+    t = a.token_stream('XXX', input)
+    t2 = a.token_stream('XXX', "one's don't T.N.T.")
+    assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
+    assert_equal(Token.new('is', 19, 21), t.next)
+    assert_equal(Token.new('my', 22, 24), t.next)
+    assert_equal(Token.new('e-mail', 25, 31), t.next)
+    assert_equal(Token.new('52', 32, 34), t.next)
+    assert_equal(Token.new('address', 40, 47), t.next)
+    assert_equal(Token.new('23', 49, 51), t.next)
+    assert_equal(Token.new('http://www.google.com/result_3.html', 55, 90), t.next)
+    assert_equal(Token.new('tnt', 91, 97), t.next)
+    assert_equal(Token.new('123-1235-asd-1234', 98, 115), t.next)
+    assert_equal(Token.new('23', 116, 118), t.next)
+    assert_equal(Token.new('rob', 119, 124), t.next)
+    assert(! t.next())
+    assert_equal(Token.new("one", 0, 5), t2.next())
+    assert_equal(Token.new("don't", 6, 11), t2.next())
+    assert_equal(Token.new("tnt", 12, 18), t2.next())
+    assert(! t2.next())
+  end
+end
+
 module Ferret::Analysis
   class StemmingStandardAnalyzer < StandardAnalyzer
     def token_stream(field, text)

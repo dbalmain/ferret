@@ -256,7 +256,7 @@ class RegExpTokenizerTest < Test::Unit::TestCase
   ACRONYM_WORD    = /^#{ACRONYM}$/
   APOSTROPHE_WORD = /^#{APOSTROPHE}$/
 
-  def test_standard_tokenizer()
+  def test_reg_exp_tokenizer()
     input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
     t = RegExpTokenizer.new(input)
     assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t.next)
@@ -277,6 +277,7 @@ class RegExpTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new("three", 8, 13), t.next())
     assert(! t.next())
     t = LowerCaseFilter.new(RegExpTokenizer.new(input))
+    t2 = LowerCaseFilter.new(RegExpTokenizer.new(input, /\w{2,}/))
     assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
     assert_equal(Token.new('my', 22, 24), t.next)
@@ -290,6 +291,28 @@ class RegExpTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('23', 116, 118), t.next)
     assert_equal(Token.new('rob\'s', 119, 124), t.next)
     assert(! t.next())
+    assert_equal(Token.new('dbalmain', 0, 8), t2.next)
+    assert_equal(Token.new('gmail', 9, 14), t2.next)
+    assert_equal(Token.new('com', 15, 18), t2.next)
+    assert_equal(Token.new('is', 19, 21), t2.next)
+    assert_equal(Token.new('my', 22, 24), t2.next)
+    assert_equal(Token.new('mail', 27, 31), t2.next)
+    assert_equal(Token.new('52', 32, 34), t2.next)
+    assert_equal(Token.new('address', 40, 47), t2.next)
+    assert_equal(Token.new('23', 49, 51), t2.next)
+    assert_equal(Token.new('http', 55, 59), t2.next)
+    assert_equal(Token.new('www', 62, 65), t2.next)
+    assert_equal(Token.new('google', 66, 72), t2.next)
+    assert_equal(Token.new('com', 73, 76), t2.next)
+    assert_equal(Token.new('result_3', 77, 85), t2.next)
+    assert_equal(Token.new('html', 86, 90), t2.next)
+    assert_equal(Token.new('123', 98, 101), t2.next)
+    assert_equal(Token.new('1235', 102, 106), t2.next)
+    assert_equal(Token.new('asd', 107, 110), t2.next)
+    assert_equal(Token.new('1234', 111, 115), t2.next)
+    assert_equal(Token.new('23', 116, 118), t2.next)
+    assert_equal(Token.new('rob', 119, 122), t2.next)
+    assert(! t2.next())
     t = RegExpTokenizer.new(input) do |str|
       if str =~ ACRONYM_WORD
         str.gsub!(/\./, '')

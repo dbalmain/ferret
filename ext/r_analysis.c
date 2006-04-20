@@ -25,6 +25,7 @@ static VALUE cWhiteSpaceAnalyzer;
 static VALUE cAsciiStandardAnalyzer;
 static VALUE cStandardAnalyzer;
 static VALUE cPerFieldAnalyzer;
+static VALUE cRegExpAnalyzer;
 
 //static VALUE cRegexAnalyzer;
 static VALUE cTokenStream;
@@ -38,6 +39,10 @@ static ID id_clone;
 static ID id_token_stream;
 
 static VALUE object_space;
+
+extern TokenStream *ts_create();
+extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int, int,
+		     struct re_registers *);
 
 /****************************************************************************
  *
@@ -220,13 +225,12 @@ frt_ts_mark(void *p)
 }
 
 static void
-frt_ts_free(void *p)
+frt_ts_free(TokenStream *ts)
 {
-  TokenStream *ts = (TokenStream *)p;
   if (object_get(&ts->text) != Qnil) object_del(&ts->text);
   if (ts->sub_ts && (object_get(&ts->sub_ts) != Qnil)) object_del(&ts->sub_ts);
   object_del(ts);
-  ts->destroy(ts);
+  ts_deref(ts);
 }
 
 static VALUE
@@ -298,7 +302,7 @@ frt_ts_next(VALUE self)
 static void
 cwrts_destroy(TokenStream *ts)
 {
-  rb_hash_delete(object_space, (VALUE)ts->data);
+  rb_hash_delete(object_space, LONG2NUM((long)ts->data));
   free(ts->token);
   free(ts);
 }
@@ -345,7 +349,7 @@ frt_get_cwrapped_rts(VALUE rts)
       ts->destroy = &cwrts_destroy;
       ts->sub_ts = NULL;
       // prevent from being garbage collected
-      rb_hash_aset(object_space, rts, Qnil);
+      rb_hash_aset(object_space, LONG2NUM(rts), rts);
       ts->ref_cnt = 1;
       break;
   }
@@ -379,12 +383,19 @@ typedef struct RegExpTokenStream {
 } RegExpTokenStream;
 
 static void
-frt_rets_free(TokenStream *ts)
+rets_destroy(TokenStream *ts)
 {
-  object_del(ts);
+  rb_hash_delete(object_space, LONG2NUM((long)object_get(ts)));
   free(ts->data);
   free(ts->token);
   free(ts);
+}
+
+static void
+frt_rets_free(TokenStream *ts)
+{
+  object_del(ts);
+  ts_deref(ts);
 }
 
 static void
@@ -421,13 +432,6 @@ frt_rets_get_text(VALUE self)
   return rets->rtext;
 }
 
-static void
-rets_destroy(TokenStream *ts)
-{ }
-
-extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int, int,
-		     struct re_registers *);
-
 static Token *
 rets_next(TokenStream *ts)
 {
@@ -442,10 +446,7 @@ rets_next(TokenStream *ts)
                  &regs);
 
   if (ret == -2) rb_raise(rb_eStandardError, "regexp buffer overflow");
-  if (ret < 0) {
-      /* not matched */
-      return NULL;
-  }
+  if (ret < 0) return NULL; /* not matched */
   
   beg = regs.beg[0];
   rets->curr_ind = end = regs.end[0];
@@ -475,30 +476,49 @@ rets_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
   new_ts->data = new_rets;
 }
 
-static VALUE
-frt_rets_init(int argc, VALUE *argv, VALUE self) 
+static TokenStream *
+rets_create(VALUE rtext, VALUE regex, VALUE proc)
 {
-  TokenStream *ts;
   RegExpTokenStream *rets;
-
-  ts = ALLOC(TokenStream);
+  if (rtext != Qnil) rtext = StringValue(rtext);
+  TokenStream *ts = ts_create();
   ts->reset = &rets_reset;
   ts->next = &rets_next;
   ts->clone_i = &rets_clone_i;
   ts->destroy = &rets_destroy;
-  ts->token = ALLOC(Token);
+  ts->ref_cnt = 1;
 
-  rets = ALLOC_AND_ZERO_N(RegExpTokenStream, 1);
-  ts->data = rets;
-  rb_scan_args(argc, argv, "11&", &rets->rtext, &rets->regex, &rets->proc);
-  if (NIL_P(rets->regex)) {
+  rets = ALLOC(RegExpTokenStream);
+  rets->curr_ind = 0;
+  rets->rtext = rtext;
+  rets->proc = proc;
+  if (NIL_P(regex)) {
     rets->regex = rtoken_re;
   } else {
-    Check_Type(rets->regex, T_REGEXP);
+    Check_Type(regex, T_REGEXP);
+    rets->regex = regex;
   }
+
+  ts->data = rets;
+
+  return ts;
+}
+
+static VALUE
+frt_rets_init(int argc, VALUE *argv, VALUE self) 
+{
+  VALUE rtext, regex, proc;
+  TokenStream *ts;
+
+  rb_scan_args(argc, argv, "11&", &rtext, &regex, &proc);
+
+  ts = rets_create(rtext, regex, proc);
 
   Frt_Wrap_Struct(self, &frt_rets_mark, &frt_rets_free, ts);
   object_add(ts, self);
+  /* no need to add to object space as it is going to ruby space
+   * rb_hash_aset(object_space, LONG2NUM((long)self), self);
+   */
   return self;
 }
 
@@ -635,7 +655,7 @@ frt_stem_filter_init(int argc, VALUE *argv, VALUE self)
 static void
 cwa_destroy(Analyzer *a)
 {
-  rb_hash_delete(object_space, (VALUE)a->data);
+  rb_hash_delete(object_space, LONG2NUM((long)a->data));
   a_standard_destroy(a);
 }
 
@@ -660,16 +680,15 @@ frt_get_cwrapped_analyzer(ranalyzer)
     default:
       a = analyzer_create((void *)ranalyzer, NULL, &cwa_destroy, &cwa_get_ts);
       // prevent from being garbage collected
-      rb_hash_aset(object_space, ranalyzer, Qnil);
+      rb_hash_aset(object_space, LONG2NUM(ranalyzer), ranalyzer);
       break;
   }
   return a;
 }
 
 static void
-frt_analyzer_free(void *p)
+frt_analyzer_free(Analyzer *a)
 {
-  Analyzer *a = (Analyzer *)p;
   object_del(a);
   a->destroy(a);
 }
@@ -816,6 +835,7 @@ frt_pfa_mark(void *p)
 }
 
 /*** PerFieldAnalyzer ***/
+
 static VALUE
 frt_per_field_analyzer_init(VALUE self, VALUE ranalyzer)
 {
@@ -838,36 +858,42 @@ frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
   return self;
 }
 
+/*** RegExpAnalyzer ***/
 
-/** RegexAnalyzer **/
-/*
-static VALUE
-frt_regex_analyzer_init(VALUE self)
+static void
+frt_re_analyzer_mark(Analyzer *a)
 {
-  Analyzer *a = regex_analyzer_create();
-  // keine Ahnung warum hier das Makro und nicht Data_Wrap_Struct:
-  Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
-  // wofuer?:
+  frt_gc_mark(a->current_ts);
+}
+
+static void
+re_analyzer_destroy(Analyzer *a)
+{
+  free(a->data);
+  a_standard_destroy(a);
+}
+
+static VALUE
+frt_re_analyzer_init(int argc, VALUE *argv, VALUE self)
+{
+  VALUE lower, rets, regex, proc;
+  Analyzer *a;
+  TokenStream *ts;
+  rb_scan_args(argc, argv, "02&", &regex, &lower, &proc);
+
+  ts = rets_create(Qnil, regex, proc);
+  rets = Data_Wrap_Struct(cRegExpTokenizer, &frt_rets_mark, &frt_rets_free, ts);
+  ref(ts);
+  rb_hash_aset(object_space, LONG2NUM((long)rets), rets);
+  object_add(ts, rets);
+
+  if (lower != Qfalse) ts = mb_lowercase_filter_create(ts);
+
+  a = analyzer_create(NULL, ts, &re_analyzer_destroy, NULL);
+  Frt_Wrap_Struct(self, &frt_re_analyzer_mark, &frt_analyzer_free, a);
   object_add(a, self);
   return self;
 }
-
-// convenience method
-// XXX this sets the locale for the entire program
-static VALUE
-frt_regex_analyzer_token_stream(VALUE self, VALUE field, VALUE string)
-{
-  Analyzer *a =((struct RData *)(self))->data;
-  TokenStream *ts = a->get_ts( a, StringValuePtr(field), StringValuePtr(string) );
-  // already freed via analyzer's free()
-  VALUE token_stream = Data_Wrap_Struct(cTokenStream, NULL, NULL, ts);
-  return token_stream;
-}
-*/
-/** /RegexAnalyzer **/
-
-/** TokenStream **/
-/** /TokenStream **/
 
 /****************************************************************************
  *
@@ -1118,7 +1144,13 @@ Init_analysis(void)
   rb_define_method(cPerFieldAnalyzer, "[]=",
       frt_per_field_analyzer_add_field, 2);
 
-  /** RegexAnalyzer **/
+  /*** * * RegexAnalyzer * * ***/
+  cRegExpAnalyzer =
+    rb_define_class_under(mAnalysis, "RegExpAnalyzer", cAnalyzer);
+  rb_define_alloc_func(cRegExpAnalyzer, frt_data_alloc);
+  rb_define_method(cRegExpAnalyzer, "initialize",
+      frt_re_analyzer_init, -1);
+
   /*
   cRegexAnalyzer =
     rb_define_class_under(mAnalysis, "RegexAnalyzer", cAnalyzer);
