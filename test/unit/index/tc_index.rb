@@ -585,4 +585,10 @@ class IndexTest < Test::Unit::TestCase
     index1.close
     index2.close
   end
+
+  def test_doc_specific_analyzer
+    index = Index.new
+    index.add_document("abc", Ferret::Analysis::Analyzer.new)
+    assert_equal(1, index.size)
+  end
 end

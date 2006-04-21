@@ -22,7 +22,7 @@ search for later. If you'd like to use a different analyzer you can specify it
 here, eg;
 
   index = Index::Index.new(:path => '/path/to/index',
-                           :analyzer => WhiteSpaceAnalyzer.new)
+                           :analyzer => Analysis::WhiteSpaceAnalyzer.new)
 
 For more options when creating an Index refer to Ferret::Index::Index.
 

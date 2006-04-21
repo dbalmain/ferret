@@ -426,7 +426,6 @@ static VALUE
 frt_iw_init(int argc, VALUE *argv, VALUE self)
 {
   VALUE rdir, roptions, rval;
-  bool close_dir = false;
   bool create = false;
   bool use_compound_file = true;
   Store *store;
@@ -436,20 +435,21 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
   if (argc > 0) {
     if (TYPE(rdir) == T_DATA) {
       store = DATA_PTR(rdir);
+      ref(store);
     } else {
-      rdir = rb_obj_as_string(rdir);
+      StringValue(rdir);
       store = open_fs_store(RSTRING(rdir)->ptr);
-      close_dir = true;
     }
   } else {
     store = open_ram_store();
-    close_dir = true;
   }
   if (argc == 2) {
     Check_Type(roptions, T_HASH);
+    /* Let ruby's GC handle the closing of the store
     if (!close_dir) {
       close_dir = RTEST(rb_hash_aref(roptions, rclose_dir_key));
     }
+    */
     /* use_compound_file defaults to true */
     use_compound_file = 
       (rb_hash_aref(roptions, ruse_compound_file_key) == Qfalse) ? false : true;
@@ -459,7 +459,6 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
       analyzer = mb_standard_analyzer_create(true);
     } else {
       analyzer = frt_get_cwrapped_analyzer(rval);
-      ref(analyzer);
     }
     create = RTEST(rb_hash_aref(roptions, rcreate_key));
     if (!create && RTEST(rb_hash_aref(roptions, rcreate_if_missing_key))) {
@@ -469,7 +468,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
     }
   }
   iw = iw_open(store, analyzer, create);
-  if (close_dir) store_deref(store);
+  store_deref(store);
   iw->use_compound_file = use_compound_file;
 
   SET_INT_ATTR(merge_factor);

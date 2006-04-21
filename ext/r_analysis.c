@@ -690,7 +690,7 @@ static void
 frt_analyzer_free(Analyzer *a)
 {
   object_del(a);
-  a->destroy(a);
+  a_deref(a);
 }
 
 VALUE
@@ -853,7 +853,6 @@ frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
   Data_Get_Struct(self, Analyzer, pfa);
   a = frt_get_cwrapped_analyzer(ranalyzer);
 
-  ref(a); /* make sure pfa won't destroy the analyzer */
   pfa_add_field(pfa, StringValuePtr(rfield), a);
   return self;
 }

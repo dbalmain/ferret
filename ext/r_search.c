@@ -1628,6 +1628,7 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
       if (!def_fields) def_fields = frt_get_fields(rval);
     }
     ind = index_create(store, analyzer, def_fields, create);
+    if (analyzer) a_deref(analyzer);
     
     /* QueryParser options */
     if (Qnil != (rval = rb_hash_aref(roptions, rhandle_parse_errors_key))) {
@@ -1784,6 +1785,7 @@ frt_ind_add_doc(int argc, VALUE *argv, VALUE self)
   if (argc == 2) {
     Analyzer *analyzer = frt_get_cwrapped_analyzer(ranalyzer);
     index_add_doc_a(ind, doc, analyzer);
+    a_deref(analyzer);
   } else {
     index_add_doc(ind, doc);
   }

@@ -87,10 +87,9 @@ frt_lock_release(VALUE self)
  ****************************************************************************/
 
 void
-frt_dir_free(void *p)
+frt_dir_free(Store *store)
 {
-  Store *store = (Store *)p;
-  object_del(p);
+  object_del(store);
   store_deref(store);
 }
 
@@ -218,6 +217,8 @@ frt_fsdir_new(VALUE klass, VALUE rpath, VALUE rcreate)
   if ((self = object_get(store)) == Qnil) {
     self = Data_Wrap_Struct(klass, NULL, &frt_dir_free, store);
     object_add(store, self);
+  } else {
+    store_deref(store);
   }
   return self;
 }
@@ -227,16 +228,6 @@ frt_fsdir_new(VALUE klass, VALUE rpath, VALUE rcreate)
  * Init Function
  *
  ****************************************************************************/
-
-#define DIR_METHODS(dir)\
-  rb_define_method(dir, "close", frt_dir_close, 0);\
-  rb_define_method(dir, "exists?", frt_dir_exists, 1);\
-  rb_define_method(dir, "touch", frt_dir_touch, 1);\
-  rb_define_method(dir, "delete", frt_dir_delete, 1);\
-  rb_define_method(dir, "file_count", frt_dir_file_count, 0);\
-  rb_define_method(dir, "refresh", frt_dir_refresh, 0);\
-  rb_define_method(dir, "rename", frt_dir_rename, 2);\
-  rb_define_method(dir, "make_lock", frt_dir_make_lock, 1);
 
 void
 Init_dir(void)
@@ -249,16 +240,22 @@ Init_dir(void)
 
   cDirectory = rb_define_class_under(mStore, "Directory", rb_cObject);
   rb_define_const(cDirectory, "LOCK_PREFIX", rb_str_new2(LOCK_PREFIX));
+  rb_define_method(cDirectory, "close", frt_dir_close, 0);\
+  rb_define_method(cDirectory, "exists?", frt_dir_exists, 1);\
+  rb_define_method(cDirectory, "touch", frt_dir_touch, 1);\
+  rb_define_method(cDirectory, "delete", frt_dir_delete, 1);\
+  rb_define_method(cDirectory, "file_count", frt_dir_file_count, 0);\
+  rb_define_method(cDirectory, "refresh", frt_dir_refresh, 0);\
+  rb_define_method(cDirectory, "rename", frt_dir_rename, 2);\
+  rb_define_method(cDirectory, "make_lock", frt_dir_make_lock, 1);
 
   /* RAMDirectory */
   cRAMDirectory = rb_define_class_under(mStore, "RAMDirectory", cDirectory);
   rb_define_alloc_func(cRAMDirectory, frt_data_alloc);
   rb_define_method(cRAMDirectory, "initialize", frt_ramdir_init, -1);
-  DIR_METHODS(cRAMDirectory);
 
   /* FSDirectory */
   cFSDirectory = rb_define_class_under(mStore, "FSDirectory", cDirectory);
   rb_define_alloc_func(cFSDirectory, frt_data_alloc);
   rb_define_singleton_method(cFSDirectory, "new", frt_fsdir_new, 2);
-  DIR_METHODS(cFSDirectory);
 }

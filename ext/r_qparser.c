@@ -94,9 +94,6 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
 
   if (!analyzer) {
     analyzer = letter_analyzer_create(true);
-    /* make sure the analyzer will be disposed of when the QueryParser
-     * is garbage collected. */
-    rval = frt_get_analyzer(analyzer);
   }
 
   qp = qp_create(all_fields, def_fields, analyzer);
