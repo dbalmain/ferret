@@ -93,7 +93,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
   }
 
   if (!analyzer) {
-    analyzer = letter_analyzer_create(true);
+    analyzer = mb_standard_analyzer_create(true);
   }
 
   qp = qp_create(all_fields, def_fields, analyzer);

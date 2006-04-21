@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a1358', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3fb', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -20,7 +20,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a135
       default_field = default_field.split("|")
     end
     @field = @default_field = default_field
-    @analyzer = options[:analyzer] || Analysis::Analyzer.new
+    @analyzer = options[:analyzer] || Analysis::StandardAnalyzer.new
     @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
     @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
     @default_slop = options[:default_slop] || 0
@@ -398,7 +398,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a135
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..idf3b64a1358
+..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3fb
 
 ##### racc 1.4.4 generates ###
 

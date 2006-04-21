@@ -131,7 +131,7 @@ end
       default_field = default_field.split("|")
     end
     @field = @default_field = default_field
-    @analyzer = options[:analyzer] || Analysis::Analyzer.new
+    @analyzer = options[:analyzer] || Analysis::StandardAnalyzer.new
     @wild_lower = options[:wild_lower].nil? ? true : options[:wild_lower]
     @occur_default = options[:occur_default] || BooleanClause::Occur::SHOULD
     @default_slop = options[:default_slop] || 0
