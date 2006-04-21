@@ -17,4 +17,11 @@ class TermTest < Test::Unit::TestCase
     term4.set!("field3", "text3")
     assert_not_equal(term1, term4)
   end
+
+  def test_non_strings()
+    t = Term.new(2345, 3)
+    t = Term.new(:symbol, :symbol)
+    t.set!(:symbol, :symbol)
+    t.set!(234, 23462346)
+  end
 end

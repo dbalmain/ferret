@@ -18,7 +18,7 @@ module Ferret::Index
 
     # Constructs a Term with the given field and text
     def initialize(fld_name, txt)
-      @field = fld_name
+      @field = fld_name.to_s
       @text = txt.to_s
     end
 
