@@ -240,5 +240,13 @@ module IndexTestHelper
     end
     return docs
   end
+
+  def IndexTestHelper.explain (query, searcher, field)
+    top_docs = searcher.search(query)
+    top_docs.score_docs.each { |sd|
+      puts "\nDoc #{sd.doc}: #{searcher.doc(sd.doc)[field]}\n#{searcher.explain(query, sd.doc).to_s}\n"
+    }
+  end
+
 end
 

@@ -181,6 +181,13 @@ module Ferret::Search
       end
     end
     
+    # See Query#extract_terms()
+    def extract_terms(query_terms) 
+      @term_arrays.each { |terms| 
+        query_terms.merge(terms) 
+      }
+    end
+
     def create_weight(searcher)
       return MultiPhraseWeight.new(self, searcher)
     end

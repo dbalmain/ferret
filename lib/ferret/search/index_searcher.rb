@@ -104,7 +104,13 @@ module Ferret::Search
         raise ArgumentError, "first_doc must be >= 0 to run a search"
       end
 
-      scorer = query.weight(self).scorer(@reader)
+      # for MultiSearcher: the weight is computed across all searchers
+      if query.is_a? Weight
+        scorer = query.scorer(@reader)
+      else
+        scorer = query.weight(self).scorer(@reader)
+      end
+        
       if (scorer == nil)
         return TopDocs.new(0, [])
       end
@@ -148,7 +154,12 @@ module Ferret::Search
     # usually want your hits sorted at least by score so you should use the
     # #search method.
     def search_each(query, filter = nil)
-      scorer = query.weight(self).scorer(@reader)
+      # for MultiSearcher: the weight is computed across all searchers
+      if query.is_a? Weight
+        scorer = query.scorer(@reader)
+      else
+        scorer = query.weight(self).scorer(@reader)
+      end
       return if scorer == nil
       bits = (filter.nil? ? nil : filter.bits(@reader))
       scorer.each_hit() do |doc, score|
@@ -175,13 +186,19 @@ module Ferret::Search
 
     # Returns an Explanation that describes how +doc+ scored against
     # +query+.
+    # A weight may be given as first parameter instead of the query, too.
     # 
     # This is intended to be used in developing Similarity implementations,
     # and, for good performance, should not be displayed with every hit.
     # Computing an explanation is as expensive as executing the query over the
     # entire index.
     def explain(query, doc)
-      return query.weight(self).explain(@reader, doc)
+      if query.is_a? Weight
+        weight = query
+      else
+        weight = query.weight(self)
+      end
+      return weight.explain(@reader, doc)
     end
   end
 end

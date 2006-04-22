@@ -173,7 +173,7 @@ module Ferret::Search
 
     # See Query#extract_terms()
     def extract_terms(query_terms) 
-      query_terms.add_all(@terms)
+      query_terms.merge(@terms)
     end
 
     # Prints a user-readable version of this query. 

@@ -248,10 +248,6 @@ module Ferret::Search
       end
     end
 
-    def combine(queries) 
-      return Query.merge_boolean_queries(queries)
-    end
-
     def initialize_copy(o)
       super
       @clauses = o.clauses.clone

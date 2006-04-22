@@ -62,15 +62,46 @@ module Ferret::Search
 
     # Expert: called when re-writing queries under MultiSearcher.
     # 
-    # Only implemented by derived queries, with no #create_weight()
-    # implementatation.
+    # Create a single query suitable for use by all subsearchers (in 1-1
+    # correspondence with queries). This is an optimization of the OR of
+    # all queries. We handle the common optimization cases of equal
+    # queries and overlapping clauses of boolean OR queries (as generated
+    # by MultiTermQuery.rewrite() and RangeQuery.rewrite()).
+    # Be careful overriding this method as queries[0] determines which
+    # method will be called and is not necessarily of the same type as
+    # the other queries.
     def combine(queries) 
-      queries.each do |query|
-        if self != query
-          raise ArgumentError
+      uniques = Set.new
+      queries.each { |query|
+        clauses = []
+        # check if we can split the query into clauses
+        splittable = query.respond_to? :clauses
+        if splittable
+          splittable = query.coord_disabled?
+          clauses = query.clauses
+          clauses.each { |clause|
+            splittable = clause.occur == BooleanClause::Occur::SHOULD
+            break unless splittable
+          }
         end
+        if splittable
+          clauses.each { |clause|
+            uniques << clause.query
+          }
+        else
+          uniques << query
+        end
+      }
+      # optimization: if we have just one query, just return it
+      if uniques.size == 1
+        uniques.each { |query| return query }
       end
-      return self
+      
+      result = BooleanQuery.new(true)
+      uniques.each { |query|
+        result.add_query(query, BooleanClause::Occur::SHOULD)
+      }
+      return result
     end
 
     # Expert: adds all terms occuring in this query to the terms set
