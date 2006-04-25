@@ -59,6 +59,7 @@ class IndexSearcherTest < Test::Unit::TestCase
     assert_equal(18, @is.max_doc)
     assert_equal("20050930", @is.doc(0).values(:date))
     assert_equal("cat1/sub2/subsub2", @is.doc(4)[:cat])
+    assert_equal("20051012", @is.doc(12)[:date])
   end
 
   def test_term_query
@@ -128,6 +129,13 @@ class IndexSearcherTest < Test::Unit::TestCase
     bq = BooleanQuery.new()
     bq.add_query(tq2, BooleanClause::Occur::SHOULD)
     bq.add_query(tq3, BooleanClause::Occur::SHOULD)
+    check_hits(bq, [1,2,3,4,6,8,11,14])
+
+    bq = BooleanQuery.new()
+    bc1 = BooleanClause.new(tq2, BooleanClause::Occur::SHOULD)
+    bc2 = BooleanClause.new(tq3, BooleanClause::Occur::SHOULD)
+    bq.add_clause(bc1)
+    bq.add_clause(bc2)
     check_hits(bq, [1,2,3,4,6,8,11,14])
   end
 

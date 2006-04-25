@@ -14,7 +14,9 @@ extern void frt_ir_mark(void *p);
 static VALUE cScoreDoc;
 static VALUE cTopDocs;
 static VALUE cExplanation;
+static VALUE cSearcher;
 static VALUE cIndexSearcher;
+static VALUE cMultiSearcher;
 static VALUE cSortField;
 static VALUE cSortType;
 static VALUE cSort;
@@ -253,9 +255,8 @@ frt_expl_value(VALUE self)
 static void
 frt_q_free(void *p)
 {
-  Query *q = (Query *)p;
   object_del(p);
-  q->destroy(q);
+  q_deref((Query *)p);
 }
 
 #define GET_Q Query *q; Data_Get_Struct(self, Query, q)
@@ -388,15 +389,15 @@ frt_bc_mark(void *p)
 static void
 frt_bc_free(void *p)
 {
-  BooleanClause *bc = (BooleanClause *)p;
-  object_del(bc);
-  free(bc);  
+  object_del(p);
+  bc_deref((BooleanClause *)p);  
 }
 
 static VALUE
 frt_get_bc(BooleanClause *bc)
 {
   VALUE self = Data_Wrap_Struct(cBooleanClause, &frt_bc_mark, &frt_bc_free, bc);
+  ref(bc);
   object_add(bc, self);
   return self;
 }
@@ -412,6 +413,7 @@ frt_bc_init(int argc, VALUE *argv, VALUE self)
     occur = FIX2INT(roccur);
   }
   Data_Get_Struct(rquery, Query, sub_q);
+  ref(sub_q);
   bc = bc_create(sub_q, occur);
   Frt_Wrap_Struct(self, &frt_bc_mark, &frt_bc_free, bc);
   object_add(bc, self);
@@ -734,7 +736,6 @@ frt_mphq_set_slop(VALUE self, VALUE rslop)
   pq->slop = FIX2INT(rslop);
   return self;
 }
-
 
 /****************************************************************************
  *
@@ -1182,9 +1183,8 @@ frt_qf_init(VALUE self, VALUE rquery)
 static void 
 frt_sf_free(void *p)
 {
-  SortField *sf = (SortField *)p;
-  object_del(sf);
-  sort_field_destroy(sf);
+  object_del(p);
+  sort_field_destroy((SortField *)p);
 }
 
 static VALUE
@@ -1366,16 +1366,139 @@ frt_sort_get_fields(VALUE self)
 
 /****************************************************************************
  *
- * IndexSearcher Methods
+ * Searcher Methods
  *
  ****************************************************************************/
 
 static void
-frt_is_free(void *p)
+frt_sea_free(void *p)
 {
   Searcher *sea = (Searcher *)p;
-  sea->close(sea);
+  object_del(sea);
+  sea_close(sea);
 }
+
+#define GET_SEA Searcher *sea; Data_Get_Struct(self, Searcher, sea)
+
+static VALUE
+frt_sea_close(VALUE self)
+{
+  GET_SEA;
+  Frt_Unwrap_Struct(self);
+  sea->close(sea);
+  return Qnil;
+}
+
+static VALUE
+frt_sea_get_reader(VALUE self, VALUE rterm)
+{
+  GET_SEA;
+  return object_get(sea->ir);
+}
+
+static VALUE
+frt_sea_doc_freq(VALUE self, VALUE rterm)
+{
+  GET_SEA;
+  Term t;
+  frt_set_term(rterm, &t);
+  return INT2FIX(sea->doc_freq(sea, &t));
+}
+
+static VALUE
+frt_sea_doc_freqs(VALUE self, VALUE rterms)
+{
+  int i;
+  GET_SEA;
+  Term t;
+  Check_Type(rterms, T_ARRAY);
+  VALUE freqs = rb_ary_new2(RARRAY(rterms)->len);
+  for (i = 0; i < RARRAY(rterms)->len; i++) {
+    frt_set_term(RARRAY(rterms)->ptr[i], &t);
+    rb_ary_store(freqs, i, INT2FIX(sea->doc_freq(sea, &t)));
+  }
+  return freqs;
+}
+
+static VALUE
+frt_sea_doc(VALUE self, VALUE rdoc_num)
+{
+  GET_SEA;
+  return frt_get_doc(sea->get_doc(sea, FIX2INT(rdoc_num)));
+}
+
+static VALUE
+frt_sea_max_doc(VALUE self)
+{
+  GET_SEA;
+  return INT2FIX(sea->max_doc(sea));
+}
+
+static TopDocs *
+frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
+{
+  VALUE rval;
+  int first_doc = 0, num_docs = 10;
+  Filter *filter = NULL;
+  Sort *sort = NULL;
+  
+  if (Qnil != roptions) {
+    if (Qnil != (rval = rb_hash_aref(roptions, rfirst_doc_key))) {
+      first_doc = FIX2INT(rval);
+      if (first_doc < 0)
+        rb_raise(rb_eArgError, ":first_doc must be >= 0");
+    }
+    if (Qnil != (rval = rb_hash_aref(roptions, rnum_docs_key))) {
+      num_docs = FIX2INT(rval);
+      if (num_docs <= 0)
+        rb_raise(rb_eArgError, ":num_docs must be > 0");
+    }
+    if (Qnil != (rval = rb_hash_aref(roptions, rfilter_key))) {
+      Data_Get_Struct(rval, Filter, filter);
+    }
+    if (Qnil != (rval = rb_hash_aref(roptions, rsort_key))) {
+      if (TYPE(rval) != T_DATA) {
+        rval = frt_sort_init(1, &rval, frt_sort_alloc(cSort));
+      }
+      Data_Get_Struct(rval, Sort, sort);
+    }
+  }
+
+  return sea->search(sea, query, first_doc, num_docs, filter, sort);
+}
+
+static VALUE
+frt_sea_search(int argc, VALUE *argv, VALUE self)
+{
+  GET_SEA;
+  VALUE rquery, roptions;
+  Query *query;
+  rb_scan_args(argc, argv, "11", &rquery, &roptions);
+  Data_Get_Struct(rquery, Query, query);
+  return frt_get_td(frt_sea_search_internal(query, roptions, sea));
+}
+
+static VALUE
+frt_sea_search_each(VALUE self, VALUE rquery, VALUE roptions)
+{
+  return Qnil;
+}
+
+static VALUE
+frt_sea_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
+{
+  GET_SEA;
+  Query *query;
+  Data_Get_Struct(rquery, Query, query);
+  Explanation *expl = sea->explain(sea, query, FIX2INT(rdoc_num));
+  return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);
+}
+
+/****************************************************************************
+ *
+ * IndexSearcher Methods
+ *
+ ****************************************************************************/
 
 static void
 frt_is_mark(void *p)
@@ -1416,124 +1539,72 @@ frt_is_init(VALUE self, VALUE obj)
 
   sea = sea_create(ir);
   sea->close_ir = false;
-  Frt_Wrap_Struct(self, &frt_is_mark, &frt_is_free, sea);
+  Frt_Wrap_Struct(self, &frt_is_mark, &frt_sea_free, sea);
+  object_add(sea, self);
   return self;
 }
 
-#define GET_SEA Searcher *sea; Data_Get_Struct(self, Searcher, sea)
+/****************************************************************************
+ *
+ * MultiSearcher Methods
+ *
+ ****************************************************************************/
 
-static VALUE
-frt_is_close(VALUE self)
+static void
+frt_ms_free(void *p)
 {
-  GET_SEA;
-  Frt_Unwrap_Struct(self);
-  sea->close(sea);
-  return Qnil;
+  Searcher *sea = (Searcher *)p;
+  MultiSearcher *msea = (MultiSearcher *)sea->data;
+  free(msea->searchers);
+  object_del(sea);
+  sea_close(sea);
 }
 
-static VALUE
-frt_is_get_reader(VALUE self, VALUE rterm)
-{
-  GET_SEA;
-  return object_get(sea->ir);
-}
-
-static VALUE
-frt_is_doc_freq(VALUE self, VALUE rterm)
-{
-  GET_SEA;
-  Term t;
-  frt_set_term(rterm, &t);
-  return INT2FIX(sea->doc_freq(sea, &t));
-}
-
-static VALUE
-frt_is_doc_freqs(VALUE self, VALUE rterms)
+static void
+frt_ms_mark(void *p)
 {
   int i;
-  GET_SEA;
-  Term t;
-  Check_Type(rterms, T_ARRAY);
-  VALUE freqs = rb_ary_new2(RARRAY(rterms)->len);
-  for (i = 0; i < RARRAY(rterms)->len; i++) {
-    frt_set_term(RARRAY(rterms)->ptr[i], &t);
-    rb_ary_store(freqs, i, INT2FIX(sea->doc_freq(sea, &t)));
+  Searcher *sea = (Searcher *)p;
+  MultiSearcher *msea = (MultiSearcher *)sea->data;
+  for (i = 0; i < msea->s_cnt; i++) {
+    frt_gc_mark(msea->searchers[i]);
   }
-  return freqs;
 }
 
 static VALUE
-frt_is_doc(VALUE self, VALUE rdoc_num)
+frt_ms_init(int argc, VALUE *argv, VALUE self)
 {
-  GET_SEA;
-  return frt_get_doc(sea->get_doc(sea, FIX2INT(rdoc_num)));
-}
+  int i, j;
 
-static VALUE
-frt_is_max_doc(VALUE self)
-{
-  GET_SEA;
-  return INT2FIX(sea->max_doc(sea));
-}
+  VALUE rsearcher;
+  Array *searchers = ary_create(argc, (free_ft)NULL);
+  Searcher *s;
 
-static TopDocs *
-frt_is_search_internal(Query *query, VALUE roptions, Searcher *sea)
-{
-  VALUE rval;
-  int first_doc = 0, num_docs = 10;
-  Filter *filter = NULL;
-  Sort *sort = NULL;
-  
-  if (Qnil != roptions) {
-    if (Qnil != (rval = rb_hash_aref(roptions, rfirst_doc_key))) {
-      first_doc = FIX2INT(rval);
-      if (first_doc < 0)
-        rb_raise(rb_eArgError, ":first_doc must be >= 0");
-    }
-    if (Qnil != (rval = rb_hash_aref(roptions, rnum_docs_key))) {
-      num_docs = FIX2INT(rval);
-      if (num_docs <= 0)
-        rb_raise(rb_eArgError, ":num_docs must be > 0");
-    }
-    if (Qnil != (rval = rb_hash_aref(roptions, rfilter_key))) {
-      Data_Get_Struct(rval, Filter, filter);
-    }
-    if (Qnil != (rval = rb_hash_aref(roptions, rsort_key))) {
-      if (TYPE(rval) != T_DATA) {
-        rval = frt_sort_init(1, &rval, frt_sort_alloc(cSort));
-      }
-      Data_Get_Struct(rval, Sort, sort);
+  for (i = 0; i < argc; i++) {
+    rsearcher = argv[i];
+    switch (TYPE(rsearcher)) {
+      case T_ARRAY:
+        for (j = 0; j < RARRAY(rsearcher)->len; j++) {
+          VALUE rs = RARRAY(rsearcher)->ptr[j];
+          Data_Get_Struct(rs, Searcher, s);
+          ary_append(searchers, s);
+        }
+      break;
+      case T_DATA:
+        Data_Get_Struct(rsearcher, Searcher, s);
+        ary_append(searchers, s);
+        break;
+      default:
+        rb_raise(rb_eArgError, "Can't add class %s to MultiSearcher",
+            rb_obj_classname(rsearcher));
+        break;
     }
   }
-
-  return sea->search(sea, query, first_doc, num_docs, filter, sort);
-}
-
-static VALUE
-frt_is_search(int argc, VALUE *argv, VALUE self)
-{
-  GET_SEA;
-  VALUE rquery, roptions;
-  Query *query;
-  rb_scan_args(argc, argv, "11", &rquery, &roptions);
-  Data_Get_Struct(rquery, Query, query);
-  return frt_get_td(frt_is_search_internal(query, roptions, sea));
-}
-
-static VALUE
-frt_is_search_each(VALUE self, VALUE rquery, VALUE roptions)
-{
-  return Qnil;
-}
-
-static VALUE
-frt_is_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
-{
-  GET_SEA;
-  Query *query;
-  Data_Get_Struct(rquery, Query, query);
-  Explanation *expl = sea->explain(sea, query, FIX2INT(rdoc_num));
-  return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);
+  s = msea_create((Searcher **)searchers->elems, searchers->size, false);
+  free(searchers); /* only free the Array, not the elems array holding the searchers */
+  Frt_Wrap_Struct(self, &frt_ms_mark, &frt_ms_free, s);
+  object_add(s, self);
+  return self;
 }
 
 /****************************************************************************
@@ -1562,18 +1633,17 @@ frt_ind_free_store_i(Index *self)
 static void
 frt_ind_free(void *p)
 {
-  Index *self = (Index *)p;
-  //frt_ind_free_store_i(self);
-  object_del(self);
-  index_destroy(self);
+  Index *ind = (Index *)p;
+  object_del(ind);
+  index_destroy(ind);
 }
 
 static void
 frt_ind_mark(void *p)
 {
-  Index *self = (Index *)p;
-  frt_gc_mark(self->store);
-  frt_gc_mark(self->analyzer);
+  Index *ind = (Index *)p;
+  frt_gc_mark(ind->store);
+  frt_gc_mark(ind->analyzer);
 }
 
 static VALUE
@@ -1794,7 +1864,7 @@ frt_ind_add_doc(int argc, VALUE *argv, VALUE self)
 }
 
 static Query *
-frt_get_query_i(Index *ind, VALUE rquery, bool *destroy_query)
+frt_get_query_i(Index *ind, VALUE rquery)
 {
   Query *q = NULL;
 
@@ -1803,10 +1873,10 @@ frt_get_query_i(Index *ind, VALUE rquery, bool *destroy_query)
       rquery = rb_obj_as_string(rquery);
     case T_STRING:
       q = index_get_query(ind, RSTRING(rquery)->ptr);
-      *destroy_query = true;
       break;
     case T_DATA:
       Data_Get_Struct(rquery, Query, q);
+      ref(q);
       break;
     default:
       rb_raise(rb_eArgError, "Can only handle a String or a Query.");
@@ -1821,14 +1891,13 @@ frt_ind_search(int argc, VALUE *argv, VALUE self)
 {
   Query *q;
   VALUE rquery, roptions, rtd;
-  bool destroy_query = false;
   GET_IND;
   rb_scan_args(argc, argv, "11", &rquery, &roptions);
   ensure_searcher_open(ind);
 
-  q = frt_get_query_i(ind, rquery, &destroy_query);
-  rtd = frt_get_td(frt_is_search_internal(q, roptions, ind->sea));
-  if (destroy_query) q->destroy(q);
+  q = frt_get_query_i(ind, rquery);
+  rtd = frt_get_td(frt_sea_search_internal(q, roptions, ind->sea));
+  q_deref(q);
 
   return rtd;
 }
@@ -1840,7 +1909,6 @@ frt_ind_search_each(int argc, VALUE *argv, VALUE self)
   Query *q;
   TopDocs *td;
   VALUE rquery, roptions, rtotal_hits;
-  bool destroy_query = false;
   GET_IND;
 
 
@@ -1850,10 +1918,10 @@ frt_ind_search_each(int argc, VALUE *argv, VALUE self)
 
   ensure_searcher_open(ind);
 
-  q = frt_get_query_i(ind, rquery, &destroy_query);
+  q = frt_get_query_i(ind, rquery);
   //printf(">>>>>%s<<<<<\n", q->to_s(q, "file_name"));
-  td = frt_is_search_internal(q, roptions, ind->sea);
-  if (destroy_query) q->destroy(q);
+  td = frt_sea_search_internal(q, roptions, ind->sea);
+  q_deref(q);
 
   rtotal_hits = INT2FIX(td->total_hits);
 
@@ -2066,7 +2134,7 @@ struct QueryUpdateArg {
   Index *ind;
 };
 
-static void frt_ind_qupd_i(Searcher *sea, int doc_num, void *arg)
+static void frt_ind_qupd_i(Searcher *sea, int doc_num, float score, void *arg)
 {
   struct QueryUpdateArg *qua = (struct QueryUpdateArg *)arg;
   Document *doc = sea->ir->get_doc(sea->ir, doc_num);
@@ -2082,18 +2150,17 @@ frt_ind_query_update(VALUE self, VALUE rquery, VALUE rdoc)
   
   int i;
   Query *q;
-  bool destroy_query = false;
   struct QueryUpdateArg qua;
 
 
   ensure_searcher_open(ind);  
   qua.rdoc = rdoc;
-  qua.docs = ary_create(8, &doc_destroy);
+  qua.docs = ary_create(8, (free_ft)&doc_destroy);
   qua.ind = ind;
 
-  q = frt_get_query_i(ind, rquery, &destroy_query);
+  q = frt_get_query_i(ind, rquery);
   sea_search_each(ind->sea, q, NULL, &frt_ind_qupd_i, &qua);
-  if (destroy_query) q->destroy(q);
+  q_deref(q);
   
   for (i = 0; i < qua.docs->size; i++) {
     index_add_doc(ind, qua.docs->elems[i]);
@@ -2252,10 +2319,9 @@ static VALUE
 frt_ind_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
 {
   GET_IND;
-  bool destroy_query = false;
-  Query *q = frt_get_query_i(ind, rquery, &destroy_query);
+  Query *q = frt_get_query_i(ind, rquery);
   Explanation *expl = index_explain(ind, q, FIX2INT(rdoc_num));
-  if (destroy_query) q->destroy(q);
+  q_deref(q);
   return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);
 }
 
@@ -2547,21 +2613,29 @@ Init_search(void)
   rb_define_const(cSort, "INDEX_ORDER",
       frt_sort_init(1, &oSORT_FIELD_DOC, frt_sort_alloc(cSort)));
 
-  /* IndexSearcher */
-  cIndexSearcher = rb_define_class_under(mSearch, "IndexSearcher", rb_cObject);
-  rb_define_alloc_func(cIndexSearcher, frt_data_alloc);
+  /* Searcher */
+  cSearcher = rb_define_class_under(mSearch, "Searcher", rb_cObject);
+  rb_define_method(cSearcher, "close", frt_sea_close, 0);
+  rb_define_method(cSearcher, "reader", frt_sea_get_reader, 0);
+  rb_define_method(cSearcher, "doc_freq", frt_sea_doc_freq, 1);
+  rb_define_method(cSearcher, "doc_freqs", frt_sea_doc_freqs, 1);
+  rb_define_method(cSearcher, "doc", frt_sea_doc, 1);
+  rb_define_method(cSearcher, "[]", frt_sea_doc, 1);
+  rb_define_method(cSearcher, "max_doc", frt_sea_max_doc, 0);
+  rb_define_method(cSearcher, "search", frt_sea_search, -1);
+  rb_define_method(cSearcher, "search_each", frt_sea_search_each, 2);
+  rb_define_method(cSearcher, "explain", frt_sea_explain, 2);
 
+  /* IndexSearcher */
+  cIndexSearcher = rb_define_class_under(mSearch, "IndexSearcher", cSearcher);
+  rb_define_alloc_func(cIndexSearcher, frt_data_alloc);
   rb_define_method(cIndexSearcher, "initialize", frt_is_init, 1);
-  rb_define_method(cIndexSearcher, "close", frt_is_close, 0);
-  rb_define_method(cIndexSearcher, "reader", frt_is_get_reader, 0);
-  rb_define_method(cIndexSearcher, "doc_freq", frt_is_doc_freq, 1);
-  rb_define_method(cIndexSearcher, "doc_freqs", frt_is_doc_freqs, 1);
-  rb_define_method(cIndexSearcher, "doc", frt_is_doc, 1);
-  rb_define_method(cIndexSearcher, "[]", frt_is_doc, 1);
-  rb_define_method(cIndexSearcher, "max_doc", frt_is_max_doc, 0);
-  rb_define_method(cIndexSearcher, "search", frt_is_search, -1);
-  rb_define_method(cIndexSearcher, "search_each", frt_is_search_each, 2);
-  rb_define_method(cIndexSearcher, "explain", frt_is_explain, 2);
+
+  /* MultiSearcher */
+  cMultiSearcher = rb_define_class_under(mSearch, "MultiSearcher", cSearcher);
+  rb_define_alloc_func(cMultiSearcher, frt_data_alloc);
+  rb_define_method(cMultiSearcher, "initialize", frt_ms_init, -1);
+
 
   /* Index */
   cIndex = rb_define_class_under(mIndex, "Index", rb_cObject);

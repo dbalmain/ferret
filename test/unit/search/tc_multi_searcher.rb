@@ -118,9 +118,20 @@ class MultiSearcherTest < Test::Unit::TestCase
     assert_equal(single_docs.total_hits, multi_docs.total_hits, 'hit count')
     
     multi_docs.score_docs.each_with_index { |sd, id|
-      assert_equal single_docs.score_docs[id].doc, sd.doc
-      assert_equal single_docs.score_docs[id].score, sd.score
+      assert_equal(single_docs.score_docs[id].doc, sd.doc)
+      assert_equal(single_docs.score_docs[id].score, sd.score)
     }
+  end
+
+  def test_get_doc()
+    assert_equal(18, @multi.max_doc)
+    assert_equal("20050930", @multi.doc(0).values(:date))
+    assert_equal("cat1/sub2/subsub2", @multi.doc(4)[:cat])
+    assert_equal("20051012", @multi.doc(12)[:date])
+    assert_equal(18, @single.max_doc)
+    assert_equal("20050930", @single.doc(0).values(:date))
+    assert_equal("cat1/sub2/subsub2", @single.doc(4)[:cat])
+    assert_equal("20051012", @single.doc(12)[:date])
   end
 
   def test_term_query

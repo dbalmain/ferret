@@ -72,35 +72,33 @@ module Ferret::Search
     # the other queries.
     def combine(queries) 
       uniques = Set.new
-      queries.each { |query|
+      queries.each do |query|
         clauses = []
         # check if we can split the query into clauses
         splittable = query.respond_to? :clauses
         if splittable
           splittable = query.coord_disabled?
           clauses = query.clauses
-          clauses.each { |clause|
+          clauses.each do |clause|
             splittable = clause.occur == BooleanClause::Occur::SHOULD
             break unless splittable
-          }
+          end
         end
         if splittable
-          clauses.each { |clause|
-            uniques << clause.query
-          }
+          clauses.each { |clause| uniques << clause.query }
         else
           uniques << query
         end
-      }
+      end
       # optimization: if we have just one query, just return it
       if uniques.size == 1
         uniques.each { |query| return query }
       end
       
       result = BooleanQuery.new(true)
-      uniques.each { |query|
+      uniques.each do |query|
         result.add_query(query, BooleanClause::Occur::SHOULD)
-      }
+      end
       return result
     end
 
