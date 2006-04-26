@@ -123,14 +123,10 @@ module Ferret::Search
         hq = HitQueue.new(max_size)
       end
       total_hits = 0
-      min_score = 0.0
       scorer.each_hit() do |doc, score|
         if score > 0.0 and (bits.nil? or bits.get(doc)) # skip docs not in bits
           total_hits += 1
-          if hq.size < max_size or score >= min_score 
-            hq.insert(ScoreDoc.new(doc, score))
-            min_score = hq.top.score # maintain min_score
-          end
+          hq.insert(ScoreDoc.new(doc, score))
         end
       end
 

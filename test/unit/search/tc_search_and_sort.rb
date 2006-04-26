@@ -44,6 +44,16 @@ class SearchAndSortTest < Test::Unit::TestCase
     top_docs.total_hits.times do |i|
       assert_equal(expected[i], top_docs.score_docs[i].doc)
     end
+
+    # test sorting works for smaller ranged query
+    first_doc = 3
+    num_docs = 3
+    top_docs = is.search(query, {:sort => sort,
+                                 :first_doc => first_doc,
+                                 :num_docs => num_docs})
+    num_docs.times do |i|
+      assert_equal(expected[first_doc + i], top_docs.score_docs[i].doc)
+    end
   end
 
   def test_sorts()

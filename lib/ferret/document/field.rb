@@ -307,6 +307,6 @@ module Ferret::Document
       str << "omit_norms," if (@omit_norms)
       str << "binary," if (@binary)
       str << "<#{@name}:#{@binary ? '=bin_data=' : data}>"
-    end  
+    end
   end
 end

@@ -474,11 +474,9 @@ module Ferret::Analysis
     def next()
       t = @input.next()
 
-      if (t == nil)
-        return nil
-      end
+      return nil if (t.nil?)
 
-      t.text = t.text[0,1].upcase + t.text[1..-1]
+      t.text = t.text.capitalize
 
       return t
     end
