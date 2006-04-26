@@ -159,9 +159,10 @@ module Ferret::Store
         flush()
         last_buffer_number = (@file.length / BUFFER_SIZE).to_i
         last_buffer_offset = @file.length % BUFFER_SIZE
-        @file.buffers.each_with_index do |buffer, i|
+
+        (0..last_buffer_number).each do |i|
           len = (i == last_buffer_number ? last_buffer_offset : BUFFER_SIZE)
-          output.write_bytes(buffer, len)
+          output.write_bytes(@file.buffers[i], len)
         end
       end
       
