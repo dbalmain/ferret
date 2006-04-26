@@ -104,7 +104,7 @@ module Ferret
       # Retrieve the field_info object by either field number or field name.
       def [](index)
         if index.is_a? Integer
-          if index == NOT_A_FIELD || index < 0 # < 0 is for C extensions
+          if index >= NOT_A_FIELD || index < 0 # < 0 is for C extensions
             return FieldInfo.new("", false, NOT_A_FIELD, false)
           end
           return @fi_array[index]
