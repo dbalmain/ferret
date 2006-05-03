@@ -21,7 +21,7 @@ Otherwise, you will need Rake installed. De-compress the archive and enter its t
   tar zxpvf ferret-<version>.tar.gz
   cd ferret-<version>
 
-Run the setup config;
+Run the following;
 
   $ rake ext
   $ ruby setup.rb config
