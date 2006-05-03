@@ -12,17 +12,18 @@ search for things in them later.
 
 == Installation
 
-If you have gems installed you can simple do;
+If you have gems installed you can simply do;
 
   gem install ferret
 
-Otherwise, de-compress the archive and enter its top directory.
+Otherwise, you will need Rake installed. De-compress the archive and enter its top directory.
 
-  tar zxpvf ferret-0.1.tar.gz
-  cd ferret-0.1
+  tar zxpvf ferret-<version>.tar.gz
+  cd ferret-<version>
 
 Run the setup config;
 
+  $ rake :ext
   $ ruby setup.rb config
   $ ruby setup.rb setup
   # ruby setup.rb install
