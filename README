@@ -23,7 +23,7 @@ Otherwise, you will need Rake installed. De-compress the archive and enter its t
 
 Run the setup config;
 
-  $ rake :ext
+  $ rake ext
   $ ruby setup.rb config
   $ ruby setup.rb setup
   # ruby setup.rb install
