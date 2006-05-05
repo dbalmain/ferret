@@ -150,7 +150,8 @@ frt_td_mark(void *p)
   frt_gc_mark(td->hits);
 }
 
-#define GET_TD TopDocs *td; Data_Get_Struct(self, TopDocs, td)
+#define GET_TD TopDocs *td = (TopDocs *)DATA_PTR(self)
+
 static VALUE
 frt_get_td(TopDocs *td)
 {
@@ -218,7 +219,8 @@ frt_td_each(VALUE self)
  *
  ****************************************************************************/
 
-#define GET_EXPL Explanation *expl; Data_Get_Struct(self, Explanation, expl)
+#define GET_EXPL Explanation *expl = (Explanation *)DATA_PTR(self)
+
 static VALUE
 frt_expl_to_s(VALUE self)
 {
@@ -259,7 +261,8 @@ frt_q_free(void *p)
   q_deref((Query *)p);
 }
 
-#define GET_Q Query *q; Data_Get_Struct(self, Query, q)
+#define GET_Q Query *q = (Query *)DATA_PTR(self)
+
 
 static VALUE
 frt_q_to_s(int argc, VALUE *argv, VALUE self)
@@ -420,7 +423,7 @@ frt_bc_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-#define GET_BC BooleanClause *bc; Data_Get_Struct(self, BooleanClause, bc)
+#define GET_BC BooleanClause *bc = (BooleanClause *)DATA_PTR(self)
 static VALUE
 frt_bc_get_query(VALUE self)
 {
@@ -508,10 +511,11 @@ frt_bq_init(int argc, VALUE *argv, VALUE self)
 {
   VALUE rcoord_disabled;
   bool coord_disabled = false;
+  Query *q;
   if (rb_scan_args(argc, argv, "01", &rcoord_disabled)) {
     coord_disabled = RTEST(rcoord_disabled);
   }
-  Query *q = bq_create(coord_disabled);
+  q = bq_create(coord_disabled);
   Frt_Wrap_Struct(self, &frt_bq_mark, &frt_q_free, q);
   object_add(q, self);
 
@@ -578,10 +582,12 @@ frt_rq_new_more(VALUE klass, VALUE rfield, VALUE rlterm, VALUE rincl)
 {
   Query *q;
   VALUE self;
-  rfield = rb_obj_as_string(rfield);
   char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
-  if (!lterm) 
-    rb_raise(rb_eArgError, "The lower term must not be nil in a more than query");
+  rfield = rb_obj_as_string(rfield);
+  if (!lterm) {
+    rb_raise(rb_eArgError, "The lower term must not be nil in a more "
+                           "than query");
+  }
   q = rq_create_more(RSTRING(rfield)->ptr, lterm, RTEST(rincl));
   self = Data_Wrap_Struct(klass, NULL, &frt_q_free, q);
   object_add(q, self);
@@ -593,10 +599,12 @@ frt_rq_new_less(VALUE klass, VALUE rfield, VALUE ruterm, VALUE rincu)
 {
   Query *q;
   VALUE self;
-  rfield = rb_obj_as_string(rfield);
   char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
-  if (!uterm) 
-    rb_raise(rb_eArgError, "The upper term must not be nil in a less than query");
+  rfield = rb_obj_as_string(rfield);
+  if (!uterm) {
+    rb_raise(rb_eArgError, "The upper term must not be nil in a less "
+                           "than query");
+  }
   q = rq_create_less(RSTRING(rfield)->ptr, uterm, RTEST(rincu));
   self = Data_Wrap_Struct(klass, NULL, &frt_q_free, q);
   object_add(q, self);
@@ -1056,9 +1064,10 @@ frt_spanxq_mark(void *p)
 static VALUE
 frt_spanxq_init(VALUE self, VALUE rinc, VALUE rexc)
 {
+  Query *q;
   Check_Type(rinc, T_DATA);
   Check_Type(rexc, T_DATA);
-  Query *q = spanxq_create(DATA_PTR(rinc), DATA_PTR(rexc));
+  q = spanxq_create(DATA_PTR(rinc), DATA_PTR(rexc));
   q->destroy_all = false;
   Frt_Wrap_Struct(self, &frt_spanxq_mark, &frt_q_free, q);
   object_add(q, self);
@@ -1079,7 +1088,7 @@ frt_f_free(void *p)
   f->destroy(f);
 }
 
-#define GET_F Filter *f; Data_Get_Struct(self, Filter, f)
+#define GET_F Filter *f = (Filter *)DATA_PTR(self)
 
 static VALUE
 frt_f_to_s(VALUE self)
@@ -1128,11 +1137,14 @@ frt_rf_new_more(int argc, VALUE *argv, VALUE klass)
   Filter *f;
   VALUE self;
   VALUE rfield, rlterm, rincl;
+  char *lterm;
   rb_scan_args(argc, argv, "21", &rfield, &rlterm, &rincl);
   rfield = rb_obj_as_string(rfield);
-  char *lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
-  if (!lterm) 
-    rb_raise(rb_eArgError, "The lower term must not be nil in a more than filter");
+  lterm = NIL_P(rlterm) ? NULL : RSTRING(rb_obj_as_string(rlterm))->ptr;
+  if (!lterm) {
+    rb_raise(rb_eArgError, "The lower term must not be nil in a more "
+                           "than filter");
+  }
   f = rfilt_create(RSTRING(rfield)->ptr, lterm, NULL, rincl != Qfalse, false);
   self = Data_Wrap_Struct(klass, NULL, &frt_f_free, f);
   object_add(f, self);
@@ -1145,11 +1157,14 @@ frt_rf_new_less(int argc, VALUE *argv, VALUE klass)
   Filter *f;
   VALUE self;
   VALUE rfield, ruterm, rincu;
+  char *uterm;
   rb_scan_args(argc, argv, "21", &rfield, &ruterm, &rincu);
   rfield = rb_obj_as_string(rfield);
-  char *uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
-  if (!uterm) 
-    rb_raise(rb_eArgError, "The upper term must not be nil in a less than filter");
+  uterm = NIL_P(ruterm) ? NULL : RSTRING(rb_obj_as_string(ruterm))->ptr;
+  if (!uterm) {
+    rb_raise(rb_eArgError, "The upper term must not be nil in a less "
+                           "than filter");
+  }
   f = rfilt_create(RSTRING(rfield)->ptr, NULL, uterm, false, rincu != Qfalse);
   self = Data_Wrap_Struct(klass, NULL, &frt_f_free, f);
   object_add(f, self);
@@ -1227,7 +1242,7 @@ frt_sf_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-#define GET_SF SortField *sf; Data_Get_Struct(self, SortField, sf)
+#define GET_SF SortField *sf = (SortField *)DATA_PTR(self)
 static VALUE
 frt_sf_is_reverse(VALUE self)
 {
@@ -1318,7 +1333,7 @@ frt_sort_add(Sort *sort, VALUE rsf, bool reverse)
   sort_add_sort_field(sort, sf);
 }
 
-#define GET_SORT Sort *sort; Data_Get_Struct(self, Sort, sort)
+#define GET_SORT Sort *sort = (Sort *)DATA_PTR(self)
 static VALUE
 frt_sort_init(int argc, VALUE *argv, VALUE self)
 {
@@ -1378,7 +1393,7 @@ frt_sea_free(void *p)
   sea_close(sea);
 }
 
-#define GET_SEA Searcher *sea; Data_Get_Struct(self, Searcher, sea)
+#define GET_SEA Searcher *sea = (Searcher *)DATA_PTR(self)
 
 static VALUE
 frt_sea_close(VALUE self)
@@ -1411,8 +1426,10 @@ frt_sea_doc_freqs(VALUE self, VALUE rterms)
   int i;
   GET_SEA;
   Term t;
+  VALUE freqs;
   Check_Type(rterms, T_ARRAY);
-  VALUE freqs = rb_ary_new2(RARRAY(rterms)->len);
+
+  freqs = rb_ary_new2(RARRAY(rterms)->len);
   for (i = 0; i < RARRAY(rterms)->len; i++) {
     frt_set_term(RARRAY(rterms)->ptr[i], &t);
     rb_ary_store(freqs, i, INT2FIX(sea->doc_freq(sea, &t)));
@@ -1489,8 +1506,9 @@ frt_sea_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
 {
   GET_SEA;
   Query *query;
+  Explanation *expl;
   Data_Get_Struct(rquery, Query, query);
-  Explanation *expl = sea->explain(sea, query, FIX2INT(rdoc_num));
+  expl = sea->explain(sea, query, FIX2INT(rdoc_num));
   return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);
 }
 
@@ -1761,7 +1779,7 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-#define GET_IND Index *ind; Data_Get_Struct(self, Index, ind);\
+#define GET_IND Index *ind = (Index *)DATA_PTR(self);\
   if (!ind) rb_raise(rb_eStandardError, "Called method on closed Index object")
 static VALUE
 frt_ind_close(VALUE self)
@@ -2146,12 +2164,10 @@ static void frt_ind_qupd_i(Searcher *sea, int doc_num, float score, void *arg)
 static VALUE
 frt_ind_query_update(VALUE self, VALUE rquery, VALUE rdoc)
 {
-  GET_IND;
-  
   int i;
   Query *q;
   struct QueryUpdateArg qua;
-
+  GET_IND;
 
   ensure_searcher_open(ind);  
   qua.rdoc = rdoc;
@@ -2318,9 +2334,11 @@ frt_ind_persist(int argc, VALUE *argv, VALUE self)
 static VALUE
 frt_ind_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
 {
+  Query *q;
+  Explanation *expl;
   GET_IND;
-  Query *q = frt_get_query_i(ind, rquery);
-  Explanation *expl = index_explain(ind, q, FIX2INT(rdoc_num));
+  q = frt_get_query_i(ind, rquery);
+  expl = index_explain(ind, q, FIX2INT(rdoc_num));
   q_deref(q);
   return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);
 }

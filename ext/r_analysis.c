@@ -124,7 +124,7 @@ frt_set_token(Token *tk, VALUE rt)
   return tk;
 }
 
-#define GET_TK RToken *token; Data_Get_Struct(self, RToken, token);
+#define GET_TK RToken *token = (RToken *)DATA_PTR(self)
 static VALUE
 frt_token_init(int argc, VALUE *argv, VALUE self) 
 {
@@ -285,8 +285,7 @@ frt_ts_get_text(VALUE self)
 static VALUE
 frt_ts_next(VALUE self)
 {
-  TokenStream *ts; 
-  Data_Get_Struct(self, TokenStream, ts);
+  TokenStream *ts = (TokenStream *)DATA_PTR(self); 
   Token *next = ts->next(ts);
   if (next == NULL) {
     return Qnil;
@@ -480,8 +479,12 @@ static TokenStream *
 rets_create(VALUE rtext, VALUE regex, VALUE proc)
 {
   RegExpTokenStream *rets;
-  if (rtext != Qnil) rtext = StringValue(rtext);
-  TokenStream *ts = ts_create();
+  TokenStream *ts;
+
+  if (rtext != Qnil) {
+    rtext = StringValue(rtext);
+  }
+  ts = ts_create();
   ts->reset = &rets_reset;
   ts->next = &rets_next;
   ts->clone_i = &rets_clone_i;
@@ -704,13 +707,16 @@ frt_get_analyzer(Analyzer *a)
 static VALUE
 frt_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 {
-  Analyzer *a = ((struct RData *)(self))->data;
+  TokenStream *ts;
+  Analyzer *a = (Analyzer *)DATA_PTR(self);
+
   rfield = rb_obj_as_string(rfield);
   rstring = rb_obj_as_string(rstring);
   
-  TokenStream *ts = a_get_new_ts(a, RSTRING(rfield)->ptr, RSTRING(rstring)->ptr);
+  ts = a_get_new_ts(a, RSTRING(rfield)->ptr, RSTRING(rstring)->ptr);
 
-  object_set(&ts->text, rstring); // Make sure that there is no entry already
+  /* Make sure that there is no entry already */
+  object_set(&ts->text, rstring);
   return get_token_stream(ts);
 }
 
@@ -724,8 +730,9 @@ frt_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 static VALUE
 frt_a_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
+  Analyzer *a;
   GET_LOWER(false);
-  Analyzer *a = whitespace_analyzer_create(lower);
+  a = whitespace_analyzer_create(lower);
   Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
   object_add(a, self);
   return self;
@@ -735,8 +742,9 @@ frt_a_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
+  Analyzer *a;
   GET_LOWER(false);
-  Analyzer *a = mb_whitespace_analyzer_create(lower);
+  a = mb_whitespace_analyzer_create(lower);
   Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
   object_add(a, self);
   return self;
@@ -746,8 +754,9 @@ frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 frt_a_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
+  Analyzer *a;
   GET_LOWER(true);
-  Analyzer *a = letter_analyzer_create(lower);
+  a = letter_analyzer_create(lower);
   Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
   object_add(a, self);
   return self;
@@ -757,8 +766,9 @@ frt_a_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 frt_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
+  Analyzer *a;
   GET_LOWER(true);
-  Analyzer *a = mb_letter_analyzer_create(lower);
+  a = mb_letter_analyzer_create(lower);
   Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
   object_add(a, self);
   return self;

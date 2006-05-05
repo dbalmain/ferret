@@ -36,7 +36,7 @@ frt_te_free(void *p)
   te->close(te);
 }
 
-#define GET_TE TermEnum *te; Data_Get_Struct(self, TermEnum, te)
+#define GET_TE TermEnum *te = (TermEnum *)DATA_PTR(self)
 static VALUE
 frt_te_next(VALUE self)
 {
@@ -101,8 +101,8 @@ frt_tvoi_init(VALUE self, VALUE rstart, VALUE rend)
   return self;
 }
 
-#define GET_TVOI TVOffsetInfo *tvoi;\
-  Data_Get_Struct(self, TVOffsetInfo, tvoi)
+#define GET_TVOI TVOffsetInfo *tvoi = (TVOffsetInfo *)DATA_PTR(self)
+
 static VALUE
 frt_tvoi_set_start(VALUE self, VALUE rstart)
 {
@@ -136,9 +136,9 @@ frt_tvoi_get_end(VALUE self)
 static VALUE
 frt_tvoi_eql(VALUE self, VALUE rother)
 {
-  if (TYPE(rother) != T_DATA) return Qfalse;
-  TVOffsetInfo *other;
   GET_TVOI;
+  TVOffsetInfo *other;
+  if (TYPE(rother) != T_DATA) return Qfalse;
   Data_Get_Struct(rother, TVOffsetInfo, other);
 
   return ((tvoi->start == other->start) && (tvoi->end == other->end))
@@ -235,7 +235,8 @@ frt_get_tv(TermVector *tv)
   return self;
 }
 
-#define GET_TV TermVector *tv; Data_Get_Struct(self, TermVector, tv);
+#define GET_TV TermVector *tv = (TermVector *)DATA_PTR(self)
+
 static VALUE
 frt_tv_get_field(VALUE self)
 {
@@ -272,9 +273,10 @@ frt_tv_get_positions(VALUE self)
 {
   int i, j, freq;
   GET_TV;
+  VALUE rpositions, rpositionss;
+
   if (!tv->positions) return Qnil;
-  VALUE rpositions;
-  VALUE rpositionss = rb_ary_new2(tv->tcnt);
+  rpositionss = rb_ary_new2(tv->tcnt);
   for (i = 0; i < tv->tcnt; i++) {
     freq = tv->freqs[i];
     rpositions = rb_ary_new2(freq);
@@ -291,9 +293,10 @@ frt_tv_get_offsets(VALUE self)
 {
   int i, j, freq;
   GET_TV;
+  VALUE roffsetss, roffsets, roffset;
   if (!tv->offsets) return Qnil;
-  VALUE roffsets, roffset;
-  VALUE roffsetss = rb_ary_new2(tv->tcnt);
+  roffsetss = rb_ary_new2(tv->tcnt);
+
   for (i = 0; i < tv->tcnt; i++) {
     freq = tv->freqs[i];
     roffsets = rb_ary_new2(freq);
@@ -325,7 +328,8 @@ frt_get_tde(TermDocEnum *tde)
   return Data_Wrap_Struct(cTermDocEnum, NULL, &frt_tde_free, tde);
 }
 
-#define GET_TDE TermDocEnum *tde; Data_Get_Struct(self, TermDocEnum, tde)
+#define GET_TDE TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self)
+
 static VALUE
 frt_tde_close(VALUE self)
 {
@@ -376,12 +380,12 @@ frt_tde_next_position(VALUE self)
 static VALUE
 frt_tde_read(VALUE self, VALUE rdocs, VALUE rfreqs)
 {
-  int i;
+  int i, req_num, cnt;
   GET_TDE;
   Check_Type(rdocs, T_ARRAY);
   Check_Type(rfreqs, T_ARRAY);
-  int req_num = MIN(RARRAY(rdocs)->len, RARRAY(rfreqs)->len);
-  int cnt = tde->read(tde, (int *)RARRAY(rdocs)->ptr,
+  req_num = MIN(RARRAY(rdocs)->len, RARRAY(rfreqs)->len);
+  cnt = tde->read(tde, (int *)RARRAY(rdocs)->ptr,
       (int *)RARRAY(rfreqs)->ptr, req_num);
   for (i = 0; i < cnt; i++) {
     RARRAY(rdocs)->ptr[i] = INT2FIX(RARRAY(rdocs)->ptr[i]);
@@ -481,7 +485,8 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-#define GET_IW IndexWriter *iw; Data_Get_Struct(self, IndexWriter, iw)
+#define GET_IW IndexWriter *iw = (IndexWriter *)DATA_PTR(self)
+
 static VALUE
 frt_iw_close(VALUE self)
 {
@@ -657,7 +662,8 @@ frt_ir_open(int argc, VALUE *argv, VALUE klass)
   return frt_ir_init(argc, argv, self);
 }
 
-#define GET_IR IndexReader *ir; Data_Get_Struct(self, IndexReader, ir)
+#define GET_IR IndexReader *ir = (IndexReader *)DATA_PTR(self)
+
 static VALUE
 frt_ir_set_norm(VALUE self, VALUE rdoc_num, VALUE rfield, VALUE rval)
 {
@@ -671,8 +677,9 @@ static VALUE
 frt_ir_get_norms(VALUE self, VALUE rfield)
 {
   GET_IR;
+  uchar *norms;
   rfield = rb_obj_as_string(rfield);
-  uchar *norms = ir->get_norms(ir, RSTRING(rfield)->ptr);
+  norms = ir->get_norms(ir, RSTRING(rfield)->ptr);
   if (norms) {
     return rb_str_new((char *)norms, ir->max_doc(ir));
   } else {
@@ -684,8 +691,9 @@ static VALUE
 frt_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
 {
   GET_IR;
+  int offset;
   rfield = rb_obj_as_string(rfield);
-  int offset = FIX2INT(roffset);
+  offset = FIX2INT(roffset);
   Check_Type(rnorms, T_STRING);
   if (RSTRING(rnorms)->len < offset + ir->max_doc(ir)) {
     rb_raise(rb_eArgError, "supplied a string of length:%d to IndexReader#get_norms_into but needed a string of length offset:%d + maxdoc:%d", RSTRING(rnorms)->len, offset, ir->max_doc(ir));
@@ -778,9 +786,9 @@ static VALUE
 frt_ir_get_term_vector(VALUE self, VALUE rdoc_num, VALUE rfield)
 {
   GET_IR;
+  TermVector *tv;
   rfield = rb_obj_as_string(rfield);
-  TermVector *tv =
-    ir->get_term_vector(ir, FIX2INT(rdoc_num), RSTRING(rfield)->ptr);
+  tv = ir->get_term_vector(ir, FIX2INT(rdoc_num), RSTRING(rfield)->ptr);
   return frt_get_tv(tv);
 }
 

@@ -32,14 +32,18 @@ frt_field_alloc(VALUE klass)
   return self;
 }
 
-#define GET_DF DocField *df; Data_Get_Struct(self, DocField, df)
+#define GET_DF DocField *df = (DocField *)DATA_PTR(self)
+
 static VALUE
 frt_field_init(int argc, VALUE *argv, VALUE self)
 {
   GET_DF;
   VALUE rname, rdata, rstored, rindexed, rstore_tv, rbinary, rboost;
+  char *name;
+  char *data;
   float boost = 1.0;
   int stored = 0, indexed = 0, store_tv = 0;
+  int len;
   bool binary = false;
   switch (rb_scan_args(argc, argv, "25", &rname, &rdata, &rstored,
             &rindexed, &rstore_tv, &rbinary, &rboost)) {
@@ -53,9 +57,9 @@ frt_field_init(int argc, VALUE *argv, VALUE self)
       rdata = rb_obj_as_string(rdata);
       break;
   }
-  char *name = RSTRING(rname)->ptr;
-  int len = RSTRING(rdata)->len;
-  char *data = ALLOC_N(char, len + 1);
+  name = RSTRING(rname)->ptr;
+  len = RSTRING(rdata)->len;
+  data = ALLOC_N(char, len + 1);
   MEMCPY(data, RSTRING(rdata)->ptr, char, len);
   data[len] = 0;
   df_set(df, name, data, stored, indexed, store_tv);
@@ -268,8 +272,8 @@ static VALUE
 frt_doc_alloc(VALUE klass)
 {
   Document *doc = doc_create();
-  doc->free_data = NULL;
   VALUE self = Data_Wrap_Struct(klass, &frt_doc_mark, &frt_doc_free, doc);
+  doc->free_data = NULL;
   object_add(doc, self);
   return self;
 }
@@ -300,7 +304,8 @@ frt_get_doc(Document *doc)
   return self;
 }
 
-#define GET_DOC Document *doc; Data_Get_Struct(self, Document, doc)
+#define GET_DOC Document *doc = (Document *)DATA_PTR(self)
+
 static VALUE
 frt_doc_init(VALUE self) 
 {

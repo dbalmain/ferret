@@ -31,14 +31,14 @@ extern void Init_index_io();
 extern void Init_search();
 extern void Init_qparser();
 //extern void object_add(void *key, VALUE obj);
-#define object_add(key, obj) object_add2(key, obj,  __FILE__, __LINE__, __func__)
-extern void object_add2(void *key, VALUE obj, const char *file, int line, const char *func);
+#define object_add(key, obj) object_add2(key, obj,  __FILE__, __LINE__)
+extern void object_add2(void *key, VALUE obj, const char *file, int line);
 //extern void object_set(void *key, VALUE obj);
-#define object_set(key, obj) object_set2(key, obj,  __FILE__, __LINE__, __func__)
-extern void object_set2(void *key, VALUE obj, const char *file, int line, const char *func);
+#define object_set(key, obj) object_set2(key, obj,  __FILE__, __LINE__)
+extern void object_set2(void *key, VALUE obj, const char *file, int line);
 //extern void object_del(void *key);
-#define object_del(key) object_del2(key,  __FILE__, __LINE__, __func__)
-extern void object_del2(void *key, const char *file, int line, const char *func);
+#define object_del(key) object_del2(key,  __FILE__, __LINE__)
+extern void object_del2(void *key, const char *file, int line);
 extern void frt_gc_mark(void *key);
 extern VALUE object_get(void *key);
 extern VALUE frt_data_alloc(VALUE klass);

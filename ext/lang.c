@@ -29,3 +29,13 @@ void ft_raise(char *file, int line_num, VALUE etype, const char *fmt, ...)
   sprintf(buf_ptr, "\n");
   rb_raise(etype, buf); /* conventional value for failed execution */
 }
+
+#ifdef WIN32
+void eprintf(VALUE etype, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  ft_raise("Windows", -1, etype, fmt, args);
+  va_end(args);
+}
+#endif

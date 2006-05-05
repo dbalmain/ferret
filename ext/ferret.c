@@ -49,30 +49,30 @@ object_get(void *key)
 //static int hash_cnt = 0;
 void
 //object_add(void *key, VALUE obj)
-object_add2(void *key, VALUE obj, const char *file, int line, const char *func)
+object_add2(void *key, VALUE obj, const char *file, int line)
 {
   if (h_get(object_map, key))
-    printf("failed adding %d. %s:%d:%s\n", (int)key, file, line, func);
-  //printf("adding %d. now contains %d %s:%d:%s\n", (int)key, ++hash_cnt, file, line, func);
+    printf("failed adding %d. %s:%d\n", (int)key, file, line);
+  //printf("adding %d. now contains %d %s:%d\n", (int)key, ++hash_cnt, file, line);
   h_set(object_map, key, (void *)obj);
 }
 
 void
 //object_set(void *key, VALUE obj)
-object_set2(void *key, VALUE obj, const char *file, int line, const char *func)
+object_set2(void *key, VALUE obj, const char *file, int line)
 {
   //if (!h_get(object_map, key))
-    //printf("seting %d. now contains %d %s:%d:%s\n", (int)key, ++hash_cnt, file, line, func);
+    //printf("seting %d. now contains %d %s:%d\n", (int)key, ++hash_cnt, file, line);
   h_set(object_map, key, (void *)obj);
 }
 
 void
 //object_del(void *key)
-object_del2(void *key, const char *file, int line, const char *func)
+object_del2(void *key, const char *file, int line)
 {
   if (object_get(key) == Qnil) 
-    printf("failed deleting %d. %s:%d:%s\n", (int)key, file, line, func);
-  //printf("deleting %d. now contains %d, %s:%d:%s\n", (int)key, --hash_cnt, file, line, func);
+    printf("failed deleting %d. %s:%d\n", (int)key, file, line);
+  //printf("deleting %d. now contains %d, %s:%d\n", (int)key, --hash_cnt, file, line);
   h_del(object_map, key);
 }
 

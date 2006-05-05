@@ -57,7 +57,7 @@ frt_get_fields(VALUE rfields)
       fields = NULL;
     } else {
       s = str = estrdup(RSTRING(rval)->ptr);
-      while ((p = index(s, '|'))) {
+      while ((p = strchr(s, '|')) != '\0') {
         *p = '\0';
         hs_add(fields, estrdup(s));
         s = p + 1;

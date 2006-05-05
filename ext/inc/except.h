@@ -7,7 +7,6 @@
 #define BODY 0
 #define FINALLY -1
 #define EXCEPTION 1
-#define ERROR 1
 #define IO_ERROR 2
 #define ARG_ERROR 3
 #define EOF_ERROR 4
@@ -29,35 +28,38 @@ RUBY_EXTERN int rb_thread_critical;
 extern xcontext_t *xtop_context;
 
 #define TRY\
-  xcontext_t xcontext;\
-  rb_thread_critical = Qtrue;\
-  xcontext.next = xtop_context;\
-  xtop_context = &xcontext;\
-  xcontext.handled = true;\
-  xcontext.in_finally = false;\
-  switch (setjmp(xcontext.jbuf)) {\
-    case BODY:
+  do {\
+    xcontext_t xcontext;\
+    rb_thread_critical = Qtrue;\
+    xcontext.next = xtop_context;\
+    xtop_context = &xcontext;\
+    xcontext.handled = true;\
+    xcontext.in_finally = false;\
+    switch (setjmp(xcontext.jbuf)) {\
+      case BODY:
 
 
 #define XENDTRY\
-  }\
-  xtop_context = xcontext.next;\
-  if (!xcontext.handled) {\
-    RAISE(xcontext.excode, xcontext.msg);\
-  }\
-  rb_thread_critical = 0;
-
-#define ENDTRY\
-  }\
-  if (!xcontext.in_finally) {\
+    }\
     xtop_context = xcontext.next;\
     if (!xcontext.handled) {\
       RAISE(xcontext.excode, xcontext.msg);\
     }\
-    xcontext.in_finally = 1;\
-    longjmp(xcontext.jbuf, FINALLY);\
-  }\
-  rb_thread_critical = 0;
+    rb_thread_critical = 0;\
+  } while (0);
+
+#define ENDTRY\
+    }\
+    if (!xcontext.in_finally) {\
+      xtop_context = xcontext.next;\
+      if (!xcontext.handled) {\
+        RAISE(xcontext.excode, xcontext.msg);\
+      }\
+      xcontext.in_finally = 1;\
+      longjmp(xcontext.jbuf, FINALLY);\
+    }\
+    rb_thread_critical = 0;\
+  } while (0);
 
 #define XFINALLY default: xcontext.in_finally = 1;
 

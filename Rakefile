@@ -121,7 +121,9 @@ task :ext => ["ext/#{EXT}"] + SRC
 file "ext/#{EXT}" => ["ext/Makefile"] do
   cp "ext/inc/lang.h", "ext/lang.h"
   cp "ext/inc/except.h", "ext/except.h"
-  sh "cd ext; make"
+  cd "ext"
+  `nmake`
+  cd ".."
 end
 
 file "ext/lang.h" => ["ext/inc/lang.h"] do
@@ -132,7 +134,9 @@ file "ext/except.h" => ["ext/inc/except.h"] do
 end
 
 file "ext/Makefile" => SRC do
-  sh "cd ext; ruby extconf.rb"
+  cd "ext"
+  `ruby extconf.rb`
+  cd ".."
 end
 
 # Make Parsers ---------------------------------------------------------------
