@@ -12,6 +12,8 @@ typedef LONG_LONG llong;
 typedef unsigned LONG_LONG ullong;
 
 #ifdef WIN32
+# undef close
+# undef rename
 extern void eprintf(VALUE etype, const char *fmt, ...);
 #else
 # define eprintf(...) ft_raise(__FILE__, __LINE__, __VA_ARGS__)
