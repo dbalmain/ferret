@@ -1651,10 +1651,6 @@ frt_ms_init(int argc, VALUE *argv, VALUE self)
  *
  ****************************************************************************/
 
-extern inline void ensure_searcher_open(Index *self);
-extern inline void ensure_reader_open(Index *self);
-extern inline void ensure_writer_open(Index *self);
-
 /*
 static void
 frt_ind_free_store_i(Index *self)
