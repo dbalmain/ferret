@@ -196,7 +196,7 @@ frt_td_total_hits(VALUE self)
 static VALUE
 frt_td_fields(VALUE self)
 {
-  GET_TD;
+  rb_raise(rb_eNotImpError, "not implemented in the c extension version");
   return Qnil;
 }
 
@@ -1270,9 +1270,19 @@ frt_sf_get_comparator(VALUE self)
   return Qnil;
 }
 
+static VALUE
+frt_sf_to_s(VALUE self)
+{
+  GET_SF;
+  char *str = sort_field_to_s(sf);
+  VALUE rstr = rb_str_new2(str);
+  free(str);
+  return rstr;
+}
+
 /****************************************************************************
  *
- * SortField Methods
+ * Sort Methods
  *
  ****************************************************************************/
 
@@ -1379,6 +1389,16 @@ frt_sort_get_fields(VALUE self)
   return object_get(sort->sort_fields);
 }
 
+
+static VALUE
+frt_sort_to_s(VALUE self)
+{
+  GET_SORT;
+  char *str = sort_to_s(sort);
+  VALUE rstr = rb_str_new2(str);
+  free(str);
+  return rstr;
+}
 /****************************************************************************
  *
  * Searcher Methods
@@ -2587,6 +2607,7 @@ Init_search(void)
   rb_define_method(cSortField, "name", frt_sf_get_name, 0);
   rb_define_method(cSortField, "sort_type", frt_sf_get_sort_type, 0);
   rb_define_method(cSortField, "comparator", frt_sf_get_comparator, 0);
+  rb_define_method(cSortField, "to_s", frt_sf_to_s, 0);
 
   /* SortType */
   cSortType = rb_define_class_under(cSortField, "SortType", rb_cObject);
@@ -2625,6 +2646,7 @@ Init_search(void)
 
   rb_define_method(cSort, "initialize", frt_sort_init, -1);
   rb_define_method(cSort, "fields", frt_sort_get_fields, 0);
+  rb_define_method(cSort, "to_s", frt_sort_to_s, 0);
 
   rb_define_const(cSort, "RELEVANCE",
       frt_sort_init(0, NULL, frt_sort_alloc(cSort)));

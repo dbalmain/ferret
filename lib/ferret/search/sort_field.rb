@@ -20,11 +20,11 @@ module Ferret::Search
 
       # Sort by document score (relevancy).  Sort values are Float and higher
       # values are at the front. 
-      SCORE = SortType.new("score")
+      SCORE = SortType.new("SCORE")
 
       # Sort by document number (order).  Sort values are Integer and lower
       # values are at the front. 
-      DOC = SortType.new("doc")
+      DOC = SortType.new("DOC")
 
       # Guess sort type of sort based on field contents. We try parsing the
       # field as an integer and then as a floating point number. If we are
@@ -37,7 +37,7 @@ module Ferret::Search
 
       # Sort using term values as encoded Integers.  Sort values are Integer
       # and lower values are at the front. 
-      INTEGER = SortType.new("int", lambda{|str| str.to_i})
+      INTEGER = SortType.new("integer", lambda{|str| str.to_i})
 
       # Sort using term values as encoded Floats.  Sort values are Float and
       # lower values are at the front. 
@@ -79,7 +79,11 @@ module Ferret::Search
     FIELD_DOC = SortField.new(nil, {:sort_type => SortType::DOC})
 
     def to_s() 
-      buffer = '"' + (@name||"<#{@sort_type}>") + '"'
+      if @name
+        buffer = "#@name:<#@sort_type>"
+      else
+        buffer = "<#{@sort_type}>"
+      end
       buffer << '!' if @reverse
       return buffer
     end

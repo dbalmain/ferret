@@ -37,7 +37,7 @@ EXT_SRC = FileList["src/**/*.[ch]"]
 EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
 SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
-CLEAN.include(FileList['**/*.o', 'InstalledFiles', '.config'])
+CLEAN.include(FileList['**/*.o', '**/*.obj', 'InstalledFiles', '.config'])
 CLOBBER.include(FileList['**/*.so'], 'ext/Makefile', EXT_SRC_DEST)
 
 task :default => :all_tests
@@ -122,7 +122,11 @@ file "ext/#{EXT}" => ["ext/Makefile"] do
   cp "ext/inc/lang.h", "ext/lang.h"
   cp "ext/inc/except.h", "ext/except.h"
   cd "ext"
-  `nmake`
+  if (/mswin/ =~ RUBY_PLATFORM)
+    sh "nmake"
+  else
+    sh "make"
+  end
   cd ".."
 end
 

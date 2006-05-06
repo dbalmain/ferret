@@ -84,8 +84,12 @@ module Ferret::Search
       fields = fields.map {|field| field.is_a?(Symbol) ? field.to_s : field}
       if fields[0].is_a?(String)
         @fields = fields.map do |field|
-          SortField.new(field, {:sort_type => SortField::SortType::AUTO,
-                                :reverse => reverse})
+          if (field.is_a?(String))
+            next SortField.new(field, {:sort_type => SortField::SortType::AUTO,
+                                       :reverse => reverse})
+          else
+            next field
+          end
         end
       end
       doc_sort_added = false
@@ -102,7 +106,7 @@ module Ferret::Search
     INDEX_ORDER = Sort.new(SortField::FIELD_DOC)
 
     def to_s() 
-      return @fields.map {|field| "#{field}"}.join(", ")
+      return "Sort[" + @fields.map {|field| "#{field}"}.join(", ") + "]"
     end
   end
 end

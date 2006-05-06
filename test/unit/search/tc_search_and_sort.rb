@@ -56,6 +56,62 @@ class SearchAndSortTest < Test::Unit::TestCase
     end
   end
 
+  def test_sort_field_to_s()
+    assert_equal("<SCORE>", SortField::FIELD_SCORE.to_s);
+    sf = SortField.new("MyScore",
+                       {:sort_type => SortField::SortType::SCORE,
+                        :reverse => true})
+    assert_equal("MyScore:<SCORE>!", sf.to_s)
+    assert_equal("<DOC>", SortField::FIELD_DOC.to_s);
+    sf = SortField.new("MyDoc",
+                       {:sort_type => SortField::SortType::DOC,
+                        :reverse => true})
+    assert_equal("MyDoc:<DOC>!", sf.to_s)
+    sf = SortField.new("date",
+                       {:sort_type => SortField::SortType::INTEGER})
+    assert_equal("date:<integer>", sf.to_s)
+    sf = SortField.new("date",
+                       {:sort_type => SortField::SortType::INTEGER,
+                        :reverse => true})
+    assert_equal("date:<integer>!", sf.to_s)
+    sf = SortField.new("price",
+                       {:sort_type => SortField::SortType::FLOAT})
+    assert_equal("price:<float>", sf.to_s)
+    sf = SortField.new("price",
+                       {:sort_type => SortField::SortType::FLOAT,
+                        :reverse => true})
+    assert_equal("price:<float>!", sf.to_s)
+    sf = SortField.new("content",
+                       {:sort_type => SortField::SortType::STRING})
+    assert_equal("content:<string>", sf.to_s)
+    sf = SortField.new("content",
+                       {:sort_type => SortField::SortType::STRING,
+                        :reverse => true})
+    assert_equal("content:<string>!", sf.to_s)
+    sf = SortField.new("auto_field",
+                       {:sort_type => SortField::SortType::AUTO})
+    assert_equal("auto_field:<auto>", sf.to_s)
+    sf = SortField.new("auto_field",
+                       {:sort_type => SortField::SortType::AUTO,
+                        :reverse => true})
+    assert_equal("auto_field:<auto>!", sf.to_s)
+  end
+  
+  def test_sort_to_s()
+    sort = Sort.new
+    assert_equal("Sort[<SCORE>, <DOC>]", sort.to_s)
+    sf = SortField.new("auto_field",
+                       {:sort_type => SortField::SortType::AUTO,
+                        :reverse => true})
+    sort = Sort.new([sf, SortField::FIELD_SCORE, SortField::FIELD_DOC])
+    assert_equal("Sort[auto_field:<auto>!, <SCORE>, <DOC>]", sort.to_s)
+    sort = Sort.new(["one", "two", SortField::FIELD_DOC])
+    assert_equal("Sort[one:<auto>, two:<auto>, <DOC>]", sort.to_s)
+    sort = Sort.new(["one", "two"])
+    assert_equal("Sort[one:<auto>, two:<auto>, <DOC>]", sort.to_s)
+  end
+
+
   def test_sorts()
     is = IndexSearcher.new(@dir)
     q = TermQuery.new(Term.new("search", "findall"))
