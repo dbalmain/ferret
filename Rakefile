@@ -33,6 +33,10 @@ $VERBOSE = nil
 
 EXT = "ferret_ext.so"
 EXT_SRC = FileList["src/**/*.[ch]"]
+if (/mswin/ =~ RUBY_PLATFORM)
+  EXT_SRC.delete('src/io/nix_io.c')
+end
+puts EXT_SRC
 
 EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
 SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
@@ -122,7 +126,7 @@ file "ext/#{EXT}" => ["ext/Makefile"] do
   cp "ext/inc/lang.h", "ext/lang.h"
   cp "ext/inc/except.h", "ext/except.h"
   cd "ext"
-  if (/mswin/ =~ RUBY_PLATFORM)
+  if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
     sh "nmake"
   else
     sh "make"
