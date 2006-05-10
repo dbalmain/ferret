@@ -1,7 +1,6 @@
 require File.dirname(__FILE__) + "/../../test_helper"
 require File.dirname(__FILE__) + "/tm_store"
 require File.dirname(__FILE__) + "/tm_store_lock"
-require 'fileutils'
 
 class FSStoreTest < Test::Unit::TestCase
   include Ferret::Store
@@ -10,7 +9,6 @@ class FSStoreTest < Test::Unit::TestCase
   def setup
     @dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    FileUtils.mkdir_p(@dpath)
     @dir = FSDirectory.new(@dpath, true)
     @dir1 = FSDirectory.new(@dpath, true)
     @dir2 = FSDirectory.new(@dpath, true)

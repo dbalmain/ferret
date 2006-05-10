@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-require 'fileutils'
 
 module IndexReaderCommon
 
@@ -638,7 +637,6 @@ class IndexReaderTest < Test::Unit::TestCase
   def test_ir_read_while_optimizing_on_disk()
     dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    FileUtils.mkdir_p(dpath)
     fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
@@ -664,7 +662,6 @@ class IndexReaderTest < Test::Unit::TestCase
   def test_latest()
     dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
-    FileUtils.mkdir_p(dpath)
     fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)

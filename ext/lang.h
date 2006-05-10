@@ -18,7 +18,6 @@ extern void eprintf(VALUE etype, const char *fmt, ...);
 #else
 # define eprintf(...) ft_raise(__FILE__, __LINE__, __VA_ARGS__)
 #endif
-
 extern void ft_raise(char *file, int line_num, VALUE etype, const char *fmt, ...);
 extern void weprintf(const char *fmt, ...);
 extern char *progname(void);

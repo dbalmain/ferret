@@ -1236,6 +1236,9 @@ frt_sf_init(int argc, VALUE *argv, VALUE self)
   rfield = rb_obj_as_string(rfield);
 
   sf = sort_field_create(RSTRING(rfield)->ptr, sort_type, is_reverse);
+  if (sf->field == NULL && RSTRING(rfield)->ptr != NULL) {
+    sf->field = estrdup(RSTRING(rfield)->ptr);
+  }
   
   Frt_Wrap_Struct(self, NULL, &frt_sf_free, sf);
   object_add(sf, self);
@@ -1898,7 +1901,7 @@ frt_ind_add_doc(int argc, VALUE *argv, VALUE self)
 }
 
 static Query *
-frt_get_query_i(Index *ind, VALUE rquery)
+frt_ind_get_query_i(Index *ind, VALUE rquery)
 {
   Query *q = NULL;
 
@@ -1929,7 +1932,7 @@ frt_ind_search(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "11", &rquery, &roptions);
   ensure_searcher_open(ind);
 
-  q = frt_get_query_i(ind, rquery);
+  q = frt_ind_get_query_i(ind, rquery);
   rtd = frt_get_td(frt_sea_search_internal(q, roptions, ind->sea));
   q_deref(q);
 
@@ -1952,7 +1955,7 @@ frt_ind_search_each(int argc, VALUE *argv, VALUE self)
 
   ensure_searcher_open(ind);
 
-  q = frt_get_query_i(ind, rquery);
+  q = frt_ind_get_query_i(ind, rquery);
   //printf(">>>>>%s<<<<<\n", q->to_s(q, "file_name"));
   td = frt_sea_search_internal(q, roptions, ind->sea);
   q_deref(q);
@@ -2190,7 +2193,7 @@ frt_ind_query_update(VALUE self, VALUE rquery, VALUE rdoc)
   qua.docs = ary_create(8, (free_ft)&doc_destroy);
   qua.ind = ind;
 
-  q = frt_get_query_i(ind, rquery);
+  q = frt_ind_get_query_i(ind, rquery);
   sea_search_each(ind->sea, q, NULL, &frt_ind_qupd_i, &qua);
   q_deref(q);
   
@@ -2353,7 +2356,7 @@ frt_ind_explain(VALUE self, VALUE rquery, VALUE rdoc_num)
   Query *q;
   Explanation *expl;
   GET_IND;
-  q = frt_get_query_i(ind, rquery);
+  q = frt_ind_get_query_i(ind, rquery);
   expl = index_explain(ind, q, FIX2INT(rdoc_num));
   q_deref(q);
   return Data_Wrap_Struct(cExplanation, NULL, &expl_destoy, expl);

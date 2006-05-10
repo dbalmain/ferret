@@ -6,6 +6,10 @@ VALUE cDirectory;
 VALUE cRAMDirectory;
 VALUE cFSDirectory;
 
+
+static ID id_mkdir_p;
+static ID id_is_directory;
+
 /****************************************************************************
  *
  * Lock Methods
@@ -212,6 +216,16 @@ frt_fsdir_new(VALUE klass, VALUE rpath, VALUE rcreate)
   Store *store;
   bool create = RTEST(rcreate);
   rpath = rb_obj_as_string(rpath);
+  if (create) {
+    VALUE mFileUtils;
+    rb_require("fileutils");
+    mFileUtils = rb_define_module("FileUtils");
+    rb_funcall(mFileUtils, id_mkdir_p, 1, rpath);
+  }
+  if (!rb_funcall(rb_cFile, id_is_directory, 1, rpath)) {
+    rb_raise(rb_eIOError, "There is no directory: %s. Use create = true to "
+        "create one.", RSTRING(rpath)->ptr);
+  }
   store = open_fs_store(RSTRING(rpath)->ptr);
   if (create) store->clear_all(store);
   if ((self = object_get(store)) == Qnil) {
@@ -232,6 +246,9 @@ frt_fsdir_new(VALUE klass, VALUE rpath, VALUE rcreate)
 void
 Init_dir(void)
 {
+  id_mkdir_p = rb_intern("mkdir_p");
+  id_is_directory = rb_intern("directory?");
+
   cLock = rb_define_class_under(mStore, "Lock", rb_cObject);
   rb_define_method(cLock, "obtain", frt_lock_obtain, -1);
   rb_define_method(cLock, "while_locked", frt_lock_while_locked, -1);

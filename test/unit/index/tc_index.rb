@@ -1,6 +1,4 @@
 require File.dirname(__FILE__) + "/../../test_helper"
-require 'fileutils'
-
 
 class IndexTest < Test::Unit::TestCase
   include Ferret::Index
@@ -147,7 +145,6 @@ class IndexTest < Test::Unit::TestCase
 
   def test_fs_index
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    FileUtils.mkdir_p(fs_path)
 
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     assert_raise(StandardError) do
@@ -174,7 +171,6 @@ class IndexTest < Test::Unit::TestCase
 
   def test_fs_index_is_persistant
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    FileUtils.mkdir_p(fs_path)
 
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     data = [
@@ -200,7 +196,6 @@ class IndexTest < Test::Unit::TestCase
 
   def test_key_used_for_id_field
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    FileUtils.mkdir_p(fs_path)
 
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     data = [
@@ -308,7 +303,6 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new(:default_field => "f")
     data.each {|doc| index << doc }
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    FileUtils.mkdir_p(fs_path)
 
     index.persist(fs_path, true)
     assert_equal(3, index.size)
@@ -346,7 +340,6 @@ class IndexTest < Test::Unit::TestCase
 
   def test_auto_update_when_externally_modified()
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
-    FileUtils.mkdir_p(fs_path)
     index = Index.new(:path => fs_path, :default_field => "f", :create => true)
     index << "document 1"
     assert_equal(1, index.size)
@@ -576,7 +569,6 @@ class IndexTest < Test::Unit::TestCase
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
     data = %q(one two three four five six seven eight nine ten eleven twelve)
-    FileUtils.mkdir_p(fs_path)
     index1 = Index.new(:path => fs_path, :auto_flush => true)
     index2 = Index.new(:path => fs_path, :auto_flush => true)
     begin
@@ -601,5 +593,35 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new
     index.add_document("abc", Ferret::Analysis::Analyzer.new)
     assert_equal(1, index.size)
+  end
+
+
+  def test_adding_empty_term_vectors
+    index = Index.new()
+    doc = Document.new
+
+    # Note: Adding keywords to either field1 or field2 gets rid of the error
+
+    doc << Field.new('field1', '',
+            Field::Store::NO,
+            Field::Index::TOKENIZED,
+            Field::TermVector::YES)
+
+    doc << Field.new('field2', '',
+            Field::Store::NO,
+            Field::Index::TOKENIZED,
+            Field::TermVector::YES)
+
+    # Note: keywords in this un-term-vector-stored field don't help the situation
+
+    doc << Field.new('field3', 'foo bar baz',
+            Field::Store::YES,
+            Field::Index::TOKENIZED,
+            Field::TermVector::NO)
+
+    index << doc
+
+    index.flush
+    index.close
   end
 end
