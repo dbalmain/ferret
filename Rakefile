@@ -36,17 +36,22 @@ EXT_SRC = FileList["src/**/*.[ch]"]
 if (/mswin/ =~ RUBY_PLATFORM)
   EXT_SRC.delete('src/io/nix_io.c')
 end
-puts EXT_SRC
 
 EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
 SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
 CLEAN.include(FileList['**/*.o', '**/*.obj', 'InstalledFiles', '.config'])
 CLOBBER.include(FileList['**/*.so'], 'ext/Makefile', EXT_SRC_DEST)
+POLISH = Rake::FileList.new.include(FileList['**/*.so'], 'ext/Makefile')
 
-task :default => :all_tests
+desc "Clean specifically for the release."
+task :polish => [:clean] do
+  POLISH.each { |fn| rm_r fn rescue nil }
+end
+
+task :default => :test_all
 desc "Run all tests"
-task :all_tests => [ :test_runits, :test_cunits, :test_functional ]
+task :test_all => [ :test_runits, :test_cunits, :test_functional ]
 
 desc "Generate API documentation, and show coding stats"
 task :doc => [ :stats, :appdoc ]
@@ -170,7 +175,9 @@ PKG_FILES = FileList[
   'Rakefile'
 ]
 PKG_FILES.exclude('**/*.o')
-
+PKG_FILES.exclude('**/Makefile')
+PKG_FILES.exclude('ext/ferret_ext.so')
+puts PKG_FILES
 
 if ! defined?(Gem)
   puts "Package Target requires RubyGEMs"
@@ -245,12 +252,13 @@ end
 # Creating a release
 
 desc "Make a new release"
-task :prerelease => [:all_tests, :clobber]
-task :repackage => EXT_SRC_DEST
-task :package => EXT_SRC_DEST
-task :tag => [:prerelease]
-task :update_version => [:prerelease]
-task :release do #=> [:tag, :update_version, :package] do
+task :release => [
+  :prerelease,
+  :polish,
+  :test_all,
+  :update_version,
+  :package,
+  :tag] do
   announce 
   announce "**************************************************************"
   announce "* Release #{PKG_VERSION} Complete."
@@ -300,6 +308,7 @@ def reversion(fn)
       end
     end
   end
+  mv fn + ".new", fn
 end
 
 task :update_version => [:prerelease] do
@@ -312,9 +321,8 @@ task :update_version => [:prerelease] do
     if ENV['RELTEST']
       announce "Release Task Testing, skipping commiting of new version"
     else
-      mv "lib/rferret.rb.new", "lib/rferret.rb"
+      sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/rferret.rb}
     end
-    sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/rferret.rb}
   end
 end
 

@@ -102,13 +102,13 @@ module Ferret::Store
         # delete all the files
         refresh_dir
         each do |fname|
-          File.delete(dir_path(fname))
+          FileUtils.rm_rf(dir_path(fname))
         end
         # clear all the locks
         refresh_lock_dir
         @lock_dir.each do |lock_fname|
           next if lock_fname == '.' or lock_fname == '..'
-          File.delete(@lock_dir.path + '/' + lock_fname)
+          FileUtils.rm_rf(@lock_dir.path + '/' + lock_fname)
         end
       end
     end
@@ -159,7 +159,13 @@ module Ferret::Store
     # This replacement should be atomic.
     def rename(from, to)
       synchronize do
-        File.rename(dir_path(from), dir_path(to))
+        begin
+          File.rename(dir_path(from), dir_path(to))
+        rescue
+          # try again, this time forcing the delete
+          FileUtils.rm_rf(dir_path(to))
+          FileUtils.cp(dir_path(from), dir_path(to))
+        end
       end
     end
 
@@ -208,11 +214,11 @@ module Ferret::Store
       def initialize(lock_file)
         @lock_file = lock_file
         #@clean = FSLock.make_finalizer(lock_file)
-        @clean = lambda { File.delete(lock_file) rescue nil}
+        @clean = lambda { FileUtils.rm_rf(lock_file)}
       end
 
       def FSLock.make_finalizer(lock_file)
-        lambda { File.delete(lock_file) rescue nil}
+        lambda { FileUtils.rm_rf(lock_file)}
       end
 
       # obtain the lock on the data source 
@@ -238,7 +244,7 @@ module Ferret::Store
       def release 
         return if FSDirectory.locks_disabled?
         begin
-          File.delete(@lock_file)
+          FileUtils.rm_rf(@lock_file)
           ObjectSpace.undefine_finalizer(self)
         rescue SystemCallError
           # maybe we tried to release a lock that wasn't locked. This
@@ -364,6 +370,7 @@ module Ferret::Store
       # This method is only used by the c extension to free the directory
       def close_internal
       end
+
     #end private
   end
 end
