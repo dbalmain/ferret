@@ -213,20 +213,6 @@ module Ferret::Store
       last = start + length
       (start ... last).each do |i|
         write_byte(buf[i])
-#          code = buf[i]
-#          if code >= 0x01 and code <= 0x7F
-#            write_byte(code)
-#          else
-#            # We need to write unicode characters. ToDo: test that this works.
-#            if code > 0x80 and code <= 0x7FF or code == 0
-#              write_byte(0xC0 | code >> 6)
-#              write_byte(0x80 | code & 0x3F)
-#            else
-#              write_byte(0xE0 | (code >> 12))
-#              write_byte(0x80 | ((code >> 6) & 0x3F))
-#              write_byte(0x80 | (code & 0x3F))
-#            end
-#          end
       end
     end
 

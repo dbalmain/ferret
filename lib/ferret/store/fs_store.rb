@@ -164,12 +164,12 @@ module Ferret::Store
         rescue
           # try again, this time forcing the delete
           FileUtils.rm_rf(dir_path(to))
-	  begin
+          begin
             FileUtils.mv(dir_path(from), dir_path(to))
-	  rescue
+          rescue
             FileUtils.cp(dir_path(from), dir_path(to))
             FileUtils.rm_rf(dir_path(to))
-	  end
+          end
         end
       end
     end

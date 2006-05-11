@@ -175,9 +175,10 @@ PKG_FILES = FileList[
   'Rakefile'
 ]
 PKG_FILES.exclude('**/*.o')
+PKG_FILES.include('ext/termdocs.c')
 PKG_FILES.exclude('**/Makefile')
 PKG_FILES.exclude('ext/ferret_ext.so')
-puts PKG_FILES
+
 
 if ! defined?(Gem)
   puts "Package Target requires RubyGEMs"
