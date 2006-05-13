@@ -6,6 +6,7 @@ class QueryParserTest < Test::Unit::TestCase
     parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "field", "f1", "f2"])
     pairs = [
       ['', ''],
+      ['*:word', 'word field:word f1:word f2:word'],
       ['word', 'word'],
       ['field:word', 'field:word'],
       ['"word1 word2 word#"', '"word1 word2 word"'],

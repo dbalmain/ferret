@@ -10,8 +10,6 @@ class FSStoreTest < Test::Unit::TestCase
     @dpath = File.join(File.dirname(__FILE__),
                        '../../temp/fsdir')
     @dir = FSDirectory.new(@dpath, true)
-    @dir1 = FSDirectory.new(@dpath, true)
-    @dir2 = FSDirectory.new(@dpath, true)
   end
 
   def teardown

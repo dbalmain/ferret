@@ -356,7 +356,7 @@ module Index
         target_merge_docs = @min_merge_docs
         while (target_merge_docs <= @max_merge_docs)
           # find segments smaller than current target size
-          min_segment = @segment_infos.size() -1
+          min_segment = @segment_infos.size() - 1
           merge_docs = 0
           while (min_segment >= 0)
             si = @segment_infos[min_segment]
@@ -383,7 +383,8 @@ module Index
         segments_to_delete = []
         merged_name = new_segment_name()
         if @info_stream != nil
-          @info_stream.print("merging segments from #{min_segment} to #{(max_segment - 1)}\n")
+          @info_stream.print("merging segments from #{min_segment} " +
+                             "to #{(max_segment - 1)}\n")
         end
         merger = SegmentMerger.new(@directory, merged_name, @term_index_interval)
 

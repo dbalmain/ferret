@@ -10,6 +10,7 @@ VALUE rwild_lower_key;
 VALUE roccur_default_key;
 VALUE rdefault_slop_key;
 VALUE rclean_str_key;
+VALUE rfields_key;
 extern VALUE ranalyzer_key;
 
 extern VALUE frt_get_analyzer(Analyzer *a);
@@ -90,6 +91,12 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
     if (Qnil != (rval = rb_hash_aref(roptions, ranalyzer_key))) {
       analyzer = frt_get_cwrapped_analyzer(rval);
     }
+    if (Qnil != (rval = rb_hash_aref(roptions, rfields_key))) {
+      all_fields = frt_get_fields(rval);
+    }
+  }
+  if (all_fields == NULL) {
+    all_fields = hs_str_create(&free);
   }
 
   if (!analyzer) {
@@ -164,6 +171,7 @@ Init_qparser(void)
   roccur_default_key = ID2SYM(rb_intern("occur_default"));
   rdefault_slop_key = ID2SYM(rb_intern("default_slop"));
   rclean_str_key = ID2SYM(rb_intern("clean_string"));
+  rfields_key = ID2SYM(rb_intern("fields"));
 
   /* QueryParser */
   cQueryParser = rb_define_class_under(mFerret, "QueryParser", rb_cObject);

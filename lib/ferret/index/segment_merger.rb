@@ -40,7 +40,9 @@ module Ferret::Index
       return @readers[i]
     end
 
-    # Merges the readers specified by the @link #addendmethod into the directory passed to the constructor
+    # Merges the readers specified by the #add method into the directory
+    # passed to the constructor
+    # 
     # returns:: The number of documents that were merged
     # raises:: IOError
     def merge()
@@ -51,8 +53,9 @@ module Ferret::Index
       return value
     end
     
-    # close all IndexReaders that have been added.
-    # Should not be called before merge().
+    # close all IndexReaders that have been added.  Should not be called
+    # before merge().
+    #
     # raises:: IOError
     def close_readers()
       @readers.each { |reader| reader.close }
