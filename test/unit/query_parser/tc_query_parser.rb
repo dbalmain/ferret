@@ -125,13 +125,14 @@ class QueryParserTest < Test::Unit::TestCase
       parser.fields = ["xxx", "one", "two", "three"]
       assert_equal('word one:word two:word three:word',
                    parser.parse("*:word").to_s("xxx"))
-      assert_equal('three:word',
+      assert_equal('three:word four:word',
                    parser.parse("three:word four:word").to_s("xxx"))
     end
 
     def test_qp_allow_any_field()
       parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"],
-                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new)
+                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new,
+                     :allow_any_fields => false)
 
       assert_equal('key:word',
                    parser.parse("key:word song:word").to_s("xxx"))
@@ -139,8 +140,7 @@ class QueryParserTest < Test::Unit::TestCase
 
 
       parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"],
-                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new,
-                     :allow_any_fields => true)
+                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new)
 
       assert_equal('key:word song:word',
                    parser.parse("key:word song:word").to_s("xxx"))

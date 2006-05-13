@@ -104,6 +104,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
   }
 
   qp = qp_create(all_fields, def_fields, analyzer);
+  qp->allow_any_fields = true;
   qp->clean_str = true;
   /* handle options */
   if (argc == 2) {
