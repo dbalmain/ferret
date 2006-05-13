@@ -104,7 +104,6 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
   }
 
   qp = qp_create(all_fields, def_fields, analyzer);
-  qp->allow_any_fields = true;
   qp->clean_str = true;
   /* handle options */
   if (argc == 2) {
@@ -132,7 +131,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
   return self;
 }
 
-#define GET_QP QParser *qp; Data_Get_Struct(self, QParser, qp)
+#define GET_QP QParser *qp = (QParser *)DATA_PTR(self)
 static VALUE
 frt_qp_parse(VALUE self, VALUE rstr)
 {
@@ -153,6 +152,36 @@ frt_qp_parse(VALUE self, VALUE rstr)
   }
   
   return rq;
+}
+
+static VALUE
+frt_qp_get_fields(VALUE self)
+{
+  GET_QP;
+  int i;
+  HashSet *fields = qp->all_fields;
+  VALUE rfields = rb_ary_new();
+
+  for (i = 0; i < fields->size; i++) {
+    rb_ary_push(rfields, rb_str_new2((char *)fields->elems[i]));
+  } 
+
+  return rfields;
+}
+
+static VALUE
+frt_qp_set_fields(VALUE self, VALUE rfields)
+{
+  GET_QP;
+  HashSet *fields = frt_get_fields(rfields);
+
+  if (fields == NULL) {
+    fields = hs_str_create(&free);
+  }
+  hs_destroy(qp->all_fields);
+  qp->all_fields = fields;
+
+  return self;
 }
 
 /****************************************************************************
@@ -179,6 +208,8 @@ Init_qparser(void)
 
   rb_define_method(cQueryParser, "initialize", frt_qp_init, -1);
   rb_define_method(cQueryParser, "parse", frt_qp_parse, 1);
+  rb_define_method(cQueryParser, "fields", frt_qp_get_fields, 0);
+  rb_define_method(cQueryParser, "fields=", frt_qp_set_fields, 1);
 
   /* QueryParseException */
   cQueryParseException = rb_define_class_under(cQueryParser,

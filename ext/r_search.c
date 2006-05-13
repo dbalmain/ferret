@@ -110,7 +110,7 @@ frt_get_sd(Hit *hit)
   return self;
 }
 
-#define GET_HIT Hit *hit; Data_Get_Struct(self, Hit, hit)
+#define GET_HIT Hit *hit = (Hit *)DATA_PTR(self)
 static VALUE
 frt_sd_score(VALUE self)
 {

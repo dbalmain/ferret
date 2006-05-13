@@ -113,6 +113,39 @@ class QueryParserTest < Test::Unit::TestCase
     pairs.each do |query_str, expected|
       assert_equal(expected, parser.parse(query_str).to_s("xxx"))
     end
+
+  end
+
+  if not $ferret_pure_ruby
+    def test_qp_changing_fields()
+      parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"],
+                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new)
+      assert_equal('word key:word', parser.parse("*:word").to_s("xxx"))
+
+      parser.fields = ["xxx", "one", "two", "three"]
+      assert_equal('word one:word two:word three:word',
+                   parser.parse("*:word").to_s("xxx"))
+      assert_equal('three:word',
+                   parser.parse("three:word four:word").to_s("xxx"))
+    end
+
+    def test_qp_allow_any_field()
+      parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"],
+                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new)
+
+      assert_equal('key:word',
+                   parser.parse("key:word song:word").to_s("xxx"))
+      assert_equal('word key:word', parser.parse("*:word").to_s("xxx"))
+
+
+      parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"],
+                     :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new,
+                     :allow_any_fields => true)
+
+      assert_equal('key:word song:word',
+                   parser.parse("key:word song:word").to_s("xxx"))
+      assert_equal('word key:word song:word', parser.parse("*:word").to_s("xxx"))
+    end
   end
   
   def do_test_query_parse_exception_raised(str)
@@ -124,7 +157,7 @@ class QueryParserTest < Test::Unit::TestCase
 
   def test_prefix_query
     parser = Ferret::QueryParser.new("xxx", :fields => ["xxx"],
-                                     :analyzer => Ferret::Analysis::StandardAnalyzer.new)
+                   :analyzer => Ferret::Analysis::StandardAnalyzer.new)
     assert_equal(Ferret::Search::PrefixQuery, parser.parse("asdg*").class)
     assert_equal(Ferret::Search::WildcardQuery, parser.parse("a?dg*").class)
     assert_equal(Ferret::Search::WildcardQuery, parser.parse("a*dg*").class)
