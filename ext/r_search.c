@@ -1561,6 +1561,7 @@ frt_is_init(VALUE self, VALUE obj)
   IndexReader *ir = NULL;
   Searcher *sea;
   if (TYPE(obj) == T_STRING) {
+    frt_create_dir(obj);
     store = open_fs_store(StringValueCStr(obj));
     ir = ir_open(store);
     deref(store);
@@ -1698,6 +1699,7 @@ frt_ind_init(int argc, VALUE *argv, VALUE self)
     if (Qnil != (rval = rb_hash_aref(roptions, rpath_key))) {
       rval = rb_obj_as_string(rval);
       /* TODO: create the directory if it is missing */
+      frt_create_dir(rval);
       store = open_fs_store(RSTRING(rval)->ptr);
       deref(store);
     } else if (Qnil != (rval = rb_hash_aref(roptions, rdir_key))) {
@@ -2329,6 +2331,7 @@ frt_ind_persist(int argc, VALUE *argv, VALUE self)
     ref(ind->store);
   } else {
     rdir = rb_obj_as_string(rdir);
+    frt_create_dir(rdir);
     ind->store = open_fs_store(RSTRING(rdir)->ptr);
   }
 

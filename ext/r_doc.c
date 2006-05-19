@@ -288,7 +288,7 @@ frt_get_doc(Document *doc)
   if (!doc || (self = object_get(doc)) != Qnil) return self;
 
   doc->free_data = NULL;
-  self = Data_Wrap_Struct(cDocument, &frt_doc_mark, &frt_doc_free, doc);
+  self = Data_Wrap_Struct(cDocument, frt_doc_mark, frt_doc_free, doc);
 
   /* We add all the document's fields to the ruby object space so that they
    * can be retrieved in ruby later. This code must come after the above

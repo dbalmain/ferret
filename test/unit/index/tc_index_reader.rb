@@ -6,6 +6,7 @@ module IndexReaderCommon
   include Ferret::Analysis
 
   def test_index_reader
+    do_test_get_field_names()
 
     do_test_term_doc_enum()
     
@@ -16,6 +17,17 @@ module IndexReaderCommon
     do_test_get_doc()
 
     do_test_term_enum()
+  end
+
+  def do_test_get_field_names()
+    field_names = @ir.get_field_names
+
+    assert(field_names.include?("body"))
+    assert(field_names.include?("changing_field"))
+    assert(field_names.include?("author"))
+    assert(field_names.include?("title"))
+    assert(field_names.include?("text"))
+    assert(field_names.include?("year"))
   end
 
   def do_test_term_enum()
@@ -635,8 +647,8 @@ class IndexReaderTest < Test::Unit::TestCase
   end
 
   def test_ir_read_while_optimizing_on_disk()
-    dpath = File.join(File.dirname(__FILE__),
-                       '../../temp/fsdir')
+    dpath = File.expand_path(File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir'))
     fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
@@ -660,8 +672,8 @@ class IndexReaderTest < Test::Unit::TestCase
   end
 
   def test_latest()
-    dpath = File.join(File.dirname(__FILE__),
-                       '../../temp/fsdir')
+    dpath = File.expand_path(File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir'))
     fs_dir = Ferret::Store::FSDirectory.new(dpath, true)
 
     iw = IndexWriter.new(fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)

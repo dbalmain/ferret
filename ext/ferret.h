@@ -2,11 +2,13 @@
 #define __FERRET_H_
 
 #include "global.h"
+#include "hashset.h"
 #include "document.h"
 
 /* IDs */
 extern ID id_new;
 extern ID id_call;
+extern ID id_is_directory;
 
 /* Modules */
 extern VALUE mFerret;
@@ -44,7 +46,8 @@ extern VALUE object_get(void *key);
 extern VALUE frt_data_alloc(VALUE klass);
 extern VALUE frt_get_doc(Document *doc);
 extern void frt_deref_free(void *p);
-
+extern void frt_create_dir(VALUE rpath);
+extern VALUE frt_hs_to_rb_ary(HashSet *hs);
 
 #define Frt_Make_Struct(klass)\
   rb_data_object_alloc(klass,NULL,(RUBY_DATA_FUNC)NULL,(RUBY_DATA_FUNC)NULL)

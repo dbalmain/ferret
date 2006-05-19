@@ -1,6 +1,7 @@
 #include "ferret.h"
 #include "except.h"
 #include "hash.h"
+#include "hashset.h"
 
 /* Object Map */
 static HshTable *object_map;
@@ -8,6 +9,9 @@ static HshTable *object_map;
 /* IDs */
 ID id_new;
 ID id_call;
+ID id_is_directory;
+
+static ID id_mkdir_p;
 
 /* Modules */
 VALUE mFerret;
@@ -130,6 +134,26 @@ frt_thread_getspecific(thread_key_t key)
 }
 
 void
+frt_create_dir(VALUE rpath)
+{
+  VALUE mFileUtils;
+  rb_require("fileutils");
+  mFileUtils = rb_define_module("FileUtils");
+  rb_funcall(mFileUtils, id_mkdir_p, 1, rpath);
+}
+
+VALUE
+frt_hs_to_rb_ary(HashSet *hs)
+{
+  int i;
+  VALUE ary = rb_ary_new();
+  for (i = 0; i < hs->size; i++) {
+    rb_ary_push(ary, rb_str_new2(hs->elems[i]));
+  }
+  return ary;
+}
+
+void
 Init_ferret_ext(void)
 {
   /* initialize object map */
@@ -138,6 +162,9 @@ Init_ferret_ext(void)
   /* IDs */
 	id_new = rb_intern("new");
 	id_call = rb_intern("call");
+
+  id_mkdir_p = rb_intern("mkdir_p");
+  id_is_directory = rb_intern("directory?");
 
   /* Modules */
   mFerret = rb_define_module("Ferret");

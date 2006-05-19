@@ -7,8 +7,8 @@ class FSStoreTest < Test::Unit::TestCase
   include StoreTest
   include StoreLockTest
   def setup
-    @dpath = File.join(File.dirname(__FILE__),
-                       '../../temp/fsdir')
+    @dpath = File.expand_path(File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir'))
     @dir = FSDirectory.new(@dpath, true)
   end
 

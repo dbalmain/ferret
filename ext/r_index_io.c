@@ -442,6 +442,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
       ref(store);
     } else {
       StringValue(rdir);
+      frt_create_dir(rdir);
       store = open_fs_store(RSTRING(rdir)->ptr);
     }
   } else {
@@ -645,6 +646,7 @@ frt_ir_init(int argc, VALUE *argv, VALUE self)
         store = DATA_PTR(rdir);
       } else {
         rdir = rb_obj_as_string(rdir);
+        frt_create_dir(rdir);
         store = open_fs_store(RSTRING(rdir)->ptr);
         deref(store);
       }
@@ -871,6 +873,17 @@ frt_ir_terms_from(VALUE self, VALUE rterm)
   return Data_Wrap_Struct(cTermEnum, NULL, &frt_te_free, te);
 }
 
+static VALUE
+frt_ir_get_field_names(VALUE self)
+{
+  GET_IR;
+  VALUE rfnames;
+  HashSet *fnames = ir->get_field_names(ir, IR_ALL);
+  rfnames = frt_hs_to_rb_ary(fnames);
+  hs_destroy(fnames);
+  return rfnames;
+}
+
 /****************************************************************************
  *
  * Init Function
@@ -1004,4 +1017,5 @@ Init_index_io(void)
   rb_define_method(cIndexReader, "doc_freq", frt_ir_doc_freq, 1);
   rb_define_method(cIndexReader, "terms", frt_ir_terms, 0);
   rb_define_method(cIndexReader, "terms_from", frt_ir_terms_from, 1);
+  rb_define_method(cIndexReader, "get_field_names", frt_ir_get_field_names, 0);
 }
