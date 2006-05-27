@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+Copyright 1999-2005 The Apache Software Foundation
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <title>Apache Developers' C Language Style Guide - The Apache Software Foundation</title>
+ </head>
+ <body>        
+   <h2>Apache Developers' C Language Style Guide</h2>
+   <strong>Compiled by Paul Sutton <a href="mailto:paul@awe.com">paul@awe.com</a></strong>
+   <br />
+   <h2>Introduction</h2>
+    <p>[This bit could state that code should be laid out to be clear to
+    someone else familiar with Apache. Functions should be short and
+    easily understood. Comments should be provided to explain the
+    rationale for code which is not obvious, and to document behavior of
+    functions. The guidelines can be broken if necessary to acheive a
+    clearer layout]</p>
+    <p>This style can be generated with the following arguments to GNU indent:</p>
+    <p><ul><code>-i4 -npsl -di0 -br -nce -d0 -cli0 -npcs -nfc1</code></ul></p>
+   <h2>The Guidelines</h2>
+    <ul>
+     <li>Opening braces are given on the same lines as statements, or on the 
+      following line at the start of a function definition.
+     </li>
+     <li>Code inside a block (whether surrounded by braces or not) is
+      indented by four space characters. Tab characters are not
+      used. Comments are indented to the same level as the surrounding
+      code.
+     </li>
+     <li>Closing braces are always on a separate line from surrounding
+      code, and are indented to line up with the start of the text on
+      the line containing the corresponding opening brace.
+     </li>
+     <li>Functions are declared with ANSI-style arguments.
+     </li>
+     <li>There is no space between the function name and the opening bracket
+      of the arguments to the function. There is a single space following
+      commas in argument lists and the semi-colons in for statements.
+     </li>
+     <li>Inside a <samp>switch()</samp> statement, the <samp>case</samp>
+      keywords are indented to the same level as the <samp>switch</samp> line.
+     </li>
+     <li>Operators in expressions should be surrounded by a single space
+      before and after, except for unary increment (++), decrement (--), and
+      negation (!) operators.
+     </li>
+     <li>There is no whitespace between a cast and the item modified
+      (<EM>e.g.</EM>, "<samp>(int)j</samp>" and not
+      "<samp>(int) j</samp>").
+     </li>
+     <li>If a cast is to a pointer type, there is a space between the type
+      and the <samp>*</samp> character (<EM>e.g.</EM>,
+      "<samp>(char *)i</samp>" instead of
+      "<samp>(char*)i</samp>")
+     </li>
+    </ul>
+   <h2> Details and Examples </h2>
+    <ol>
+     <li><strong>Indentation, General Style</strong>
+      <p>Each level of indentation of code is four spaces. Tab characters
+         should never be used. Specific indentation rules for function
+         declarations and control-flow keywords are given below.</p>
+
+      <p>Example:</p>
+      <pre>
+          main(int argc, char **argc)
+          {
+              if (argc != 0) {
+                  fprintf(stderr, "No arguments allowed\n");
+                  exit(1);
+              }
+              exit(0);
+          }
+      </pre>
+
+      <p><A NAME="long-exps">If an expression</A> (or a routine declaration or
+      invocation) would extend 
+      past column 80, the terms or arguments are wrapped at a convenient spot
+      and the wrapped portion is indented under the first term in the expression
+      (or the first argument to the function).
+      Conditional expressions should be wrapped to keep single or
+      parenthesized terms as atomic as possible, and place Boolean operators
+      at either the start (preferable) or end of the line.
+      </p>
+      <p>
+      Example:
+      </p>
+      <pre>
+           static const char *really_long_name(int i, int j,
+                                               const char *args, void *foo,
+                                               int k)
+
+           if (cond1 &amp;&amp; (item2 || item3) &amp;&amp; (!item4)
+               &amp;&amp; (item5 || item6) &amp;&amp; item7) {
+               do_a_thing();
+           }
+      </pre>
+     </li>
+     <li><strong>Comments</strong>
+
+      <p>Provide comments which explain the function of code where it is not
+         clear from the code itself.  Provide rationale where necessary for
+         particular bits of code.</p>
+
+      <p>Comments should be indented to same level as the surrounding text.</p>
+
+      <p>Example:</p>
+
+      <pre>
+          code;
+          /* comment */
+          code;
+      </pre>
+     </li>
+     <li><strong>Function Declaration and Layout</strong>
+
+      <p>Functions are laid out as follows:</p>
+
+      <pre>
+          int main(int argc, char **argv)
+          {
+              code;
+          }
+      </pre>
+
+      <p>The return type is placed on the same line as the function. Arguments
+         (if any) are given in ANSI style. If no arguments, declare function
+         as <samp>void</samp>. No space
+         between function name and opening bracket, single space after comma
+         separating each argument. The opening brace is placed on the line
+         after the definition, indented to line up with the start of the 
+         return type text. The code is indented with four spaces, and the closing
+         brace is indented to line up with the opening brace.  <strong>Also
+         see the section on indenting <A HREF="#long-exps">long declarations
+         and invocations</A>.</strong></p>
+     </li>
+     <li><strong>Function Calls</strong>
+
+      <p>Space after commas in function calls. No space between function name
+         and opening bracket.</p>
+      <pre>
+          f(a, b);
+      </pre>
+      <p><strong>Also
+         see the section on indenting <A HREF="#long-exps">long declarations
+         and invocations</A>.</strong>
+      </p>
+     </li>
+     <li><strong>Flow-Control Layout</strong>
+
+      <p>Flow-control statements (<samp>if</samp>, <samp>while</samp>,
+         <samp>for</samp>, <EM>etc.</EM>) are laid out as in this example:</p>
+
+      <pre>
+          if (expr) {
+              code;
+          }
+          else {
+              code;
+          }
+      </pre>
+
+      <p>There is a space between the keyword and the opening bracket.
+         Opening brace placed on same line as the flow keyword. The code
+         itself is indented by four spaces. The closing brace is indented to
+         line up with the opening brace. If an <samp>else</samp> clause is used, the
+         <samp>else</samp> keyword is placed on the line following the closing
+         brace and is indented to line up with the corresponding
+         <samp>if</samp>.  <strong>Also 
+         see the section on indenting <A HREF="#long-exps">long
+         expressions</A>.</strong>
+      </p>
+     </li>   
+       
+     <li><strong><samp>for</samp> Layout</strong>
+
+      <p>Space after the semi-colons. Example:</p>
+
+      <pre>
+          for (a; b; c)
+      </pre>
+     </li>
+
+     <li><strong><samp>switch</samp> Layout</strong>
+
+      <p><samp>case</samp> lines within a <samp>switch()</samp> are indented to
+         same level as the switch 
+         statement itself. The code for each case is indented by four spaces.
+         Braces are laid out as for other control-flow keywords. Example:</p>
+
+      <pre>
+          switch (x) {
+          case a:
+              code;
+          case b:
+              code;
+          }
+      </pre>
+     </li>
+
+     <li><strong>Expressions</strong>
+
+      <p>Space before and after assignment and other and operators. No space
+         between unary operators (increment, decrement, and negation) and the
+         lvalue. Examples:</p>
+
+      <pre>
+          a = b
+          a + b
+          a &lt; b
+          a = -b
+          a = !b
+          ++a
+      </pre>
+     </li>
+
+     <li><strong>Capitalisation of Enums</strong>
+      <p>No rule.</p>
+     </li>
+    </ol>
+ </body>
+</html>
