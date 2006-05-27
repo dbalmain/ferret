@@ -1,5 +1,4 @@
 #include <time.h>
-#include <math.h>
 #include "test.h"
 #include "all_tests.h"
 
@@ -373,7 +372,7 @@ bool tst_flt_delta_equal(int line_num, tst_case *tc, const double expected,
 
     /* account for floating point error */
     diff = (expected - actual) / expected;
-    if (abs(diff) < delta) {
+    if ((diff * diff) < delta) {
         return true;
     }
 

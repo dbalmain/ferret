@@ -59,9 +59,6 @@ static void test_failures(tst_case *tc, void *data)
 
 tst_suite *ts_test(tst_suite *suite)
 {
-    long long i = 1234561234621;
-    (void)i;
-
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_asserts, NULL);

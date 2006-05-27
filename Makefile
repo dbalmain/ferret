@@ -2,9 +2,9 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -fno-common -O2 -g -DDEBUG
 
 LFLAGS = -lm
 
-TEST_OBJS = test_priorityqueue.o test_hashset.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_helper.o
+TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o
 
-OBJS = priorityqueue.o hashset.o global.o bitvector.o hash.o helper.o posh.o
+OBJS = priorityqueue.o hashset.o helper.o global.o bitvector.o hash.o posh.o
 
 vpath %.c test src
 
@@ -33,15 +33,15 @@ test_bitvector.o: defines.h posh.h errcode.h test.h global.h bitvector.h
 
 test_test.o: defines.h posh.h errcode.h test.h global.h
 
-helper.o: helper.h
+helper.o: defines.h posh.h helper.h
 
 bitvector.o: defines.h posh.h errcode.h global.h bitvector.h
-
-test_helper.o: defines.h posh.h errcode.h test.h global.h helper.h
 
 test_hash.o: defines.h hash.h posh.h errcode.h test.h global.h
 
 test_global.o: defines.h posh.h errcode.h test.h global.h
+
+test_helper.o: defines.h posh.h errcode.h test.h global.h helper.h
 
 priorityqueue.o: defines.h priorityqueue.h posh.h errcode.h global.h
 
