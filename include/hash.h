@@ -9,7 +9,7 @@
  *
  ****************************************************************************/
 
-#define Hash_MINSIZE 8
+#define HASH_MINSIZE 8
 #define SLOW_DOWN 50000         /* stop increasing the hash table so quickly to
                                  * conserve memory */
 
@@ -54,13 +54,13 @@ typedef struct HashTable
     int mask;                   /* capacity_of_table - 1 */
 
     /* table points to smalltable initially. If the table grows beyond 2/3 of
-     * Hash_MINSIZE it will point to newly malloced memory as it grows. */
+     * HASH_MINSIZE it will point to newly malloced memory as it grows. */
     HashEntry *table;
 
     /* When a HashTable is created it needs an initial table to start if off.
      * All HashTables will start with smalltable and then malloc a larger
      * table as the HashTable grows */
-    HashEntry smalltable[Hash_MINSIZE];
+    HashEntry smalltable[HASH_MINSIZE];
 
     /* the following function pointers are used internally and should not be
      * used outside of the HashTable methods */

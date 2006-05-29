@@ -337,6 +337,7 @@ void tst_msg(const char *func, const char *fname, int line_num,
     }
 }
 
+#define I64_PFX POSH_I64_PRINTF_PREFIX
 bool tst_int_equal(int line_num, tst_case *tc, const f_u64 expected,
                    const f_u64 actual)
 {
@@ -352,7 +353,8 @@ bool tst_int_equal(int line_num, tst_case *tc, const f_u64 expected,
 
     tc->failed = true;
     tst_msg(tc->name, tc->suite->name, line_num,
-            "expected <%d>, but saw <%d>\n", expected, actual);
+            "expected <%"I64_PFX"d>, but saw <%"I64_PFX"d>\n",
+            expected, actual);
     return false;
 }
 

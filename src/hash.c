@@ -163,7 +163,7 @@ HashTable *h_new_str(free_ft free_key, free_ft free_value)
     }
     ht->fill = 0;
     ht->size = 0;
-    ht->mask = Hash_MINSIZE - 1;
+    ht->mask = HASH_MINSIZE - 1;
     ht->table = ht->smalltable;
     memset(ht->smalltable, 0, sizeof(ht->smalltable));
     ht->lookup_i = (lookup_ft)&h_lookup_str;
@@ -270,17 +270,17 @@ void *h_rem(HashTable *ht, const void *key, bool destroy_key)
 
 static int h_resize(HashTable *ht, int min_newsize)
 {
-    HashEntry smallcopy[Hash_MINSIZE];
+    HashEntry smallcopy[HASH_MINSIZE];
     HashEntry *oldtable;
     HashEntry *he_old, *he_new;
     int newsize, num_active;
 
     /* newsize will be a power of two */
-    for (newsize = Hash_MINSIZE; newsize < min_newsize; newsize <<= 1) {
+    for (newsize = HASH_MINSIZE; newsize < min_newsize; newsize <<= 1) {
     }
 
     oldtable = ht->table;
-    if (newsize == Hash_MINSIZE) {
+    if (newsize == HASH_MINSIZE) {
         if (ht->table == ht->smalltable) {
             /* need to copy the d*(int *)ata out so we can rebuild the table into
              * the same space */

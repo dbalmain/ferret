@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define MAX_FILE_PATH 1024
+
 #define false 0
 #define true 1
 
