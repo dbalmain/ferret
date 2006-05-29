@@ -217,7 +217,7 @@ static void test_rw_ulongs(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *) data;
-    unsigned long long ulongs[4] =
+    f_u64 ulongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
     OutStream *ostream = store->create_output(store, "rw_ulong.test");
     InStream *istream;
@@ -377,7 +377,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     os_write_vint(ostream, 1234567890);
     os_seek(ostream, 4000);
     Aiequal(4000, os_pos(ostream));
-    os_write_vlong(ostream, 9876543210LL);
+    os_write_vlong(ostream, 9876543210);
     os_close(ostream);
 
     istream = store->open_input(store, "rw_seek.test");
@@ -386,7 +386,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     Aiequal(1234567890, is_read_vint(istream));
     is_seek(istream, 4000);
     Aiequal(4000, is_pos(istream));
-    Aiequal(9876543210LL, is_read_vlong(istream));
+    Aiequal(9876543210, is_read_vlong(istream));
     is_seek(istream, 987);
     Aiequal(987, is_pos(istream));
     Aiequal(555, is_read_vint(istream));
