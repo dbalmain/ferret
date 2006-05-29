@@ -86,7 +86,7 @@ static void test_each(tst_case *tc, void *data)
     store->touch(store, "file4");
     store->each(store, &concat_filenames, &ea);
     *(ea.p) = 0;
-    Assert(strstr(ea.str, "file1") != NULL, "should contain this file");
+	Assert(strstr(ea.str, "file1") != NULL, "should contain this file");
     Assert(strstr(ea.str, "file2") != NULL, "should contain this file");
     Assert(strstr(ea.str, "file3") != NULL, "should contain this file");
     Assert(strstr(ea.str, "file4") != NULL, "should contain this file");
@@ -456,7 +456,7 @@ void create_test_store_suite(tst_suite *suite, Store *store)
     tst_run_test(suite, test_basic_file_ops, store);
     tst_run_test(suite, test_rename, store);
     tst_run_test(suite, test_each, store);
-    tst_run_test(suite, test_rw_bytes, store);
+	tst_run_test(suite, test_rw_bytes, store);
     tst_run_test(suite, test_rw_ints, store);
     tst_run_test(suite, test_rw_longs, store);
     tst_run_test(suite, test_rw_uints, store);

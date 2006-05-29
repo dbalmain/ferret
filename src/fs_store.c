@@ -1,24 +1,30 @@
 #include "store.h"
-#ifdef POSH_OS_WIN32
-# define DIR_SEPARATOR "\\"
-# ifndef S_IRUSR
-#  define S_IRUSR _S_IREAD
-# endif
-# ifndef S_IWUSR
-# define S_IWUSR _S_IWRITE
-# endif
-#else
-# define DIR_SEPARATOR "/"
-# include <unistd.h>
-# include <dirent.h>
-#endif
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
-
+#ifdef POSH_OS_WIN32
+# include <io.h>
+# include "win32.h"
+# ifndef sleep
+#	define sleep _sleep
+# endif
+# ifndef DIR_SEPARATOR
+#   define DIR_SEPARATOR "\\"
+# endif
+# ifndef S_IRUSR
+#	define S_IRUSR _S_IREAD
+# endif
+# ifndef S_IWUSR
+#	define S_IWUSR _S_IWRITE
+# endif
+#else
+# define DIR_SEPARATOR "/"
+# include <unistd.h>
+# include <dirent.h>
+#endif
 
 static char *const FILE_OPEN_ERROR_MSG = "Couldn't open the file to read";
 static char *const SEEK_ERROR_MSG = "Seek error message";
@@ -53,9 +59,10 @@ static void fs_touch(Store *store, char *filename)
 
 static int fs_exists(Store *store, char *filename)
 {
+	int fd;
     char buf[MAX_FILE_PATH];
     join_path(buf, store->dir.path, filename);
-    int fd = open(buf, 0);
+    fd = open(buf, 0);
     if (fd < 0) {
         if (errno != ENOENT) {
             raise(IO_ERROR, strerror(errno));
@@ -112,7 +119,7 @@ static void fs_each(Store *store, void (*func) (char *fname, void *arg), void *a
     if (!d) raise(IO_ERROR, strerror(errno));
 
     while ((de = readdir(d)) != NULL) {
-        if (de->d_name[0] > '/' && !file_is_lock(de->d_name)) {
+		if (de->d_name[0] > '/' && !file_is_lock(de->d_name)) {
             func(de->d_name, arg);
         }
     }
