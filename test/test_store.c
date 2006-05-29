@@ -242,21 +242,21 @@ static void test_rw_vints(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *) data;
-    f_i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
+    f_u32 vints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
     OutStream *ostream = store->create_output(store, "rw_vint.test");
     InStream *istream;
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         os_write_vint(ostream, vints[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_vint.test");
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         Aiequal(vints[i], is_read_vint(istream));
     }
     is_close(istream);
-    Aiequal(20, store->length(store, "rw_vint.test"));
+    Aiequal(10, store->length(store, "rw_vint.test"));
 }
 
 /**
@@ -266,22 +266,22 @@ static void test_rw_vlongs(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *) data;
-    f_u64 longs[4] =
-        { POSH_I64_MIN, POSH_I64_MAX, POSH_I64(-1), POSH_I64(0) };
+    f_u64 vlongs[4] =
+        { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
     OutStream *ostream = store->create_output(store, "rw_vlong.test");
     InStream *istream;
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         os_write_vlong(ostream, vlongs[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_vlong.test");
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         Aiequal(vlongs[i], is_read_vlong(istream));
     }
     is_close(istream);
-    Aiequal(20, store->length(store, "rw_vlong.test"));
+    Aiequal(19, store->length(store, "rw_vlong.test"));
 }
 
 /**
@@ -377,16 +377,16 @@ static void test_buffer_seek(tst_case *tc, void *data)
     os_write_vint(ostream, 1234567890);
     os_seek(ostream, 4000);
     Aiequal(4000, os_pos(ostream));
-    os_write_vint(ostream, 9876543210LL);
+    os_write_vlong(ostream, 9876543210LL);
     os_close(ostream);
 
     istream = store->open_input(store, "rw_seek.test");
     is_seek(istream, 56);
     Aiequal(56, is_pos(istream));
-    Aiequal(1234567890ULL, is_read_vint(istream));
+    Aiequal(1234567890, is_read_vint(istream));
     is_seek(istream, 4000);
     Aiequal(4000, is_pos(istream));
-    Aiequal(9876543210ULL, is_read_vint(istream));
+    Aiequal(9876543210LL, is_read_vlong(istream));
     is_seek(istream, 987);
     Aiequal(987, is_pos(istream));
     Aiequal(555, is_read_vint(istream));

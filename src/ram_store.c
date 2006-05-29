@@ -6,19 +6,23 @@ static char *const RENAME_ERROR_MSG =
 static char *const MISSING_RAMFILE_ERROR_MSG =
     "Couldn't open the ram file to read";
 
-extern void store_destroy(Store * store);
+extern Store *store_create();
+extern void store_destroy(Store *store);
 extern OutStream *os_create();
 extern InStream *is_create();
 extern int file_is_lock(char *filename);
 
+/*
+ * TODO: remove alive
+ */
 typedef struct RamFile
 {
-    char *name;
+    char   *name;
     uchar **buffers;
-    int bufcnt;
-    int len;
-    int ref_cnt;
-    bool alive;
+    int     bufcnt;
+    long    len;
+    int     ref_cnt;
+    bool    alive;
 } RamFile;
 
 static RamFile *rf_create(const char *name)
@@ -34,7 +38,7 @@ static RamFile *rf_create(const char *name)
     return rf;
 }
 
-static void rf_extend_if_necessary(RamFile * rf, int buf_num)
+static void rf_extend_if_necessary(RamFile *rf, int buf_num)
 {
     while (rf->bufcnt <= buf_num) {
         REALLOC_N(rf->buffers, uchar *, (rf->bufcnt + 1));
@@ -45,7 +49,7 @@ static void rf_extend_if_necessary(RamFile * rf, int buf_num)
 static void rf_close(void *p)
 {
     int i;
-    RamFile *rf = (RamFile *) p;
+    RamFile *rf = (RamFile *)p;
     if (rf->ref_cnt > 0 || rf->alive) {
         return;
     }
@@ -57,14 +61,14 @@ static void rf_close(void *p)
     free(rf);
 }
 
-static void ram_touch(Store * store, char *filename)
+static void ram_touch(Store *store, char *filename)
 {
     if (h_get(store->dir.ht, filename) == NULL) {
         h_set(store->dir.ht, filename, rf_create(filename));
     }
 }
 
-static int ram_exists(Store * store, char *filename)
+static int ram_exists(Store *store, char *filename)
 {
     if (h_get(store->dir.ht, filename) != NULL) {
         return true;
@@ -74,7 +78,7 @@ static int ram_exists(Store * store, char *filename)
     }
 }
 
-static int ram_remove(Store * store, char *filename)
+static int ram_remove(Store *store, char *filename)
 {
     RamFile *rf = h_rem(store->dir.ht, filename, false);
     if (rf != NULL) {
@@ -87,13 +91,13 @@ static int ram_remove(Store * store, char *filename)
     }
 }
 
-static int ram_rename(Store * store, char *from, char *to)
+static void ram_rename(Store *store, char *from, char *to)
 {
-    RamFile *rf = (RamFile *) h_rem(store->dir.ht, from, false);
+    RamFile *rf = (RamFile *)h_rem(store->dir.ht, from, false);
     RamFile *tmp;
 
     if (rf == NULL) {
-        RAISE(IO_ERROR, RENAME_ERROR_MSG);
+        raise(IO_ERROR, RENAME_ERROR_MSG);
     }
 
     free(rf->name);
@@ -101,28 +105,27 @@ static int ram_rename(Store * store, char *from, char *to)
     rf->name = estrdup(to);
 
     /* clean up the file we are overwriting */
-    tmp = (RamFile *) h_get(store->dir.ht, to);
+    tmp = (RamFile *)h_get(store->dir.ht, to);
     if (tmp != NULL) {
         tmp->alive = false;
     }
 
     h_set(store->dir.ht, rf->name, rf);
-    return true;
 }
 
-static int ram_count(Store * store)
+static int ram_count(Store *store)
 {
-    return store->dir.ht->used;
+    return store->dir.ht->size;
 }
 
-static void ram_each(Store * store,
+static void ram_each(Store *store,
                      void (*func)(char *fname, void *arg), void *arg)
 {
-    HshTable *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     RamFile *rf;
     int i;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *) ht->table[i].value;
+        rf = (RamFile *)ht->table[i].value;
         if (rf) {
             if (strncmp(rf->name, LOCK_PREFIX, strlen(LOCK_PREFIX)) == 0) {
                 continue;
@@ -132,13 +135,13 @@ static void ram_each(Store * store,
     }
 }
 
-static void ram_close_i(Store * store)
+static void ram_close_i(Store *store)
 {
-    HshTable *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     RamFile *rf;
     int i;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *) ht->table[i].value;
+        rf = (RamFile *)ht->table[i].value;
         if (rf) {
             rf->alive = false;
         }
@@ -150,13 +153,13 @@ static void ram_close_i(Store * store)
 /*
  * Be sure to keep the locks
  */
-static void ram_clear(Store * store)
+static void ram_clear(Store *store)
 {
     int i;
-    HshTable *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *) ht->table[i].value;
+        rf = (RamFile *)ht->table[i].value;
         if (rf && !file_is_lock(rf->name)) {
             rf->alive = false;
             h_del(ht, rf->name);
@@ -164,13 +167,13 @@ static void ram_clear(Store * store)
     }
 }
 
-static void ram_clear_locks(Store * store)
+static void ram_clear_locks(Store *store)
 {
     int i;
-    HshTable *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *) ht->table[i].value;
+        rf = (RamFile *)ht->table[i].value;
         if (rf && file_is_lock(rf->name)) {
             rf->alive = false;
             h_del(ht, rf->name);
@@ -178,13 +181,13 @@ static void ram_clear_locks(Store * store)
     }
 }
 
-static void ram_clear_all(Store * store)
+static void ram_clear_all(Store *store)
 {
     int i;
-    HshTable *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *) ht->table[i].value;
+        rf = (RamFile *)ht->table[i].value;
         if (rf) {
             rf->alive = false;
             h_del(ht, rf->name);
@@ -192,9 +195,9 @@ static void ram_clear_all(Store * store)
     }
 }
 
-static int ram_length(Store * store, char *filename)
+static long ram_length(Store *store, char *filename)
 {
-    RamFile *rf = (RamFile *) h_get(store->dir.ht, filename);
+    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
     if (rf != NULL) {
         return rf->len;
     }
@@ -203,20 +206,20 @@ static int ram_length(Store * store, char *filename)
     }
 }
 
-int ramo_length(OutStream * os)
+long ramo_length(OutStream *os)
 {
-    return ((RamFile *) os->file)->len;
+    return ((RamFile *)os->file)->len;
 }
 
-static void ramo_flush_i(OutStream * os, uchar * src, int len)
+static void ramo_flush_i(OutStream *os, uchar *src, int len)
 {
     uchar *buffer;
-    RamFile *rf = (RamFile *) os->file;
+    RamFile *rf = (RamFile *)os->file;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
     int src_offset;
-    int pointer = os->pointer;
+    long pointer = os->pointer;
 
-    buffer_number = (int) (pointer / BUFFER_SIZE);
+    buffer_number = (int)(pointer / BUFFER_SIZE);
     buffer_offset = pointer % BUFFER_SIZE;
     bytes_in_buffer = BUFFER_SIZE - buffer_offset;
     bytes_to_copy = bytes_in_buffer < len ? bytes_in_buffer : len;
@@ -242,29 +245,29 @@ static void ramo_flush_i(OutStream * os, uchar * src, int len)
     }
 }
 
-static void ramo_seek_i(OutStream * os, int pos)
+static void ramo_seek_i(OutStream *os, long pos)
 {
     os->pointer = pos;
 }
 
-void ramo_reset(OutStream * os)
+void ramo_reset(OutStream *os)
 {
-    RamFile *rf = (RamFile *) os->file;
+    RamFile *rf = (RamFile *)os->file;
     os_seek(os, 0);
     rf->len = 0;
 }
 
-static void ramo_close_i(OutStream * os)
+static void ramo_close_i(OutStream *os)
 {
-    RamFile *rf = (RamFile *) os->file;
+    RamFile *rf = (RamFile *)os->file;
     rf->ref_cnt--;
     rf_close(rf);
 }
 
-void ramo_write_to(OutStream * os, OutStream * other_o)
+void ramo_write_to(OutStream *os, OutStream *other_o)
 {
     int i, len;
-    RamFile *rf = (RamFile *) os->file;
+    RamFile *rf = (RamFile *)os->file;
     int last_buffer_number;
     int last_buffer_offset;
 
@@ -291,15 +294,15 @@ OutStream *ram_create_buffer()
     return os;
 }
 
-void ram_destroy_buffer(OutStream * os)
+void ram_destroy_buffer(OutStream *os)
 {
     rf_close(os->file);
     free(os);
 }
 
-static OutStream *ram_create_output(Store * store, const char *filename)
+static OutStream *ram_create_output(Store *store, const char *filename)
 {
-    RamFile *rf = (RamFile *) h_get(store->dir.ht, filename);
+    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
     OutStream *os = os_create();
 
     if (rf == NULL) {
@@ -315,13 +318,14 @@ static OutStream *ram_create_output(Store * store, const char *filename)
     return os;
 }
 
-static void rami_read_i(InStream * is, uchar * b, int offset, int len)
+static void rami_read_i(InStream *is, uchar *b, int len)
 {
-    RamFile *rf = (RamFile *) is->file;
+    RamFile *rf = (RamFile *)is->file.p;
 
+    int offset = 0;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
     int remainder = len;
-    int start = is->d.pointer;
+    long start = is->d.pointer;
     uchar *buffer;
 
     while (remainder > 0) {
@@ -345,38 +349,39 @@ static void rami_read_i(InStream * is, uchar * b, int offset, int len)
     is->d.pointer += len;
 }
 
-static int rami_length_i(InStream * is)
+static long rami_length_i(InStream *is)
 {
-    return ((RamFile *) is->file)->len;
+    return ((RamFile *)is->file.p)->len;
 }
 
-static void rami_seek_i(InStream * is, int pos)
+static void rami_seek_i(InStream *is, long pos)
 {
     is->d.pointer = pos;
 }
 
-static void rami_close_i(InStream * is)
+static void rami_close_i(InStream *is)
 {
-    RamFile *rf = (RamFile *) is->file;
+    RamFile *rf = (RamFile *)is->file.p;
     rf->ref_cnt--;
     rf_close(rf);
 }
 
-static void rami_clone_i(InStream * is, InStream * new_index_i)
+static void rami_clone_i(InStream *is, InStream *new_is)
 {
-    ((RamFile *) is->file)->ref_cnt++;
+    (void)new_is; /* suppress unused parameter warning */
+    ((RamFile *)is->file.p)->ref_cnt++;
 }
 
-static InStream *ram_open_input(Store * store, const char *filename)
+static InStream *ram_open_input(Store *store, const char *filename)
 {
-    RamFile *rf = (RamFile *) h_get(store->dir.ht, filename);
+    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
     InStream *is = is_create();
 
     if (rf == NULL) {
-        RAISE(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
+        raise(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
     }
     rf->ref_cnt++;
-    is->file = rf;
+    is->file.p = rf;
     is->d.pointer = 0;
     is->is_clone = false;
     is->read_i = &rami_read_i;
@@ -389,7 +394,7 @@ static InStream *ram_open_input(Store * store, const char *filename)
 
 #define LOCK_OBTAIN_TIMEOUT 5
 
-static int ram_lock_obtain(Lock * lock)
+static int ram_lock_obtain(Lock *lock)
 {
     int ret = true;
     if (ram_exists(lock->store, lock->name))
@@ -398,17 +403,17 @@ static int ram_lock_obtain(Lock * lock)
     return ret;
 }
 
-static int ram_lock_is_locked(Lock * lock)
+static int ram_lock_is_locked(Lock *lock)
 {
     return ram_exists(lock->store, lock->name);
 }
 
-static void ram_lock_release(Lock * lock)
+static void ram_lock_release(Lock *lock)
 {
     ram_remove(lock->store, lock->name);
 }
 
-static Lock *ram_open_lock(Store * store, char *lockname)
+static Lock *ram_open_lock(Store *store, char *lockname)
 {
     Lock *lock = ALLOC(Lock);
     char lname[100];
@@ -421,7 +426,7 @@ static Lock *ram_open_lock(Store * store, char *lockname)
     return lock;
 }
 
-static void ram_close_lock(Lock * lock)
+static void ram_close_lock(Lock *lock)
 {
     free(lock->name);
     free(lock);
@@ -458,10 +463,10 @@ struct CopyFileArg
 
 static void copy_files(char *fname, void *arg)
 {
-    struct CopyFileArg *cfa = (struct CopyFileArg *) arg;
+    struct CopyFileArg *cfa = (struct CopyFileArg *)arg;
     OutStream *os = cfa->to_store->create_output(cfa->to_store, fname);
     InStream *is = cfa->from_store->open_input(cfa->from_store, fname);
-    int len = is_length(is);
+    int len = (int)is_length(is);
     uchar *buffer = ALLOC_N(uchar, len + 1);
 
     is_read_bytes(is, buffer, 0, len);
@@ -472,7 +477,7 @@ static void copy_files(char *fname, void *arg)
     free(buffer);
 }
 
-Store *open_ram_store_and_copy(Store * from_store, bool close_dir)
+Store *open_ram_store_and_copy(Store *from_store, bool close_dir)
 {
     Store *store = open_ram_store();
     struct CopyFileArg cfa;
@@ -481,8 +486,9 @@ Store *open_ram_store_and_copy(Store * from_store, bool close_dir)
 
     from_store->each(from_store, &copy_files, &cfa);
 
-    if (close_dir)
+    if (close_dir) {
         store_deref(from_store);
+    }
 
     return store;
 }

@@ -39,18 +39,7 @@ f_u32 str_hash(const char *const str)
 
 typedef HashEntry *(*lookup_ft)(struct HashTable *ht, register const void *key);
 
-/**
- * This is the lookup function for a hash table keyed with strings. Since it
- * is so common for hash tables to be keyed with strings it gets it's own
- * lookup function. This method will always return a HashEntry. If there is no
- * entry with the given key then an empty entry will be returned with the key
- * set to the key that was passed.
- *
- * @param ht the hash table to look in
- * @param key the key to lookup
- * @return the HashEntry that was found
- */
-static HashEntry *h_lookup_str(HashTable *ht, register const char *key)
+HashEntry *h_lookup_str(HashTable *ht, register const char *key)
 {
     register f_u32 hash = str_hash(key);
     register f_u32 perturb;
@@ -95,18 +84,7 @@ static HashEntry *h_lookup_str(HashTable *ht, register const char *key)
     }
 }
 
-
-/**
- * This is the lookup function for a hash table with non-string keys. The
- * hash() and eq() methods used are stored in the hash table. This method will
- * always return a HashEntry. If there is no entry with the given key then an
- * empty entry will be returned with the key set to the key that was passed.
- *
- * @param ht the hash table to look in
- * @param key the key to lookup
- * @return the HashEntry that was found
- */
-static HashEntry *h_lookup(HashTable *ht, register const void *key)
+HashEntry *h_lookup(HashTable *ht, register const void *key)
 {
     register unsigned int hash = ht->hash_i(key);
     register unsigned int perturb;

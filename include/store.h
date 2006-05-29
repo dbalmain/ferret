@@ -15,16 +15,16 @@
 typedef struct Buffer
 {
     uchar buf[BUFFER_SIZE];
-    f_u32   start;
-    f_u32   pos;
-    f_u32   len;
+    long  start;
+    long  pos;
+    long  len;
 } Buffer;
 
 typedef struct OutStream
 {
     Buffer buf;
     void  *file;
-    f_u32  pointer;             /* only used by RAMOut */
+    long   pointer;             /* only used by RAMOut */
 
     /* internal functions for the InStream */
     /**
@@ -44,7 +44,7 @@ typedef struct OutStream
      * @param pos the position to seek in the stream
      * @raise IO_ERROR if there is an error seeking in the output stream
      */
-    void (*seek_i)(struct OutStream *os, int pos);
+    void (*seek_i)(struct OutStream *os, long pos);
 
     /**
      * Close any resources used by the output stream +os+
@@ -61,10 +61,14 @@ typedef struct InStream
 {
     int is_clone;
     Buffer buf;
-    void *file;
     union
     {
-        int pointer;            /* only used by RAMIn */
+        int fd;
+        void *p;
+    } file;
+    union
+    {
+        long pointer;           /* only used by RAMIn */
         char *path;             /* only used by FSIn */
         CompoundInStream *cis;
     } d;
@@ -89,7 +93,7 @@ typedef struct InStream
      * @param pos the position to seek
      * @raise IO_ERROR if the seek fails
      */
-    void (*seek_i)(struct InStream *is, int pos);
+    void (*seek_i)(struct InStream *is, long pos);
 
     /**
      * Close the resources allocated to the inputstream +is+
@@ -105,7 +109,7 @@ typedef struct InStream
      * @param is self
      * @raise IO_ERROR if there is an error getting the file length
      */
-    int (*length_i)(struct InStream *is);
+    long (*length_i)(struct InStream *is);
 
     /**
      * Do internal cloning processing for this particular type of InStream.
@@ -119,8 +123,8 @@ typedef struct InStream
 struct CompoundInStream
 {
     InStream *sub;
-    int offset;
-    int length;
+    long offset;
+    long length;
 };
 
 #define is_length(mis) mis->length_i(mis)
@@ -191,10 +195,9 @@ struct Store
      * @param store self
      * @param from the name of the file to rename
      * @param to the new name of the file
-     * @returns On success, zero is returned.  On error, -1 is returned, and
-     *   errno is set appropriately.
+     * @raise IO_ERROR if there is an error renaming the file
      */
-    int (*rename)(Store *store, char *from, char *to);
+    void (*rename)(Store *store, char *from, char *to);
 
     /**
      * Returns the number of files in the store.
@@ -252,7 +255,7 @@ struct Store
      * @return the length of the file in bytes
      * @raise IO_ERROR if there is an error checking the file length
      */
-    int (*length)(Store *store, char *filename);
+    long (*length)(Store *store, char *filename);
 
     /**
      * Allocate the resources needed for the output stream in the +store+ with
@@ -359,7 +362,7 @@ extern Store *open_cmpd_store(Store *store, const char *filename);
  * @param os the OutStream who's length you want
  * @return the length of +os+ in bytes
  */
-extern int ramo_length(OutStream *os);
+extern long ramo_length(OutStream *os);
 
 /**
  * Reset the OutStream removing any data written to it. Since it is a RAM
@@ -433,6 +436,13 @@ extern void with_lock_name(Store *store, char *lock_name,
 extern void store_deref(Store *store);
 
 /**
+ * Flush the buffered contents of the OutStream to the store.
+ *
+ * @param os the OutStream to flush
+ */
+extern void os_flush(OutStream *os);
+
+/**
  * Close the OutStream after flushing the buffers, also freeing all allocated
  * resources.
  *
@@ -446,7 +456,7 @@ extern void os_close(OutStream *os);
  * @param os the OutStream to get the position from
  * @return the current position in OutStream +os+
  */
-extern int os_pos(OutStream *os);
+extern long os_pos(OutStream *os);
 
 /**
  * Set the current position in OutStream +os+.
@@ -455,7 +465,7 @@ extern int os_pos(OutStream *os);
  * @param pos the new position in the OutStream
  * @raise IO_ERROR if there is a file-system IO error seeking the file
  */
-extern void os_seek(OutStream *os, int new_pos);
+extern void os_seek(OutStream *os, long new_pos);
 
 /**
  * Write a single byte +b+ to the OutStream +os+
@@ -547,7 +557,7 @@ extern void os_write_string(OutStream *os, char *str);
  * @param is the InStream to get the current position from
  * @return the current position within the InStream +is+
  */
-extern f_u32 is_pos(InStream *is);
+extern long is_pos(InStream *is);
 
 /**
  * Set the current position in InStream +is+ to +pos+.
@@ -557,7 +567,7 @@ extern f_u32 is_pos(InStream *is);
  * @raise IO_ERROR if there is a error seeking from the file-system
  * @raise EOF_ERROR if there is an attempt to seek past the end of the file
  */
-extern void is_seek(InStream *is, f_u32 pos);
+extern void is_seek(InStream *is, long pos);
 
 /**
  * Close the InStream freeing all allocated resources.
@@ -583,7 +593,7 @@ extern InStream *is_clone(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern __frt_inline__ uchar is_read_byte(InStream *is);
+extern inline uchar is_read_byte(InStream *is);
 
 /**
  * Read +len+ bytes from InStream +is+ and write them to buffer +buf+ starting
@@ -648,7 +658,7 @@ extern f_u64 is_read_ulong(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i32 is_read_vint(InStream *is);
+extern inline f_u32 is_read_vint(InStream *is);
 
 /**
  * Read a compressed (VINT) 64-bit unsigned integer from the InStream.
@@ -659,7 +669,7 @@ extern f_i32 is_read_vint(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i64 is_read_vlong(InStream *is);
+extern inline f_u64 is_read_vlong(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint

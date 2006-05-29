@@ -2,7 +2,7 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -fno-common -O2 -g -DDEBUG
 
 LFLAGS = -lm
 
-TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_store.o test_fs_store.o test_ram_store.o
+TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_ram_store.o test_store.o test_fs_store.o
 
 OBJS = priorityqueue.o hashset.o helper.o global.o bitvector.o hash.o fs_store.o posh.o ram_store.o store.o
 
@@ -36,6 +36,8 @@ test_store.o: threading.h defines.h hash.h posh.h errcode.h test.h global.h stor
 test_bitvector.o: defines.h posh.h errcode.h test.h global.h bitvector.h
 
 test_test.o: defines.h posh.h errcode.h test.h global.h
+
+ram_store.o: threading.h defines.h hash.h posh.h errcode.h global.h store.h
 
 helper.o: defines.h posh.h helper.h
 

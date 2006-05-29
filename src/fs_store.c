@@ -24,6 +24,7 @@ static char *const FILE_OPEN_ERROR_MSG = "Couldn't open the file to read";
 static char *const SEEK_ERROR_MSG = "Seek error message";
 static char *const WRITE_ERROR_MSG = "Write error message";
 
+extern Store *store_create();
 extern void store_destroy(Store *store);
 extern OutStream *os_create();
 extern InStream *is_create();
@@ -71,7 +72,7 @@ static int fs_remove(Store *store, char *filename)
     return remove(join_path(buf, store->dir.path, filename));
 }
 
-static int fs_rename(Store *store, char *from, char *to)
+static void fs_rename(Store *store, char *from, char *to)
 {
     char buf1[MAX_FILE_PATH], buf2[MAX_FILE_PATH];
 
@@ -83,7 +84,6 @@ static int fs_rename(Store *store, char *from, char *to)
                join_path(buf2, store->dir.path, to)) < 0) {
         raise(IO_ERROR, strerror(errno));
     }
-    return true;
 }
 
 static int fs_count(Store *store)
@@ -180,7 +180,7 @@ static void fs_destroy(Store *store)
     store_destroy(store);
 }
 
-static int fs_length(Store *store, char *filename)
+static long fs_length(Store *store, char *filename)
 {
     char buf[MAX_FILE_PATH];
     struct stat stt;
@@ -189,7 +189,7 @@ static int fs_length(Store *store, char *filename)
         raise(IO_ERROR, strerror(errno));
     }
 
-    return (int)stt.st_size;
+    return (long)stt.st_size;
 }
 
 static void fso_flush_i(OutStream *os, uchar *src, int len)
@@ -199,7 +199,7 @@ static void fso_flush_i(OutStream *os, uchar *src, int len)
     }
 }
 
-static void fso_seek_i(OutStream *os, int pos)
+static void fso_seek_i(OutStream *os, long pos)
 {
     if (fseek((FILE *) os->file, pos, SEEK_SET)) {
         raise(IO_ERROR, strerror(errno));
@@ -232,7 +232,7 @@ static OutStream *fs_create_output(Store *store, const char *filename)
 
 static void fsi_read_i(InStream *is, uchar *buf, int len)
 {
-    int fd = (int) is->file;
+    int fd = is->file.fd;
     int pos = is_pos(is);
     if (pos != lseek(fd, 0, SEEK_CUR)) {
         lseek(fd, pos, SEEK_SET);
@@ -245,9 +245,9 @@ static void fsi_read_i(InStream *is, uchar *buf, int len)
     }
 }
 
-static void fsi_seek_i(InStream *is, int pos)
+static void fsi_seek_i(InStream *is, long pos)
 {
-    if (lseek((int) is->file, pos, SEEK_SET) < 0) {
+    if (lseek(is->file.fd, pos, SEEK_SET) < 0) {
         raise(IO_ERROR, strerror(errno));
     }
 }
@@ -255,20 +255,20 @@ static void fsi_seek_i(InStream *is, int pos)
 static void fsi_close_i(InStream *is)
 {
     if (!is->is_clone) {
-        if (close((int) is->file)) {
+        if (close(is->file.fd)) {
             raise(IO_ERROR, strerror(errno));
         }
         free(is->d.path);
     }
 }
 
-static int fsi_length(InStream *is)
+static long fsi_length(InStream *is)
 {
     struct stat stt;
-    if (fstat((int) is->file, &stt)) {
+    if (fstat(is->file.fd, &stt)) {
         raise(IO_ERROR, strerror(errno));
     }
-    return stt.st_size;
+    return (long)stt.st_size;
 }
 
 /*
@@ -290,7 +290,7 @@ static InStream *fs_open_input(Store *store, const char *filename)
     }
 
     is = is_create();
-    is->file = (void *) fd;
+    is->file.fd = fd;
     is->d.path = estrdup(buf);
     is->is_clone = false;
     is->read_i = &fsi_read_i;
@@ -361,34 +361,20 @@ static void fs_close_lock(Lock *lock)
     free(lock);
 }
 
-#ifdef POSH_OS_WIN32
 static HashTable stores = {
     /* fill */       0,
     /* used */       0,
     /* mask */       HASH_MINSIZE - 1,
     /* table */      stores.smalltable,
-    /* smalltable */ {0},
-    /* lookup */     &h_lookup_str,
+    /* smalltable */ {{0, NULL, NULL}},
+    /* lookup */     (h_lookup_ft)&h_lookup_str,
     /* hash */       NULL,
     /* eq */         NULL,
-    /* free_key */   (free_ft) & dummy_free,
-    /* free_value */ (free_ft) & fs_destroy
+    /* free_key */   (free_ft)&dummy_free,
+    /* free_value */ (free_ft)&fs_destroy
 };
-#endif
-static HashTable stores = {
-  fill:0,
-  size:0,
-  mask:HASH_MINSIZE - 1,
-  table:stores.smalltable,
-  lookup:&h_lookup_str,
-  hash:NULL,
-  eq:NULL,
-  free_key:(free_ft) & dummy_free,
-  free_value:(free_ft) & fs_destroy
-};
-#endif
 
-#ifndef FERRET_EXT
+#ifndef UNTHREADED
 static mutex_t stores_mutex = MUTEX_INITIALIZER;
 #endif
 

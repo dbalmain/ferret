@@ -78,13 +78,13 @@ typedef struct HashTable
  * @param key object to hash
  * @return an unsigned 32-bit integer hash value
  */
-typedef f_u32 (*hash_ft) (const void *key);
+typedef f_u32 (*hash_ft)(const void *key);
 
 /**
  * Equals function type used by HashTable. A function of this type must be
  * passed to create a new HashTable.
  */
-typedef int (*eq_ft) (const void *key1, const void *key2);
+typedef int (*eq_ft)(const void *key1, const void *key2);
 
 
 /**
@@ -299,7 +299,7 @@ extern void h_each(HashTable *self,
                    void (*each_key_val)(void *key, void *value, void *arg),
                    void *arg);
 
-typedef void *(*h_clone_func_t) (void *val);
+typedef void *(*h_clone_func_t)(void *val);
 /**
  * Clone the HashTable as well as cloning each of the keys and values if you
  * want to do a deep clone. To do a deep clone you will need to pass a
@@ -314,5 +314,35 @@ extern HashTable *h_clone(HashTable *self,
                           h_clone_func_t clone_key,
                           h_clone_func_t clone_value);
 
+/*
+ * The following functions should only be used in static HashTable
+ * declarations
+ */
+/**
+ * This is the lookup function for a hash table keyed with strings. Since it
+ * is so common for hash tables to be keyed with strings it gets it's own
+ * lookup function. This method will always return a HashEntry. If there is no
+ * entry with the given key then an empty entry will be returned with the key
+ * set to the key that was passed.
+ *
+ * @param ht the hash table to look in
+ * @param key the key to lookup
+ * @return the HashEntry that was found
+ */
+HashEntry *h_lookup_str(HashTable *ht, register const char *key);
+
+/**
+ * This is the lookup function for a hash table with non-string keys. The
+ * hash() and eq() methods used are stored in the hash table. This method will
+ * always return a HashEntry. If there is no entry with the given key then an
+ * empty entry will be returned with the key set to the key that was passed.
+ *
+ * @param ht the hash table to look in
+ * @param key the key to lookup
+ * @return the HashEntry that was found
+ */
+HashEntry *h_lookup(HashTable *ht, register const void *key);
+
+typedef HashEntry *(*h_lookup_ft)(HashTable *ht, register const void *key);
 
 #endif

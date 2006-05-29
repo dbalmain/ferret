@@ -15,6 +15,7 @@ void test_write_to(tst_case * tc, void *data)
     char buf[12000] = "";
     OutStream *ostream, *fs_ostream;
     InStream *istream;
+    (void)data;/* suppress unused parameter warning */
 
     for (i = 0; i < 1000; i++) {
         strcat(buf, str);

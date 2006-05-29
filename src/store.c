@@ -1,4 +1,5 @@
 #include "store.h"
+#include <string.h>
 
 static char *const STORE_EOF_ERROR_MSG = "EOF Error when trying to refill";
 static char *const COULD_NOT_OBTAIN_LOCK = "Could not obtain lock";
@@ -12,7 +13,7 @@ static char *const COULD_NOT_OBTAIN_LOCK = "Could not obtain lock";
 void with_lock(Lock *lock, void (*func)(void *arg), void *arg)
 {
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        raise(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
     }
     func(arg);
     lock->release(lock);
@@ -26,7 +27,7 @@ void with_lock_name(Store *store, char *lock_name,
 {
     Lock *lock = store->open_lock(store, lock_name);
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        raise(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
     }
     func(arg);
     lock->release(lock);
@@ -87,9 +88,9 @@ OutStream *os_create()
  *
  * @param the OutStream to flush
  */
-static __frt_inline__ void os_flush(OutStream *os)
+inline void os_flush(OutStream *os)
 {
-    os->flush_internal(os, os->buf.buf, os->buf.pos);
+    os->flush_i(os, os->buf.buf, os->buf.pos);
     os->buf.start += os->buf.pos;
     os->buf.pos = 0;
 }
@@ -97,20 +98,20 @@ static __frt_inline__ void os_flush(OutStream *os)
 void os_close(OutStream *os)
 {
     os_flush(os);
-    os->close_internal(os);
+    os->close_i(os);
     free(os);
 }
 
-int os_pos(OutStream *os)
+long os_pos(OutStream *os)
 {
     return os->buf.start + os->buf.pos;
 }
 
-void os_seek(OutStream *os, int new_pos)
+void os_seek(OutStream *os, long new_pos)
 {
     os_flush(os);
     os->buf.start = new_pos;
-    os->seek_internal(os, new_pos);
+    os->seek_i(os, new_pos);
 }
 
 /**
@@ -126,7 +127,7 @@ void os_seek(OutStream *os, int new_pos)
  * @param b  the byte to write
  * @raise IO_ERROR if there is an IO error writing to the filesystem
  */
-__frt_inline__ void os_write_byte(OutStream *os, uchar b)
+inline void os_write_byte(OutStream *os, uchar b)
 {
     if (os->buf.pos >= BUFFER_SIZE) {
         os_flush(os);
@@ -141,7 +142,7 @@ void os_write_bytes(OutStream *os, uchar *buf, int len)
     }
 
     if (len < BUFFER_SIZE) {
-        os->flush_internal(os, buf, len);
+        os->flush_i(os, buf, len);
         os->buf.start += len;
     }
     else {
@@ -154,7 +155,7 @@ void os_write_bytes(OutStream *os, uchar *buf, int len)
             else {
                 size = BUFFER_SIZE;
             }
-            os->flush_internal(os, buf + pos, size);
+            os->flush_i(os, buf + pos, size);
             pos += size;
             os->buf.start += size;
         }
@@ -184,9 +185,9 @@ InStream *is_create()
  */
 void is_refill(InStream *is)
 {
-    int start = is->buf.start + is->buf.pos;
-    int last = start + BUFFER_SIZE;
-    int flen = is->length_internal(is);
+    long start = is->buf.start + is->buf.pos;
+    long last = start + BUFFER_SIZE;
+    long flen = is->length_i(is);
 
     if (last > flen) {          /* don't read past EOF */
         last = flen;
@@ -194,10 +195,10 @@ void is_refill(InStream *is)
 
     is->buf.len = last - start;
     if (is->buf.len <= 0) {
-        RAISE(EOF_ERROR, STORE_EOF_ERROR_MSG);
+        raise(EOF_ERROR, STORE_EOF_ERROR_MSG);
     }
 
-    is->read_internal(is, is->buf.buf, 0, is->buf.len);
+    is->read_i(is, is->buf.buf, is->buf.len);
 
     is->buf.start = start;
     is->buf.pos = 0;
@@ -218,7 +219,7 @@ void is_refill(InStream *is)
  * @raise IO_ERROR if there is a error reading from the filesystem
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-__frt_inline__ uchar is_read_byte(InStream *is)
+inline uchar is_read_byte(InStream *is)
 {
     if (is->buf.pos >= is->buf.len) {
         is_refill(is);
@@ -227,47 +228,49 @@ __frt_inline__ uchar is_read_byte(InStream *is)
     return read_byte(is);
 }
 
-f_u32 is_pos(InStream *is)
+long is_pos(InStream *is)
 {
     return is->buf.start + is->buf.pos;
 }
 
 uchar *is_read_bytes(InStream *is, uchar *buf, int offset, int len)
 {
-    int i, start;
+    int i;
+    long start;
+
     if ((offset + len) < BUFFER_SIZE) {
         for (i = offset; i < offset + len; i++) {
             buf[i] = is_read_byte(is);
         }
     }
-    else {                      // read all-at-once
+    else {                              /* read all-at-once */
         start = is_pos(is);
-        is->seek_internal(is, start);
-        is->read_internal(is, buf, offset, len);
+        is->seek_i(is, start);
+        is->read_i(is, buf + offset, len);
 
-        is->buf.start = start + len;    // adjust stream variables
+        is->buf.start = start + len;    /* adjust stream variables */
         is->buf.pos = 0;
-        is->buf.len = 0;        // trigger refill on read
+        is->buf.len = 0;                /* trigger refill on read */
     }
     return buf;
 }
 
-void is_seek(InStream *is, f_u32 pos)
+void is_seek(InStream *is, long pos)
 {
     if (pos >= is->buf.start && pos < (is->buf.start + is->buf.len)) {
-        is->buf.pos = pos - is->buf.start;      // seek within buffer
+        is->buf.pos = pos - is->buf.start;  /* seek within buffer */
     }
     else {
         is->buf.start = pos;
         is->buf.pos = 0;
-        is->buf.len = 0;        // trigger refill() on read()
-        is->seek_internal(is, pos);
+        is->buf.len = 0;                    /* trigger refill() on read() */
+        is->seek_i(is, pos);
     }
 }
 
 void is_close(InStream *is)
 {
-    is->close_internal(is);
+    is->close_i(is);
     free(is);
 }
 
@@ -276,7 +279,7 @@ InStream *is_clone(InStream *is)
     InStream *new_index_i = ALLOC(InStream);
     memcpy(new_index_i, is, sizeof(InStream));
     new_index_i->is_clone = true;
-    is->clone_internal(is, new_index_i);
+    is->clone_i(is, new_index_i);
     return new_index_i;
 }
 
@@ -321,7 +324,7 @@ f_u64 is_read_ulong(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-__frt_inline__ f_u32 is_read_vint(InStream *is)
+inline f_u32 is_read_vint(InStream *is)
 {
     register f_u32 res, b;
     register int shift = 7;
@@ -351,7 +354,7 @@ __frt_inline__ f_u32 is_read_vint(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-__frt_inline__ f_u64 is_read_vlong(InStream *is)
+inline f_u64 is_read_vlong(InStream *is)
 {
     register f_u64 res, b;
     register int shift = 7;
@@ -380,7 +383,7 @@ __frt_inline__ f_u64 is_read_vlong(InStream *is)
     return res;
 }
 
-__frt_inline__ void is_read_chars(InStream *is, char *buffer,
+inline void is_read_chars(InStream *is, char *buffer,
                                   int off, int len)
 {
     int end, i;
@@ -453,7 +456,7 @@ void os_write_ulong(OutStream *os, f_u64 num)
 }
 
 /* optimized to use an unchecked write if there is space */
-__frt_inline__ void os_write_vint(OutStream *os, register f_u32 num)
+inline void os_write_vint(OutStream *os, register f_u32 num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {
@@ -472,7 +475,7 @@ __frt_inline__ void os_write_vint(OutStream *os, register f_u32 num)
 }
 
 /* optimized to use an unchecked write if there is space */
-__frt_inline__ void os_write_vint(OutStream *os, register f_u64 num)
+inline void os_write_vlong(OutStream *os, register f_u64 num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {
