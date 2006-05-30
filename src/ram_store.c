@@ -2,7 +2,7 @@
 #include <string.h>
 
 static char *const RENAME_ERROR_MSG =
-    "tried to rename a file that doesn't exist";
+    "Tried to rename a file that doesn't exist";
 static char *const MISSING_RAMFILE_ERROR_MSG =
     "Couldn't open the ram file to read";
 
@@ -12,9 +12,6 @@ extern OutStream *os_create();
 extern InStream *is_create();
 extern int file_is_lock(char *filename);
 
-/*
- * TODO: remove alive
- */
 typedef struct RamFile
 {
     char   *name;
@@ -22,7 +19,6 @@ typedef struct RamFile
     int     bufcnt;
     long    len;
     int     ref_cnt;
-    bool    alive;
 } RamFile;
 
 static RamFile *rf_create(const char *name)
@@ -33,8 +29,7 @@ static RamFile *rf_create(const char *name)
     rf->name = estrdup(name);
     rf->len = 0;
     rf->bufcnt = 1;
-    rf->ref_cnt = 0;
-    rf->alive = true;
+    rf->ref_cnt = 1;
     return rf;
 }
 
@@ -50,7 +45,7 @@ static void rf_close(void *p)
 {
     int i;
     RamFile *rf = (RamFile *)p;
-    if (rf->ref_cnt > 0 || rf->alive) {
+    if (rf->ref_cnt > 0) {
         return;
     }
     free(rf->name);
@@ -82,7 +77,7 @@ static int ram_remove(Store *store, char *filename)
 {
     RamFile *rf = h_rem(store->dir.ht, filename, false);
     if (rf != NULL) {
-        rf->alive = false;
+        DEREF(rf);
         rf_close(rf);
         return true;
     }
@@ -107,7 +102,7 @@ static void ram_rename(Store *store, char *from, char *to)
     /* clean up the file we are overwriting */
     tmp = (RamFile *)h_get(store->dir.ht, to);
     if (tmp != NULL) {
-        tmp->alive = false;
+        DEREF(tmp);
     }
 
     h_set(store->dir.ht, rf->name, rf);
@@ -143,7 +138,7 @@ static void ram_close_i(Store *store)
     for (i = 0; i <= ht->mask; i++) {
         rf = (RamFile *)ht->table[i].value;
         if (rf) {
-            rf->alive = false;
+            DEREF(rf);
         }
     }
     h_destroy(store->dir.ht);
@@ -161,7 +156,7 @@ static void ram_clear(Store *store)
     for (i = 0; i <= ht->mask; i++) {
         rf = (RamFile *)ht->table[i].value;
         if (rf && !file_is_lock(rf->name)) {
-            rf->alive = false;
+            DEREF(rf);
             h_del(ht, rf->name);
         }
     }
@@ -175,7 +170,7 @@ static void ram_clear_locks(Store *store)
     for (i = 0; i <= ht->mask; i++) {
         rf = (RamFile *)ht->table[i].value;
         if (rf && file_is_lock(rf->name)) {
-            rf->alive = false;
+            DEREF(rf);
             h_del(ht, rf->name);
         }
     }
@@ -189,7 +184,7 @@ static void ram_clear_all(Store *store)
     for (i = 0; i <= ht->mask; i++) {
         rf = (RamFile *)ht->table[i].value;
         if (rf) {
-            rf->alive = false;
+            DEREF(rf);
             h_del(ht, rf->name);
         }
     }
@@ -260,7 +255,7 @@ void ramo_reset(OutStream *os)
 static void ramo_close_i(OutStream *os)
 {
     RamFile *rf = (RamFile *)os->file;
-    rf->ref_cnt--;
+    DEREF(rf);
     rf_close(rf);
 }
 
@@ -285,7 +280,7 @@ OutStream *ram_create_buffer()
     RamFile *rf = rf_create("");
     OutStream *os = os_create();
 
-    rf->alive = false;
+    DEREF(rf);
     os->file = rf;
     os->pointer = 0;
     os->flush_i = &ramo_flush_i;
@@ -309,7 +304,7 @@ static OutStream *ram_create_output(Store *store, const char *filename)
         rf = rf_create(filename);
         h_set(store->dir.ht, rf->name, rf);
     }
-    rf->ref_cnt++;
+    REF(rf);
     os->pointer = 0;
     os->file = rf;
     os->flush_i = &ramo_flush_i;
@@ -362,14 +357,14 @@ static void rami_seek_i(InStream *is, long pos)
 static void rami_close_i(InStream *is)
 {
     RamFile *rf = (RamFile *)is->file.p;
-    rf->ref_cnt--;
+    DEREF(rf);
     rf_close(rf);
 }
 
 static void rami_clone_i(InStream *is, InStream *new_is)
 {
     (void)new_is; /* suppress unused parameter warning */
-    ((RamFile *)is->file.p)->ref_cnt++;
+    REF((RamFile *)is->file.p);
 }
 
 static InStream *ram_open_input(Store *store, const char *filename)
@@ -380,7 +375,7 @@ static InStream *ram_open_input(Store *store, const char *filename)
     if (rf == NULL) {
         raise(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
     }
-    rf->ref_cnt++;
+    REF(rf);
     is->file.p = rf;
     is->d.pointer = 0;
     is->is_clone = false;

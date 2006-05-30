@@ -100,12 +100,13 @@ void weprintf(const char *fmt, ...)
     fprintf(stderr, "\n");
 }
 
-static char name[200];          /* program name for error msgs */
+#define MAX_PROG_NAME 200
+static char name[MAX_PROG_NAME]; /* program name for error msgs */
 
 /* setprogname: set stored name of program */
 void setprogname(const char *str)
 {
-    strcpy(name, str);
+    strncpy(name, str, MAX_PROG_NAME - 1);
 }
 
 char *progname()

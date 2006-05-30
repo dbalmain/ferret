@@ -29,6 +29,9 @@ typedef void (*free_ft) (void *key);
 #define ALLOC_AND_ZERO(type) (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
 #define ALLOC_AND_ZERO_N(type,n) (type*)ZEROSET_N(emalloc(sizeof(type)*(n)), type, n)
 
+#define REF(a) (a)->ref_cnt++
+#define DEREF(a) (a)->ref_cnt--
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
