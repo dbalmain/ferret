@@ -104,12 +104,12 @@ static void test_simple_except(tst_case *tc, void *data)
     (void)data; /* suppress warning */
 
     TRY
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "error message %s %d", "string", 20);
         Assert(false, "Exception should have been raised");
         break;
     case EXCEPTION:
         /* This should be called */
-        Astrstr(xcontext.msg, msg1);
+        Astrstr(xcontext.msg, "error message string 20");
 #if defined(__func__) && defined(FRT_HAS_VARARGS)
         Astrstr(xcontext.msg, __func__);
 #endif

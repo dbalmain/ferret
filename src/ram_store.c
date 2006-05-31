@@ -1,11 +1,6 @@
 #include "store.h"
 #include <string.h>
 
-static char *const RENAME_ERROR_MSG =
-    "Tried to rename a file that doesn't exist";
-static char *const MISSING_RAMFILE_ERROR_MSG =
-    "Couldn't open the ram file to read";
-
 extern Store *store_create();
 extern void store_destroy(Store *store);
 extern OutStream *os_create();
@@ -92,7 +87,8 @@ static void ram_rename(Store *store, char *from, char *to)
     RamFile *tmp;
 
     if (rf == NULL) {
-        RAISE(IO_ERROR, RENAME_ERROR_MSG);
+        RAISE(IO_ERROR, "couldn't rename \"%s\" to \"%s\". \"%s\""
+              " doesn't exist", from, to, from);
     }
 
     free(rf->name);
@@ -373,7 +369,7 @@ static InStream *ram_open_input(Store *store, const char *filename)
     InStream *is = is_create();
 
     if (rf == NULL) {
-        RAISE(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
+        RAISE(IO_ERROR, "tried to open \"%s\" but it doesn't exist", filename);
     }
     REF(rf);
     is->file.p = rf;

@@ -1,9 +1,6 @@
 #include "store.h"
 #include <string.h>
 
-static char *const STORE_EOF_ERROR_MSG = "EOF Error when trying to refill";
-static char *const COULD_NOT_OBTAIN_LOCK = "Could not obtain lock";
-
 #define VINT_MAX_LEN 10
 #define VINT_END BUFFER_SIZE - VINT_MAX_LEN
 
@@ -13,7 +10,7 @@ static char *const COULD_NOT_OBTAIN_LOCK = "Could not obtain lock";
 void with_lock(Lock *lock, void (*func)(void *arg), void *arg)
 {
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        RAISE(IO_ERROR, "couldn't obtain lock \"%s\"", lock->name);
     }
     func(arg);
     lock->release(lock);
@@ -27,7 +24,7 @@ void with_lock_name(Store *store, char *lock_name,
 {
     Lock *lock = store->open_lock(store, lock_name);
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        RAISE(IO_ERROR, "couldn't obtain lock \"%s\"", lock->name);
     }
     func(arg);
     lock->release(lock);
@@ -195,7 +192,7 @@ void is_refill(InStream *is)
 
     is->buf.len = last - start;
     if (is->buf.len <= 0) {
-        RAISE(EOF_ERROR, STORE_EOF_ERROR_MSG);
+        RAISE(EOF_ERROR, "current pos = %ld, file length = %ld", start, flen);
     }
 
     is->read_i(is, is->buf.buf, is->buf.len);

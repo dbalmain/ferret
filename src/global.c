@@ -161,7 +161,7 @@ char *estrdup(const char *s)
     char *t = (char *) malloc(strlen(s) + 1);
 
     if (t == NULL) {
-        RAISE(MEM_ERROR, "Memory allocation error");
+        RAISE(MEM_ERROR, "failed to allocate %d bytes", strlen(s) + 1);
     }
 
     strcpy(t, s);
@@ -174,7 +174,7 @@ void *emalloc(size_t size)
     void *p = malloc(size);
 
     if (p == NULL) {
-        RAISE(MEM_ERROR, "malloc failed");
+        RAISE(MEM_ERROR, "failed to allocate %d bytes", size);
     }
 
     return p;
@@ -186,7 +186,7 @@ void *erealloc(void *ptr, size_t size)
     void *p = realloc(ptr, size);
 
     if (p == NULL) {
-        RAISE(MEM_ERROR, "malloc failed");
+        RAISE(MEM_ERROR, "failed to reallocate %d bytes", size);
     }
 
     return p;

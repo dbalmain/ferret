@@ -120,14 +120,14 @@ typedef struct xcontext_t
 #ifdef FRT_HAS_ISO_VARARGS
 # define RAISE(excode, ...) do {\
   sprintf(xmsg_buffer, __VA_ARGS__);\
-  sprintf(xmsg_buffer_final, "Error occured in %s:%d - %s\n  %s",\
+  sprintf(xmsg_buffer_final, "Error occured in %s:%d - %s\n\t%s\n",\
           __FILE__, __LINE__, __func__, xmsg_buffer);\
   xraise(excode, xmsg_buffer_final);\
 } while (0)
 #elif defined(FRT_HAS_GNUC_VARARGS)
 # define RAISE(excode, args...) do {\
   sprintf(xmsg_buffer, ##args);\
-  sprintf(xmsg_buffer_final, "Error occured in %s:%d - %s\n  %s",\
+  sprintf(xmsg_buffer_final, "Error occured in %s:%d - %s\n\t%s\n",\
           __FILE__, __LINE__, __func__, xmsg_buffer);\
   xraise(excode, xmsg_buffer_final);\
 } while (0)
