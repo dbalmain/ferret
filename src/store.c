@@ -13,7 +13,7 @@ static char *const COULD_NOT_OBTAIN_LOCK = "Could not obtain lock";
 void with_lock(Lock *lock, void (*func)(void *arg), void *arg)
 {
     if (!lock->obtain(lock)) {
-        raise(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
     }
     func(arg);
     lock->release(lock);
@@ -27,7 +27,7 @@ void with_lock_name(Store *store, char *lock_name,
 {
     Lock *lock = store->open_lock(store, lock_name);
     if (!lock->obtain(lock)) {
-        raise(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
+        RAISE(IO_ERROR, COULD_NOT_OBTAIN_LOCK);
     }
     func(arg);
     lock->release(lock);
@@ -195,7 +195,7 @@ void is_refill(InStream *is)
 
     is->buf.len = last - start;
     if (is->buf.len <= 0) {
-        raise(EOF_ERROR, STORE_EOF_ERROR_MSG);
+        RAISE(EOF_ERROR, STORE_EOF_ERROR_MSG);
     }
 
     is->read_i(is, is->buf.buf, is->buf.len);

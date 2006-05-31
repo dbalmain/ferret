@@ -190,6 +190,22 @@ bool tst_str_equal(int line_num, tst_case * tc, const char *expected,
                    const char *actual);
 
 /**
+ * Test one string contains another string. This test is similar to the
+ * Standard C strstr function. If haystack doesn't contain needle then add an
+ * error to the test diagnostics. You should use the Astrstr(haystack, needle)
+ * macro to call this function so that the line number will be added
+ * automatically.
+ *
+ * @param line_num the line number this function is called from
+ * @param tc the test case to record the diagnostics
+ * @param haystack the string to search in
+ * @param needle the string to search for
+ * @return true if the test passed
+ */
+bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
+                   const char *needle);
+
+/**
  * Test that two arrays of integers are equal, ie the have the same elements
  * for up to +size+ elements. If they are not equal then add an error to the
  * test diagnostics. You should use the Aaiequal(expected, actual, size) macro
@@ -351,6 +367,7 @@ bool tst_assert(int line_num, tst_case * tc, int condition,
 #define Afequal(a, b)      tst_flt_equal(__LINE__, tc, (a), (b))
 #define Afdequal(a, b, d)  tst_flt_delta_equal(__LINE__, tc, (a), (b), (d))
 #define Asequal(a, b)      tst_str_equal(__LINE__, tc, (a), (b))
+#define Astrstr(a, b)      tst_strstr(__LINE__, tc, (a), (b))
 #define Aaiequal(a, b, c)  tst_arr_int_equal(__LINE__, tc, (a), (b), (c))
 #define Aasequal(a, b, c)  tst_arr_str_equal(__LINE__, tc, (a), (b), (c))
 #define Asnequal(a, b, c)  tst_str_nequal(__LINE__, tc, (a), (b), (c))

@@ -2,19 +2,12 @@
 #define FRT_GLOBAL_H
 
 #include "defines.h"
-#include "errcode.h"
+#include "except.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
+#include <stdarg.h>
 
 #define MAX_FILE_PATH 1024
-
-#define false 0
-#define true 1
-
-typedef unsigned int bool;
-typedef unsigned char uchar;
-typedef unsigned int uint;
 
 typedef void (*free_ft) (void *key);
 
@@ -56,17 +49,30 @@ typedef void (*free_ft) (void *key);
 
 #ifdef FRT_HAS_ISO_VARARGS
   /* C99-compliant compiler */
-# define raise(...) raise_pos(__FILE__, __LINE__, __func__, __VA_ARGS__)
-extern void raise_pos(char *file, int line_num, const char *func,
-                      const char *etype, const char *fmt, ...);
+
+# define FRT_EXIT(...) frt_exit(__FILE__, __LINE__, __func__, __VA_ARGS__)
+extern void frt_exit(const char *file, int line_num, const char *func,
+                     const char *err_type, const char *fmt, ...);
+
+# define V_FRT_EXIT(err_type, fmt, args) \
+    vfrt_exit(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void vfrt_exit(const char *file, int line_num, const char *func,
+                      const char *err_type, const char *fmt, va_list args);
+
 #elif defined(FRT_HAS_GNUC_VARARGS)
   /* gcc has an extension */
-# define raise(args...) raise_pos(__FILE__, __LINE__, __func__, ##args)
-extern void raise_pos(char *file, int line_num, const char *func,
-                      const char *etype, const char *fmt, ...);
+# define FRT_EXIT(args...) frt_exit(__FILE__, __LINE__, __func__, ##args)
+extern void frt_exit(const char *file, int line_num, const char *func,
+                      const char *err_type, const char *fmt, ...);
+
+# define V_FRT_EXIT(err_type, fmt, args) \
+    vfrt_exit(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void vfrt_exit(const char *file, int line_num, const char *func,
+                      const char *err_type, const char *fmt, va_list args);
 #else
   /* Can't do VARARGS */
-extern void raise(const char *etype, const char *fmt, ...);
+extern void FRT_EXIT(const char *err_type, const char *fmt, ...);
+extern void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args);
 #endif
 
 extern char *progname();

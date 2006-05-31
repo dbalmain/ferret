@@ -5,6 +5,7 @@
 
 extern tst_suite *ts_test(tst_suite * suite);
 extern tst_suite *ts_global(tst_suite * suite);
+extern tst_suite *ts_except(tst_suite * suite);
 extern tst_suite *ts_hash(tst_suite * suite);
 extern tst_suite *ts_hashset(tst_suite * suite);
 extern tst_suite *ts_bitvector(tst_suite * suite);
@@ -19,6 +20,7 @@ const struct test_list
 } all_tests[] = {
     {ts_test},
     {ts_global},
+    {ts_except},
     {ts_hash},
     {ts_hashset},
     {ts_bitvector},

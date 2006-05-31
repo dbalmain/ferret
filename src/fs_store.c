@@ -52,7 +52,7 @@ static void fs_touch(Store *store, char *filename)
     char path[MAX_FILE_PATH];
     join_path(path, store->dir.path, filename);
     if ((f = creat(path, S_IRUSR | S_IWUSR)) == 0) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
     close(f);
 }
@@ -65,7 +65,7 @@ static int fs_exists(Store *store, char *filename)
     fd = open(buf, 0);
     if (fd < 0) {
         if (errno != ENOENT) {
-            raise(IO_ERROR, strerror(errno));
+            RAISE(IO_ERROR, strerror(errno));
         }
         return false;
     }
@@ -89,7 +89,7 @@ static void fs_rename(Store *store, char *from, char *to)
 
     if (rename(join_path(buf1, store->dir.path, from),
                join_path(buf2, store->dir.path, to)) < 0) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 }
 
@@ -99,7 +99,7 @@ static int fs_count(Store *store)
     struct dirent *de;
     DIR *d = opendir(store->dir.path);
 
-    if (!d) raise(IO_ERROR, strerror(errno));
+    if (!d) RAISE(IO_ERROR, strerror(errno));
 
     while ((de = readdir(d)) != NULL) {
         if (de->d_name[0] > '/') {
@@ -116,7 +116,7 @@ static void fs_each(Store *store, void (*func) (char *fname, void *arg), void *a
     struct dirent *de;
     DIR *d = opendir(store->dir.path);
 
-    if (!d) raise(IO_ERROR, strerror(errno));
+    if (!d) RAISE(IO_ERROR, strerror(errno));
 
     while ((de = readdir(d)) != NULL) {
 		if (de->d_name[0] > '/' && !file_is_lock(de->d_name)) {
@@ -131,7 +131,7 @@ static void fs_clear_locks(Store *store)
   struct dirent *de;
   DIR *d = opendir(store->dir.path);
 
-  if (!d) raise(IO_ERROR, strerror(errno));
+  if (!d) RAISE(IO_ERROR, strerror(errno));
 
   while ((de = readdir(d)) != NULL) {
     if (file_is_lock(de->d_name)) {
@@ -147,7 +147,7 @@ static void fs_clear(Store *store)
   struct dirent *de;
   DIR *d = opendir(store->dir.path);
 
-  if (!d) raise(IO_ERROR, strerror(errno));
+  if (!d) RAISE(IO_ERROR, strerror(errno));
 
   while ((de = readdir(d)) != NULL) {
     if (de->d_name[0] > '/' && !file_is_lock(de->d_name)) {
@@ -163,7 +163,7 @@ static void fs_clear_all(Store *store)
   struct dirent *de;
   DIR *d = opendir(store->dir.path);
 
-  if (!d) raise(IO_ERROR, strerror(errno));
+  if (!d) RAISE(IO_ERROR, strerror(errno));
 
   while ((de = readdir(d)) != NULL) {
     if (de->d_name[0] > '/') {
@@ -193,7 +193,7 @@ static long fs_length(Store *store, char *filename)
     struct stat stt;
 
     if (stat(join_path(buf, store->dir.path, filename), &stt)) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 
     return (long)stt.st_size;
@@ -202,21 +202,21 @@ static long fs_length(Store *store, char *filename)
 static void fso_flush_i(OutStream *os, uchar *src, int len)
 {
     if (len != (int)fwrite(src, sizeof(uchar), len, (FILE *)os->file)) {
-        raise(IO_ERROR, WRITE_ERROR_MSG);
+        RAISE(IO_ERROR, WRITE_ERROR_MSG);
     }
 }
 
 static void fso_seek_i(OutStream *os, long pos)
 {
     if (fseek((FILE *) os->file, pos, SEEK_SET)) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 }
 
 static void fso_close_i(OutStream *os)
 {
     if (fclose((FILE *) os->file)) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 }
 
@@ -226,7 +226,7 @@ static OutStream *fs_create_output(Store *store, const char *filename)
     FILE *f = fopen(join_path(buf, store->dir.path, filename), "wb");
     OutStream *os;
     if (!f) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 
     os = os_create();
@@ -247,7 +247,7 @@ static void fsi_read_i(InStream *is, uchar *buf, int len)
     if (read(fd, buf, len) != len) {
         /* win: the wrong value can be returned for some reason so double check */
         if (lseek(fd, 0, SEEK_CUR) != (pos + len)) {
-            raise(EOF_ERROR, strerror(errno));
+            RAISE(EOF_ERROR, strerror(errno));
         }
     }
 }
@@ -255,7 +255,7 @@ static void fsi_read_i(InStream *is, uchar *buf, int len)
 static void fsi_seek_i(InStream *is, long pos)
 {
     if (lseek(is->file.fd, pos, SEEK_SET) < 0) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
 }
 
@@ -263,7 +263,7 @@ static void fsi_close_i(InStream *is)
 {
     if (!is->is_clone) {
         if (close(is->file.fd)) {
-            raise(IO_ERROR, strerror(errno));
+            RAISE(IO_ERROR, strerror(errno));
         }
         free(is->d.path);
     }
@@ -273,7 +273,7 @@ static long fsi_length(InStream *is)
 {
     struct stat stt;
     if (fstat(is->file.fd, &stt)) {
-        raise(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, strerror(errno));
     }
     return (long)stt.st_size;
 }
@@ -293,7 +293,7 @@ static InStream *fs_open_input(Store *store, const char *filename)
     char buf[MAX_FILE_PATH];
     int fd = open(join_path(buf, store->dir.path, filename), O_RDONLY);
     if (fd < 0) {
-        raise(IO_ERROR, FILE_OPEN_ERROR_MSG);
+        RAISE(IO_ERROR, FILE_OPEN_ERROR_MSG);
     }
 
     is = is_create();
@@ -334,7 +334,7 @@ static int fs_lock_is_locked(Lock *lock)
     int f = open(lock->name, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
     if (f >= 0) {
         if (close(f) || remove(lock->name)) {
-            raise(IO_ERROR, strerror(errno));
+            RAISE(IO_ERROR, strerror(errno));
         }
         return false;
     }

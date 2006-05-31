@@ -48,16 +48,14 @@ int icmp(const void *p1, const void *p2)
     return 0;
 }
 
-/* raise: print error message and exit */
+/* frt_exit: print error message and exit */
 #ifdef FRT_HAS_VARARGS
-void raise_pos(char *file, int line_num, const char *func,
-               const char *etype, const char *fmt, ...)
+void vfrt_exit(const char *file, int line_num, const char *func,
+               const char *err_type, const char *fmt, va_list args)
 #else
-extern void raise(const char *etype, const char *fmt, ...)
+void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
 #endif
 {
-    va_list args;
-
     fflush(stdout);
     fprintf(stderr, "\n");
     if (progname() != NULL) {
@@ -66,13 +64,11 @@ extern void raise(const char *etype, const char *fmt, ...)
 
 #ifdef FRT_HAS_VARARGS
     fprintf(stderr, "%s occured at <%s>:%d in %s\n",
-            etype, file, line_num, func);
+            err_type, file, line_num, func);
 #else
-    fprintf(stderr, "%s occured:\n", etype);
+    fprintf(stderr, "%s occured:\n", err_type);
 #endif
-    va_start(args, fmt);
     vfprintf(stderr, fmt, args);
-    va_end(args);
 
     if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':') {
         fprintf(stderr, " %s", strerror(errno));
@@ -81,6 +77,25 @@ extern void raise(const char *etype, const char *fmt, ...)
     fprintf(stderr, "\n");
     exit(2);                    /* conventional value for failed execution */
 }
+
+
+#ifdef FRT_HAS_VARARGS
+void frt_exit(const char *file, int line_num, const char *func,
+              const char *err_type, const char *fmt, ...)
+#else
+void FRT_EXIT(const char *err_type, const char *fmt, ...)
+#endif
+{
+    va_list args;
+    va_start(args, fmt);
+#ifdef FRT_HAS_VARARGS
+    vfrt_exit(file, line_num, func, err_type, fmt, args);
+#else
+    V_FRT_EXIT(err_type, fmt, args);
+#endif
+    va_end(args);
+}
+
 
 /* weprintf: print error message and don't exit */
 void weprintf(const char *fmt, ...)
@@ -146,7 +161,7 @@ char *estrdup(const char *s)
     char *t = (char *) malloc(strlen(s) + 1);
 
     if (t == NULL) {
-        raise(MEM_ERROR, "Memory allocation error");
+        RAISE(MEM_ERROR, "Memory allocation error");
     }
 
     strcpy(t, s);
@@ -159,7 +174,7 @@ void *emalloc(size_t size)
     void *p = malloc(size);
 
     if (p == NULL) {
-        raise(MEM_ERROR, "malloc failed");
+        RAISE(MEM_ERROR, "malloc failed");
     }
 
     return p;
@@ -171,7 +186,7 @@ void *erealloc(void *ptr, size_t size)
     void *p = realloc(ptr, size);
 
     if (p == NULL) {
-        raise(MEM_ERROR, "malloc failed");
+        RAISE(MEM_ERROR, "malloc failed");
     }
 
     return p;

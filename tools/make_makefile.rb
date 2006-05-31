@@ -19,7 +19,7 @@ test_objs = Dir["test/*.c"].map {|full_path| File.basename(full_path).gsub(/c$/,
 
 print """CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -fno-common -O2 -g -DDEBUG
 
-LFLAGS = -lm
+LFLAGS = -lm -lpthread
 
 TEST_OBJS = #{test_objs.join(" ")}
 

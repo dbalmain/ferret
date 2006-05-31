@@ -92,7 +92,7 @@ static void ram_rename(Store *store, char *from, char *to)
     RamFile *tmp;
 
     if (rf == NULL) {
-        raise(IO_ERROR, RENAME_ERROR_MSG);
+        RAISE(IO_ERROR, RENAME_ERROR_MSG);
     }
 
     free(rf->name);
@@ -373,7 +373,7 @@ static InStream *ram_open_input(Store *store, const char *filename)
     InStream *is = is_create();
 
     if (rf == NULL) {
-        raise(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
+        RAISE(IO_ERROR, MISSING_RAMFILE_ERROR_MSG);
     }
     REF(rf);
     is->file.p = rf;

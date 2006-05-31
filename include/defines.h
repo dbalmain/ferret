@@ -1,7 +1,6 @@
 #ifndef FRT_DEFINES_H
 #define FRT_DEFINES_H
 
-#include <limits.h>
 #include "posh.h"
 
 #ifndef false
@@ -11,6 +10,9 @@
 #define true  1
 #endif
 
+typedef unsigned int bool;
+typedef unsigned char uchar;
+typedef unsigned int uint;
 
 typedef posh_u16_t f_u16;
 typedef posh_i16_t f_i16;

@@ -1,10 +1,10 @@
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -fno-common -O2 -g -DDEBUG
 
-LFLAGS = -lm
+LFLAGS = -lm -lpthread
 
-TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_ram_store.o test_store.o test_fs_store.o
+TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_ram_store.o test_store.o test_fs_store.o test_except.o
 
-OBJS = priorityqueue.o hashset.o helper.o global.o bitvector.o hash.o fs_store.o posh.o ram_store.o store.o
+OBJS = priorityqueue.o hashset.o helper.o global.o bitvector.o hash.o fs_store.o posh.o except.o ram_store.o store.o
 
 vpath %.c test src
 
@@ -23,45 +23,49 @@ valgrind: testall
 clean:
 	rm -f *.o testall gmon.out
 
-test.o: defines.h all_tests.h posh.h errcode.h test.h global.h
+test.o: defines.h all_tests.h except.h posh.h test.h global.h
 
-test_ram_store.o: threading.h defines.h hash.h posh.h test.h errcode.h global.h test_store.h store.h
+test_ram_store.o: threading.h defines.h hash.h except.h posh.h test.h global.h test_store.h store.h
 
-global.o: defines.h posh.h errcode.h global.h
+global.o: defines.h except.h posh.h global.h
 
-hashset.o: defines.h hash.h posh.h errcode.h global.h hashset.h
+hashset.o: defines.h hash.h except.h posh.h global.h hashset.h
 
-test_store.o: threading.h defines.h hash.h posh.h errcode.h test.h global.h store.h
+test_store.o: threading.h defines.h hash.h except.h posh.h test.h global.h store.h
 
-test_bitvector.o: defines.h posh.h errcode.h test.h global.h bitvector.h
+test_bitvector.o: defines.h except.h posh.h test.h global.h bitvector.h
 
-test_test.o: defines.h posh.h errcode.h test.h global.h
+test_test.o: defines.h except.h posh.h test.h global.h
 
-ram_store.o: threading.h defines.h hash.h posh.h errcode.h global.h store.h
+ram_store.o: threading.h defines.h hash.h except.h posh.h global.h store.h
 
 helper.o: defines.h posh.h helper.h
 
-store.o: threading.h defines.h hash.h posh.h errcode.h global.h store.h
+store.o: threading.h defines.h hash.h except.h posh.h global.h store.h
 
-bitvector.o: defines.h posh.h errcode.h global.h bitvector.h
+bitvector.o: defines.h except.h posh.h global.h bitvector.h
 
-test_hash.o: defines.h hash.h posh.h errcode.h test.h global.h
+test_except.o: defines.h except.h posh.h test.h global.h
 
-test_global.o: defines.h posh.h errcode.h test.h global.h
+test_hash.o: defines.h except.h hash.h posh.h test.h global.h
 
-test_helper.o: defines.h posh.h errcode.h test.h global.h helper.h
+test_global.o: defines.h except.h posh.h test.h global.h
 
-priorityqueue.o: defines.h priorityqueue.h posh.h errcode.h global.h
+test_helper.o: defines.h except.h posh.h test.h global.h helper.h
 
-test_fs_store.o: threading.h defines.h hash.h posh.h test.h errcode.h global.h test_store.h store.h
+priorityqueue.o: defines.h priorityqueue.h except.h posh.h global.h
 
-hash.o: defines.h hash.h posh.h errcode.h global.h
+test_fs_store.o: threading.h defines.h hash.h except.h posh.h test.h global.h test_store.h store.h
 
-fs_store.o: threading.h defines.h hash.h posh.h errcode.h global.h store.h
+except.o: defines.h threading.h except.h posh.h global.h
+
+hash.o: defines.h except.h hash.h posh.h global.h
+
+fs_store.o: threading.h defines.h hash.h except.h posh.h global.h store.h
 
 posh.o: posh.h
 
-test_hashset.o: defines.h hash.h posh.h errcode.h test.h global.h hashset.h
+test_hashset.o: defines.h hash.h except.h posh.h test.h global.h hashset.h
 
-test_priorityqueue.o: defines.h priorityqueue.h posh.h errcode.h test.h global.h
+test_priorityqueue.o: defines.h priorityqueue.h except.h posh.h test.h global.h
 
