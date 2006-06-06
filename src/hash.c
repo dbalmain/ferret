@@ -10,7 +10,7 @@
  * the algorithm can be found in the file dictobject.c in Python's src
  ****************************************************************************/
 
-char *dummy_key = "";
+static char *dummy_key = "";
 
 #define PERTURB_SHIFT 5
 #define MAX_FREE_HASH_TABLES 80
@@ -37,7 +37,86 @@ f_u32 str_hash(const char *const str)
     return h;
 }
 
+static int int_eq(const void *q1, const void *q2)
+{
+    (void)q1;
+    (void)q2;
+    return true;
+}
+
+static f_u32 int_hash(const void *i)
+{
+    return *((f_u32 *)i);
+}
+
 typedef HashEntry *(*lookup_ft)(struct HashTable *ht, register const void *key);
+
+/**
+ * Fast lookup function for resizing as we know there are no equal elements or
+ * deletes to worry about.
+ *
+ * @param ht the HashTable to do the fast lookup in
+ * @param the hashkey we are looking for
+ */
+static inline HashEntry *h_resize_lookup(HashTable *ht, register const f_u32 hash)
+{
+    register f_u32 perturb;
+    register int mask = ht->mask;
+    register HashEntry *he0 = ht->table;
+    register int i = hash & mask;
+    register HashEntry *he = &he0[i];
+
+    if (he->key == NULL) {
+        he->hash = hash;
+        return he;
+    }
+
+    for (perturb = hash;; perturb >>= PERTURB_SHIFT) {
+        i = (i << 2) + i + perturb + 1;
+        he = &he0[i & mask];
+        if (he->key == NULL) {
+            he->hash = hash;
+            return he;
+        }
+    }
+}
+
+HashEntry *h_lookup_int(HashTable *ht, const void *key)
+{
+    register f_u32 hash = *((int *)key);
+    register f_u32 perturb;
+    register int mask = ht->mask;
+    register HashEntry *he0 = ht->table;
+    register int i = hash & mask;
+    register HashEntry *he = &he0[i];
+    register HashEntry *freeslot = NULL;
+
+    if (he->key == NULL || he->hash == hash) {
+        he->hash = hash;
+        return he;
+    }
+    if (he->key == dummy_key) {
+        freeslot = he;
+    }
+
+    for (perturb = hash;; perturb >>= PERTURB_SHIFT) {
+        i = (i << 2) + i + perturb + 1;
+        he = &he0[i & mask];
+        if (he->key == NULL) {
+            if (freeslot != NULL) {
+                he = freeslot;
+            }
+            he->hash = hash;
+            return he;
+        }
+        if (he->hash == hash) {
+            return he;
+        }
+        if (he->key == dummy_key && freeslot == NULL) {
+            freeslot = he;
+        }
+    }
+}
 
 HashEntry *h_lookup_str(HashTable *ht, register const char *key)
 {
@@ -148,6 +227,15 @@ HashTable *h_new_str(free_ft free_key, free_ft free_value)
 
     ht->free_key_i = free_key != NULL ? free_key : &dummy_free;
     ht->free_value_i = free_value != NULL ? free_value : &dummy_free;
+    return ht;
+}
+
+HashTable *h_new_int(free_ft free_value)
+{
+    HashTable *ht = h_new_str(NULL, free_value);
+    ht->lookup_i = &h_lookup_int;
+    ht->eq_i = int_eq;
+    ht->hash_i = int_hash;
     return ht;
 }
 
@@ -278,7 +366,8 @@ static int h_resize(HashTable *ht, int min_newsize)
 
     for (num_active = ht->size, he_old = oldtable; num_active > 0; he_old++) {
         if (he_old->key && he_old->key != dummy_key) {    /* active entry */
-            he_new = ht->lookup_i(ht, he_old->key);
+            /*he_new = ht->lookup_i(ht, he_old->key); */
+            he_new = h_resize_lookup(ht, he_old->hash);
             he_new->key = he_old->key;
             he_new->value = he_old->value;
             num_active--;
@@ -316,7 +405,7 @@ int h_set(HashTable *ht, const void *key, void *value)
         }
         ret_val = HASH_KEY_SAME;
     }
-    he->key = (void *) key;
+    he->key = (void *)key;
     he->value = value;
 
     if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
@@ -360,6 +449,36 @@ int h_has_key(HashTable *ht, const void *key)
     else {
         return HASH_KEY_EQUAL;
     }
+}
+
+void *h_get_int(HashTable *self, const f_u32 key)
+{
+  return h_get(self, &key);
+}
+
+int h_del_int(HashTable *self, const f_u32 key)
+{
+  return h_del(self, &key);
+}
+
+void *h_rem_int(HashTable *self, const f_u32 key)
+{
+  return h_rem(self, &key, false);
+}
+
+int h_set_int(HashTable *self, const f_u32 key, void *value)
+{
+  return h_set(self, &key, value);
+}
+
+int h_set_safe_int(HashTable *self, const f_u32 key, void *value)
+{
+  return h_set_safe(self, &key, value);
+}
+
+int h_has_key_int(HashTable *self, const f_u32 key)
+{
+  return h_has_key(self, &key);
 }
 
 void h_each(HashTable *ht,

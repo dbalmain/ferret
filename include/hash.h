@@ -14,19 +14,13 @@
                                  * conserve memory */
 
 /**
- * dummy key that is used as a key when a value is deleted from the HashTable 
- * as a kind of placeholder
- */
-extern char *dummy_key;
-
-/**
  * Return values for h_set
  */
 enum
 {
     HASH_KEY_DOES_NOT_EXIST = 0,
-    HASH_KEY_SAME = 1,
-    HASH_KEY_EQUAL = 2
+    HASH_KEY_EQUAL = 1,
+    HASH_KEY_SAME = 2
 };
 
 /**
@@ -103,22 +97,6 @@ extern f_u32 *imalloc(f_u32 value);
 extern f_u32 str_hash(const char *const str);
 
 /**
- * Create a new HashTable that uses null-terminated strings as it's key. The
- * HashTable will store all keys and values so if you want to destroy those
- * values when the HashTable is destroyed then you should pass free functions.
- * NULL will suffice otherwise.
- *
- * @param free_key function to free the key stored in the HashTable when an
- *    entry is deleted, replaced or when the HashTable is destroyed. If you
- *    pass NULL in place of this parameter the key will not be destroyed.
- * @param free_value function to free the value stored in the HashTable when
- *    an entry is deleted, replaced or when the HashTable is destroyed. If you
- *    pass NULL in place of this parameter the value will not be destroyed.
- * @return A newly allocated HashTable
- */
-extern HashTable *h_new_str(free_ft free_key, free_ft free_value);
-
-/**
  * Create a new HashTable that uses any type of object as it's key. The
  * HashTable will store all keys and values so if you want to destroy those
  * values when the HashTable is destroyed then you should pass free functions.
@@ -136,6 +114,35 @@ extern HashTable *h_new_str(free_ft free_key, free_ft free_value);
  */
 extern HashTable *h_new(hash_ft hash, eq_ft eq, free_ft free_key,
                         free_ft free_value);
+
+/**
+ * Create a new HashTable that uses null-terminated strings as it's keys. The
+ * HashTable will store all keys and values so if you want to destroy those
+ * values when the HashTable is destroyed then you should pass free functions.
+ * NULL will suffice otherwise.
+ *
+ * @param free_key function to free the key stored in the HashTable when an
+ *    entry is deleted, replaced or when the HashTable is destroyed. If you
+ *    pass NULL in place of this parameter the key will not be destroyed.
+ * @param free_value function to free the value stored in the HashTable when
+ *    an entry is deleted, replaced or when the HashTable is destroyed. If you
+ *    pass NULL in place of this parameter the value will not be destroyed.
+ * @return A newly allocated HashTable
+ */
+extern HashTable *h_new_str(free_ft free_key, free_ft free_value);
+
+/**
+ * Create a new HashTable that uses integers as it's keys. The
+ * HashTable will store all values so if you want to destroy those
+ * values when the HashTable is destroyed then you should pass a free function.
+ * NULL will suffice otherwise.
+ *
+ * @param free_value function to free the value stored in the HashTable when
+ *    an entry is deleted, replaced or when the HashTable is destroyed. If you
+ *    pass NULL in place of this parameter the value will not be destroyed.
+ * @return A newly allocated HashTable
+ */
+extern HashTable *h_new_int(free_ft free_value);
 
 /**
  * Destroy the HashTable. This function will also destroy all keys and values
@@ -221,11 +228,11 @@ extern void *h_rem(HashTable *self, const void *key, bool del_key);
  * @return one of three values;
  *   <pre>
  *     HASH_KEY_DOES_NOT_EXIST  there was no value stored with that key
- *     HASH_KEY_SAME            the key was identical (same memory pointer) to
- *                              the existing key so no key was freed
  *     HASH_KEY_EQUAL           the key existed and was seperately allocated.
  *                              In this situation the old key will have been
  *                              destroyed if free_key was set
+ *     HASH_KEY_SAME            the key was identical (same memory pointer) to
+ *                              the existing key so no key was freed
  *   </pre>
  */
 extern int h_set(HashTable *self, const void *key, void *value);
@@ -250,6 +257,97 @@ extern int h_set_safe(HashTable *self, const void *key, void *value);
  * @return true if the key exists in the HashTable, false otherwise.
  */
 extern int h_has_key(HashTable *self, const void *key);
+
+/**
+ * Get the value in the HashTable referenced by an integer key +key+.
+ *
+ * @param self the HashTable to reference
+ * @param key the integer key to lookup
+ * @return the value referenced by the key +key+. If there is no value
+ *   referenced by that key, NULL is returned.
+ */
+extern void *h_get_int(HashTable *self, const f_u32 key);
+
+/**
+ * Delete the value in HashTable referenced by the integer key +key+. When the
+ * value is deleted it is also destroyed using the free_value function. If you
+ * don't want to destroy the value use h_rem. 
+ *
+ * This functions returns +true+ if the value was deleted successfully or
+ * false if the key was not found.
+ *
+ * @see h_rem
+ *
+ * @param self the HashTable to reference
+ * @param key the integer key to lookup
+ * @return true if the object was successfully deleted or false if the key was
+ *   not found
+ */
+extern int h_del_int(HashTable *self, const f_u32 key);
+
+/**
+ * Remove the value in HashTable referenced by the integer key +key+. When the
+ * value is removed it is returned rather than destroyed.
+ *
+ * If you want the value to be destroyed, use the h_del function.
+ *
+ * @see h_del
+ *
+ * @param self the HashTable to reference
+ * @param key the integer key to lookup
+ * @return the value referenced by +key+ if it can be found or NULL otherwise
+ */
+extern void *h_rem_int(HashTable *self, const f_u32 key);
+
+/**
+ * WARNING: this function may destroy an old value if the key already exists
+ * in the HashTable, depending on how free_value was set for this HashTable.
+ *
+ * Add the value +value+ to the HashTable referencing it with an integer key
+ * +key+.
+ *
+ * When a value is added to the HashTable it replaces any value that
+ * might already be stored under that key. If free_value is already set then
+ * the old value will be freed using that function.
+ *
+ * Similarly the old key might replace be replaced by the new key if they are
+ * are equal (according to the HashTable's eq function) but seperately
+ * allocated objects.
+ *
+ * @param self the HashTable to add the value to
+ * @param key the integer key to use to reference the value
+ * @param value the value to add to the HashTable
+ * @return one of three values;
+ *   <pre>
+ *     HASH_KEY_DOES_NOT_EXIST  there was no value stored with that key
+ *     HASH_KEY_EQUAL           the key existed and was seperately allocated.
+ *                              In this situation the old key will have been
+ *                              destroyed if free_key was set
+ *     HASH_KEY_SAME            the key was identical (same memory pointer) to
+ *                              the existing key so no key was freed
+ *   </pre>
+ */
+extern int h_set_int(HashTable *self, const f_u32 key, void *value);
+
+/**
+ * Add the value +value+ to the HashTable referencing it with integer key
+ * +key+. If the key already exists in the HashTable, the value won't be added
+ * and the function will return false. Otherwise it will return true.
+ *
+ * @param self the HashTable to add the value to
+ * @param key the integer key to use to reference the value
+ * @param value the value to add to the HashTable
+ * @return true if the value was successfully added or false otherwise
+ */
+extern int h_set_safe_int(HashTable *self, const f_u32 key, void *value);
+/**
+ * Check whether integer key +key+ exists in the HashTable.
+ *
+ * @param self the HashTable to check in
+ * @param key the integer key to check for in the HashTable
+ * @return true if the key exists in the HashTable, false otherwise.
+ */
+extern int h_has_key_int(HashTable *self, const f_u32 key);
 
 typedef void (*h_each_key_val_ft)(void *key, void *value, void *arg);
 

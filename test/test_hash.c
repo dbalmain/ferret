@@ -25,6 +25,11 @@ static void test_hash_str(tst_case *tc, void *data)
     Aiequal(true, h_del(ht, "one"));
 
     Assert(h_get(ht, "one") == NULL, "The Hash Entry has been deleted");
+
+    /* test that h_has_key works even when value is set to null */
+    h_set(ht, "one", NULL);
+    Apnull(h_get(ht, "one"));
+    Atrue(h_has_key(ht, "one"));
     h_destroy(ht);
 }
 
@@ -41,7 +46,7 @@ static int point_eq(const void *q1, const void *q2)
     return p1->x == p2->x && p1->y == p2->y;
 }
 
-static unsigned int point_hash(const void *q)
+static f_u32 point_hash(const void *q)
 {
     Point *p = (Point *) q;
     return p->x * p->y;
@@ -96,6 +101,56 @@ static void test_hash_point(tst_case *tc, void *data)
     free(p1);
     free(p2);
     free(p3);
+}
+
+/**
+ * Test using integers as the key. This is also an example as to how to use
+ * integers as the key.
+ */
+#define HASH_INT_TEST_SIZE 1000
+static void test_hash_int(tst_case *tc, void *data)
+{
+    f_u32 i;
+    HashTable *ht = h_new_int(&free);
+    char buf[100];
+    char *word;
+    (void)data; /* suppress unused argument warning */
+
+    Aiequal(0, ht->size);
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set_int(ht, 0, estrdup("one")));
+    Aiequal(1, ht->size);
+    Atrue(h_has_key_int(ht, 0));
+    h_set_int(ht, 10, estrdup("ten"));
+    Aiequal(2, ht->size);
+    Atrue(h_has_key_int(ht, 10));
+    h_set_int(ht, 1000, estrdup("thousand"));
+    Aiequal(3, ht->size);
+    Atrue(h_has_key_int(ht, 1000));
+    Asequal("thousand", word = h_rem_int(ht, 1000));
+    Aiequal(2, ht->size);
+    Atrue(!h_has_key_int(ht, 1000));
+    Atrue(h_has_key_int(ht, 10));
+    Atrue(!h_set_safe_int(ht, 10, word));
+    free(word);
+    h_del_int(ht, 10);
+
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+      sprintf(buf, "<%d>", i);
+      h_set_int(ht, i, estrdup(buf));
+    }
+    Asequal("<0>", h_get_int(ht, 0));
+    Asequal("<100>", h_get_int(ht, 100));
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+      sprintf(buf, "<%d>", i);
+      Asequal(buf, h_get_int(ht, i));
+    }
+
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+      h_del_int(ht, i);
+    }
+    Aiequal(0, ht->size);
+
+    h_destroy(ht);
 }
 
 /**
@@ -337,6 +392,7 @@ tst_suite *ts_hash(tst_suite *suite)
 
     tst_run_test(suite, test_hash_str, NULL);
     tst_run_test(suite, test_hash_point, NULL);
+    tst_run_test(suite, test_hash_int, NULL);
     tst_run_test(suite, stress_hash, NULL);
     tst_run_test(suite, test_hash_up_and_down, NULL);
     tst_run_test(suite, test_hash_each_and_clone, NULL);
