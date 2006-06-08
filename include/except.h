@@ -117,6 +117,8 @@ typedef struct xcontext_t
 
 #define XCATCHALL break; default: xcontext.in_finally = 1;
 
+#define HANDLED() xcontext.handled = 1; /* true */
+
 #ifdef FRT_HAS_ISO_VARARGS
 # define RAISE(excode, ...) do {\
   sprintf(xmsg_buffer, __VA_ARGS__);\
@@ -136,7 +138,6 @@ typedef struct xcontext_t
 extern void RAISE(int excode, const char *const fmt, ...);
 #endif
 
-#define HANDLED() xcontext.handled = 1; /* true */
 
 extern void xraise(int excode, const char *const msg);
 extern void xpush_context(xcontext_t *context);

@@ -238,6 +238,12 @@ static void fso_close_i(OutStream *os)
     }
 }
 
+const struct OutStreamMethods FS_OUT_STREAM_METHODS = {
+    fso_flush_i,
+    fso_seek_i,
+    fso_close_i
+};
+
 static OutStream *fs_create_output(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
@@ -250,9 +256,7 @@ static OutStream *fs_create_output(Store *store, const char *filename)
 
     os = os_create();
     os->file = f;
-    os->flush_i = &fso_flush_i;
-    os->seek_i = &fso_seek_i;
-    os->close_i = &fso_close_i;
+    os->m = &FS_OUT_STREAM_METHODS;
     return os;
 }
 
@@ -289,7 +293,7 @@ static void fsi_close_i(InStream *is)
     }
 }
 
-static long fsi_length(InStream *is)
+static long fsi_length_i(InStream *is)
 {
     struct stat stt;
     if (fstat(is->file.fd, &stt)) {
@@ -307,6 +311,14 @@ static void fsi_clone_i(InStream *is, InStream *new_is)
     (void)new_is;
 }
 
+static const struct InStreamMethods FS_IN_STREAM_METHODS = {
+    fsi_read_i,
+    fsi_seek_i,
+    fsi_length_i,
+    fsi_clone_i,
+    fsi_close_i
+};
+
 static InStream *fs_open_input(Store *store, const char *filename)
 {
     InStream *is;
@@ -316,16 +328,11 @@ static InStream *fs_open_input(Store *store, const char *filename)
         RAISE(IO_ERROR, "couldn't open %s to read: <%s>", 
               path, strerror(errno));
     }
-
     is = is_create();
     is->file.fd = fd;
     is->d.path = estrdup(path);
     is->is_clone = false;
-    is->read_i = &fsi_read_i;
-    is->seek_i = &fsi_seek_i;
-    is->close_i = &fsi_close_i;
-    is->clone_i = &fsi_clone_i;
-    is->length_i = &fsi_length;
+    is->m = &FS_IN_STREAM_METHODS;
     return is;
 }
 

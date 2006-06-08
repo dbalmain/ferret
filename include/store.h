@@ -1,9 +1,9 @@
+#ifndef FRT_STORE_H
+#define FRT_STORE_H
+
 #include "global.h"
 #include "hash.h"
 #include "threading.h"
-
-#ifndef FRT_STORE_H
-#define FRT_STORE_H
 
 #define BUFFER_SIZE 1024
 #define LOCK_PREFIX "ferret-"
@@ -20,12 +20,8 @@ typedef struct Buffer
     long  len;
 } Buffer;
 
-typedef struct OutStream
-{
-    Buffer buf;
-    void  *file;
-    long   pointer;             /* only used by RAMOut */
-
+typedef struct OutStream OutStream;
+struct OutStreamMethods {
     /* internal functions for the InStream */
     /**
      * Flush +len+ characters from +src+ to the output stream +os+
@@ -53,27 +49,22 @@ typedef struct OutStream
      * @raise IO_ERROR if there is an closing the file
      */
     void (*close_i)(struct OutStream *os);
-} OutStream;
+};
+
+struct OutStream
+{
+    Buffer buf;
+    void  *file;
+    long   pointer;             /* only used by RAMOut */
+    const struct OutStreamMethods *m;
+};
 
 typedef struct CompoundInStream CompoundInStream;
 
-typedef struct InStream
-{
-    int is_clone;
-    Buffer buf;
-    union
-    {
-        int fd;
-        void *p;
-    } file;
-    union
-    {
-        long pointer;           /* only used by RAMIn */
-        char *path;             /* only used by FSIn */
-        CompoundInStream *cis;
-    } d;
+typedef struct InStream InStream;
 
-    /* internal functions for the InStream */
+struct InStreamMethods
+{
     /**
      * Read +len+ characters from the input stream into the +offset+ position in
      * +buf+, an array of unsigned characters.
@@ -96,14 +87,6 @@ typedef struct InStream
     void (*seek_i)(struct InStream *is, long pos);
 
     /**
-     * Close the resources allocated to the inputstream +is+
-     *
-     * @param is self
-     * @raise IO_ERROR if the close fails
-     */
-    void (*close_i)(struct InStream *is);
-
-    /**
      * Returns the length of the input stream +is+
      *
      * @param is self
@@ -118,7 +101,33 @@ typedef struct InStream
      * @param new_is the newly allocated clone.
      */
     void (*clone_i)(struct InStream *is, struct InStream *new_is);
-} InStream;
+    
+    /**
+     * Close the resources allocated to the inputstream +is+
+     *
+     * @param is self
+     * @raise IO_ERROR if the close fails
+     */
+    void (*close_i)(struct InStream *is);
+};
+
+struct InStream
+{
+    int is_clone;
+    Buffer buf;
+    union
+    {
+        int fd;
+        void *p;
+    } file;
+    union
+    {
+        long pointer;           /* only used by RAMIn */
+        char *path;             /* only used by FSIn */
+        CompoundInStream *cis;
+    } d;
+    const struct InStreamMethods *m;
+};
 
 struct CompoundInStream
 {
@@ -127,7 +136,7 @@ struct CompoundInStream
     long length;
 };
 
-#define is_length(mis) mis->length_i(mis)
+#define is_length(mis) mis->m->length_i(mis)
 
 typedef struct Store Store;
 typedef struct Lock Lock;

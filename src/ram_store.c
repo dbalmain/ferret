@@ -271,6 +271,12 @@ void ramo_write_to(OutStream *os, OutStream *other_o)
     }
 }
 
+const struct OutStreamMethods RAM_OUT_STREAM_METHODS = {
+    ramo_flush_i,
+    ramo_seek_i,
+    ramo_close_i
+};
+
 OutStream *ram_create_buffer()
 {
     RamFile *rf = rf_create("");
@@ -279,9 +285,7 @@ OutStream *ram_create_buffer()
     DEREF(rf);
     os->file = rf;
     os->pointer = 0;
-    os->flush_i = &ramo_flush_i;
-    os->seek_i = &ramo_seek_i;
-    os->close_i = &ramo_close_i;
+    os->m = &RAM_OUT_STREAM_METHODS;
     return os;
 }
 
@@ -303,9 +307,7 @@ static OutStream *ram_create_output(Store *store, const char *filename)
     REF(rf);
     os->pointer = 0;
     os->file = rf;
-    os->flush_i = &ramo_flush_i;
-    os->seek_i = &ramo_seek_i;
-    os->close_i = &ramo_close_i;
+    os->m = &RAM_OUT_STREAM_METHODS;
     return os;
 }
 
@@ -363,6 +365,14 @@ static void rami_clone_i(InStream *is, InStream *new_is)
     REF((RamFile *)is->file.p);
 }
 
+static const struct InStreamMethods RAM_IN_STREAM_METHODS = {
+    rami_read_i,
+    rami_seek_i,
+    rami_length_i,
+    rami_clone_i,
+    rami_close_i
+};
+
 static InStream *ram_open_input(Store *store, const char *filename)
 {
     RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
@@ -375,11 +385,7 @@ static InStream *ram_open_input(Store *store, const char *filename)
     is->file.p = rf;
     is->d.pointer = 0;
     is->is_clone = false;
-    is->read_i = &rami_read_i;
-    is->seek_i = &rami_seek_i;
-    is->close_i = &rami_close_i;
-    is->clone_i = &rami_clone_i;
-    is->length_i = &rami_length_i;
+    is->m = &RAM_IN_STREAM_METHODS;
     return is;
 }
 

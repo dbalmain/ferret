@@ -3,8 +3,8 @@
 require 'set'
 
 $dep_tree = {}
-
-Dir["**/*.[ch]"].each do |file_name|
+$files = Dir["src/*.c"] + Dir["include/*.h"] + Dir["test/*.[ch]"]
+$files.each do |file_name|
   File.open(file_name) do |file|
     file.each do |line|
       if line =~ /#include "(.*)"/
@@ -17,17 +17,22 @@ end
 objs = Dir["src/*.c"].map {|full_path| File.basename(full_path).gsub(/c$/, "o")}
 test_objs = Dir["test/*.c"].map {|full_path| File.basename(full_path).gsub(/c$/, "o")}
 
-print """CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -fno-common -O2 -g -DDEBUG
+print """
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG
 
 LFLAGS = -lm -lpthread
 
+include lib/libstemmer_c/mkinc.mak
+
+STEMMER_OBJS = $(patsubst %.c,src/libstemmer_c/%.o, $(snowball_sources))
+
 TEST_OBJS = #{test_objs.join(" ")}
 
-OBJS = #{objs.join(" ")}
+OBJS = libstemmer.o #{objs.join(" ")}
 
 vpath %.c test src
 
-vpath %.h test include
+vpath %.h test include lib/libstemmer_c/include
 
 runtests: testall
 	./testall -v -f -q
@@ -37,6 +42,9 @@ testall: $(OBJS) $(TEST_OBJS)
 
 valgrind: testall
 	valgrind --leak-check=yes -v testall -q
+
+libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
+	$(AR) -cru $@ $^
 
 .PHONY: clean
 clean:

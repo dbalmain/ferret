@@ -3,16 +3,19 @@
 
 #include "test.h"
 
-extern tst_suite *ts_test(tst_suite * suite);
-extern tst_suite *ts_global(tst_suite * suite);
-extern tst_suite *ts_except(tst_suite * suite);
-extern tst_suite *ts_hash(tst_suite * suite);
-extern tst_suite *ts_hashset(tst_suite * suite);
-extern tst_suite *ts_bitvector(tst_suite * suite);
-extern tst_suite *ts_priorityqueue(tst_suite * suite);
-extern tst_suite *ts_helper(tst_suite * suite);
-extern tst_suite *ts_fs_store(tst_suite * suite);
-extern tst_suite *ts_ram_store(tst_suite * suite);
+extern tst_suite *ts_test(tst_suite *suite);
+extern tst_suite *ts_global(tst_suite *suite);
+extern tst_suite *ts_except(tst_suite *suite);
+extern tst_suite *ts_hash(tst_suite *suite);
+extern tst_suite *ts_hashset(tst_suite *suite);
+extern tst_suite *ts_bitvector(tst_suite *suite);
+extern tst_suite *ts_priorityqueue(tst_suite *suite);
+extern tst_suite *ts_helper(tst_suite *suite);
+extern tst_suite *ts_fs_store(tst_suite *suite);
+extern tst_suite *ts_ram_store(tst_suite *suite);
+extern tst_suite *ts_fields(tst_suite *suite);
+extern tst_suite *ts_document(tst_suite *suite);
+extern tst_suite *ts_analysis(tst_suite *suite);
 
 const struct test_list
 {
@@ -27,7 +30,10 @@ const struct test_list
     {ts_priorityqueue},
     {ts_helper},
     {ts_fs_store},
-    {ts_ram_store}
+    {ts_ram_store},
+    {ts_fields},
+    {ts_document},
+    {ts_analysis}
 };
 
 #endif

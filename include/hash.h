@@ -16,7 +16,7 @@
 /**
  * Return values for h_set
  */
-enum
+enum HashSetValues
 {
     HASH_KEY_DOES_NOT_EXIST = 0,
     HASH_KEY_EQUAL = 1,

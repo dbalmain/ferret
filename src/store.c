@@ -87,7 +87,7 @@ OutStream *os_create()
  */
 inline void os_flush(OutStream *os)
 {
-    os->flush_i(os, os->buf.buf, os->buf.pos);
+    os->m->flush_i(os, os->buf.buf, os->buf.pos);
     os->buf.start += os->buf.pos;
     os->buf.pos = 0;
 }
@@ -95,7 +95,7 @@ inline void os_flush(OutStream *os)
 void os_close(OutStream *os)
 {
     os_flush(os);
-    os->close_i(os);
+    os->m->close_i(os);
     free(os);
 }
 
@@ -108,7 +108,7 @@ void os_seek(OutStream *os, long new_pos)
 {
     os_flush(os);
     os->buf.start = new_pos;
-    os->seek_i(os, new_pos);
+    os->m->seek_i(os, new_pos);
 }
 
 /**
@@ -139,7 +139,7 @@ void os_write_bytes(OutStream *os, uchar *buf, int len)
     }
 
     if (len < BUFFER_SIZE) {
-        os->flush_i(os, buf, len);
+        os->m->flush_i(os, buf, len);
         os->buf.start += len;
     }
     else {
@@ -152,7 +152,7 @@ void os_write_bytes(OutStream *os, uchar *buf, int len)
             else {
                 size = BUFFER_SIZE;
             }
-            os->flush_i(os, buf + pos, size);
+            os->m->flush_i(os, buf + pos, size);
             pos += size;
             os->buf.start += size;
         }
@@ -184,7 +184,7 @@ void is_refill(InStream *is)
 {
     long start = is->buf.start + is->buf.pos;
     long last = start + BUFFER_SIZE;
-    long flen = is->length_i(is);
+    long flen = is->m->length_i(is);
 
     if (last > flen) {          /* don't read past EOF */
         last = flen;
@@ -195,7 +195,7 @@ void is_refill(InStream *is)
         RAISE(EOF_ERROR, "current pos = %ld, file length = %ld", start, flen);
     }
 
-    is->read_i(is, is->buf.buf, is->buf.len);
+    is->m->read_i(is, is->buf.buf, is->buf.len);
 
     is->buf.start = start;
     is->buf.pos = 0;
@@ -242,8 +242,8 @@ uchar *is_read_bytes(InStream *is, uchar *buf, int offset, int len)
     }
     else {                              /* read all-at-once */
         start = is_pos(is);
-        is->seek_i(is, start);
-        is->read_i(is, buf + offset, len);
+        is->m->seek_i(is, start);
+        is->m->read_i(is, buf + offset, len);
 
         is->buf.start = start + len;    /* adjust stream variables */
         is->buf.pos = 0;
@@ -261,13 +261,13 @@ void is_seek(InStream *is, long pos)
         is->buf.start = pos;
         is->buf.pos = 0;
         is->buf.len = 0;                    /* trigger refill() on read() */
-        is->seek_i(is, pos);
+        is->m->seek_i(is, pos);
     }
 }
 
 void is_close(InStream *is)
 {
-    is->close_i(is);
+    is->m->close_i(is);
     free(is);
 }
 
@@ -276,7 +276,7 @@ InStream *is_clone(InStream *is)
     InStream *new_index_i = ALLOC(InStream);
     memcpy(new_index_i, is, sizeof(InStream));
     new_index_i->is_clone = true;
-    is->clone_i(is, new_index_i);
+    is->m->clone_i(is, new_index_i);
     return new_index_i;
 }
 
@@ -492,7 +492,7 @@ inline void os_write_vlong(OutStream *os, register f_u64 num)
 
 void os_write_string(OutStream *os, char *str)
 {
-    int len = (int) strlen(str);
+    int len = (int)strlen(str);
     os_write_vint(os, len);
 
     os_write_bytes(os, (uchar *)str, len);
