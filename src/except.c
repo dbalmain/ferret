@@ -30,7 +30,7 @@ char xmsg_buffer_final[2048];
 static thread_key_t exception_stack_key;
 static thread_once_t exception_stack_key_once = THREAD_ONCE_INIT;
 
-static void exception_stack_alloc()
+static void exception_stack_alloc(void)
 {
     thread_key_create(&exception_stack_key, NULL);
 }
@@ -57,11 +57,12 @@ static inline void xraise_context(xcontext_t *context,
 }
 
 #ifndef FRT_HAS_VARARGS
-void RAISE(int excode, const char *const fmt, ...)
+void RAISE(int excode, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    xraise(excode, vsprintf(xmsg_buffer, excode, fmt, args));
+    vsprintf(xmsg_buffer, fmt, args);
+    xraise(excode, xmsg_buffer);
     va_end(args);
 }
 #endif

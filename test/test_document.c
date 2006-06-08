@@ -7,20 +7,20 @@ void test_df_standard(tst_case * tc, void *data)
     DocField *df;
     (void)data;
 
-    df = df_create("title", estrdup("This is the title"));
+    df = df_create("title", estrdup("Life of Pi"));
     Aiequal(1, df->size);
     Asequal("title", df->name);
-    Asequal("This is the title", df->data[0]);
-    Aiequal(strlen("This is the title"), df->lengths[0]);
-    Asequal("title: \"This is the title\"", s = df_to_s(df));
+    Asequal("Life of Pi", df->data[0]);
+    Aiequal(strlen("Life of Pi"), df->lengths[0]);
+    Asequal("title: \"Life of Pi\"", s = df_to_s(df));
     free(s);
     df_destroy(df);
 
-    df = df_create_len("title", "new\0title", 9);
+	df = df_create_len("title", "new title", 9);
     df->destroy_data = false;
     Aiequal(1, df->size);
     Asequal("title", df->name);
-    Asequal("new", df->data[0]);
+    Asequal("new title", df->data[0]);
     Aiequal(9, df->lengths[0]);
     df_destroy(df);
 }
@@ -32,21 +32,21 @@ void test_df_multi_fields(tst_case * tc, void *data)
     DocField *df;
     (void)data;
 
-    df = df_create("title", estrdup("This is the title"));
+    df = df_create("title", estrdup("Vernon God Little"));
     Aiequal(1, df->size);
     Asequal("title", df->name);
-    Asequal("This is the title", df->data[0]);
-    Aiequal(strlen("This is the title"), df->lengths[0]);
+    Asequal("Vernon God Little", df->data[0]);
+    Aiequal(strlen("Vernon God Little"), df->lengths[0]);
     
     df_add_data(df, estrdup("some more data"));
     Aiequal(2, df->size);
-    Asequal("title: [\"This is the title\", \"some more data\"]",
+    Asequal("title: [\"Vernon God Little\", \"some more data\"]",
             s = df_to_s(df));
     free(s);
     df_add_data_len(df, estrdup("and more data"), 14);
     Aiequal(3, df->size);
     Asequal("title", df->name);
-    Asequal("This is the title", df->data[0]);
+    Asequal("Vernon God Little", df->data[0]);
     Asequal("some more data", df->data[1]);
     Asequal("and more data", df->data[2]);
 

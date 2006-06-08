@@ -135,7 +135,7 @@ typedef struct xcontext_t
 } while (0)
 
 #else
-extern void RAISE(int excode, const char *const fmt, ...);
+extern void RAISE(int excode, const char *fmt, ...);
 #endif
 
 

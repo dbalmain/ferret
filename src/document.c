@@ -70,7 +70,7 @@ char *df_to_s(DocField *df)
     s += strlen(str);
     if (df->size == 1) {
         *(s++) = '"';
-        strncat(s, df->data[0], df->lengths[0]);
+		strncpy(s, df->data[0], df->lengths[0]);
         s += df->lengths[0];
         *(s++) = '"';
         *(s++) = '\0';
@@ -78,14 +78,14 @@ char *df_to_s(DocField *df)
     else {
         *(s++) = '[';
         *(s++) = '"';
-        strncat(s, df->data[0], df->lengths[0]);
+        strncpy(s, df->data[0], df->lengths[0]);
         s += df->lengths[0];
         *(s++) = '"';
         for (i = 1; i < df->size; i++) {
             *(s++) = ',';
             *(s++) = ' ';
             *(s++) = '"';
-            strncat(s, df->data[i], df->lengths[i]);
+            strncpy(s, df->data[i], df->lengths[i]);
             s += df->lengths[i];
             *(s++) = '"';
         }

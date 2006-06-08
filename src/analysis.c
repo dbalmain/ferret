@@ -965,9 +965,9 @@ void sf_destroy(TokenStream *tf)
 
 void sf_clone_i_i(void *key, void *value, void *arg)
 {
-    (void)value;
     HashTable *wordtable = (HashTable *)arg;
     char *w = estrdup(key);
+    (void)value;
     h_set(wordtable, w, w);
 }
 
