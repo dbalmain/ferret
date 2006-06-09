@@ -364,7 +364,7 @@ bool si_has_separate_norms(SegmentInfo *si)
 
 static const char base36_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-static char *new_seg_name(int counter) 
+static char *new_seg_name(f_u64 counter) 
 {
   char buf[SEGMENT_NAME_MAX_LENGTH];
   int i;
@@ -512,11 +512,11 @@ void sis_write(SegmentInfos *sis, Store *store)
     store->rename(store, TEMPORARY_INDEX_FILENAME, INDEX_FILENAME);
 }
 
-int sis_read_current_version(Store *store)
+f_u64 sis_read_current_version(Store *store)
 {
     InStream *is;
     int format = 0;
-    int version = 0;
+    f_u64 version = 0;
 
     if (!store->exists(store, INDEX_FILENAME)) {
         return 0;

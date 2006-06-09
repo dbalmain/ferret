@@ -135,7 +135,7 @@ extern void sis_del_from_to(SegmentInfos *sis, int from, int to);
 extern void sis_clear(SegmentInfos *sis);
 extern SegmentInfos *sis_read(Store *store);
 extern void sis_write(SegmentInfos *sis, Store *store);
-extern int sis_read_current_version(Store *store);
+extern f_u64 sis_read_current_version(Store *store);
 extern void sis_destroy(SegmentInfos *sis);
 
 #endif

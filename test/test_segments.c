@@ -107,7 +107,7 @@ extern void field_prop_test(tst_case *tc,
 
 void test_sis_rw(tst_case *tc, void *data)
 {
-    int version;
+    f_u64 version;
     Store *store = (Store *)data;
     FieldInfos *fis = fis_create(STORE_YES, INDEX_YES, TERM_VECTOR_WITH_OFFSETS);
     SegmentInfos *sis = sis_create(fis);
