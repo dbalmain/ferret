@@ -13,11 +13,10 @@ inline void fi_set_store(FieldInfo *self, int store)
         case STORE_NO:
             break;
         case STORE_YES:
-            self->props |= FI_IS_STORED_BM;
+            self->bits |= FI_IS_STORED_BM;
             break;
         case STORE_COMPRESS:
-            self->props |= FI_IS_COMPRESSED_BM;
-            self->props |= FI_IS_STORED_BM;
+            self->bits |= FI_IS_COMPRESSED_BM | FI_IS_STORED_BM;
             break;
     }
 }
@@ -28,20 +27,17 @@ inline void fi_set_index(FieldInfo *self, int index)
         case INDEX_NO:
             break;
         case INDEX_YES:
-            self->props |= FI_IS_INDEXED_BM;
-            self->props |= FI_IS_TOKENIZED_BM;
+            self->bits |= FI_IS_INDEXED_BM | FI_IS_TOKENIZED_BM;
             break;
         case INDEX_UNTOKENIZED:
-            self->props |= FI_IS_INDEXED_BM;
+            self->bits |= FI_IS_INDEXED_BM;
             break;
         case INDEX_YES_OMIT_NORMS:
-            self->props |= FI_OMIT_NORMS_BM;
-            self->props |= FI_IS_INDEXED_BM;
-            self->props |= FI_IS_TOKENIZED_BM;
+            self->bits |= FI_OMIT_NORMS_BM | FI_IS_INDEXED_BM |
+                FI_IS_TOKENIZED_BM;
             break;
         case INDEX_UNTOKENIZED_OMIT_NORMS:
-            self->props |= FI_OMIT_NORMS_BM;
-            self->props |= FI_IS_INDEXED_BM;
+            self->bits |= FI_OMIT_NORMS_BM | FI_IS_INDEXED_BM;
             break;
     }
 }
@@ -52,20 +48,17 @@ inline void fi_set_term_vector(FieldInfo *self, int term_vector)
         case TERM_VECTOR_NO:
             break;
         case TERM_VECTOR_YES:
-            self->props |= FI_STORE_TERM_VECTOR_BM;
+            self->bits |= FI_STORE_TERM_VECTOR_BM;
             break;
         case TERM_VECTOR_WITH_POSITIONS:
-            self->props |= FI_STORE_TERM_VECTOR_BM;
-            self->props |= FI_STORE_POSITIONS_BM;
+            self->bits |= FI_STORE_TERM_VECTOR_BM | FI_STORE_POSITIONS_BM;
             break;
         case TERM_VECTOR_WITH_OFFSETS:
-            self->props |= FI_STORE_TERM_VECTOR_BM;
-            self->props |= FI_STORE_OFFSETS_BM;
+            self->bits |= FI_STORE_TERM_VECTOR_BM | FI_STORE_OFFSETS_BM;
             break;
         case TERM_VECTOR_WITH_POSITIONS_OFFSETS:
-            self->props |= FI_STORE_TERM_VECTOR_BM;
-            self->props |= FI_STORE_POSITIONS_BM;
-            self->props |= FI_STORE_OFFSETS_BM;
+            self->bits |= FI_STORE_TERM_VECTOR_BM | FI_STORE_POSITIONS_BM |
+                FI_STORE_OFFSETS_BM;
             break;
     }
 }
@@ -78,7 +71,7 @@ FieldInfo *fi_create(char *name,
     FieldInfo *self = ALLOC(FieldInfo);
     self->name = estrdup(name);
     self->boost = 1.0;
-    self->props = 0;
+    self->bits = 0;
     fi_set_store(self, store);
     fi_set_index(self, index);
     fi_set_term_vector(self, term_vector);
@@ -112,11 +105,11 @@ char *fi_to_s(FieldInfo *self)
     return str;
 }
 
-/*****
+/****************************************************************************
  *
  * FieldInfos
  *
- *****/
+ ****************************************************************************/
 
 FieldInfos *fis_create(int store, int index, int term_vector)
 {
@@ -174,12 +167,9 @@ FieldInfo *fis_by_number(FieldInfos *self, int num)
 void fis_write(FieldInfos *self, OutStream *os)
 {
     int i;
-    union {
-        f_u32 i;
-        float f;
-    } tmp;
+    union { f_u32 i; float f; } tmp;
     FieldInfo *fi;
-    os_write_long(os, FIELD_INFOS_VERSION);
+
     os_write_uint(os, self->store);
     os_write_uint(os, self->index);
     os_write_uint(os, self->term_vector);
@@ -188,8 +178,8 @@ void fis_write(FieldInfos *self, OutStream *os)
         fi = self->fields[i];
         os_write_string(os, fi->name);
         tmp.f = fi->boost;
-        os_write_uint(os, POSH_LittleU32(tmp.i));
-        os_write_uint(os, fi->props);
+        os_write_uint(os, tmp.i);
+        os_write_uint(os, fi->bits);
     }
 }
 
@@ -197,13 +187,10 @@ FieldInfos *fis_read(InStream *is)
 {
     int store, index, term_vector;
     int i;
-    union {
-        f_u32 i;
-        float f;
-    } tmp;
+    union { f_u32 i; float f; } tmp;
     FieldInfo *fi;
     FieldInfos *self;
-    is_read_long(is); /* ignore as we are only at the first version */
+
     store = is_read_uint(is);
     index = is_read_uint(is);
     term_vector = is_read_uint(is);
@@ -211,9 +198,9 @@ FieldInfos *fis_read(InStream *is)
     for (i = is_read_uint(is); i > 0; i--) {
         fi = ALLOC(FieldInfo);
         fi->name = is_read_string(is);
-        tmp.i = POSH_LittleU32(is_read_uint(is));
+        tmp.i = is_read_uint(is);
         fi->boost = tmp.f;
-        fi->props = is_read_uint(is);
+        fi->bits = is_read_uint(is);
         fis_add_field(self, fi);
     }
     return self; 
@@ -228,7 +215,7 @@ static const char *store_str[] = {
 
 static const char *fi_store_str(FieldInfo *fi)
 {
-    return store_str[fi->props & 0x3];
+    return store_str[fi->bits & 0x3];
 }
 
 static const char *index_str[] = {
@@ -244,7 +231,7 @@ static const char *index_str[] = {
 
 static const char *fi_index_str(FieldInfo *fi)
 {
-    return index_str[(fi->props >> 2) & 0x7];
+    return index_str[(fi->bits >> 2) & 0x7];
 }
 
 static const char *term_vector_str[] = {
@@ -260,7 +247,7 @@ static const char *term_vector_str[] = {
 
 static const char *fi_term_vector_str(FieldInfo *fi)
 {
-    return term_vector_str[(fi->props >> 2) & 0x7];
+    return term_vector_str[(fi->bits >> 2) & 0x7];
 }
 
 char *fis_to_s(FieldInfos *self)

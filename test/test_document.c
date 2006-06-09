@@ -13,6 +13,7 @@ void test_df_standard(tst_case * tc, void *data)
     Asequal("Life of Pi", df->data[0]);
     Aiequal(strlen("Life of Pi"), df->lengths[0]);
     Asequal("title: \"Life of Pi\"", s = df_to_s(df));
+    Afequal(1.0, df->boost);
     free(s);
     df_destroy(df);
 
@@ -89,6 +90,7 @@ void test_doc(tst_case * tc, void *data)
     Asequal("data2", doc_get_field(doc, "data")->data[1]);
     Asequal("data3", doc_get_field(doc, "data")->data[2]);
     Asequal("data4", doc_get_field(doc, "data")->data[3]);
+    Afequal(1.0, doc->boost);
     doc_destroy(doc);
 
     doc = doc_create();

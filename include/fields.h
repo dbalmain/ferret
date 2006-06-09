@@ -36,17 +36,17 @@ enum TermVectorValues {
 #define FI_STORE_POSITIONS_BM   0x040
 #define FI_STORE_OFFSETS_BM     0x080
 
-/*****
+/****************************************************************************
  *
  * FieldInfo
  *
- *****/
+ ****************************************************************************/
 
 typedef struct FieldInfo {
     char *name;
     float boost;
     int number;
-    unsigned int props;
+    unsigned int bits;
 } FieldInfo;
 
 extern FieldInfo *fi_create(char *name,
@@ -55,22 +55,21 @@ extern FieldInfo *fi_create(char *name,
                             int term_vector);
 extern char *fi_to_s(FieldInfo *self);
 extern void fi_destroy(FieldInfo *self);
-#define fi_is_stored(fi)         (((fi)->props & FI_IS_STORED_BM) != 0)
-#define fi_is_compressed(fi)     (((fi)->props & FI_IS_COMPRESSED_BM) != 0)
-#define fi_is_indexed(fi)        (((fi)->props & FI_IS_INDEXED_BM) != 0)
-#define fi_is_tokenized(fi)      (((fi)->props & FI_IS_TOKENIZED_BM) != 0)
-#define fi_omit_norms(fi)        (((fi)->props & FI_OMIT_NORMS_BM) != 0)
-#define fi_store_term_vector(fi) (((fi)->props & FI_STORE_TERM_VECTOR_BM) != 0)
-#define fi_store_positions(fi)   (((fi)->props & FI_STORE_POSITIONS_BM) != 0)
-#define fi_store_offsets(fi)     (((fi)->props & FI_STORE_OFFSETS_BM) != 0)
+#define fi_is_stored(fi)         (((fi)->bits & FI_IS_STORED_BM) != 0)
+#define fi_is_compressed(fi)     (((fi)->bits & FI_IS_COMPRESSED_BM) != 0)
+#define fi_is_indexed(fi)        (((fi)->bits & FI_IS_INDEXED_BM) != 0)
+#define fi_is_tokenized(fi)      (((fi)->bits & FI_IS_TOKENIZED_BM) != 0)
+#define fi_omit_norms(fi)        (((fi)->bits & FI_OMIT_NORMS_BM) != 0)
+#define fi_store_term_vector(fi) (((fi)->bits & FI_STORE_TERM_VECTOR_BM) != 0)
+#define fi_store_positions(fi)   (((fi)->bits & FI_STORE_POSITIONS_BM) != 0)
+#define fi_store_offsets(fi)     (((fi)->bits & FI_STORE_OFFSETS_BM) != 0)
 
-/*****
+/****************************************************************************
  *
  * FieldInfos
  *
- *****/
+ ****************************************************************************/
 
-#define FIELD_INFOS_VERSION 0
 #define FIELD_INFOS_INIT_CAPA 4
 typedef struct FieldInfos {
     int store;

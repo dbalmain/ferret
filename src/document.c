@@ -18,6 +18,7 @@ DocField *df_create_len(const char *name, char *data, int len)
     df->data[0] = data;
     df->lengths[0] = len;
     df->destroy_data = true;
+    df->boost = 1.0;
     return df;
 }
 

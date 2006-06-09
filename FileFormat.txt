@@ -18,23 +18,31 @@ Compound(.cfs) ->
     Chars FileData
   } * FileCount
 
-FieldInfos(.fnm) ->
-  VInt FieldsCount
+Fields ->
+  Int StoreDefault
+  Int IndexDefault
+  Int TermVectorDefault
+  Int FeildCount
   {
     String FieldName 
+    Int    Boost          # CastAsInt
     Byte   FieldBits
     <
-      0x01 => index fields
-      0x02 => store term vector
-      0x04 => store positions
-      0x08 => store offsets
+      0x01 => store fields
+      0x02 => compress fields
+      0x04 => index fields
+      0x08 => tokenize fields
       0x10 => omit norms
+      0x20 => store term vector
+      0x40 => store positions
+      0x80 => store offsets
     > FieldBits
-  } * FieldsCount
+  } * FieldCount
 
 FieldIndex(.fdx) -> 
   {
-    UInt64 FieldValuesPosition
+    UInt32 FieldValuesPosition
+    UInt32 FieldTermVectorsPosition
   } * SegSize
 
 FieldData(.fdt) ->  
@@ -42,13 +50,18 @@ FieldData(.fdt) ->
     VInt FieldCount
     {
       VInt   FieldNum
-      Byte   Bits
-      <
-        0x01 => is tokenized
-        0x02 => is binary
-        0x04 => is compressed
-      > Bits
-      String Value
+      VInt   FieldLen
+    } * FieldCount
+    {
+      Bytes FieldData
+    } * FieldCount
+    VInt TVCount
+    {
+      VInt   FieldNum
+      VInt   FieldLen
+    } * FieldCount
+    {
+      Bytes FieldData
     } * FieldCount
   } * SegSize
 
