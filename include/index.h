@@ -2,6 +2,7 @@
 #define FRT_INDEX_H
 
 #include "global.h"
+#include "document.h"
 #include "hash.h"
 #include "store.h"
 
@@ -75,18 +76,18 @@ typedef struct FieldInfos {
     int store;
     int index;
     int term_vector;
-    HashTable *field_dict;
     int size;
     int capa;
     FieldInfo **fields;
+    HashTable *field_dict;
 } FieldInfos;
 
 extern FieldInfos *fis_create(int store, int index, int term_vector);
 extern FieldInfo *fis_add_field(FieldInfos *self, FieldInfo *fi);
 extern FieldInfo *fis_get_field(FieldInfos *self, char *name);
 extern FieldInfo *fis_get_or_add_field(FieldInfos *self, char *name);
-extern void fis_write(FieldInfos *fis, OutStream *os);
-extern FieldInfos *fis_read(InStream *is);
+extern void fis_write(FieldInfos *fis, Store *store);
+extern FieldInfos *fis_read(Store *store);
 extern char *fis_to_s(FieldInfos *self);
 extern void fis_destroy(FieldInfos *self);
 
@@ -124,10 +125,9 @@ typedef struct SegmentInfos
     int capa;
     f_u64 counter;
     f_u64 version;
-    FieldInfos *fis;
 } SegmentInfos;
 
-extern SegmentInfos *sis_create(FieldInfos *fis);
+extern SegmentInfos *sis_create();
 extern SegmentInfo *sis_new_segment(SegmentInfos *sis, int dcnt, Store *store);
 extern SegmentInfo *sis_add_si(SegmentInfos *sis, SegmentInfo *si);
 extern void sis_del_at(SegmentInfos *sis, int at);
@@ -137,5 +137,38 @@ extern SegmentInfos *sis_read(Store *store);
 extern void sis_write(SegmentInfos *sis, Store *store);
 extern f_u64 sis_read_current_version(Store *store);
 extern void sis_destroy(SegmentInfos *sis);
+
+/****************************************************************************
+ *
+ * FieldsReader
+ *
+ ****************************************************************************/
+
+typedef struct FieldsReader {
+  int len;
+  FieldInfos *fis;
+  InStream *fdt_in;
+  InStream *fdx_in;
+} FieldsReader;
+
+extern FieldsReader *fr_open(Store *store, char *segment, FieldInfos *fis);
+extern void fr_close(FieldsReader *fr);
+extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
+
+/****************************************************************************
+ *
+ * FieldsWriter
+ *
+ ****************************************************************************/
+
+typedef struct FieldsWriter {
+  FieldInfos *fis;
+  OutStream *fdt_out;
+  OutStream *fdx_out;
+} FieldsWriter;
+
+extern FieldsWriter *fw_open(Store *store, char *segment, FieldInfos *fis);
+extern void fw_close(FieldsWriter *fw);
+extern void fw_add_doc(FieldsWriter *fw, Document *doc);
 
 #endif

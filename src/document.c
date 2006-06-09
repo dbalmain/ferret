@@ -7,27 +7,20 @@
  *
  ****************************************************************************/
 
-DocField *df_create_len(const char *name, char *data, int len)
+DocField *df_create(const char *name)
 {
     DocField *df = ALLOC(DocField);
     df->name = estrdup(name);
-    df->size = 1;
+    df->size = 0;
     df->capa = DF_INIT_CAPA;
     df->data = ALLOC_N(char *, df->capa);
     df->lengths = ALLOC_N(int, df->capa);
-    df->data[0] = data;
-    df->lengths[0] = len;
     df->destroy_data = true;
     df->boost = 1.0;
     return df;
 }
 
-DocField *df_create(const char *name, char *data)
-{
-    return df_create_len(name, data, strlen(data));
-}
-
-void df_add_data_len(DocField *df, char *data, int len)
+DocField *df_add_data_len(DocField *df, char *data, int len)
 {
     if (df->size >= df->capa) {
         df->capa <<= 2;
@@ -37,11 +30,12 @@ void df_add_data_len(DocField *df, char *data, int len)
     df->data[df->size] = data;
     df->lengths[df->size] = len;
     df->size++;
+    return df;
 }
 
-void df_add_data(DocField *df, char *data)
+DocField *df_add_data(DocField *df, char *data)
 {
-    df_add_data_len(df, data, strlen(data));
+    return df_add_data_len(df, data, strlen(data));
 }
 
 void df_destroy(DocField *df)
@@ -112,7 +106,7 @@ Document *doc_create()
     return doc;
 }
 
-void doc_add_field(Document *doc, DocField *df)
+DocField *doc_add_field(Document *doc, DocField *df)
 {
     if (!h_set_safe(doc->field_dict, df->name, df)) {
         RAISE(EXCEPTION, "tried to add %s field which alread existed\n",
@@ -124,6 +118,7 @@ void doc_add_field(Document *doc, DocField *df)
     }
     doc->fields[doc->size] = df;
     doc->size++;
+    return df;
 }
 
 DocField *doc_get_field(Document *doc, const char *name)

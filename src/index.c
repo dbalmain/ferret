@@ -111,6 +111,9 @@ char *fi_to_s(FieldInfo *self)
  *
  ****************************************************************************/
 
+#define FIELDS_FILENAME "fields"
+#define TEMPORARY_FIELDS_FILENAME "fields.new"
+
 FieldInfos *fis_create(int store, int index, int term_vector)
 {
     FieldInfos *self = ALLOC(FieldInfos);
@@ -164,11 +167,38 @@ FieldInfo *fis_by_number(FieldInfos *self, int num)
     }
 }
 
-void fis_write(FieldInfos *self, OutStream *os)
+FieldInfos *fis_read(Store *store)
+{
+    int store_val, index_val, term_vector_val;
+    int i;
+    union { f_u32 i; float f; } tmp;
+    FieldInfo *fi;
+    FieldInfos *self;
+    InStream *is = store->open_input(store, FIELDS_FILENAME);
+
+    store_val = is_read_uint(is);
+    index_val = is_read_uint(is);
+    term_vector_val = is_read_uint(is);
+    self = fis_create(store_val, index_val, term_vector_val);
+    for (i = is_read_uint(is); i > 0; i--) {
+        fi = ALLOC(FieldInfo);
+        fi->name = is_read_string(is);
+        tmp.i = is_read_uint(is);
+        fi->boost = tmp.f;
+        fi->bits = is_read_uint(is);
+        fis_add_field(self, fi);
+    }
+    is_close(is);
+
+    return self; 
+}
+
+void fis_write(FieldInfos *self, Store *store)
 {
     int i;
     union { f_u32 i; float f; } tmp;
     FieldInfo *fi;
+    OutStream *os = store->create_output(store, TEMPORARY_FIELDS_FILENAME);
 
     os_write_uint(os, self->store);
     os_write_uint(os, self->index);
@@ -181,29 +211,9 @@ void fis_write(FieldInfos *self, OutStream *os)
         os_write_uint(os, tmp.i);
         os_write_uint(os, fi->bits);
     }
-}
+    os_close(os);
 
-FieldInfos *fis_read(InStream *is)
-{
-    int store, index, term_vector;
-    int i;
-    union { f_u32 i; float f; } tmp;
-    FieldInfo *fi;
-    FieldInfos *self;
-
-    store = is_read_uint(is);
-    index = is_read_uint(is);
-    term_vector = is_read_uint(is);
-    self = fis_create(store, index, term_vector);
-    for (i = is_read_uint(is); i > 0; i--) {
-        fi = ALLOC(FieldInfo);
-        fi->name = is_read_string(is);
-        tmp.i = is_read_uint(is);
-        fi->boost = tmp.f;
-        fi->bits = is_read_uint(is);
-        fis_add_field(self, fi);
-    }
-    return self; 
+    store->rename(store, TEMPORARY_FIELDS_FILENAME, FIELDS_FILENAME);
 }
 
 static const char *store_str[] = {
@@ -359,8 +369,8 @@ bool si_has_separate_norms(SegmentInfo *si)
 
 #include <time.h>
 #define FORMAT 0
-#define INDEX_FILENAME "index"
-#define TEMPORARY_INDEX_FILENAME "index.new"
+#define SEGMENTS_FILENAME "segments"
+#define TEMPORARY_SEGMENTS_FILENAME "segments.new"
 
 static const char base36_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -380,7 +390,7 @@ static char *new_seg_name(f_u64 counter)
   return estrdup(&buf[i]);
 }
 
-SegmentInfos *sis_create(FieldInfos *fis)
+SegmentInfos *sis_create()
 {
     SegmentInfos *sis = ALLOC(SegmentInfos);
     sis->format = FORMAT;
@@ -389,7 +399,6 @@ SegmentInfos *sis_create(FieldInfos *fis)
     sis->counter = 0;
     sis->capa = 4;
     sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
-    sis->fis = fis;
     return sis;
 }
 
@@ -405,7 +414,6 @@ void sis_destroy(SegmentInfos *sis)
     for (i = 0; i < sis->size; i++) {
         si_destroy(sis->segs[i]);
     }
-    fis_destroy(sis->fis);
     free(sis->segs);
     free(sis);
 }
@@ -454,35 +462,31 @@ void sis_clear(SegmentInfos *sis)
 
 SegmentInfos *sis_read(Store *store)
 {
-    SegmentInfos *sis = ALLOC(SegmentInfos);
     int doc_cnt;
     int seg_count;
     int i;
     char *name;
-    InStream *is = store->open_input(store, INDEX_FILENAME);
+    InStream *is = store->open_input(store, SEGMENTS_FILENAME);
+    SegmentInfos *sis = ALLOC(SegmentInfos);
     sis->store = store;
 
-    TRY
-        sis->format = is_read_uint(is); /* do nothing. it's the first version */
-        sis->version = is_read_ulong(is);
-        sis->counter = is_read_ulong(is);
-        seg_count = is_read_int(is);
+    sis->format = is_read_uint(is); /* do nothing. it's the first version */
+    sis->version = is_read_ulong(is);
+    sis->counter = is_read_ulong(is);
+    seg_count = is_read_int(is);
 
-        /* allocate space for segments */
-        for (sis->capa = 4; sis->capa < seg_count; sis->capa <<= 1) {
-        }
-        sis->size = 0;
-        sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
+    /* allocate space for segments */
+    for (sis->capa = 4; sis->capa < seg_count; sis->capa <<= 1) {
+    }
+    sis->size = 0;
+    sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
 
-        for (i = 0; i < seg_count; i++) {
-            name = is_read_string(is);
-            doc_cnt = is_read_int(is);
-            sis_add_si(sis, si_create(name, doc_cnt, store));
-        }
-        sis->fis = fis_read(is);
-    XFINALLY
-        is_close(is);
-    XENDTRY
+    for (i = 0; i < seg_count; i++) {
+        name = is_read_string(is);
+        doc_cnt = is_read_int(is);
+        sis_add_si(sis, si_create(name, doc_cnt, store));
+    }
+    is_close(is);
 
     return sis;
 }
@@ -491,25 +495,21 @@ void sis_write(SegmentInfos *sis, Store *store)
 {
     int i;
     SegmentInfo *si;
-    OutStream *os = store->create_output(store, TEMPORARY_INDEX_FILENAME);
-    TRY
-        os_write_uint(os, FORMAT);
-        os_write_ulong(os, ++(sis->version)); /* every write changes the index */
-        os_write_ulong(os, sis->counter);
-        os_write_int(os, sis->size); 
-        for (i = 0; i < sis->size; i++) {
-            si = sis->segs[i];
-            os_write_string(os, si->name);
-            os_write_int(os, si->doc_cnt);
-        }
-        fis_write(sis->fis, os);
+    OutStream *os = store->create_output(store, TEMPORARY_SEGMENTS_FILENAME);
 
-    XFINALLY
-        os_close(os);
-    XENDTRY
+    os_write_uint(os, FORMAT);
+    os_write_ulong(os, ++(sis->version)); /* every write changes the index */
+    os_write_ulong(os, sis->counter);
+    os_write_int(os, sis->size); 
+    for (i = 0; i < sis->size; i++) {
+        si = sis->segs[i];
+        os_write_string(os, si->name);
+        os_write_int(os, si->doc_cnt);
+    }
+    os_close(os);
 
     /* install new segment info */
-    store->rename(store, TEMPORARY_INDEX_FILENAME, INDEX_FILENAME);
+    store->rename(store, TEMPORARY_SEGMENTS_FILENAME, SEGMENTS_FILENAME);
 }
 
 f_u64 sis_read_current_version(Store *store)
@@ -518,10 +518,10 @@ f_u64 sis_read_current_version(Store *store)
     int format = 0;
     f_u64 version = 0;
 
-    if (!store->exists(store, INDEX_FILENAME)) {
+    if (!store->exists(store, SEGMENTS_FILENAME)) {
         return 0;
     }
-    is = store->open_input(store, INDEX_FILENAME);
+    is = store->open_input(store, SEGMENTS_FILENAME);
 
     TRY
         format = is_read_uint(is);
@@ -532,3 +532,157 @@ f_u64 sis_read_current_version(Store *store)
 
     return version;
 }
+/****************************************************************************
+ *
+ * FieldsReader
+ *
+ ****************************************************************************/
+
+FieldsReader *fr_open(Store *store, char *segment, FieldInfos *fis)
+{
+    FieldsReader *fr = ALLOC(FieldsReader);
+    InStream *fdx_in;
+    char buf[SEGMENT_NAME_MAX_LENGTH];
+    size_t segment_name_len = strlen(segment);
+
+    memcpy(buf, segment, segment_name_len);
+
+    fr->fis = fis;
+    strcpy(buf + segment_name_len, ".fdt");
+    fr->fdt_in = store->open_input(store, buf);
+    strcpy(buf + segment_name_len, ".fdx");
+    fdx_in = fr->fdx_in = store->open_input(store, buf);
+    fr->len = fdx_in->m->length_i(fdx_in)/8;
+
+    return fr;
+}
+
+void fr_close(FieldsReader *fr)
+{
+    is_close(fr->fdt_in);
+    is_close(fr->fdx_in);
+    free(fr);
+}
+
+static DocField *fr_df_create(char *name, int size)
+{
+    DocField *df = ALLOC(DocField);
+    df->name = estrdup(name);
+    df->capa = df->size = size;
+    df->data = ALLOC_N(char *, df->capa);
+    df->lengths = ALLOC_N(int, df->capa);
+    df->destroy_data = true;
+    return df;
+}
+
+Document *fr_get_doc(FieldsReader *fr, int doc_num)
+{
+    int i, j;
+    FieldInfo *fi;
+    f_u64 position;
+    int stored_cnt, field_number;
+    DocField *df;
+    Document *doc = doc_create();
+    InStream *fdx_in = fr->fdx_in;
+    InStream *fdt_in = fr->fdt_in;
+
+    is_seek(fdx_in, doc_num * 8);
+    position = is_read_ulong(fdx_in);
+    is_seek(fdt_in, (long)position);
+    stored_cnt = (int)is_read_vint(fdt_in);
+
+    for (i = 0; i < stored_cnt; i++) {
+        field_number = (int)is_read_vint(fdt_in);
+        fi = fr->fis->fields[field_number];
+        df = fr_df_create(fi->name, (int)is_read_vint(fdt_in));
+
+        for (j = 0; j < df->size; j++) {
+            df->lengths[j] = (int)is_read_vint(fdt_in);
+        }
+
+        for (j = 0; j < df->size; j++) {
+            df->data[j] = ALLOC_N(char, df->lengths[j] + 1);
+            is_read_bytes(fdt_in, (uchar *)df->data[j], 0, df->lengths[j]);
+            df->data[j][df->lengths[j]] = '\0';
+        }
+        doc_add_field(doc, df);
+    }
+
+    return doc;
+}
+
+/****************************************************************************
+ *
+ * FieldsWriter
+ *
+ ****************************************************************************/
+
+FieldsWriter *fw_open(Store *store, char *segment, FieldInfos *fis)
+{
+    FieldsWriter *fw = ALLOC(FieldsWriter);
+    char buf[SEGMENT_NAME_MAX_LENGTH];
+    size_t segment_name_len = strlen(segment);
+
+    memcpy(buf, segment, segment_name_len);
+
+    strcpy(buf + segment_name_len, ".fdt");
+    fw->fdt_out = store->create_output(store, buf);
+
+    strcpy(buf + segment_name_len, ".fdx");
+    fw->fdx_out = store->create_output(store, buf);
+
+    fw->fis = fis;
+
+    return fw;
+}
+
+void fw_close(FieldsWriter *fw)
+{
+    os_close(fw->fdt_out);
+    os_close(fw->fdx_out);
+    free(fw);
+}
+
+static inline void save_data(OutStream *fdt_out, char *data, int dlen)
+{
+    os_write_vint(fdt_out, dlen);
+    os_write_bytes(fdt_out, (uchar *)data, dlen);
+}
+
+void fw_add_doc(FieldsWriter *fw, Document *doc)
+{
+    int i, j, stored_cnt = 0;
+    DocField *df;
+    FieldInfo *fi;
+    OutStream *fdt_out = fw->fdt_out, *fdx_out = fw->fdx_out;
+
+    for (i = 0; i < doc->size; i++) {
+        df = doc->fields[i];
+        if (fi_is_stored(fis_get_or_add_field(fw->fis, df->name))) {
+            stored_cnt++;
+        }
+    }
+
+    os_write_ulong(fdx_out, os_pos(fdt_out));
+    os_write_vint(fdt_out, stored_cnt);
+
+    for (i = 0; i < doc->size; i++) {
+        df = doc->fields[i];
+        fi = fis_get_field(fw->fis, df->name);
+        if (fi_is_stored(fi)) {
+            os_write_vint(fdt_out, fi->number);
+            os_write_vint(fdt_out, df->size);
+            /**
+             * TODO: add compression
+             */
+            for (j = 0; j < df->size; j++) {
+                os_write_vint(fdt_out, df->lengths[j]);
+            }
+            for (j = 0; j < df->size; j++) {
+                os_write_bytes(fdt_out, (unsigned char *)df->data[j],
+                               df->lengths[j]);
+            }
+        }
+    }
+}
+

@@ -36,9 +36,12 @@ void field_prop_test(tst_case *tc,
     tst_int_equal(line_num, tc, store_offsets,      fi_store_offsets(fi));
 }
 
-/**
- * Test fields
- */
+/****************************************************************************
+ *
+ * FieldInfo
+ *
+ ****************************************************************************/
+
 static void test_fi_create(tst_case *tc, void *data)
 {
     FieldInfo *fi;
@@ -64,6 +67,12 @@ static void test_fi_create(tst_case *tc, void *data)
     do_field_prop_test(tc, fi, "name", 1000.0, F, F, T, F, T, T, T, T);
     fi_destroy(fi);
 }
+
+/****************************************************************************
+ *
+ * FieldInfos
+ *
+ ****************************************************************************/
 
 static void test_fis_basic(tst_case *tc, void *data)
 {
@@ -170,8 +179,6 @@ static void test_fis_rw(tst_case *tc, void *data)
     char *str;
     FieldInfos *fis;
     Store *store = open_ram_store();
-    OutStream *os;
-    InStream *is;
     (void)data; /* suppress unused argument warning */
 
     fis = fis_create(STORE_YES, INDEX_UNTOKENIZED_OMIT_NORMS, 
@@ -192,9 +199,7 @@ static void test_fis_rw(tst_case *tc, void *data)
     fis->fields[3]->boost = 4.0;
     fis->fields[4]->boost = 5.0;
 
-    os = store->create_output(store, "fields");
-    fis_write(fis, os);
-    os_close(os);
+    fis_write(fis, store);
 
     /* these fields won't be saved be will added again later */
     Aiequal(5, fis->size);
@@ -207,12 +212,10 @@ static void test_fis_rw(tst_case *tc, void *data)
 
     fis_destroy(fis);
 
-    is = store->open_input(store, "fields");
-    fis = fis_read(is);
+    fis = fis_read(store);
     Aiequal(STORE_YES, fis->store);
     Aiequal(INDEX_UNTOKENIZED_OMIT_NORMS, fis->index);
     Aiequal(TERM_VECTOR_WITH_POSITIONS_OFFSETS, fis->term_vector);
-    is_close(is);
 
     do_field_prop_test(tc, fis->fields[0], "FFFFFFFF", 1.0,
                        F, F, F, F, F, F, F, F);
@@ -278,6 +281,224 @@ static void test_fis_rw(tst_case *tc, void *data)
     store_deref(store);
 }
 
+/****************************************************************************
+ *
+ * FieldsReader/FieldsWriter
+ *
+ ****************************************************************************/
+
+#define BIN_DATA_LEN 1234
+
+static char *prepare_bin_data(int len)
+{
+  int i;
+  char *bin_data = ALLOC_N(char, len);
+  for (i = 0; i < len; i++) {
+    bin_data[i] = i;
+  }
+  return bin_data;
+}
+
+#define check_df_data(df, index, mdata)\
+    do {\
+        Aiequal(strlen(mdata), df->lengths[index]);\
+        Asequal(mdata, df->data[index]);\
+    } while (0)
+
+#define check_df_bin_data(df, index, mdata, mlen)\
+    do {\
+        Aiequal(mlen, df->lengths[index]);\
+        Assert(memcmp(mdata, df->data[index], mlen) == 0, "Data should be equal");\
+    } while (0)
+
+static Document *prepare_doc()
+{
+    Document *doc = doc_create();
+    DocField *df;
+    char *bin_data = prepare_bin_data(BIN_DATA_LEN);
+
+    doc_add_field(doc, df_add_data(df_create("ignored"),
+                                   "this fld's ignored"))->destroy_data = false;
+    doc_add_field(doc, df_add_data(df_create("unstored"),
+                                   "unstored ignored"))->destroy_data = false;
+    doc_add_field(doc, df_add_data(df_create("stored"),
+                                   "Yay, a stored field"))->destroy_data = false;
+    df = doc_add_field(doc, df_add_data(df_create("stored_array"), "one"));
+    df->destroy_data = false;
+    df_add_data(df, "two");
+    df_add_data(df, "three");
+    df_add_data(df, "four");
+    df_add_data_len(df, bin_data, BIN_DATA_LEN);
+    doc_add_field(doc, df_add_data_len(df_create("binary"), bin_data,
+                                       BIN_DATA_LEN));
+    df = doc_add_field(doc, df_add_data(df_create("array"), "ichi"));
+    df_add_data(df, "ni");
+    df_add_data(df, "san");
+    df_add_data(df, "yon");
+    df_add_data(df, "go");
+    df->destroy_data = false;
+
+    return doc;
+}
+
+static FieldInfos *prepare_fis()
+{
+    FieldInfos *fis;
+    fis = fis_create(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
+    fis_add_field(fis, fi_create("ignored", STORE_NO, INDEX_NO,
+                                 TERM_VECTOR_NO));
+    fis_add_field(fis, fi_create("unstored", STORE_NO, INDEX_YES,
+                                 TERM_VECTOR_WITH_POSITIONS_OFFSETS));
+    fis_add_field(fis, fi_create("stored", STORE_YES, INDEX_YES,
+                                 TERM_VECTOR_YES));
+    fis_add_field(fis, fi_create("stored_array", STORE_COMPRESS,
+                                 INDEX_UNTOKENIZED, TERM_VECTOR_NO));
+    return fis;
+}
+
+static void test_fields_rw_single(tst_case *tc, void *data)
+{
+    Store *store = open_ram_store();
+    char *bin_data = prepare_bin_data(BIN_DATA_LEN);
+    Document *doc = prepare_doc();
+    FieldInfos *fis = prepare_fis();
+    FieldsWriter *fw;
+    FieldsReader *fr;
+    DocField *df;
+    (void)data;
+
+    Aiequal(4, fis->size);
+    Aiequal(6, doc->size);
+
+    fw = fw_open(store, "_0", fis);
+    fw_add_doc(fw, doc);
+    fw_close(fw);
+    doc_destroy(doc);
+
+    Aiequal(6, fis->size);
+    do_field_prop_test(tc, fis_get_field(fis, "binary"), "binary", 1.0,
+                       T, F, T, T, F, F, F, F);
+    do_field_prop_test(tc, fis_get_field(fis, "array"), "array", 1.0,
+                       T, F, T, T, F, F, F, F);
+
+    fr = fr_open(store, "_0", fis);
+    doc = fr_get_doc(fr, 0);
+    fr_close(fr);
+
+    Aiequal(4, doc->size);
+
+    Apnull(doc_get_field(doc, "ignored"));
+    Apnull(doc_get_field(doc, "unstored"));
+
+    df = doc_get_field(doc, "stored");
+    Aiequal(1, df->size);
+    check_df_data(df, 0, "Yay, a stored field");
+
+    df = doc_get_field(doc, "stored_array");
+    Aiequal(5, df->size);
+    check_df_data(df, 0, "one");
+    check_df_data(df, 1, "two");
+    check_df_data(df, 2, "three");
+    check_df_data(df, 3, "four");
+    check_df_bin_data(df, 4, bin_data, BIN_DATA_LEN);
+
+    df = doc_get_field(doc, "binary");
+    Aiequal(1, df->size);
+    check_df_bin_data(df, 0, bin_data, BIN_DATA_LEN);
+
+    df = doc_get_field(doc, "array");
+    Aiequal(5, df->size);
+    check_df_data(df, 0, "ichi");
+    check_df_data(df, 1, "ni");
+    check_df_data(df, 2, "san");
+    check_df_data(df, 3, "yon");
+    check_df_data(df, 4, "go");
+
+    free(bin_data);
+    store_deref(store);
+    doc_destroy(doc);
+    fis_destroy(fis);
+}
+
+static void test_fields_rw_multi(tst_case *tc, void *data)
+{
+    int i;
+    Store *store = open_ram_store();
+    char *bin_data = prepare_bin_data(BIN_DATA_LEN);
+    Document *doc;
+    FieldInfos *fis = prepare_fis();
+    FieldsWriter *fw;
+    FieldsReader *fr;
+    DocField *df;
+    (void)data;
+    
+    fw = fw_open(store, "_as3", fis);
+    for (i = 0; i < 100; i++) {
+        char buf[100];
+        sprintf(buf, "<<%d>>", i);
+        doc = doc_create();
+        doc_add_field(doc, df_add_data(df_create(buf), buf)
+                      )->destroy_data = false;
+        fw_add_doc(fw, doc);
+        doc_destroy(doc);
+    }
+
+    doc = prepare_doc();
+    fw_add_doc(fw, doc);
+    doc_destroy(doc);
+    fw_close(fw);
+
+    Aiequal(106, fis->size);
+    do_field_prop_test(tc, fis_get_field(fis, "binary"), "binary", 1.0,
+                       T, F, T, T, F, F, F, F);
+    do_field_prop_test(tc, fis_get_field(fis, "array"), "array", 1.0,
+                       T, F, T, T, F, F, F, F);
+    for (i = 0; i < 100; i++) {
+        char buf[100];
+        sprintf(buf, "<<%d>>", i);
+        do_field_prop_test(tc, fis_get_field(fis, buf), buf, 1.0,
+                           T, F, T, T, F, F, F, F);
+    }
+
+    fr = fr_open(store, "_as3", fis);
+    doc = fr_get_doc(fr, 100);
+    fr_close(fr);
+
+    Aiequal(4, doc->size);
+
+    Apnull(doc_get_field(doc, "ignored"));
+    Apnull(doc_get_field(doc, "unstored"));
+
+    df = doc_get_field(doc, "stored");
+    Aiequal(1, df->size);
+    check_df_data(df, 0, "Yay, a stored field");
+
+    df = doc_get_field(doc, "stored_array");
+    Aiequal(5, df->size);
+    check_df_data(df, 0, "one");
+    check_df_data(df, 1, "two");
+    check_df_data(df, 2, "three");
+    check_df_data(df, 3, "four");
+    check_df_bin_data(df, 4, bin_data, BIN_DATA_LEN);
+
+    df = doc_get_field(doc, "binary");
+    Aiequal(1, df->size);
+    check_df_bin_data(df, 0, bin_data, BIN_DATA_LEN);
+
+    df = doc_get_field(doc, "array");
+    Aiequal(5, df->size);
+    check_df_data(df, 0, "ichi");
+    check_df_data(df, 1, "ni");
+    check_df_data(df, 2, "san");
+    check_df_data(df, 3, "yon");
+    check_df_data(df, 4, "go");
+
+    free(bin_data);
+    store_deref(store);
+    doc_destroy(doc);
+    fis_destroy(fis);
+}
+
 tst_suite *ts_fields(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
@@ -286,6 +507,8 @@ tst_suite *ts_fields(tst_suite *suite)
     tst_run_test(suite, test_fis_basic, NULL);
     tst_run_test(suite, test_fis_with_default, NULL);
     tst_run_test(suite, test_fis_rw, NULL);
+    tst_run_test(suite, test_fields_rw_single, NULL);
+    tst_run_test(suite, test_fields_rw_multi, NULL);
 
     return suite;
 }
