@@ -1,5 +1,5 @@
 #include "test.h"
-#include "fields.h"
+#include "index.h"
 
 #define do_field_prop_test(tc, fi, name, boost, is_stored,\
                            is_compressed, is_indexed, is_tokenized, omit_norms,\
@@ -10,19 +10,19 @@
 #define T 1
 #define F 0
 
-static void field_prop_test(tst_case *tc,
-                            int line_num,
-                            FieldInfo *fi,
-                            char *name,
-                            float boost,
-                            bool is_stored,
-                            bool is_compressed,
-                            bool is_indexed,
-                            bool is_tokenized,
-                            bool omit_norms,
-                            bool store_term_vector,
-                            bool store_positions,
-                            bool store_offsets)
+void field_prop_test(tst_case *tc,
+                     int line_num,
+                     FieldInfo *fi,
+                     char *name,
+                     float boost,
+                     bool is_stored,
+                     bool is_compressed,
+                     bool is_indexed,
+                     bool is_tokenized,
+                     bool omit_norms,
+                     bool store_term_vector,
+                     bool store_positions,
+                     bool store_offsets)
 {
     tst_str_equal(line_num, tc, name, fi->name);
     tst_flt_equal(line_num, tc, boost, fi->boost);
@@ -68,6 +68,7 @@ static void test_fi_create(tst_case *tc, void *data)
 static void test_fis_basic(tst_case *tc, void *data)
 {
     FieldInfos *fis;
+    FieldInfo *fi;
     (void)data; /* suppress unused argument warning */
 
     fis = fis_create(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
@@ -82,6 +83,11 @@ static void test_fis_basic(tst_case *tc, void *data)
     fis_add_field(fis, fi_create("FFTFTTTT", STORE_NO,
                                  INDEX_UNTOKENIZED_OMIT_NORMS,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
+
+    fi = fi_create("FFTFTTTT", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+                   TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+    Apnull(fis_add_field(fis, fi));
+    fi_destroy(fi);
 
     Apequal(fis_get_field(fis, "FFFFFFFF"), fis->fields[0]);
     Apequal(fis_get_field(fis, "TFTTFTFF"), fis->fields[1]);
@@ -272,7 +278,7 @@ static void test_fis_rw(tst_case *tc, void *data)
     store_deref(store);
 }
 
-tst_suite *ts_fields(tst_suite * suite)
+tst_suite *ts_fields(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

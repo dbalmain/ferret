@@ -1,5 +1,5 @@
-#ifndef FRT_FIELDS_H
-#define FRT_FIELDS_H
+#ifndef FRT_INDEX_H
+#define FRT_INDEX_H
 
 #include "global.h"
 #include "hash.h"
@@ -82,12 +82,60 @@ typedef struct FieldInfos {
 } FieldInfos;
 
 extern FieldInfos *fis_create(int store, int index, int term_vector);
-extern int fis_add_field(FieldInfos *self, FieldInfo *fi);
+extern FieldInfo *fis_add_field(FieldInfos *self, FieldInfo *fi);
 extern FieldInfo *fis_get_field(FieldInfos *self, char *name);
 extern FieldInfo *fis_get_or_add_field(FieldInfos *self, char *name);
 extern void fis_write(FieldInfos *fis, OutStream *os);
 extern FieldInfos *fis_read(InStream *is);
 extern char *fis_to_s(FieldInfos *self);
 extern void fis_destroy(FieldInfos *self);
+
+/****************************************************************************
+ *
+ * SegmentInfo
+ *
+ ****************************************************************************/
+
+typedef struct SegmentInfo
+{
+    char *name;
+    int doc_cnt;
+    Store *store;
+} SegmentInfo;
+
+extern SegmentInfo *si_create(char *name, int doc_cnt, Store *store);
+extern void si_destroy(SegmentInfo *si);
+extern bool si_has_deletions(SegmentInfo *si);
+extern bool si_uses_compound_file(SegmentInfo *si);
+extern bool si_has_separate_norms(SegmentInfo *si);
+
+/****************************************************************************
+ *
+ * SegmentInfos
+ *
+ ****************************************************************************/
+
+typedef struct SegmentInfos
+{
+    f_u32 format;
+    Store *store;
+    SegmentInfo **segs;
+    int size;
+    int capa;
+    f_u64 counter;
+    f_u64 version;
+    FieldInfos *fis;
+} SegmentInfos;
+
+extern SegmentInfos *sis_create(FieldInfos *fis);
+extern SegmentInfo *sis_new_segment(SegmentInfos *sis, int dcnt, Store *store);
+extern SegmentInfo *sis_add_si(SegmentInfos *sis, SegmentInfo *si);
+extern void sis_del_at(SegmentInfos *sis, int at);
+extern void sis_del_from_to(SegmentInfos *sis, int from, int to);
+extern void sis_clear(SegmentInfos *sis);
+extern SegmentInfos *sis_read(Store *store);
+extern void sis_write(SegmentInfos *sis, Store *store);
+extern int sis_read_current_version(Store *store);
+extern void sis_destroy(SegmentInfos *sis);
 
 #endif

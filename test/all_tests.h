@@ -16,6 +16,7 @@ extern tst_suite *ts_ram_store(tst_suite *suite);
 extern tst_suite *ts_fields(tst_suite *suite);
 extern tst_suite *ts_document(tst_suite *suite);
 extern tst_suite *ts_analysis(tst_suite *suite);
+extern tst_suite *ts_segments(tst_suite *suite);
 
 const struct test_list
 {
@@ -32,6 +33,7 @@ const struct test_list
     {ts_fs_store},
     {ts_ram_store},
     {ts_fields},
+    {ts_segments},
     {ts_document},
     {ts_analysis}
 };

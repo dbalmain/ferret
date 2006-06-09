@@ -9,7 +9,7 @@
  */
 static void test_lock(tst_case *tc, void *data)
 {
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     Lock *lock1, *lock2;
 
     lock1 = store->open_lock(store, TEST_LOCK_NAME);
@@ -32,7 +32,7 @@ static void test_lock(tst_case *tc, void *data)
  */
 static void test_basic_file_ops(tst_case *tc, void *data)
 {
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
 
     store->clear_all(store);    /* Make sure the test directory is empty. */
     Assert(!store->exists(store, "file1"),
@@ -62,9 +62,8 @@ struct EachArg
 /**
  * Test function used to test store->each function
  */
-static void concat_filenames(char *fname, void *arg)
+static void concat_filenames(char *fname, struct EachArg *ea)
 {
-    struct EachArg *ea = (struct EachArg *) arg;
     strcpy(ea->p, fname);
     ea->p += strlen(fname);
 }
@@ -74,7 +73,7 @@ static void concat_filenames(char *fname, void *arg)
  */
 static void test_each(tst_case *tc, void *data)
 {
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
 
     struct EachArg ea;
     ea.p = ea.str;
@@ -84,7 +83,7 @@ static void test_each(tst_case *tc, void *data)
     store->touch(store, "file2");
     store->touch(store, "file3");
     store->touch(store, "file4");
-    store->each(store, &concat_filenames, &ea);
+    store->each(store, (void (*)(char *fname, void *arg))&concat_filenames, &ea);
     *(ea.p) = 0;
 	Assert(strstr(ea.str, "file1") != NULL, "should contain this file");
     Assert(strstr(ea.str, "file2") != NULL, "should contain this file");
@@ -99,7 +98,7 @@ static void test_each(tst_case *tc, void *data)
 static void test_rename(tst_case *tc, void *data)
 {
     int cnt_before, cnt_after;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     store->touch(store, "from");
     Assert(store->exists(store, "from"), "File should exist");
     Assert(!store->exists(store, "to"), "File should not exist");
@@ -117,7 +116,7 @@ static void test_rename(tst_case *tc, void *data)
 static void test_rw_bytes(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     uchar bytes[6] = { 0x34, 0x87, 0xF9, 0xEA, 0x00, 0xFF };
     OutStream *ostream = store->create_output(store, "rw_byte.test");
     InStream *istream;
@@ -142,13 +141,13 @@ static void test_rw_bytes(tst_case *tc, void *data)
 static void test_rw_ints(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     OutStream *ostream = store->create_output(store, "rw_int.test");
     InStream *istream;
     f_i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
 
     for (i = 0; i < 4; i++) {
-        os_write_int(ostream, (int) ints[i]);
+        os_write_int(ostream, (int)ints[i]);
     }
     os_close(ostream);
 
@@ -167,7 +166,7 @@ static void test_rw_ints(tst_case *tc, void *data)
 static void test_rw_longs(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     f_u64 longs[4] =
         { POSH_I64_MIN, POSH_I64_MAX, POSH_I64(-1), POSH_I64(0) };
     OutStream *ostream = store->create_output(store, "rw_long.test");
@@ -192,7 +191,7 @@ static void test_rw_longs(tst_case *tc, void *data)
 static void test_rw_uints(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     f_u32 uints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
     OutStream *ostream = store->create_output(store, "rw_uint.test");
     InStream *istream;
@@ -216,7 +215,7 @@ static void test_rw_uints(tst_case *tc, void *data)
 static void test_rw_ulongs(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     f_u64 ulongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
     OutStream *ostream = store->create_output(store, "rw_ulong.test");
@@ -241,7 +240,7 @@ static void test_rw_ulongs(tst_case *tc, void *data)
 static void test_rw_vints(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     f_u32 vints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
     OutStream *ostream = store->create_output(store, "rw_vint.test");
     InStream *istream;
@@ -265,7 +264,7 @@ static void test_rw_vints(tst_case *tc, void *data)
 static void test_rw_vlongs(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     f_u64 vlongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
     OutStream *ostream = store->create_output(store, "rw_vlong.test");
@@ -291,7 +290,7 @@ static void test_rw_strings(tst_case *tc, void *data)
 {
     int i;
     char *tmp;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     char str[60] =
         "This is a c ferret test string ~!@#$%^&*()`123456790-=\\)_+|";
     char buf[60000] = "";
@@ -326,7 +325,7 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
 {
     int i;
     char *tmp;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     char str[12] = "³³ ëêğïéÄ";
     char buf[12000] = "";
     OutStream *ostream;
@@ -359,7 +358,7 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
 static void test_buffer_seek(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
 
     OutStream *ostream = store->create_output(store, "rw_seek.test");
     char text[60] = "This is another int test string !@#$%#$%&%$*%^&*()(_";
@@ -399,7 +398,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
 static void test_is_clone(tst_case *tc, void *data)
 {
     int i;
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     OutStream *ostream = store->create_output(store, "clone.test");
     InStream *istream, *alt_istream;
 
@@ -430,16 +429,16 @@ static void test_is_clone(tst_case *tc, void *data)
 static void test_read_bytes(tst_case *tc, void *data)
 {
     char str[11] = "0000000000";
-    Store *store = (Store *) data;
+    Store *store = (Store *)data;
     OutStream *ostream = store->create_output(store, "read_bytes.test");
     InStream *istream;
 
-    os_write_bytes(ostream, (uchar *) "how are you doing?", 18);
+    os_write_bytes(ostream, (uchar *)"how are you doing?", 18);
     os_close(ostream);
     istream = store->open_input(store, "read_bytes.test");
-    is_read_bytes(istream, (uchar *) str, 2, 4);
+    is_read_bytes(istream, (uchar *)str, 2, 4);
     Asequal("00how 0000", str);
-    is_read_bytes(istream, (uchar *) str, 1, 8);
+    is_read_bytes(istream, (uchar *)str, 1, 8);
     Asequal("0are you 0", str);
     is_close(istream);
 }

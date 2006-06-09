@@ -1,4 +1,4 @@
-#include "fields.h"
+#include "index.h"
 #include <string.h>
 
 /****************************************************************************
@@ -124,19 +124,19 @@ FieldInfos *fis_create(int store, int index, int term_vector)
     return self;
 }
 
-int fis_add_field(FieldInfos *self, FieldInfo *fi)
+FieldInfo *fis_add_field(FieldInfos *self, FieldInfo *fi)
 {
     if (self->size == self->capa) {
         self->capa <<= 1;
         REALLOC_N(self->fields, FieldInfo *, self->capa);
     }
     if (!h_set_safe(self->field_dict, fi->name, fi)) {
-        return false;
+        return NULL;
     }
     fi->number = self->size;
     self->fields[self->size] = fi;
     self->size++;
-    return true;
+    return fi;
 }
 
 FieldInfo *fis_get_field(FieldInfos *self, char *name)
@@ -287,4 +287,248 @@ void fis_destroy(FieldInfos *self)
     h_destroy(self->field_dict);
     free(self->fields);
     free(self);
+}
+
+/****************************************************************************
+ *
+ * SegmentInfo
+ *
+ ****************************************************************************/
+
+#define SEGMENT_NAME_MAX_LENGTH 100
+
+SegmentInfo *si_create(char *name, int doc_cnt, Store *store)
+{
+    SegmentInfo *si = ALLOC(SegmentInfo);
+    si->name = name;
+    si->doc_cnt = doc_cnt;
+    si->store = store;
+    return si;
+}
+
+void si_destroy(SegmentInfo *si)
+{
+    free(si->name);
+    free(si);
+}
+
+bool si_has_deletions(SegmentInfo *si)
+{
+    char del_file_name[SEGMENT_NAME_MAX_LENGTH];
+    sprintf(del_file_name, "%s.del", si->name);
+    return si->store->exists(si->store, del_file_name);
+}
+
+bool si_uses_compound_file(SegmentInfo *si)
+{
+    char compound_file_name[SEGMENT_NAME_MAX_LENGTH];
+    sprintf(compound_file_name, "%s.cfs", si->name);
+    return si->store->exists(si->store, compound_file_name);
+}
+
+struct NormTester {
+    bool has_norm_file;
+    int norm_file_pattern_len;
+    char norm_file_pattern[SEGMENT_NAME_MAX_LENGTH];
+};
+
+static void is_norm_file(char *fname, struct NormTester *nt)
+{
+    if (strncmp(fname, nt->norm_file_pattern, nt->norm_file_pattern_len) == 0) {
+        nt->has_norm_file = true;
+    }
+}
+
+bool si_has_separate_norms(SegmentInfo *si)
+{
+    struct NormTester nt;
+    sprintf(nt.norm_file_pattern, "%s.s", si->name);
+    nt.norm_file_pattern_len = strlen(nt.norm_file_pattern);
+    nt.has_norm_file = false;
+    si->store->each(si->store, (void (*)(char *fname, void *arg))&is_norm_file, &nt);
+
+    return nt.has_norm_file;
+}
+
+
+/****************************************************************************
+ *
+ * SegmentInfos
+ *
+ ****************************************************************************/
+
+#include <time.h>
+#define FORMAT 0
+#define INDEX_FILENAME "index"
+#define TEMPORARY_INDEX_FILENAME "index.new"
+
+static const char base36_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+static char *new_seg_name(int counter) 
+{
+  char buf[SEGMENT_NAME_MAX_LENGTH];
+  int i;
+
+  buf[SEGMENT_NAME_MAX_LENGTH - 1] = '\0';
+  for (i = SEGMENT_NAME_MAX_LENGTH - 2; ; i--) {
+    buf[i] = base36_digitmap[counter%36];
+    counter /= 36;
+    if (counter == 0) break;
+  }
+  i--;
+  buf[i] = '_';
+  return estrdup(&buf[i]);
+}
+
+SegmentInfos *sis_create(FieldInfos *fis)
+{
+    SegmentInfos *sis = ALLOC(SegmentInfos);
+    sis->format = FORMAT;
+    sis->version = (f_u64)time(NULL);
+    sis->size = 0;
+    sis->counter = 0;
+    sis->capa = 4;
+    sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
+    sis->fis = fis;
+    return sis;
+}
+
+SegmentInfo *sis_new_segment(SegmentInfos *sis, int doc_cnt, Store *store)
+{
+    return sis_add_si(sis, si_create(new_seg_name(sis->counter++), doc_cnt,
+                                     store));
+}
+
+void sis_destroy(SegmentInfos *sis)
+{
+    int i;
+    for (i = 0; i < sis->size; i++) {
+        si_destroy(sis->segs[i]);
+    }
+    fis_destroy(sis->fis);
+    free(sis->segs);
+    free(sis);
+}
+
+SegmentInfo *sis_add_si(SegmentInfos *sis, SegmentInfo *si)
+{
+    if (sis->size >= sis->capa) {
+        sis->capa = sis->size * 2;
+        REALLOC_N(sis->segs, SegmentInfo *, sis->capa);
+    }
+    sis->segs[sis->size] = si;
+    sis->size++;
+    return si;
+}
+
+void sis_del_at(SegmentInfos *sis, int at)
+{
+    int i;
+    si_destroy(sis->segs[at]);
+    sis->size--;
+    for (i = at; i < sis->size; i++) {
+        sis->segs[i] = sis->segs[i+1];
+    }
+}
+
+void sis_del_from_to(SegmentInfos *sis, int from, int to)
+{
+    int i, num_to_del = to - from;
+    sis->size -= num_to_del;
+    for (i = from; i < to; i++) {
+        si_destroy(sis->segs[i]);
+    }
+    for (i = from; i < sis->size; i++) {
+        sis->segs[i] = sis->segs[i+num_to_del];
+    }
+}
+
+void sis_clear(SegmentInfos *sis)
+{
+    int i;
+    for (i = 0; i < sis->size; i++) {
+        si_destroy(sis->segs[i]);
+    }
+    sis->size = 0;
+}
+
+SegmentInfos *sis_read(Store *store)
+{
+    SegmentInfos *sis = ALLOC(SegmentInfos);
+    int doc_cnt;
+    int seg_count;
+    int i;
+    char *name;
+    InStream *is = store->open_input(store, INDEX_FILENAME);
+    sis->store = store;
+
+    TRY
+        sis->format = is_read_uint(is); /* do nothing. it's the first version */
+        sis->version = is_read_ulong(is);
+        sis->counter = is_read_ulong(is);
+        seg_count = is_read_int(is);
+
+        /* allocate space for segments */
+        for (sis->capa = 4; sis->capa < seg_count; sis->capa <<= 1) {
+        }
+        sis->size = 0;
+        sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
+
+        for (i = 0; i < seg_count; i++) {
+            name = is_read_string(is);
+            doc_cnt = is_read_int(is);
+            sis_add_si(sis, si_create(name, doc_cnt, store));
+        }
+        sis->fis = fis_read(is);
+    XFINALLY
+        is_close(is);
+    XENDTRY
+
+    return sis;
+}
+
+void sis_write(SegmentInfos *sis, Store *store)
+{
+    int i;
+    SegmentInfo *si;
+    OutStream *os = store->create_output(store, TEMPORARY_INDEX_FILENAME);
+    TRY
+        os_write_uint(os, FORMAT);
+        os_write_ulong(os, ++(sis->version)); /* every write changes the index */
+        os_write_ulong(os, sis->counter);
+        os_write_int(os, sis->size); 
+        for (i = 0; i < sis->size; i++) {
+            si = sis->segs[i];
+            os_write_string(os, si->name);
+            os_write_int(os, si->doc_cnt);
+        }
+        fis_write(sis->fis, os);
+
+    XFINALLY
+        os_close(os);
+    XENDTRY
+
+    /* install new segment info */
+    store->rename(store, TEMPORARY_INDEX_FILENAME, INDEX_FILENAME);
+}
+
+int sis_read_current_version(Store *store)
+{
+    InStream *is;
+    int format = 0;
+    int version = 0;
+
+    if (!store->exists(store, INDEX_FILENAME)) {
+        return 0;
+    }
+    is = store->open_input(store, INDEX_FILENAME);
+
+    TRY
+        format = is_read_uint(is);
+        version = is_read_ulong(is);
+    XFINALLY
+        is_close(is);
+    XENDTRY
+
+    return version;
 }

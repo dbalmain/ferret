@@ -21,7 +21,7 @@ static void test_hash_str(tst_case *tc, void *data)
     Assert(h_get(ht, "one") == NULL, "No entries added yet");
 
     Aiequal(0, h_set(ht, "one", malloc_int(1)));
-    Aiequal(1, *(int *) h_get(ht, "one"));
+    Aiequal(1, *(int *)h_get(ht, "one"));
     Aiequal(true, h_del(ht, "one"));
 
     Assert(h_get(ht, "one") == NULL, "The Hash Entry has been deleted");
@@ -41,14 +41,14 @@ typedef struct Point
 
 static int point_eq(const void *q1, const void *q2)
 {
-    Point *p1 = (Point *) q1;
-    Point *p2 = (Point *) q2;
+    Point *p1 = (Point *)q1;
+    Point *p2 = (Point *)q2;
     return p1->x == p2->x && p1->y == p2->y;
 }
 
 static f_u32 point_hash(const void *q)
 {
-    Point *p = (Point *) q;
+    Point *p = (Point *)q;
     return p->x * p->y;
 }
 
@@ -80,17 +80,17 @@ static void test_hash_point(tst_case *tc, void *data)
     Aiequal(0, ht->size);
     Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(ht, p1, malloc_int(0)));
     Aiequal(1, ht->size);
-    Aiequal(0, *(int *) h_get(ht, p1));
+    Aiequal(0, *(int *)h_get(ht, p1));
     Aiequal(HASH_KEY_SAME, h_set(ht, p1, malloc_int(1)));
     Aiequal(1, ht->size);
-    Aiequal(1, *(int *) h_get(ht, p1));
+    Aiequal(1, *(int *)h_get(ht, p1));
     Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(ht, p2, malloc_int(2)));
     Aiequal(2, ht->size);
-    Aiequal(2, *(int *) h_get(ht, p2));
+    Aiequal(2, *(int *)h_get(ht, p2));
     Aiequal(HASH_KEY_EQUAL, h_set(ht, p3, malloc_int(3)));
     Aiequal(2, ht->size);
-    Aiequal(3, *(int *) h_get(ht, p3));
-    Aiequal(3, *(int *) h_get(ht, p1));
+    Aiequal(3, *(int *)h_get(ht, p3));
+    Aiequal(3, *(int *)h_get(ht, p1));
     Aiequal(true, h_del(ht, p1));
     Aiequal(1, ht->size);
     Assert(h_get(ht, p1) == NULL, "Entry should be deleted");
@@ -182,7 +182,7 @@ static void stress_hash(tst_case *tc, void *data)
         for (j = 0; j < 1; j++) {
             for (i = 0; i < STRESS_SIZE; i++) {
                 sprintf(buf, "(%d)", i);
-                if (i != *(int *) h_get(ht, buf)) {
+                if (i != *(int *)h_get(ht, buf)) {
                     Assert(false, "h_get returned an incorrect result\n");
                     return;
                 }
@@ -227,7 +227,7 @@ static void test_hash_up_and_down(tst_case *tc, void *data)
                 return;
             }
             h_set(ht, estrdup(buf), malloc_int(i));
-            if (i != *(int *) h_get(ht, buf)) {
+            if (i != *(int *)h_get(ht, buf)) {
                 Assert(false, "h_get returned an incorrect result\n");
                 return;
             }
@@ -252,10 +252,9 @@ static void test_hash_up_and_down(tst_case *tc, void *data)
 /**
  * Method used in h_each test
  */
-static void test_each_ekv(void *key, void *value, void *arg)
+static void test_each_ekv(void *key, void *value, HashTable *ht)
 {
-    HashTable *ht = (HashTable *) arg;
-    if ((strlen((char *) key) % 2) == 0) {
+    if ((strlen((char *)key) % 2) == 0) {
         h_del(ht, key);
     }
     else {
@@ -301,7 +300,7 @@ static void test_hash_each_and_clone(tst_case *tc, void *data)
     Aiequal(5, ht2->fill);
     Aiequal(5, ht2->size);
 
-    h_each(ht, test_each_ekv, ht2);
+    h_each(ht, (void (*)(void *k, void *v, void *a))&test_each_ekv, ht2);
 
     Aiequal(7, ht->fill);
     Aiequal(4, ht->size);

@@ -28,7 +28,7 @@ STEMMER_OBJS = $(patsubst %.c,src/libstemmer_c/%.o, $(snowball_sources))
 
 TEST_OBJS = #{test_objs.join(" ")}
 
-OBJS = libstemmer.o #{objs.join(" ")}
+OBJS = #{objs.join(" ")} libstemmer.o
 
 vpath %.c test src
 
