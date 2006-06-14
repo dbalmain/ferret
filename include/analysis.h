@@ -13,6 +13,7 @@
 typedef struct Token
 {
     char text[MAX_WORD_SIZE];
+    int len;
     int start;
     int end;
     int pos_inc;

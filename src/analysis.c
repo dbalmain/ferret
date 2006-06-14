@@ -30,6 +30,7 @@ inline Token *tk_set(Token *tk,
     }
     memcpy(tk->text, text, sizeof(char) * tlen);
     tk->text[tlen] = '\0';
+    tk->len = tlen;
     tk->start = start;
     tk->end = end;
     tk->pos_inc = pos_inc;
@@ -143,7 +144,9 @@ RAISE(IO_ERROR, ENC_ERR_MSG)
 inline Token *w_tk_set(Token *tk, wchar_t *text, int start, int end,
                        int pos_inc)
 {
-    tk->text[wcstombs(tk->text, text, MAX_WORD_SIZE - 1)] = '\0';
+    int len = wcstombs(tk->text, text, MAX_WORD_SIZE - 1);
+    tk->text[len] = '\0';
+    tk->len = len;
     tk->start = start;
     tk->end = end;
     tk->pos_inc = pos_inc;
@@ -1190,6 +1193,7 @@ Token *stemf_next(TokenStream *ts)
 
     memcpy(tk->text, stemmed, len);
     tk->text[len] = '\0';
+    tk->len = len;
     return tk;
 }
 

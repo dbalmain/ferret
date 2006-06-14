@@ -1,5 +1,6 @@
 #include "index.h"
 #include "helper.h"
+#include "analysis.h"
 #include <string.h>
 #include <limits.h>
 
@@ -1659,19 +1660,33 @@ TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
     return tv;
 }
 
-/*
-HashTable *di_invert_field(DocField *df,
+HashTable *di_invert_field(MemoryPool *mp,
+                           DocField *df,
                            HashTable *postings,
                            Analyzer *a,
                            bool is_tokenized)
 {
     int i;
     if (is_tokenized) {
-        TokenStream *stream = a_get_ts(self->analyzer, field_name, field->data);
+        Token *tk;
+        int position = -1;
+        TokenStream *ts = a_get_ts(a, df->name, "");
+        HashEntry *he;
         for (i = 0; i < df->size; i++) {
+            ts->reset(ts, df->data[i]);
+            while (NULL != (tk = ts->next(ts))) {
+                position += tk->pos_inc;
+                he = postings->lookup_i(postings, tk->text);
+                if (he->value) {
+                } else {
+                    he->key = mp_memdup(mp, tk->text, tk->len);
+                }
+
+            }
         }
+        ts_deref(ts);
     }
     else {
     }
+    return postings;
 }
-*/

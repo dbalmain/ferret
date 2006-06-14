@@ -17,6 +17,7 @@ void tt_token(Token *tk,
                 tk->start, tk->end, tk->text, start, end, str);
         tst_assert(line_num, tc, false, buf);
     }
+    tst_int_equal(line_num, tc, strlen(tk->text), tk->len);
 }
 
 #define test_token_pi(mtk, mstr, mstart, mend, mpi) \
@@ -34,6 +35,7 @@ void tt_token_pi(Token *tk,
                 pi);
         tst_assert(line_num, tc, false, buf);
     }
+    tst_int_equal(line_num, tc, strlen(tk->text), tk->len);
 }
 
 void test_tk(tst_case *tc, void *data)
