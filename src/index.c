@@ -1,6 +1,5 @@
 #include "index.h"
 #include "helper.h"
-#include "analysis.h"
 #include <string.h>
 #include <limits.h>
 
@@ -1660,33 +1659,54 @@ TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
     return tv;
 }
 
-HashTable *di_invert_field(MemoryPool *mp,
+#define DI_ADD_POSTING(text, len, pos, start, end) do {\
+    he = postings->lookup_i(postings, text);\
+    if (he->value) {\
+        if (store_offsets) {\
+            p_add_occurence_with_offsets(mp, he->value, pos, start, end);\
+        }\
+        else {\
+            p_add_occurence(mp, he->value, pos);\
+        }\
+    } else {\
+        char *txt = he->key = mp_memdup(mp, text, len);\
+        if (store_offsets) {\
+            he->value = p_new_with_offsets(mp, txt, len, pos, start, end);\
+        }\
+        else {\
+            he->value = p_new(mp, txt, len, pos);\
+        }\
+    }\
+} while (0)
+
+HashTable *di_invert_field(DocumentInverter *di,
                            DocField *df,
-                           HashTable *postings,
-                           Analyzer *a,
-                           bool is_tokenized)
+                           FieldInfo *fi)
 {
+    MemoryPool *mp = di->mp;
+    Analyzer *a = di->analyzer;
+    HashTable *postings = di->postings;
+    HashEntry *he;
+    bool is_tokenized = fi_is_tokenized(fi);
+    bool store_offsets = fi_store_offsets(fi);
     int i;
     if (is_tokenized) {
         Token *tk;
         int position = -1;
         TokenStream *ts = a_get_ts(a, df->name, "");
-        HashEntry *he;
         for (i = 0; i < df->size; i++) {
             ts->reset(ts, df->data[i]);
             while (NULL != (tk = ts->next(ts))) {
                 position += tk->pos_inc;
-                he = postings->lookup_i(postings, tk->text);
-                if (he->value) {
-                } else {
-                    he->key = mp_memdup(mp, tk->text, tk->len);
-                }
-
+                DI_ADD_POSTING(tk->text, tk->len, position, tk->start, tk->end);
             }
         }
         ts_deref(ts);
     }
     else {
+        for (i = 0; i < df->size; i++) {
+            DI_ADD_POSTING(df->data[i], df->lengths[i], i, 0, df->lengths[i]);
+        }
     }
     return postings;
 }

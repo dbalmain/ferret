@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "document.h"
+#include "analysis.h"
 #include "hash.h"
 #include "store.h"
 #include "mem_pool.h"
@@ -522,17 +523,15 @@ extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
  *
  ****************************************************************************/
 
-/*
-typedef struct InvertedField
+typedef struct DocumentInverter
 {
-    int field_num;
+    MemoryPool *mp;
+    Analyzer *analyzer;
     HashTable *postings;
-} InvertedField;
+} DocumentInverter;
 
-extern HashTable *di_invert_field(DocField *df,
-                                  HashTable *postings,
-                                  Analyzer *a,
-                                  FieldInfos *fis);
+extern HashTable *di_invert_field(DocumentInverter *di,
+                                  DocField *df,
+                                  FieldInfo *fi);
 
-*/
 #endif
