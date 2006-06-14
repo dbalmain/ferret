@@ -276,7 +276,7 @@ struct Store
      * @raise IO_ERROR if there is an error opening the output stream
      *   resources
      */
-    OutStream *(*create_output)(Store *store, const char *filename);
+    OutStream *(*new_output)(Store *store, const char *filename);
 
     /**
      * Open an input stream in the +store+ with the name +filename+
@@ -397,7 +397,7 @@ extern void ramo_write_to(OutStream *from_os, OutStream *to_os);
  *
  * @return A newly allocated RAM OutStream
  */
-extern OutStream *ram_create_buffer();
+extern OutStream *ram_new_buffer();
 
 /**
  * Destroy a RAM OutStream which is unassociated with any RAM Store, freeing
@@ -500,7 +500,7 @@ extern void os_write_bytes(OutStream *os, uchar *buf, int len);
  * @param num the 32-bit signed integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_int(OutStream *os, f_i32 num);
+extern void os_write_i32(OutStream *os, f_i32 num);
 
 /**
  * Write a 64-bit signed integer to the OutStream
@@ -510,7 +510,7 @@ extern void os_write_int(OutStream *os, f_i32 num);
  * @param num the 64-bit signed integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_long(OutStream *os, f_i64 num);
+extern void os_write_i64(OutStream *os, f_i64 num);
 
 /**
  * Write a 32-bit unsigned integer to the OutStream
@@ -519,7 +519,7 @@ extern void os_write_long(OutStream *os, f_i64 num);
  * @param num the 32-bit unsigned integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_uint(OutStream *os, f_u32 num);
+extern void os_write_u32(OutStream *os, f_u32 num);
 
 /**
  * Write a 64-bit unsigned integer to the OutStream
@@ -528,27 +528,27 @@ extern void os_write_uint(OutStream *os, f_u32 num);
  * @param num the 64-bit unsigned integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_ulong(OutStream *os, f_u64 num);
+extern void os_write_u64(OutStream *os, f_u64 num);
 
 /**
- * Write a 32-bit unsigned integer to OutStream in compressed VINT format.
+ * Write an unsigned integer to OutStream in compressed VINT format.
  * TODO: describe VINT format
  *
  * @param os OutStream to write to
- * @param num the 32-bit unsigned integer to write
+ * @param num the integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vint(OutStream *os, register f_u32 num);
+extern void os_write_vint(OutStream *os, register unsigned int num);
 
 /**
- * Write a 64-bit unsigned integer to OutStream in compressed VINT format.
+ * Write an unsigned long to OutStream in compressed VINT format.
  * TODO: describe VINT format
  *
  * @param os OutStream to write to
- * @param num the 64-bit unsigned integer to write
+ * @param num the long to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vlong(OutStream *os, register f_u64 num);
+extern void os_write_vlong(OutStream *os, register unsigned long num);
 
 /**
  * Write a string to the OutStream. A string is an integer +length+ in VINT
@@ -605,18 +605,16 @@ extern InStream *is_clone(InStream *is);
 extern inline uchar is_read_byte(InStream *is);
 
 /**
- * Read +len+ bytes from InStream +is+ and write them to buffer +buf+ starting
- * from the position +offset+.
+ * Read +len+ bytes from InStream +is+ and write them to buffer +buf+
  *
  * @param is     the InStream to read from
  * @param buf    the buffer to read into, that is copy the bytes read to
- * @param offset the offset in the buffer to start writing the read bytes
  * @param len    the number of bytes to read
  * @return       the resultant buffer +buf+
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern uchar *is_read_bytes(InStream *is, uchar *buf, int offset, int len);
+extern uchar *is_read_bytes(InStream *is, uchar *buf, int len);
 
 /**
  * Read a 32-bit unsigned integer from the InStream.
@@ -626,7 +624,7 @@ extern uchar *is_read_bytes(InStream *is, uchar *buf, int offset, int len);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i32 is_read_int(InStream *is);
+extern f_i32 is_read_i32(InStream *is);
 
 /**
  * Read a 64-bit unsigned integer from the InStream.
@@ -636,7 +634,7 @@ extern f_i32 is_read_int(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i64 is_read_long(InStream *is);
+extern f_i64 is_read_i64(InStream *is);
 
 /**
  * Read a 32-bit signed integer from the InStream.
@@ -646,7 +644,7 @@ extern f_i64 is_read_long(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_u32 is_read_uint(InStream *is);
+extern f_u32 is_read_u32(InStream *is);
 
 /**
  * Read a 64-bit signed integer from the InStream.
@@ -656,29 +654,29 @@ extern f_u32 is_read_uint(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_u64 is_read_ulong(InStream *is);
+extern f_u64 is_read_u64(InStream *is);
 
 /**
- * Read a compression (VINT) 32-bit unsigned integer from the InStream.
+ * Read a compressed (VINT) unsigned integer from the InStream.
  * TODO: describe VINT format
  *
  * @param is the InStream to read from
- * @return a 32-bit unsigned integer
+ * @return an int
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern inline f_u32 is_read_vint(InStream *is);
+extern inline unsigned int is_read_vint(InStream *is);
 
 /**
- * Read a compressed (VINT) 64-bit unsigned integer from the InStream.
+ * Read a compressed (VINT) unsigned long from the InStream.
  * TODO: describe VINT format
  *
  * @param is the InStream to read from
- * @return a 64-bit unsigned integer
+ * @return a long
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern inline f_u64 is_read_vlong(InStream *is);
+extern inline unsigned long is_read_vlong(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint

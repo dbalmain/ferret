@@ -1,7 +1,7 @@
 #include "bitvector.h"
 #include <string.h>
 
-BitVector *bv_create_capa(int capa)
+BitVector *bv_new_capa(int capa)
 {
     BitVector *bv = ALLOC(BitVector);
 
@@ -16,9 +16,9 @@ BitVector *bv_create_capa(int capa)
     return bv;
 }
 
-BitVector *bv_create()
+BitVector *bv_new()
 {
-    return bv_create_capa(BV_INIT_CAPA);
+    return bv_new_capa(BV_INIT_CAPA);
 }
 
 void bv_destroy(BitVector * bv)
@@ -57,7 +57,7 @@ void bv_set(BitVector * bv, int bit)
 
 /*
  * This method relies on the fact that enough space has been set for the bits
- * to be set. You need to create the BitVector using bv_create_capa(capa) with
+ * to be set. You need to create the BitVector using bv_new_capa(capa) with
  * a capacity larger than any bit being set.
  */
 void bv_set_fast(BitVector * bv, int bit)

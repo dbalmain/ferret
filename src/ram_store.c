@@ -1,10 +1,10 @@
 #include "store.h"
 #include <string.h>
 
-extern Store *store_create();
+extern Store *store_new();
 extern void store_destroy(Store *store);
-extern OutStream *os_create();
-extern InStream *is_create();
+extern OutStream *os_new();
+extern InStream *is_new();
 extern int file_is_lock(char *filename);
 
 typedef struct RamFile
@@ -16,7 +16,7 @@ typedef struct RamFile
     int     ref_cnt;
 } RamFile;
 
-static RamFile *rf_create(const char *name)
+static RamFile *rf_new(const char *name)
 {
     RamFile *rf = ALLOC(RamFile);
     rf->buffers = ALLOC(uchar *);
@@ -54,7 +54,7 @@ static void rf_close(void *p)
 static void ram_touch(Store *store, char *filename)
 {
     if (h_get(store->dir.ht, filename) == NULL) {
-        h_set(store->dir.ht, filename, rf_create(filename));
+        h_set(store->dir.ht, filename, rf_new(filename));
     }
 }
 
@@ -277,10 +277,10 @@ const struct OutStreamMethods RAM_OUT_STREAM_METHODS = {
     ramo_close_i
 };
 
-OutStream *ram_create_buffer()
+OutStream *ram_new_buffer()
 {
-    RamFile *rf = rf_create("");
-    OutStream *os = os_create();
+    RamFile *rf = rf_new("");
+    OutStream *os = os_new();
 
     DEREF(rf);
     os->file = rf;
@@ -295,13 +295,13 @@ void ram_destroy_buffer(OutStream *os)
     free(os);
 }
 
-static OutStream *ram_create_output(Store *store, const char *filename)
+static OutStream *ram_new_output(Store *store, const char *filename)
 {
     RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
-    OutStream *os = os_create();
+    OutStream *os = os_new();
 
     if (rf == NULL) {
-        rf = rf_create(filename);
+        rf = rf_new(filename);
         h_set(store->dir.ht, rf->name, rf);
     }
     REF(rf);
@@ -376,7 +376,7 @@ static const struct InStreamMethods RAM_IN_STREAM_METHODS = {
 static InStream *ram_open_input(Store *store, const char *filename)
 {
     RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
-    InStream *is = is_create();
+    InStream *is = is_new();
 
     if (rf == NULL) {
         RAISE(IO_ERROR, "tried to open \"%s\" but it doesn't exist", filename);
@@ -432,7 +432,7 @@ static void ram_close_lock(Lock *lock)
 
 Store *open_ram_store()
 {
-    Store *new_store = store_create();
+    Store *new_store = store_new();
 
     new_store->dir.ht = h_new_str(NULL, rf_close);
     new_store->touch = &ram_touch;
@@ -445,7 +445,7 @@ Store *open_ram_store()
     new_store->clear_locks = &ram_clear_locks;
     new_store->length = &ram_length;
     new_store->each = &ram_each;
-    new_store->create_output = &ram_create_output;
+    new_store->new_output = &ram_new_output;
     new_store->open_input = &ram_open_input;
     new_store->open_lock = &ram_open_lock;
     new_store->close_lock = &ram_close_lock;
@@ -461,12 +461,12 @@ struct CopyFileArg
 static void copy_files(char *fname, void *arg)
 {
     struct CopyFileArg *cfa = (struct CopyFileArg *)arg;
-    OutStream *os = cfa->to_store->create_output(cfa->to_store, fname);
+    OutStream *os = cfa->to_store->new_output(cfa->to_store, fname);
     InStream *is = cfa->from_store->open_input(cfa->from_store, fname);
     int len = (int)is_length(is);
     uchar *buffer = ALLOC_N(uchar, len + 1);
 
-    is_read_bytes(is, buffer, 0, len);
+    is_read_bytes(is, buffer, len);
     os_write_bytes(os, buffer, len);
 
     is_close(is);

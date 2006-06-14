@@ -45,7 +45,7 @@ void store_deref(Store *store)
 /**
  * Create a store struct initializing the mutex.
  */
-Store *store_create()
+Store *store_new()
 {
     Store *store = ALLOC(Store);
     store->ref_cnt = 1;
@@ -71,7 +71,7 @@ void store_destroy(Store *store)
  *
  * @return a newly allocated and initialized OutStream object
  */
-OutStream *os_create()
+OutStream *os_new()
 {
     OutStream *os = ALLOC(OutStream);
     os->buf.start = 0;
@@ -164,7 +164,7 @@ void os_write_bytes(OutStream *os, uchar *buf, int len)
  *
  * @return a newly allocated and initialized InStream
  */
-InStream *is_create()
+InStream *is_new()
 {
     InStream *is = ALLOC(InStream);
     is->buf.start = 0;
@@ -230,20 +230,20 @@ long is_pos(InStream *is)
     return is->buf.start + is->buf.pos;
 }
 
-uchar *is_read_bytes(InStream *is, uchar *buf, int offset, int len)
+uchar *is_read_bytes(InStream *is, uchar *buf, int len)
 {
     int i;
     long start;
 
-    if ((offset + len) < BUFFER_SIZE) {
-        for (i = offset; i < offset + len; i++) {
-            buf[i] = is_read_byte(is);
+    if ((is->buf.pos + len) < is->buf.len) {
+        for (i = 0; i < len; i++) {
+            buf[i] = read_byte(is);
         }
     }
     else {                              /* read all-at-once */
         start = is_pos(is);
         is->m->seek_i(is, start);
-        is->m->read_i(is, buf + offset, len);
+        is->m->read_i(is, buf, len);
 
         is->buf.start = start + len;    /* adjust stream variables */
         is->buf.pos = 0;
@@ -280,7 +280,7 @@ InStream *is_clone(InStream *is)
     return new_index_i;
 }
 
-f_i32 is_read_int(InStream *is)
+f_i32 is_read_i32(InStream *is)
 {
     return ((f_i32)is_read_byte(is) << 24) |
         ((f_i32)is_read_byte(is) << 16) |
@@ -288,7 +288,7 @@ f_i32 is_read_int(InStream *is)
         ((f_i32)is_read_byte(is));
 }
 
-f_i64 is_read_long(InStream *is)
+f_i64 is_read_i64(InStream *is)
 {
     return ((f_i64)is_read_byte(is) << 56) |
         ((f_i64)is_read_byte(is) << 48) |
@@ -300,7 +300,7 @@ f_i64 is_read_long(InStream *is)
         ((f_i64)is_read_byte(is));
 }
 
-f_u32 is_read_uint(InStream *is)
+f_u32 is_read_u32(InStream *is)
 {
     return ((f_u32)is_read_byte(is) << 24) |
         ((f_u32)is_read_byte(is) << 16) |
@@ -308,7 +308,7 @@ f_u32 is_read_uint(InStream *is)
         ((f_u32)is_read_byte(is));
 }
 
-f_u64 is_read_ulong(InStream *is)
+f_u64 is_read_u64(InStream *is)
 {
     return ((f_u64)is_read_byte(is) << 56) |
         ((f_u64)is_read_byte(is) << 48) |
@@ -321,9 +321,9 @@ f_u64 is_read_ulong(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-inline f_u32 is_read_vint(InStream *is)
+inline unsigned int is_read_vint(InStream *is)
 {
-    register f_u32 res, b;
+    register unsigned int res, b;
     register int shift = 7;
 
     if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
@@ -351,9 +351,9 @@ inline f_u32 is_read_vint(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-inline f_u64 is_read_vlong(InStream *is)
+inline unsigned long is_read_vlong(InStream *is)
 {
-    register f_u64 res, b;
+    register unsigned long res, b;
     register int shift = 7;
 
     if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
@@ -412,7 +412,7 @@ char *is_read_string(InStream *is)
     return str;
 }
 
-void os_write_int(OutStream *os, f_i32 num)
+void os_write_i32(OutStream *os, f_i32 num)
 {
     os_write_byte(os, (uchar)((num >> 24) & 0xFF));
     os_write_byte(os, (uchar)((num >> 16) & 0xFF));
@@ -420,7 +420,7 @@ void os_write_int(OutStream *os, f_i32 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_long(OutStream *os, f_i64 num)
+void os_write_i64(OutStream *os, f_i64 num)
 {
     os_write_byte(os, (uchar)((num >> 56) & 0xFF));
     os_write_byte(os, (uchar)((num >> 48) & 0xFF));
@@ -432,7 +432,7 @@ void os_write_long(OutStream *os, f_i64 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_uint(OutStream *os, f_u32 num)
+void os_write_u32(OutStream *os, f_u32 num)
 {
     os_write_byte(os, (uchar)((num >> 24) & 0xFF));
     os_write_byte(os, (uchar)((num >> 16) & 0xFF));
@@ -440,7 +440,7 @@ void os_write_uint(OutStream *os, f_u32 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_ulong(OutStream *os, f_u64 num)
+void os_write_u64(OutStream *os, f_u64 num)
 {
     os_write_byte(os, (uchar)((num >> 56) & 0xFF));
     os_write_byte(os, (uchar)((num >> 48) & 0xFF));
@@ -453,7 +453,7 @@ void os_write_ulong(OutStream *os, f_u64 num)
 }
 
 /* optimized to use an unchecked write if there is space */
-inline void os_write_vint(OutStream *os, register f_u32 num)
+inline void os_write_vint(OutStream *os, register unsigned int num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {
@@ -472,7 +472,7 @@ inline void os_write_vint(OutStream *os, register f_u32 num)
 }
 
 /* optimized to use an unchecked write if there is space */
-inline void os_write_vlong(OutStream *os, register f_u64 num)
+inline void os_write_vlong(OutStream *os, register unsigned long num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {

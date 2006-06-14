@@ -66,8 +66,6 @@ FieldData(.fdt) ->
   } * SegSize
 
 TermInfoFile(.tis) ->
-  UInt32 TIVersion
-  UInt64 TermCount
   UInt32 IndexInterval
   UInt32 SkipInterval
   TermInfo {
@@ -81,8 +79,6 @@ TermInfoFile(.tis) ->
   } * TermCount
 
 TermInfoIndex(.tii) ->
-  UInt32 TIVersion
-  UInt64 IndexTermCount
   UInt32 IndexInterval
   UInt32 SkipInterval
   {

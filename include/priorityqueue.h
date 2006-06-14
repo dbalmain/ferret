@@ -30,7 +30,7 @@ typedef struct PriorityQueue
  *   when it is destroyed or there is insertion overflow
  * @return a newly allocated PriorityQueue
  */
-extern PriorityQueue *pq_create(int capa,
+extern PriorityQueue *pq_new(int capa,
                                 bool (*less_than)(void *p1, void *p2),
                                 void (*free_elem)(void *elem));
 

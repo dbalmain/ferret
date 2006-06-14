@@ -1,4 +1,10 @@
 #include "test.h"
+#include "except.h"
+
+static void raise_eof()
+{
+    RAISE(EOF_ERROR, "Error, end of file");
+}
 
 /**
  * Test the basic test functions
@@ -25,8 +31,13 @@ static void test_asserts(tst_case *tc, void *data)
     Atrue(1);
     Atrue(!0);
     Assert(1 == 1, "%d != %d", 1, 1);
+    Araise(EOF_ERROR, &raise_eof, NULL);
 }
 
+static void raise_nothing(void *nothing)
+{
+    (void)nothing;
+}
 /**
  * Test test failures. This method isn't called because we want 100% tests
  * passing but if you want to check the tests work in case of failure, run
@@ -55,6 +66,8 @@ static void test_failures(tst_case *tc, void *data)
     Assert(1 == 2, "%d != %d", 1, 2);
     Atrue(0);
     free(p);
+    Araise(EXCEPTION, &raise_eof, NULL);
+    Araise(EXCEPTION, &raise_nothing, NULL);
 }
 
 tst_suite *ts_test(tst_suite *suite)

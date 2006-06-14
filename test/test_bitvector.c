@@ -11,7 +11,7 @@
 static void test_bv(tst_case *tc, void *data)
 {
     int i;
-    BitVector *bv = bv_create();
+    BitVector *bv = bv_new();
     (void)data; /* suppress unused argument warning */
 
     Aiequal(0, bv->size);
@@ -82,7 +82,7 @@ static void test_bv(tst_case *tc, void *data)
 static void test_bv_scan(tst_case *tc, void *data)
 {
     int i;
-    BitVector *bv = bv_create();
+    BitVector *bv = bv_new();
     (void)data; /* suppress unused argument warning */
 
     for (i = 6; i <= 10; i++) {
@@ -107,7 +107,7 @@ static void test_bv_scan(tst_case *tc, void *data)
 static void test_bv_scan_stress(tst_case * tc, void *data)
 {
     int i;
-    BitVector *bv = bv_create_capa(BV_SCAN_SIZE);
+    BitVector *bv = bv_new_capa(BV_SCAN_SIZE);
     (void)data; /* suppress unused argument warning */
 
     /*

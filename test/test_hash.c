@@ -52,7 +52,7 @@ static f_u32 point_hash(const void *q)
     return p->x * p->y;
 }
 
-static Point *point_create(int x, int y)
+static Point *point_new(int x, int y)
 {
     Point *p = ALLOC(Point);
     p->x = x;
@@ -66,9 +66,9 @@ static Point *point_create(int x, int y)
  */
 static void test_hash_point(tst_case *tc, void *data)
 {
-    Point *p1 = point_create(1, 2);
-    Point *p2 = point_create(2, 1);
-    Point *p3 = point_create(1, 2);
+    Point *p1 = point_new(1, 2);
+    Point *p2 = point_new(2, 1);
+    Point *p3 = point_new(1, 2);
     HashTable *ht = h_new(&point_hash, &point_eq, NULL, &free);
     (void)data; /* suppress unused argument warning */
 

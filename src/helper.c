@@ -1,7 +1,7 @@
 #include "helper.h"
 
 inline int hlp_string_diff(register const char *const s1,
-                                   register const char *const s2)
+                           register const char *const s2)
 {
     register int i = 0;
     while (s1[i] && (s1[i] == s2[i])) {
@@ -12,20 +12,14 @@ inline int hlp_string_diff(register const char *const s1,
 
 f_u32 float2int(float f)
 {
-    union {
-        f_u32 i;
-        float f;
-    } tmp;
+    union { f_u32 i; float f; } tmp;
     tmp.f = f;
     return POSH_LittleU32(tmp.i);
 }
 
 float int2float(f_u32 i32)
 {
-    union {
-        f_u32 i;
-        float f;
-    } tmp;
+    union { f_u32 i; float f; } tmp;
     tmp.i = POSH_LittleU32(i32);
     return tmp.f;
 }

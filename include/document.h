@@ -22,7 +22,7 @@ typedef struct DocField
     bool destroy_data : 1;
 } DocField;
 
-extern DocField *df_create(const char *name);
+extern DocField *df_new(const char *name);
 extern DocField *df_add_data(DocField *df, char *data);
 extern DocField *df_add_data_len(DocField *df, char *data, int len);
 extern void df_destroy(DocField *df);
@@ -44,7 +44,7 @@ typedef struct Document
     float boost;
 } Document;
 
-extern Document *doc_create();
+extern Document *doc_new();
 extern DocField *doc_add_field(Document *doc, DocField *df);
 extern DocField *doc_get_field(Document *doc, const char *fname);
 extern char *doc_to_s(Document *doc);

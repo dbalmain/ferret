@@ -17,7 +17,7 @@ static HashSet *hs_alloc(void (*free_elem) (void *p))
     return hs;
 }
 
-HashSet *hs_create(unsigned int (*hash) (const void *p),
+HashSet *hs_new(unsigned int (*hash) (const void *p),
                    int (*eq) (const void *p1, const void *p2),
                    void (*free_elem) (void *p))
 {
@@ -26,7 +26,7 @@ HashSet *hs_create(unsigned int (*hash) (const void *p),
     return hs;
 }
 
-HashSet *hs_str_create(void (*free_elem) (void *p))
+HashSet *hs_str_new(void (*free_elem) (void *p))
 {
     HashSet *hs = hs_alloc(free_elem);
     hs->ht = h_new_str((free_ft) NULL, &free);

@@ -158,7 +158,7 @@ char *epstrdup(const char *fmt, int len, ...)
 /* estrdup: duplicate a string, report if error */
 char *estrdup(const char *s)
 {
-    char *t = (char *) malloc(strlen(s) + 1);
+    char *t = (char *)malloc(strlen(s) + 1);
 
     if (t == NULL) {
         RAISE(MEM_ERROR, "failed to allocate %d bytes", strlen(s) + 1);

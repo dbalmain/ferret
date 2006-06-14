@@ -37,7 +37,7 @@ static int tst_si_eql(int line_num,
 static void test_si(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
-    SegmentInfo *si = si_create(estrdup("_1"), 10, store);
+    SegmentInfo *si = si_new(estrdup("_1"), 10, store);
     Asi_has_vals(si, "_1", 10, store);
     store = open_fs_store("./test/testdir/store");
     si->name[1] = '2';
@@ -67,7 +67,7 @@ static void test_si(tst_case *tc, void *data)
 void test_sis_add_del(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
-    SegmentInfos *sis = sis_create();
+    SegmentInfos *sis = sis_new();
     SegmentInfo *seg0 = sis_new_segment(sis, 123, store);
     SegmentInfo *seg1 = sis_new_segment(sis,  98, store);
     SegmentInfo *seg2 = sis_new_segment(sis,   3, store);
@@ -99,11 +99,11 @@ void test_sis_rw(tst_case *tc, void *data)
 {
     f_u64 version;
     Store *store = (Store *)data;
-    SegmentInfos *sis = sis_create();
+    SegmentInfos *sis = sis_new();
     SegmentInfo *seg0 = sis_new_segment(sis, 51, store);
     SegmentInfo *seg1 = sis_new_segment(sis, 213, store);
     SegmentInfo *seg2 = sis_new_segment(sis, 23, store);
-    SegmentInfo *seg3 = si_create(estrdup("_3"), 9, store);
+    SegmentInfo *seg3 = si_new(estrdup("_3"), 9, store);
     SegmentInfos *sis2, *sis3;
 
     Aiequal(0, sis_read_current_version(store));

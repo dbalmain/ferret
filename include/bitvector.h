@@ -29,7 +29,7 @@ typedef struct BitVector
  *
  * @return BitVector with a capacity of +BV_INIT_CAPA+.
  */
-extern BitVector *bv_create();
+extern BitVector *bv_new();
 
 /**
  * Create a new BitVector with a capacity of +capa+. Note that the BitVector
@@ -38,7 +38,7 @@ extern BitVector *bv_create();
  * @param capa the initial capacity of the BitVector
  * @return BitVector with a capacity of +capa+.
  */
-extern BitVector *bv_create_capa(int capa);
+extern BitVector *bv_new_capa(int capa);
 
 /**
  * Destroy a BitVector, freeing all memory allocated to that BitVector
@@ -66,7 +66,7 @@ extern void bv_set(BitVector * bv, int index);
  *
  * So this is ok;
  * <pre>
- *   BitVector *bv = bv_create_capa(1000);
+ *   BitVector *bv = bv_new_capa(1000);
  *   bv_set_fast(bv, 900);
  *   bv_set_fast(bv, 920);
  *   bv_set_fast(bv, 999);
@@ -74,7 +74,7 @@ extern void bv_set(BitVector * bv, int index);
  *
  * While these are not ok;
  * <pre>
- *   BitVector *bv = bv_create_capa(90);
+ *   BitVector *bv = bv_new_capa(90);
  *   bv_set_fast(bv, 80);
  *   bv_set_fast(bv, 79); // <= Bad: Out of Order
  *   bv_set_fast(bv, 80); // <= Bad: Already set

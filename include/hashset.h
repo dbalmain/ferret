@@ -36,19 +36,19 @@ typedef struct HashSet
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_create(unsigned int (*hash) (const void *p),
+extern HashSet *hs_new(unsigned int (*hash) (const void *p),
                           int (*eq) (const void *p1, const void *p2),
                           void (*free_elem) (void *p));
 
 /**
  * Create a new HashSet specifically for strings. This will create a HashSet
- * as if you used hs_create with the standard string hash and eq functions.
+ * as if you used hs_new with the standard string hash and eq functions.
  *
  * @param free_elem function used to free elements as added to the HashSet
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_str_create(void (*free_elem) (void *p));
+extern HashSet *hs_str_new(void (*free_elem) (void *p));
 
 /**
  * Free the memory allocated by the HashSet, but don't free the elements added

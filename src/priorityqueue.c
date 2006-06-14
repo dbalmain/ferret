@@ -1,6 +1,6 @@
 #include "priorityqueue.h"
 
-PriorityQueue *pq_create(int capa,
+PriorityQueue *pq_new(int capa,
                          bool (*less_than)(void *p1, void *p2),
                          void (*free_elem)(void *elem))
 {

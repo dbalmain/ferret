@@ -8,7 +8,7 @@
 static void test_hs(tst_case *tc, void *data)
 {
     char *two = estrdup("two");
-    HashSet *hs = hs_str_create(&free);
+    HashSet *hs = hs_str_new(&free);
     (void)data; /* suppress unused argument warning */
 
     Atrue(HASH_KEY_EQUAL);
@@ -58,8 +58,8 @@ static void test_hs(tst_case *tc, void *data)
  */
 static void test_hs_merge(tst_case *tc, void *data)
 {
-    HashSet *hs1 = hs_str_create(&free);
-    HashSet *hs2 = hs_str_create(&free);
+    HashSet *hs1 = hs_str_new(&free);
+    HashSet *hs2 = hs_str_new(&free);
     (void)data; /* suppress unused argument warning */
 
     hs_add(hs1, estrdup("one"));
@@ -97,8 +97,8 @@ static void hs_free_mock(void *p)
 static void test_hs_free(tst_case *tc, void *data)
 {
     char str1[10], str2[10], str3[10], str4[10], str5[10];
-    HashSet *hs1 = hs_str_create(&hs_free_mock);
-    HashSet *hs2 = hs_str_create(&hs_free_mock);
+    HashSet *hs1 = hs_str_new(&hs_free_mock);
+    HashSet *hs2 = hs_str_new(&hs_free_mock);
     (void)data; /* suppress unused argument warning */
 
     strcpy(str1, "one");
@@ -158,7 +158,7 @@ static void stress_hs(tst_case *tc, void *data)
 {
     int i;
     char buf[100];
-    HashSet *hs = hs_str_create(&free);
+    HashSet *hs = hs_str_new(&free);
     (void)data; /* suppress unused argument warning */
 
     for (i = 0; i < HS_STRESS_NUM; i++) {

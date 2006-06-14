@@ -12,7 +12,7 @@
  *
  ****************************************************************************/
 
-Token *tk_create()
+Token *tk_new()
 {
     return ALLOC(Token);
 }
@@ -104,10 +104,10 @@ void ts_reset(TokenStream *ts, char *text)
     ts->t = ts->text = text;
 }
 
-TokenStream *ts_create()
+TokenStream *ts_new()
 {
     TokenStream *ts = ALLOC_AND_ZERO_N(TokenStream, 1);
-    ts->token = tk_create();
+    ts->token = tk_new();
     ts->destroy = &ts_standard_destroy;
     ts->reset = &ts_reset;
     ts->ref_cnt = 1;
@@ -132,10 +132,10 @@ TokenStream *ts_clone(TokenStream *orig_ts)
 
 /* * Multi-byte TokenStream * */
 static char *const ENC_ERR_MSG = "Error decoding input string. "
-    "Check that you have the locale set correctly";
+"Check that you have the locale set correctly";
 #define MB_NEXT_CHAR \
-  if ((i = (int)mbrtowc(&wchr, t, MB_CUR_MAX, (mbstate_t *)ts->data)) < 0)\
-    RAISE(IO_ERROR, ENC_ERR_MSG)
+    if ((i = (int)mbrtowc(&wchr, t, MB_CUR_MAX, (mbstate_t *)ts->data)) < 0)\
+RAISE(IO_ERROR, ENC_ERR_MSG)
 
 inline Token *w_tk_set(Token *tk, wchar_t *text, int start, int end,
                        int pos_inc)
@@ -166,11 +166,11 @@ void mb_ts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
     memcpy(new_ts->data, orig_ts->data, sizeof(mbstate_t));
 }
 
-TokenStream *mb_ts_create()
+TokenStream *mb_ts_new()
 {
     TokenStream *ts = ALLOC_AND_ZERO_N(TokenStream, 1);
     ts->data = ALLOC(mbstate_t);
-    ts->token = tk_create();
+    ts->token = tk_new();
     ts->destroy = &mb_ts_standard_destroy;
     ts->reset = &mb_ts_reset;
     ts->clone_i = &mb_ts_clone_i;
@@ -205,10 +205,10 @@ TokenStream *a_standard_get_ts(Analyzer *a, char *field, char *text)
     return a->current_ts;
 }
 
-Analyzer *analyzer_create(void *data, TokenStream *ts,
-                          void (*destroy) (Analyzer *a),
-                          TokenStream *(*get_ts) (Analyzer *a, char *field,
-                                                   char *text))
+Analyzer *analyzer_new(void *data, TokenStream *ts,
+                       void (*destroy) (Analyzer *a),
+                       TokenStream *(*get_ts) (Analyzer *a, char *field,
+                                               char *text))
 {
     Analyzer *a = ALLOC(Analyzer);
     a->data = data;
@@ -248,9 +248,9 @@ Token *wst_next(TokenStream *ts)
     return ts->token;
 }
 
-TokenStream *whitespace_tokenizer_create()
+TokenStream *whitespace_tokenizer_new()
 {
-    TokenStream *ts = ts_create();
+    TokenStream *ts = ts_new();
     ts->next = &wst_next;
     return ts;
 }
@@ -324,9 +324,9 @@ Token *mb_wst_next_lc(TokenStream *ts)
     return ts->token;
 }
 
-TokenStream *mb_whitespace_tokenizer_create(bool lowercase)
+TokenStream *mb_whitespace_tokenizer_new(bool lowercase)
 {
-    TokenStream *ts = mb_ts_create();
+    TokenStream *ts = mb_ts_new();
     ts->next = lowercase ? &mb_wst_next_lc : &mb_wst_next;
     return ts;
 }
@@ -334,22 +334,22 @@ TokenStream *mb_whitespace_tokenizer_create(bool lowercase)
 /*
  * WhitespaceAnalyzers
  */
-Analyzer *whitespace_analyzer_create(bool lowercase)
+Analyzer *whitespace_analyzer_new(bool lowercase)
 {
     TokenStream *ts;
     if (lowercase) {
-        ts = lowercase_filter_create(whitespace_tokenizer_create());
+        ts = lowercase_filter_new(whitespace_tokenizer_new());
     }
     else {
-        ts = whitespace_tokenizer_create();
+        ts = whitespace_tokenizer_new();
     }
-    return analyzer_create(NULL, ts, NULL, NULL);
+    return analyzer_new(NULL, ts, NULL, NULL);
 }
 
-Analyzer *mb_whitespace_analyzer_create(bool lowercase)
+Analyzer *mb_whitespace_analyzer_new(bool lowercase)
 {
-    return analyzer_create(NULL, mb_whitespace_tokenizer_create(lowercase),
-                           NULL, NULL);
+    return analyzer_new(NULL, mb_whitespace_tokenizer_new(lowercase),
+                        NULL, NULL);
 }
 
 /****************************************************************************
@@ -381,9 +381,9 @@ Token *lt_next(TokenStream *ts)
     return ts->token;
 }
 
-TokenStream *letter_tokenizer_create()
+TokenStream *letter_tokenizer_new()
 {
-    TokenStream *ts = ts_create();
+    TokenStream *ts = ts_new();
     ts->next = &lt_next;
     return ts;
 }
@@ -457,9 +457,9 @@ Token *mb_lt_next_lc(TokenStream *ts)
     return ts->token;
 }
 
-TokenStream *mb_letter_tokenizer_create(bool lowercase)
+TokenStream *mb_letter_tokenizer_new(bool lowercase)
 {
-    TokenStream *ts = mb_ts_create();
+    TokenStream *ts = mb_ts_new();
     ts->next = lowercase ? &mb_lt_next_lc : &mb_lt_next;
     return ts;
 }
@@ -467,22 +467,22 @@ TokenStream *mb_letter_tokenizer_create(bool lowercase)
 /*
  * LetterAnalyzers
  */
-Analyzer *letter_analyzer_create(bool lowercase)
+Analyzer *letter_analyzer_new(bool lowercase)
 {
     TokenStream *ts;
     if (lowercase) {
-        ts = lowercase_filter_create(letter_tokenizer_create());
+        ts = lowercase_filter_new(letter_tokenizer_new());
     }
     else {
-        ts = letter_tokenizer_create();
+        ts = letter_tokenizer_new();
     }
-    return analyzer_create(NULL, ts, NULL, NULL);
+    return analyzer_new(NULL, ts, NULL, NULL);
 }
 
-Analyzer *mb_letter_analyzer_create(bool lowercase)
+Analyzer *mb_letter_analyzer_new(bool lowercase)
 {
-    return analyzer_create(NULL,
-                           mb_letter_tokenizer_create(lowercase), NULL, NULL);
+    return analyzer_new(NULL,
+                        mb_letter_tokenizer_new(lowercase), NULL, NULL);
 }
 
 /****************************************************************************
@@ -694,7 +694,7 @@ int std_get_url(char *input, char *token, int i)
 }
 
 /* Company names can contain '@' and '&' like AT&T and Excite@Home. Let's
- */
+*/
 int std_get_company_name(char *input)
 {
     int i = 0;
@@ -909,9 +909,9 @@ void std_ts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
     memcpy(new_ts->data, orig_ts->data, sizeof(StandardTokenizer));
 }
 
-TokenStream *standard_tokenizer_create()
+TokenStream *standard_tokenizer_new()
 {
-    TokenStream *ts = ts_create();
+    TokenStream *ts = ts_new();
 
     StandardTokenizer *std_tz = ALLOC(StandardTokenizer);
     std_tz->advance_to_start = &std_advance_to_start;
@@ -926,9 +926,9 @@ TokenStream *standard_tokenizer_create()
     return ts;
 }
 
-TokenStream *mb_standard_tokenizer_create()
+TokenStream *mb_standard_tokenizer_new()
 {
-    TokenStream *ts = ts_create();
+    TokenStream *ts = ts_new();
 
     StandardTokenizer *std_tz = ALLOC(StandardTokenizer);
     std_tz->advance_to_start = &mb_std_advance_to_start;
@@ -991,8 +991,8 @@ Token *sf_next(TokenStream *tf)
     return tk;
 }
 
-TokenStream *stop_filter_create_with_words_len(TokenStream *ts,
-                                               const char **words, int len)
+TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
+                                            const char **words, int len)
 {
     int i;
     char *w;
@@ -1014,8 +1014,8 @@ TokenStream *stop_filter_create_with_words_len(TokenStream *ts,
     return tf;
 }
 
-TokenStream *stop_filter_create_with_words(TokenStream *ts,
-                                           const char **words)
+TokenStream *stop_filter_new_with_words(TokenStream *ts,
+                                        const char **words)
 {
     char *w;
     HashTable *wordtable = h_new_str(&free, (free_ft) NULL);
@@ -1036,9 +1036,9 @@ TokenStream *stop_filter_create_with_words(TokenStream *ts,
     return tf;
 }
 
-TokenStream *stop_filter_create(TokenStream *ts)
+TokenStream *stop_filter_new(TokenStream *ts)
 {
-    return stop_filter_create_with_words(ts, FULL_ENGLISH_STOP_WORDS);
+    return stop_filter_new_with_words(ts, FULL_ENGLISH_STOP_WORDS);
 }
 
 Token *mb_lcf_next(TokenStream *ts)
@@ -1060,7 +1060,7 @@ Token *mb_lcf_next(TokenStream *ts)
     return tk;
 }
 
-TokenStream *mb_lowercase_filter_create(TokenStream *ts)
+TokenStream *mb_lowercase_filter_new(TokenStream *ts)
 {
     TokenStream *tf = ALLOC(TokenStream);
     tf->token = NULL;
@@ -1086,7 +1086,7 @@ Token *lcf_next(TokenStream *ts)
     return tk;
 }
 
-TokenStream *lowercase_filter_create(TokenStream *ts)
+TokenStream *lowercase_filter_new(TokenStream *ts)
 {
     TokenStream *tf = ALLOC(TokenStream);
     tf->token = NULL;
@@ -1148,8 +1148,8 @@ void stemf_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
     new_ts->data = stemf;
 }
 
-TokenStream *stem_filter_create(TokenStream *ts, const char *algorithm,
-                                const char *charenc)
+TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
+                             const char *charenc)
 {
     TokenStream *tf = ALLOC(TokenStream);
     StemFilter *stemf = ALLOC(StemFilter);
@@ -1168,80 +1168,80 @@ TokenStream *stem_filter_create(TokenStream *ts, const char *algorithm,
     return tf;
 }
 
-Analyzer *standard_analyzer_create_with_words_len(const char **words, int len,
-                                                  bool lowercase)
+Analyzer *standard_analyzer_new_with_words_len(const char **words, int len,
+                                               bool lowercase)
 {
     TokenStream *ts;
     if (lowercase) {
-        ts = stop_filter_create_with_words_len(lowercase_filter_create
-                                               (standard_tokenizer_create()),
-                                               words, len);
+        ts = stop_filter_new_with_words_len(lowercase_filter_new
+                                            (standard_tokenizer_new()),
+                                            words, len);
     }
     else {
-        ts = stop_filter_create_with_words_len(standard_tokenizer_create(),
-                                               words, len);
+        ts = stop_filter_new_with_words_len(standard_tokenizer_new(),
+                                            words, len);
     }
-    return analyzer_create(NULL, ts, NULL, NULL);
+    return analyzer_new(NULL, ts, NULL, NULL);
 }
 
-Analyzer *standard_analyzer_create_with_words(const char **words,
+Analyzer *standard_analyzer_new_with_words(const char **words,
+                                           bool lowercase)
+{
+    TokenStream *ts;
+    if (lowercase) {
+        ts = stop_filter_new_with_words(lowercase_filter_new
+                                        (standard_tokenizer_new()),
+                                        words);
+    }
+    else {
+        ts = stop_filter_new_with_words(standard_tokenizer_new(),
+                                        words);
+    }
+    return analyzer_new(NULL, ts, NULL, NULL);
+}
+
+Analyzer *mb_standard_analyzer_new_with_words_len(const char **words,
+                                                  int len, bool lowercase)
+{
+    TokenStream *ts;
+    if (lowercase) {
+        ts = stop_filter_new_with_words_len(mb_lowercase_filter_new
+                                            (mb_standard_tokenizer_new
+                                             ()), words, len);
+    }
+    else {
+        ts = stop_filter_new_with_words_len(mb_standard_tokenizer_new(),
+                                            words, len);
+    }
+    return analyzer_new(NULL, ts, NULL, NULL);
+}
+
+Analyzer *mb_standard_analyzer_new_with_words(const char **words,
                                               bool lowercase)
 {
     TokenStream *ts;
     if (lowercase) {
-        ts = stop_filter_create_with_words(lowercase_filter_create
-                                           (standard_tokenizer_create()),
-                                           words);
+        ts = stop_filter_new_with_words(mb_lowercase_filter_new
+                                        (mb_standard_tokenizer_new()),
+                                        words);
     }
     else {
-        ts = stop_filter_create_with_words(standard_tokenizer_create(),
-                                           words);
+        ts = stop_filter_new_with_words(mb_standard_tokenizer_new(),
+                                        words);
     }
-    return analyzer_create(NULL, ts, NULL, NULL);
+    return analyzer_new(NULL, ts, NULL, NULL);
 }
 
-Analyzer *mb_standard_analyzer_create_with_words_len(const char **words,
-                                                     int len, bool lowercase)
+Analyzer *standard_analyzer_new(bool lowercase)
 {
-    TokenStream *ts;
-    if (lowercase) {
-        ts = stop_filter_create_with_words_len(mb_lowercase_filter_create
-                                               (mb_standard_tokenizer_create
-                                                ()), words, len);
-    }
-    else {
-        ts = stop_filter_create_with_words_len(mb_standard_tokenizer_create(),
-                                               words, len);
-    }
-    return analyzer_create(NULL, ts, NULL, NULL);
+    return standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
+                                            lowercase);
 }
 
-Analyzer *mb_standard_analyzer_create_with_words(const char **words,
-                                                 bool lowercase)
+Analyzer *mb_standard_analyzer_new(bool lowercase)
 {
-    TokenStream *ts;
-    if (lowercase) {
-        ts = stop_filter_create_with_words(mb_lowercase_filter_create
-                                           (mb_standard_tokenizer_create()),
-                                           words);
-    }
-    else {
-        ts = stop_filter_create_with_words(mb_standard_tokenizer_create(),
-                                           words);
-    }
-    return analyzer_create(NULL, ts, NULL, NULL);
-}
-
-Analyzer *standard_analyzer_create(bool lowercase)
-{
-    return standard_analyzer_create_with_words(FULL_ENGLISH_STOP_WORDS,
+    return mb_standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
                                                lowercase);
-}
-
-Analyzer *mb_standard_analyzer_create(bool lowercase)
-{
-    return mb_standard_analyzer_create_with_words(FULL_ENGLISH_STOP_WORDS,
-                                                  lowercase);
 }
 
 /****************************************************************************
@@ -1264,8 +1264,9 @@ TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
 {
     PerFieldAnalyzer *pfa = (PerFieldAnalyzer *) self->data;
     Analyzer *a = h_get(pfa->dict, field);
-    if (a == NULL)
+    if (a == NULL) {
         a = pfa->def;
+    }
     return a_get_ts(a, field, text);
 }
 
@@ -1281,19 +1282,19 @@ void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer)
     h_set(pfa->dict, estrdup(field), analyzer);
 }
 
-Analyzer *per_field_analyzer_create(Analyzer *def)
+Analyzer *per_field_analyzer_new(Analyzer *def)
 {
     PerFieldAnalyzer *pfa = ALLOC(PerFieldAnalyzer);
     pfa->def = def;
     pfa->dict = h_new_str(&free, &pfa_sub_a_destroy);
-    return analyzer_create(pfa, NULL, &pfa_destroy, &pfa_get_ts);
+    return analyzer_new(pfa, NULL, &pfa_destroy, &pfa_get_ts);
 }
 
 #ifdef ALONE
 int main(int argc, char **argv)
 {
     char buf[10000];
-    Analyzer *a = standard_analyzer_create(true);
+    Analyzer *a = standard_analyzer_new(true);
     TokenStream *ts;
     Token *tk;
     while (fgets(buf, 9999, stdin) != NULL) {

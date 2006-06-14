@@ -10,7 +10,6 @@
  *
  ****************************************************************************/
 
-#define MAX_WORD_SIZE 255
 typedef struct Token
 {
     char text[MAX_WORD_SIZE];
@@ -19,7 +18,7 @@ typedef struct Token
     int pos_inc;
 } Token;
 
-Token *tk_create();
+Token *tk_new();
 void tk_destroy(void *p);
 Token *tk_set(Token *tk, char *text, int tlen, int start, int end, int pos_inc);
 Token *tk_set_no_len(Token * tk, char *text, int start, int end, int pos_inc);
@@ -52,17 +51,17 @@ struct TokenStream
 
 void ts_deref(void *p);
 
-TokenStream *whitespace_tokenizer_create();
-TokenStream *mb_whitespace_tokenizer_create(bool lowercase);
+TokenStream *whitespace_tokenizer_new();
+TokenStream *mb_whitespace_tokenizer_new(bool lowercase);
 
-TokenStream *letter_tokenizer_create();
-TokenStream *mb_letter_tokenizer_create(bool lowercase);
+TokenStream *letter_tokenizer_new();
+TokenStream *mb_letter_tokenizer_new(bool lowercase);
 
-TokenStream *standard_tokenizer_create();
-TokenStream *mb_standard_tokenizer_create();
+TokenStream *standard_tokenizer_new();
+TokenStream *mb_standard_tokenizer_new();
 
-TokenStream *lowercase_filter_create(TokenStream * ts);
-TokenStream *mb_lowercase_filter_create(TokenStream * ts);
+TokenStream *lowercase_filter_new(TokenStream * ts);
+TokenStream *mb_lowercase_filter_new(TokenStream * ts);
 
 extern const char *ENGLISH_STOP_WORDS[];
 extern const char *FULL_ENGLISH_STOP_WORDS[];
@@ -79,13 +78,13 @@ extern const char *FULL_DANISH_STOP_WORDS[];
 extern const char *FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FULL_FINNISH_STOP_WORDS[];
 
-TokenStream *stop_filter_create_with_words_len(TokenStream * ts,
-                                               const char **words, int len);
-TokenStream *stop_filter_create_with_words(TokenStream * ts,
-                                           const char **words);
-TokenStream *stop_filter_create(TokenStream * ts);
-TokenStream *stem_filter_create(TokenStream * ts, const char *algorithm,
-                                const char *charenc);
+TokenStream *stop_filter_new_with_words_len(TokenStream * ts,
+                                            const char **words, int len);
+TokenStream *stop_filter_new_with_words(TokenStream * ts,
+                                        const char **words);
+TokenStream *stop_filter_new(TokenStream * ts);
+TokenStream *stem_filter_new(TokenStream * ts, const char *algorithm,
+                             const char *charenc);
 TokenStream *ts_clone(TokenStream * orig_ts);
 
 /****************************************************************************
@@ -108,28 +107,29 @@ void a_deref(void *p);
 #define a_get_ts(ma, field, text) ma->get_ts(ma, field, text)
 #define a_get_new_ts(ma, field, text) ts_clone(ma->get_ts(ma, field, text))
 
-Analyzer *analyzer_create(void *data, TokenStream * ts,
-                          void (*destroy) (Analyzer *),
-                          TokenStream * (*get_ts) (Analyzer * a, char *field,
-                                                   char *text));
+Analyzer *analyzer_new(void *data, TokenStream * ts,
+                       void (*destroy) (Analyzer *),
+                       TokenStream * (*get_ts) (Analyzer * a,
+                                                char *field,
+                                                char *text));
 void a_standard_destroy(Analyzer * a);
-Analyzer *whitespace_analyzer_create(bool lowercase);
-Analyzer *mb_whitespace_analyzer_create(bool lowercase);
+Analyzer *whitespace_analyzer_new(bool lowercase);
+Analyzer *mb_whitespace_analyzer_new(bool lowercase);
 
-Analyzer *letter_analyzer_create(bool lowercase);
-Analyzer *mb_letter_analyzer_create(bool lowercase);
+Analyzer *letter_analyzer_new(bool lowercase);
+Analyzer *mb_letter_analyzer_new(bool lowercase);
 
-Analyzer *standard_analyzer_create(bool lowercase);
-Analyzer *mb_standard_analyzer_create(bool lowercase);
+Analyzer *standard_analyzer_new(bool lowercase);
+Analyzer *mb_standard_analyzer_new(bool lowercase);
 
-Analyzer *standard_analyzer_create_with_words(const char **words,
+Analyzer *standard_analyzer_new_with_words(const char **words,
+                                           bool lowercase);
+Analyzer *standard_analyzer_new_with_words_len(const char **words, int len,
+                                               bool lowercase);
+Analyzer *mb_standard_analyzer_new_with_words(const char **words,
                                               bool lowercase);
-Analyzer *standard_analyzer_create_with_words_len(const char **words, int len,
-                                                  bool lowercase);
-Analyzer *mb_standard_analyzer_create_with_words(const char **words,
-                                                 bool lowercase);
-Analyzer *mb_standard_analyzer_create_with_words_len(const char **words,
-                                                     int len, bool lowercase);
+Analyzer *mb_standard_analyzer_new_with_words_len(const char **words,
+                                                  int len, bool lowercase);
 
 typedef struct PerFieldAnalyzer
 {
@@ -137,7 +137,7 @@ typedef struct PerFieldAnalyzer
     Analyzer *def;
 } PerFieldAnalyzer;
 
-Analyzer *per_field_analyzer_create(Analyzer * def);
+Analyzer *per_field_analyzer_new(Analyzer * def);
 void pfa_add_field(Analyzer * self, char *field, Analyzer * analyzer);
 
 #endif

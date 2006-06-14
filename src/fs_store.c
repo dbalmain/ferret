@@ -26,10 +26,10 @@
 # include <dirent.h>
 #endif
 
-extern Store *store_create();
+extern Store *store_new();
 extern void store_destroy(Store *store);
-extern OutStream *os_create();
-extern InStream *is_create();
+extern OutStream *os_new();
+extern InStream *is_new();
 extern int file_is_lock(char *filename);
 
 /**
@@ -244,7 +244,7 @@ const struct OutStreamMethods FS_OUT_STREAM_METHODS = {
     fso_close_i
 };
 
-static OutStream *fs_create_output(Store *store, const char *filename)
+static OutStream *fs_new_output(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
     FILE *f = fopen(join_path(path, store->dir.path, filename), "wb");
@@ -254,7 +254,7 @@ static OutStream *fs_create_output(Store *store, const char *filename)
               filename, strerror(errno));
     }
 
-    os = os_create();
+    os = os_new();
     os->file = f;
     os->m = &FS_OUT_STREAM_METHODS;
     return os;
@@ -328,7 +328,7 @@ static InStream *fs_open_input(Store *store, const char *filename)
         RAISE(IO_ERROR, "couldn't open %s to read: <%s>", 
               path, strerror(errno));
     }
-    is = is_create();
+    is = is_new();
     is->file.fd = fd;
     is->d.path = estrdup(path);
     is->is_clone = false;
@@ -421,9 +421,9 @@ static void fs_close_i(Store *store)
     mutex_unlock(&stores_mutex);
 }
 
-static Store *fs_store_create(const char *pathname)
+static Store *fs_store_new(const char *pathname)
 {
-    Store *new_store = store_create();
+    Store *new_store = store_new();
 
     new_store->dir.path      = estrdup(pathname);
     new_store->touch         = &fs_touch;
@@ -437,7 +437,7 @@ static Store *fs_store_create(const char *pathname)
     new_store->clear_locks   = &fs_clear_locks;
     new_store->length        = &fs_length;
     new_store->each          = &fs_each;
-    new_store->create_output = &fs_create_output;
+    new_store->new_output    = &fs_new_output;
     new_store->open_input    = &fs_open_input;
     new_store->open_lock     = &fs_open_lock;
     new_store->close_lock    = &fs_close_lock;
@@ -456,7 +456,7 @@ Store *open_fs_store(const char *pathname)
         mutex_unlock(&store->mutex);
     }
     else {
-        store = fs_store_create(pathname);
+        store = fs_store_new(pathname);
         h_set(&stores, store->dir.path, store);
     }
     mutex_unlock(&stores_mutex);

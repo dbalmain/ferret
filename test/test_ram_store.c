@@ -17,15 +17,17 @@ void test_write_to(tst_case * tc, void *data)
     InStream *istream;
     (void)data;/* suppress unused parameter warning */
 
+    fs_store->clear(fs_store);
+
     for (i = 0; i < 1000; i++) {
         strcat(buf, str);
     }
 
-    ostream = ram_store->create_output(ram_store, "rw_funny_string.test");
+    ostream = ram_store->new_output(ram_store, "rw_funny_string.test");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
 
-    fs_ostream = fs_store->create_output(fs_store, "rw_funny_string.test");
+    fs_ostream = fs_store->new_output(fs_store, "rw_funny_string.test");
     ramo_write_to(ostream, fs_ostream);
 
     os_close(ostream);

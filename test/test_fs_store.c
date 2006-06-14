@@ -12,6 +12,7 @@ tst_suite *ts_fs_store(tst_suite * suite)
 #else
     Store *store = open_fs_store("./test/testdir/store");
 #endif
+    store->clear(store);
 
     suite = ADD_SUITE(suite);
 

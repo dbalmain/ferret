@@ -1,6 +1,7 @@
 #include "test.h"
 #include "store.h"
 #include <string.h>
+#include <limits.h>
 
 #define TEST_LOCK_NAME "test"
 
@@ -118,7 +119,7 @@ static void test_rw_bytes(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
     uchar bytes[6] = { 0x34, 0x87, 0xF9, 0xEA, 0x00, 0xFF };
-    OutStream *ostream = store->create_output(store, "rw_byte.test");
+    OutStream *ostream = store->new_output(store, "rw_byte.test");
     InStream *istream;
     Assert(store->exists(store, "rw_byte.test"), "File should now exist");
     for (i = 0; i < 6; i++) {
@@ -138,22 +139,22 @@ static void test_rw_bytes(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 32-bit integers
  */
-static void test_rw_ints(tst_case *tc, void *data)
+static void test_rw_i32(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    OutStream *ostream = store->create_output(store, "rw_int.test");
+    OutStream *ostream = store->new_output(store, "rw_int.test");
     InStream *istream;
     f_i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
 
     for (i = 0; i < 4; i++) {
-        os_write_int(ostream, (int)ints[i]);
+        os_write_i32(ostream, (int)ints[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_int.test");
     for (i = 0; i < 4; i++) {
-        Aiequal(ints[i], is_read_int(istream));
+        Aiequal(ints[i], is_read_i32(istream));
     }
 
     is_close(istream);
@@ -163,23 +164,23 @@ static void test_rw_ints(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 64-bit integers
  */
-static void test_rw_longs(tst_case *tc, void *data)
+static void test_rw_i64(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
     f_u64 longs[4] =
         { POSH_I64_MIN, POSH_I64_MAX, POSH_I64(-1), POSH_I64(0) };
-    OutStream *ostream = store->create_output(store, "rw_long.test");
+    OutStream *ostream = store->new_output(store, "rw_long.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
-        os_write_long(ostream, longs[i]);
+        os_write_i64(ostream, longs[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_long.test");
     for (i = 0; i < 4; i++) {
-        Aiequal(longs[i], is_read_long(istream));
+        Aiequal(longs[i], is_read_i64(istream));
     }
     is_close(istream);
     Aiequal(32, store->length(store, "rw_long.test"));
@@ -188,22 +189,22 @@ static void test_rw_longs(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 32-bit unsigned integers
  */
-static void test_rw_uints(tst_case *tc, void *data)
+static void test_rw_u32(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
     f_u32 uints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
-    OutStream *ostream = store->create_output(store, "rw_uint.test");
+    OutStream *ostream = store->new_output(store, "rw_uint.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
-        os_write_uint(ostream, uints[i]);
+        os_write_u32(ostream, uints[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_uint.test");
     for (i = 0; i < 4; i++) {
-        Aiequal(uints[i], is_read_uint(istream));
+        Aiequal(uints[i], is_read_u32(istream));
     }
     is_close(istream);
     Aiequal(16, store->length(store, "rw_uint.test"));
@@ -212,37 +213,37 @@ static void test_rw_uints(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 64-bit unsigned integers
  */
-static void test_rw_ulongs(tst_case *tc, void *data)
+static void test_rw_u64(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
     f_u64 ulongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
-    OutStream *ostream = store->create_output(store, "rw_ulong.test");
+    OutStream *ostream = store->new_output(store, "rw_ulong.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
-        os_write_ulong(ostream, ulongs[i]);
+        os_write_u64(ostream, ulongs[i]);
     }
     os_close(ostream);
 
     istream = store->open_input(store, "rw_ulong.test");
     for (i = 0; i < 4; i++) {
-        Aiequal(ulongs[i], is_read_ulong(istream));
+        Aiequal(ulongs[i], is_read_u64(istream));
     }
     is_close(istream);
     Aiequal(32, store->length(store, "rw_ulong.test"));
 }
 
 /**
- * Test reading and writing of variable size 32-bit integers
+ * Test reading and writing of variable size integers
  */
 static void test_rw_vints(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    f_u32 vints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
-    OutStream *ostream = store->create_output(store, "rw_vint.test");
+    unsigned int vints[4] = { UINT_MAX, 0, 10000, 1 };
+    OutStream *ostream = store->new_output(store, "rw_vint.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -255,7 +256,6 @@ static void test_rw_vints(tst_case *tc, void *data)
         Aiequal(vints[i], is_read_vint(istream));
     }
     is_close(istream);
-    Aiequal(10, store->length(store, "rw_vint.test"));
 }
 
 /**
@@ -265,9 +265,9 @@ static void test_rw_vlongs(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    f_u64 vlongs[4] =
-        { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
-    OutStream *ostream = store->create_output(store, "rw_vlong.test");
+    unsigned long vlongs[4] =
+        { ULONG_MAX, 0, 1000000, 1 };
+    OutStream *ostream = store->new_output(store, "rw_vlong.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -280,7 +280,6 @@ static void test_rw_vlongs(tst_case *tc, void *data)
         Aiequal(vlongs[i], is_read_vlong(istream));
     }
     is_close(istream);
-    Aiequal(19, store->length(store, "rw_vlong.test"));
 }
 
 /**
@@ -301,7 +300,7 @@ static void test_rw_strings(tst_case *tc, void *data)
         strcat(buf, str);
     }
 
-    ostream = store->create_output(store, "rw_string.test");
+    ostream = store->new_output(store, "rw_string.test");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
     os_close(ostream);
@@ -335,7 +334,7 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
         strcat(buf, str);
     }
 
-    ostream = store->create_output(store, "rw_funny_string.test");
+    ostream = store->new_output(store, "rw_funny_string.test");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
     os_close(ostream);
@@ -360,12 +359,12 @@ static void test_buffer_seek(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
 
-    OutStream *ostream = store->create_output(store, "rw_seek.test");
+    OutStream *ostream = store->new_output(store, "rw_seek.test");
     char text[60] = "This is another int test string !@#$%#$%&%$*%^&*()(_";
     InStream *istream;
 
     for (i = 0; i < 1000; i++) {
-        os_write_long(ostream, i);
+        os_write_i64(ostream, i);
         os_write_string(ostream, text);
     }
     os_seek(ostream, 987);
@@ -373,19 +372,19 @@ static void test_buffer_seek(tst_case *tc, void *data)
     os_write_vint(ostream, 555);
     os_seek(ostream, 56);
     Aiequal(56, os_pos(ostream));
-    os_write_vint(ostream, 1234567890);
+    os_write_vint(ostream, 12345);
     os_seek(ostream, 4000);
     Aiequal(4000, os_pos(ostream));
-    os_write_vlong(ostream, 9876543210);
+    os_write_vlong(ostream, 98763210);
     os_close(ostream);
 
     istream = store->open_input(store, "rw_seek.test");
     is_seek(istream, 56);
     Aiequal(56, is_pos(istream));
-    Aiequal(1234567890, is_read_vint(istream));
+    Aiequal(12345, is_read_vint(istream));
     is_seek(istream, 4000);
     Aiequal(4000, is_pos(istream));
-    Aiequal(9876543210, is_read_vlong(istream));
+    Aiequal(98763210, is_read_vlong(istream));
     is_seek(istream, 987);
     Aiequal(987, is_pos(istream));
     Aiequal(555, is_read_vint(istream));
@@ -399,11 +398,11 @@ static void test_is_clone(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    OutStream *ostream = store->create_output(store, "clone.test");
+    OutStream *ostream = store->new_output(store, "clone.test");
     InStream *istream, *alt_istream;
 
     for (i = 0; i < 10; i++) {
-        os_write_long(ostream, i);
+        os_write_i64(ostream, i);
     }
     os_close(ostream);
     istream = store->open_input(store, "clone.test");
@@ -411,12 +410,12 @@ static void test_is_clone(tst_case *tc, void *data)
     alt_istream = is_clone(istream);
     Aiequal(is_pos(istream), is_pos(alt_istream));
     for (i = 3; i < 10; i++) {
-        Aiequal(i, is_read_long(alt_istream));
+        Aiequal(i, is_read_i64(alt_istream));
     }
     Aiequal(80, is_pos(alt_istream));
     Aiequal(24, is_pos(istream));
     for (i = 3; i < 10; i++) {
-        Aiequal(i, is_read_long(istream));
+        Aiequal(i, is_read_i64(istream));
     }
     is_close(alt_istream);
     is_close(istream);
@@ -430,15 +429,15 @@ static void test_read_bytes(tst_case *tc, void *data)
 {
     char str[11] = "0000000000";
     Store *store = (Store *)data;
-    OutStream *ostream = store->create_output(store, "read_bytes.test");
+    OutStream *ostream = store->new_output(store, "read_bytes.test");
     InStream *istream;
 
     os_write_bytes(ostream, (uchar *)"how are you doing?", 18);
     os_close(ostream);
     istream = store->open_input(store, "read_bytes.test");
-    is_read_bytes(istream, (uchar *)str, 2, 4);
+    is_read_bytes(istream, (uchar *)(str + 2), 4);
     Asequal("00how 0000", str);
-    is_read_bytes(istream, (uchar *)str, 1, 8);
+    is_read_bytes(istream, (uchar *)(str + 1), 8);
     Asequal("0are you 0", str);
     is_close(istream);
 }
@@ -456,10 +455,10 @@ void create_test_store_suite(tst_suite *suite, Store *store)
     tst_run_test(suite, test_rename, store);
     tst_run_test(suite, test_each, store);
 	tst_run_test(suite, test_rw_bytes, store);
-    tst_run_test(suite, test_rw_ints, store);
-    tst_run_test(suite, test_rw_longs, store);
-    tst_run_test(suite, test_rw_uints, store);
-    tst_run_test(suite, test_rw_ulongs, store);
+    tst_run_test(suite, test_rw_i32, store);
+    tst_run_test(suite, test_rw_i64, store);
+    tst_run_test(suite, test_rw_u32, store);
+    tst_run_test(suite, test_rw_u64, store);
     tst_run_test(suite, test_rw_vints, store);
     tst_run_test(suite, test_rw_vlongs, store);
     tst_run_test(suite, test_rw_strings, store);

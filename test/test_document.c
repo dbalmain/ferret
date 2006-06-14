@@ -7,7 +7,7 @@ void test_df_standard(tst_case * tc, void *data)
     DocField *df;
     (void)data;
 
-    df = df_add_data(df_create("title"), estrdup("Life of Pi"));
+    df = df_add_data(df_new("title"), estrdup("Life of Pi"));
     Aiequal(1, df->size);
     Asequal("title", df->name);
     Asequal("Life of Pi", df->data[0]);
@@ -17,7 +17,7 @@ void test_df_standard(tst_case * tc, void *data)
     free(s);
     df_destroy(df);
 
-	df = df_add_data_len(df_create("title"), "new title", 9);
+	df = df_add_data_len(df_new("title"), "new title", 9);
     df->destroy_data = false;
     Aiequal(1, df->size);
     Asequal("title", df->name);
@@ -33,7 +33,7 @@ void test_df_multi_fields(tst_case * tc, void *data)
     DocField *df;
     (void)data;
 
-    df = df_add_data(df_create("title"), estrdup("Vernon God Little"));
+    df = df_add_data(df_new("title"), estrdup("Vernon God Little"));
     Aiequal(1, df->size);
     Asequal("title", df->name);
     Asequal("Vernon God Little", df->data[0]);
@@ -53,7 +53,7 @@ void test_df_multi_fields(tst_case * tc, void *data)
 
     df_destroy(df);
 
-    df = df_add_data(df_create("data"), estrdup("start"));
+    df = df_add_data(df_new("data"), estrdup("start"));
     Aiequal(1, df->size);
     for (i = 0; i < 1000; i++) {
         char buf[100];
@@ -71,10 +71,10 @@ void test_doc(tst_case * tc, void *data)
     DocField *df;
     (void)data;
 
-    doc = doc_create();
-    doc_add_field(doc, df_add_data(df_create("title"), estrdup("title")));
+    doc = doc_new();
+    doc_add_field(doc, df_add_data(df_new("title"), estrdup("title")));
     Aiequal(1, doc->size);
-    df = df_add_data(df_create("data"), "data1");
+    df = df_add_data(df_new("data"), "data1");
     df->destroy_data = false;
     df_add_data(df, "data2");
     df_add_data(df, "data3");
@@ -93,11 +93,11 @@ void test_doc(tst_case * tc, void *data)
     Afequal(1.0, doc->boost);
     doc_destroy(doc);
 
-    doc = doc_create();
+    doc = doc_new();
     for (i = 0; i < 1000; i++) {
         char buf[100];
         sprintf(buf, "<<%d>>", i);
-        df = df_add_data(df_create(buf), estrdup(buf));
+        df = df_add_data(df_new(buf), estrdup(buf));
         doc_add_field(doc, df);
         Aiequal(i + 1, doc->size);
     }
@@ -119,11 +119,11 @@ void test_double_field_exception(tst_case * tc, void *data)
     DocField *volatile df = NULL;
     (void)data;
 
-    doc = doc_create();
-    doc_add_field(doc, df_add_data(df_create("title"), estrdup("title")));
+    doc = doc_new();
+    doc_add_field(doc, df_add_data(df_new("title"), estrdup("title")));
 
     TRY
-        df = df_add_data_len(df_create("title"), "title", 5);
+        df = df_add_data_len(df_new("title"), "title", 5);
         df->destroy_data = false;
         doc_add_field(doc, df);
     case EXCEPTION:

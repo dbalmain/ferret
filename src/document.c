@@ -7,7 +7,7 @@
  *
  ****************************************************************************/
 
-DocField *df_create(const char *name)
+DocField *df_new(const char *name)
 {
     DocField *df = ALLOC(DocField);
     df->name = estrdup(name);
@@ -95,7 +95,7 @@ char *df_to_s(DocField *df)
  *
  ****************************************************************************/
 
-Document *doc_create()
+Document *doc_new()
 {
     Document *doc = ALLOC(Document);
     doc->field_dict = h_new_str(NULL, (free_ft)&df_destroy);

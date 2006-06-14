@@ -1,5 +1,6 @@
 #include <time.h>
 #include "test.h"
+#include "except.h"
 #include "all_tests.h"
 
 #define TST_STAT_SIZE 4
@@ -337,6 +338,46 @@ void tst_msg(const char *func, const char *fname, int line_num,
     }
 }
 
+bool tst_raise(int line_num, tst_case *tc, const int err_code,
+               void (*func)(void *args), void *args)
+{
+    volatile bool was_raised = false;
+    a_cnt++;
+    update_status();
+    if (tc->failed && !force) {
+        return true;
+    }
+
+    TRY
+        func(args);
+        break;
+    default:
+        if (err_code == xcontext.excode) {
+            was_raised = true;
+        }
+        else {
+            tc->failed = true;
+            tst_msg(tc->name, tc->suite->name, line_num,
+                "exception %d raised unexpectedly with msg;\n\"\"\"\n%s\n\"\"\"\n",
+                xcontext.excode, xcontext.msg);
+        }
+        HANDLED();
+    XENDTRY
+
+    if (!was_raised) {
+        tc->failed = true;
+        tst_msg(tc->name, tc->suite->name, line_num,
+            "exception %d was not raised as expected\n",
+            err_code);
+    }
+    if (tc->failed) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
 #define I64_PFX POSH_I64_PRINTF_PREFIX
 bool tst_int_equal(int line_num, tst_case *tc, const f_u64 expected,
                    const f_u64 actual)
@@ -636,7 +677,7 @@ bool tst_not_impl(int line_num, tst_case *tc, const char *message)
     return false;
 }
 
-#ifndef LUCY_HAS_VARARGS
+#ifndef FRT_HAS_VARARGS
 bool Assert(int condition, const char *fmt, ...)
 {
     if (condition) {

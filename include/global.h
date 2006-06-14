@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define MAX_WORD_SIZE 255
 #define MAX_FILE_PATH 1024
 
 typedef void (*free_ft) (void *key);
@@ -15,12 +16,16 @@ typedef void (*free_ft) (void *key);
 
 #define ALLOC_N(type,n) (type *)emalloc(sizeof(type)*(n))
 #define ALLOC(type) (type *)emalloc(sizeof(type))
-#define REALLOC_N(ptr, type, n) (ptr)=(type *)erealloc((ptr),sizeof(type)*(n))
+#define REALLOC_N(ptr, type, n)\
+    (ptr)=(type *)erealloc((ptr),sizeof(type)*(n))
 
 #define ZEROSET(ptr, type) memset(ptr, 0, sizeof(type))
 #define ZEROSET_N(ptr, type, n) memset(ptr, 0, sizeof(type)*(n))
-#define ALLOC_AND_ZERO(type) (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
-#define ALLOC_AND_ZERO_N(type,n) (type*)ZEROSET_N(emalloc(sizeof(type)*(n)), type, n)
+
+#define ALLOC_AND_ZERO(type)\
+    (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
+#define ALLOC_AND_ZERO_N(type,n)\
+    (type*)memset(emalloc(sizeof(type)*(n)), 0, (sizeof(type)*(n)))
 
 #define REF(a) (a)->ref_cnt++
 #define DEREF(a) (a)->ref_cnt--

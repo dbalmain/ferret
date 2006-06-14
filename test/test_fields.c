@@ -42,26 +42,26 @@ void field_prop_test(tst_case *tc,
  *
  ****************************************************************************/
 
-static void test_fi_create(tst_case *tc, void *data)
+static void test_fi_new(tst_case *tc, void *data)
 {
     FieldInfo *fi;
     (void)data; /* suppress unused argument warning */
 
-    fi = fi_create("name", STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fi = fi_new("name", STORE_NO, INDEX_NO, TERM_VECTOR_NO);
     do_field_prop_test(tc, fi, "name", 1.0, F, F, F, F, F, F, F, F);
     fi_destroy(fi);
-    fi = fi_create("name", STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    fi = fi_new("name", STORE_YES, INDEX_YES, TERM_VECTOR_YES);
     do_field_prop_test(tc, fi, "name", 1.0, T, F, T, T, F, T, F, F);
     fi_destroy(fi);
-    fi = fi_create("name", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fi = fi_new("name", STORE_COMPRESS, INDEX_UNTOKENIZED,
                    TERM_VECTOR_WITH_POSITIONS);
     do_field_prop_test(tc, fi, "name", 1.0, T, T, T, F, F, T, T, F);
     fi_destroy(fi);
-    fi = fi_create("name", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fi = fi_new("name", STORE_NO, INDEX_YES_OMIT_NORMS,
                    TERM_VECTOR_WITH_OFFSETS);
     do_field_prop_test(tc, fi, "name", 1.0, F, F, T, T, T, T, F, T);
     fi_destroy(fi);
-    fi = fi_create("name", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+    fi = fi_new("name", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                    TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     fi->boost = 1000.0;
     do_field_prop_test(tc, fi, "name", 1000.0, F, F, T, F, T, T, T, T);
@@ -80,20 +80,20 @@ static void test_fis_basic(tst_case *tc, void *data)
     FieldInfo *fi;
     (void)data; /* suppress unused argument warning */
 
-    fis = fis_create(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_create("FFFFFFFF", STORE_NO, INDEX_NO,
+    fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fis_add_field(fis, fi_new("FFFFFFFF", STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_create("TFTTFTFF", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new("TFTTFTFF", STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_create("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
                                  TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_create("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fis_add_field(fis, fi_new("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
                                  TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_create("FFTFTTTT", STORE_NO,
+    fis_add_field(fis, fi_new("FFTFTTTT", STORE_NO,
                                  INDEX_UNTOKENIZED_OMIT_NORMS,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
 
-    fi = fi_create("FFTFTTTT", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+    fi = fi_new("FFTFTTTT", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                    TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     Apnull(fis_add_field(fis, fi));
     fi_destroy(fi);
@@ -140,7 +140,7 @@ static void test_fis_with_default(tst_case *tc, void *data)
     FieldInfos *fis;
     (void)data; /* suppress unused argument warning */
 
-    fis = fis_create(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
                        F, F, F, F, F, F, F, F);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "dave"), "dave", 1.0,
@@ -153,21 +153,21 @@ static void test_fis_with_default(tst_case *tc, void *data)
     Apnull(fis_get_field(fis, "random"));
     fis_destroy(fis);
 
-    fis = fis_create(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
                        T, F, T, T, F, T, F, F);
     fis_destroy(fis);
-    fis = fis_create(STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fis = fis_new(STORE_COMPRESS, INDEX_UNTOKENIZED,
                      TERM_VECTOR_WITH_POSITIONS);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
                        T, T, T, F, F, T, T, F);
     fis_destroy(fis);
-    fis = fis_create(STORE_NO, INDEX_YES_OMIT_NORMS,
+    fis = fis_new(STORE_NO, INDEX_YES_OMIT_NORMS,
                      TERM_VECTOR_WITH_OFFSETS);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
                        F, F, T, T, T, T, F, T);
     fis_destroy(fis);
-    fis = fis_create(STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+    fis = fis_new(STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                      TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
                        F, F, T, F, T, T, T, T);
@@ -181,17 +181,17 @@ static void test_fis_rw(tst_case *tc, void *data)
     Store *store = open_ram_store();
     (void)data; /* suppress unused argument warning */
 
-    fis = fis_create(STORE_YES, INDEX_UNTOKENIZED_OMIT_NORMS, 
+    fis = fis_new(STORE_YES, INDEX_UNTOKENIZED_OMIT_NORMS, 
                      TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_create("FFFFFFFF", STORE_NO, INDEX_NO,
+    fis_add_field(fis, fi_new("FFFFFFFF", STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_create("TFTTFTFF", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new("TFTTFTFF", STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_create("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
                                  TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_create("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fis_add_field(fis, fi_new("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
                                  TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_create("FFTFTTTT", STORE_NO,
+    fis_add_field(fis, fi_new("FFTFTTTT", STORE_NO,
                                  INDEX_UNTOKENIZED_OMIT_NORMS,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
     fis->fields[1]->boost = 2.0;
@@ -313,25 +313,25 @@ static char *prepare_bin_data(int len)
 
 static Document *prepare_doc()
 {
-    Document *doc = doc_create();
+    Document *doc = doc_new();
     DocField *df;
     char *bin_data = prepare_bin_data(BIN_DATA_LEN);
 
-    doc_add_field(doc, df_add_data(df_create("ignored"),
+    doc_add_field(doc, df_add_data(df_new("ignored"),
                                    "this fld's ignored"))->destroy_data = false;
-    doc_add_field(doc, df_add_data(df_create("unstored"),
+    doc_add_field(doc, df_add_data(df_new("unstored"),
                                    "unstored ignored"))->destroy_data = false;
-    doc_add_field(doc, df_add_data(df_create("stored"),
+    doc_add_field(doc, df_add_data(df_new("stored"),
                                    "Yay, a stored field"))->destroy_data = false;
-    df = doc_add_field(doc, df_add_data(df_create("stored_array"), "one"));
+    df = doc_add_field(doc, df_add_data(df_new("stored_array"), "one"));
     df->destroy_data = false;
     df_add_data(df, "two");
     df_add_data(df, "three");
     df_add_data(df, "four");
     df_add_data_len(df, bin_data, BIN_DATA_LEN);
-    doc_add_field(doc, df_add_data_len(df_create("binary"), bin_data,
+    doc_add_field(doc, df_add_data_len(df_new("binary"), bin_data,
                                        BIN_DATA_LEN));
-    df = doc_add_field(doc, df_add_data(df_create("array"), "ichi"));
+    df = doc_add_field(doc, df_add_data(df_new("array"), "ichi"));
     df_add_data(df, "ni");
     df_add_data(df, "san");
     df_add_data(df, "yon");
@@ -344,14 +344,14 @@ static Document *prepare_doc()
 static FieldInfos *prepare_fis()
 {
     FieldInfos *fis;
-    fis = fis_create(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_create("ignored", STORE_NO, INDEX_NO,
+    fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
+    fis_add_field(fis, fi_new("ignored", STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_create("unstored", STORE_NO, INDEX_YES,
+    fis_add_field(fis, fi_new("unstored", STORE_NO, INDEX_YES,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
-    fis_add_field(fis, fi_create("stored", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new("stored", STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_create("stored_array", STORE_COMPRESS,
+    fis_add_field(fis, fi_new("stored_array", STORE_COMPRESS,
                                  INDEX_UNTOKENIZED, TERM_VECTOR_NO));
     return fis;
 }
@@ -436,8 +436,8 @@ static void test_fields_rw_multi(tst_case *tc, void *data)
     for (i = 0; i < 100; i++) {
         char buf[100];
         sprintf(buf, "<<%d>>", i);
-        doc = doc_create();
-        doc_add_field(doc, df_add_data(df_create(buf), buf)
+        doc = doc_new();
+        doc_add_field(doc, df_add_data(df_new(buf), buf)
                       )->destroy_data = false;
         fw_add_doc(fw, doc);
         doc_destroy(doc);
@@ -503,7 +503,7 @@ tst_suite *ts_fields(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 
-    tst_run_test(suite, test_fi_create, NULL);
+    tst_run_test(suite, test_fi_new, NULL);
     tst_run_test(suite, test_fis_basic, NULL);
     tst_run_test(suite, test_fis_with_default, NULL);
     tst_run_test(suite, test_fis_rw, NULL);

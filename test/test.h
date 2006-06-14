@@ -58,7 +58,7 @@ typedef void (*test_func)(tst_case * tc, void *data);
  *   suite. This will suffice in most cases.
  * @return the current suite
  */
-tst_suite *tst_add_suite(tst_suite *suite, const char *suite_name);
+extern tst_suite *tst_add_suite(tst_suite *suite, const char *suite_name);
 #define ADD_SUITE(suite) tst_add_suite(suite, __FILE__);
 
 
@@ -74,8 +74,8 @@ tst_suite *tst_add_suite(tst_suite *suite, const char *suite_name);
  *   output. Use the tst_run_tests macro if you just want the name of the
  *   function to be used. This will suffice in most cases.
  */
-void tst_run_test_with_name(tst_suite * suite, test_func func, void *value,
-                            char *test_name);
+extern void tst_run_test_with_name(tst_suite * suite, test_func func,
+                                   void *value, char *test_name);
 #define tst_run_test(ts, f, val) tst_run_test_with_name(ts, f, (val), #f)
 
 /**
@@ -98,13 +98,28 @@ void tst_run_test_with_name(tst_suite * suite, test_func func, void *value,
  *   format you would pass to printf.
  * @param ... the arguments to print in the format
  */
-void Tmsg(const char *fmt, ...);
+extern void Tmsg(const char *fmt, ...);
 
 /**
  * Add a message to the test output diagnostics. See Tmsg for usage. vTmsg is
  * to Tmsg want vprintf is to printf
  */
-void vTmsg(const char *fmt, va_list args);
+extern void vTmsg(const char *fmt, va_list args);
+
+/**
+ * Test that a function raises a particular exception. Pass a function to call
+ * that should raise the exception if everything is working as expected. You
+ * can use the _args_ parameter to pass arguments to the function.
+ *
+ * @param line_num the line number this function is called from
+ * @param tc the test case to record the diagnostics
+ * @param err_code the exception you expect to be raised
+ * @param func the function to call that is supposed to raise the exception
+ * @param args the args to pass to the function
+ * @return true if the test passed
+ */
+extern bool tst_raise(int line_num, tst_case *tc, int err_code,
+                      void (*func)(void *args), void *args);
 
 /**
  * Test that two integers are equal. If they are not equal then add an error
@@ -117,8 +132,8 @@ void vTmsg(const char *fmt, va_list args);
  * @param actual the actual value
  * @return true if the test passed
  */
-bool tst_int_equal(int line_num, tst_case * tc, const f_u64 expected,
-                   const f_u64 actual);
+extern bool tst_int_equal(int line_num, tst_case * tc, const f_u64 expected,
+                          const f_u64 actual);
 
 /**
  * Test that two floats (or doubles) are equal (within 0.001%). If they are
@@ -145,8 +160,8 @@ bool tst_int_equal(int line_num, tst_case * tc, const f_u64 expected,
  * @param actual the actual value
  * @return true if the test passed
  */
-bool tst_flt_equal(int line_num, tst_case * tc, const double expected,
-                   const double actual);
+extern bool tst_flt_equal(int line_num, tst_case * tc, const double expected,
+                          const double actual);
 
 /**
  * Test that two floats (or doubles) are equal (within +delta+/100%). If they
@@ -172,8 +187,8 @@ bool tst_flt_equal(int line_num, tst_case * tc, const double expected,
  * @param delta the allowed fraction of difference
  * @return true if the test passed
  */
-bool tst_flt_delta_equal(int line_num, tst_case * tc, const double expected,
-                         const double actual, const double delta);
+extern bool tst_flt_delta_equal(int line_num, tst_case * tc, const double expected,
+                                const double actual, const double delta);
 
 /**
  * Test that two strings are equal. If they are not equal then add an error to
@@ -186,8 +201,8 @@ bool tst_flt_delta_equal(int line_num, tst_case * tc, const double expected,
  * @param actual the actual value
  * @return true if the test passed
  */
-bool tst_str_equal(int line_num, tst_case * tc, const char *expected,
-                   const char *actual);
+extern bool tst_str_equal(int line_num, tst_case * tc, const char *expected,
+                          const char *actual);
 
 /**
  * Test one string contains another string. This test is similar to the
@@ -202,8 +217,8 @@ bool tst_str_equal(int line_num, tst_case * tc, const char *expected,
  * @param needle the string to search for
  * @return true if the test passed
  */
-bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
-                   const char *needle);
+extern bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
+                       const char *needle);
 
 /**
  * Test that two arrays of integers are equal, ie the have the same elements
@@ -219,8 +234,8 @@ bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
  *   least this number of elements allocated or you will get memory overflow
  * @return true if the test passed
  */
-bool tst_arr_int_equal(int line_num, tst_case * tc, const int *expected,
-                       const int *actual, int size);
+extern bool tst_arr_int_equal(int line_num, tst_case * tc, const int *expected,
+                              const int *actual, int size);
 
 /**
  * Test that two arrays of strings are equal, ie the have the same elements
@@ -236,8 +251,8 @@ bool tst_arr_int_equal(int line_num, tst_case * tc, const int *expected,
  *   least this number of elements allocated or you will get memory overflow
  * @return true if the test passed
  */
-bool tst_arr_str_equal(int line_num, tst_case * tc, char **expected,
-                       char **actual, int size);
+extern bool tst_arr_str_equal(int line_num, tst_case * tc, char **expected,
+                              char **actual, int size);
 
 /**
  * Test that two strings are equal up to +n+ bytes. If they are not equal then
@@ -255,8 +270,8 @@ bool tst_arr_str_equal(int line_num, tst_case * tc, char **expected,
  *   least this number of bytes allocated or you will get memory overflow
  * @return true if the test passed
  */
-bool tst_str_nequal(int line_num, tst_case * tc, const char *expected,
-                    const char *actual, size_t n);
+extern bool tst_str_nequal(int line_num, tst_case * tc, const char *expected,
+                           const char *actual, size_t n);
 
 /**
  * Test that +ptr+ is NULL. If it is not NULL then add an error to the test
@@ -268,7 +283,7 @@ bool tst_str_nequal(int line_num, tst_case * tc, const char *expected,
  * @param ptr fail if this is NULL
  * @return true if the test passed, ie +ptr+ was NULL.
  */
-bool tst_ptr_null(int line_num, tst_case * tc, const void *ptr);
+extern bool tst_ptr_null(int line_num, tst_case * tc, const void *ptr);
 
 /**
  * Test that +ptr+ is not NULL. If it is NULL then add an error to the test
@@ -280,7 +295,7 @@ bool tst_ptr_null(int line_num, tst_case * tc, const void *ptr);
  * @param ptr fail if this is NULL
  * @return true if the test passed, ie +ptr+ was NULL.
  */
-bool tst_ptr_notnull(int line_num, tst_case * tc, const void *ptr);
+extern bool tst_ptr_notnull(int line_num, tst_case * tc, const void *ptr);
 
 /**
  * Test that two ptrs point to the same memory (ie, they are equal). If they
@@ -294,8 +309,8 @@ bool tst_ptr_notnull(int line_num, tst_case * tc, const void *ptr);
  * @param actual the actual value
  * @return true if the test passed
  */
-bool tst_ptr_equal(int line_num, tst_case * tc, const void *expected,
-                   const void *actual);
+extern bool tst_ptr_equal(int line_num, tst_case * tc, const void *expected,
+                          const void *actual);
 
 /**
  * Test that the +condition+ is true. If it is false, add an error to the test
@@ -308,7 +323,7 @@ bool tst_ptr_equal(int line_num, tst_case * tc, const void *expected,
  * @param actual the actual value
  * @return true if the test passed
  */
-bool tst_true(int line_num, tst_case * tc, int condition);
+extern bool tst_true(int line_num, tst_case * tc, int condition);
 
 /**
  * Fail. Add an error to the test diagnostics. You should use the Afail(msg)
@@ -322,7 +337,7 @@ bool tst_true(int line_num, tst_case * tc, int condition);
  * @param ... variables to interpolate into the format
  * @return false always (for consistency with other test functions)
  */
-bool tst_fail(int line_num, tst_case * tc, const char *fmt, ...);
+extern bool tst_fail(int line_num, tst_case * tc, const char *fmt, ...);
 
 /**
  * Add an error to the test diagnotistics specifying that this test has not
@@ -335,7 +350,7 @@ bool tst_fail(int line_num, tst_case * tc, const char *fmt, ...);
  *   "Not Implemented" message
  * @return true if the test passed
  */
-bool tst_not_impl(int line_num, tst_case * tc, const char *message);
+extern bool tst_not_impl(int line_num, tst_case * tc, const char *message);
 
 /**
  * Test that +condition+ is true. If it isn't, add an error to the test
@@ -360,9 +375,11 @@ bool tst_not_impl(int line_num, tst_case * tc, const char *message);
  * @param ... variables to interpolate into the format
  * @return true if the test passed
  */
-bool tst_assert(int line_num, tst_case * tc, int condition,
-                const char *fmt, ...);
+extern bool tst_assert(int line_num, tst_case * tc, int condition,
+                       const char *fmt, ...);
 
+#define Araise(e, f, b)\
+    tst_raise(__LINE__, tc, e, (void (*)(void *))(f), (void *)(b))
 #define Aiequal(a, b)      tst_int_equal(__LINE__, tc, (f_u64)(a), (f_u64)(b))
 #define Afequal(a, b)      tst_flt_equal(__LINE__, tc, (a), (b))
 #define Afdequal(a, b, d)  tst_flt_delta_equal(__LINE__, tc, (a), (b), (d))
@@ -377,12 +394,12 @@ bool tst_assert(int line_num, tst_case * tc, int condition,
 #define Atrue(a)           tst_true(__LINE__, tc, (a))
 #define Afail(a)           tst_fail(__LINE__, tc, (a))
 #define Anotimpl(a)        tst_not_impl(__LINE__, tc, (a))
-#ifdef LUCY_HAS_ISO_VARARGS
+#ifdef FRT_HAS_ISO_VARARGS
 # define Assert(a, ...) tst_assert(__LINE__, tc, (a), __VA_ARGS__)
-#elif defined(LUCY_HAS_GNUC_VARARGS)
+#elif defined(FRT_HAS_GNUC_VARARGS)
 # define Assert(a, args...) tst_assert(__LINE__, tc, (a), ##args)
 #else
-bool Assert(int condition, const char *fmt, ...);
+extern bool Assert(int condition, const char *fmt, ...);
 #endif
 
 #endif
