@@ -89,26 +89,27 @@ void ts_deref(void *p)
 {
     TokenStream *ts = (TokenStream *) p;
     if (--ts->ref_cnt <= 0) {
-        ts->destroy(ts);
+        ts->destroy_i(ts);
     }
 }
 
-void ts_standard_destroy(TokenStream *ts)
+void ts_standard_destroy_i(TokenStream *ts)
 {
     tk_destroy(ts->token);
     free(ts);
 }
 
-void ts_reset(TokenStream *ts, char *text)
+TokenStream *ts_reset(TokenStream *ts, char *text)
 {
     ts->t = ts->text = text;
+    return ts;
 }
 
 TokenStream *ts_new()
 {
     TokenStream *ts = ALLOC_AND_ZERO_N(TokenStream, 1);
     ts->token = tk_new();
-    ts->destroy = &ts_standard_destroy;
+    ts->destroy_i = &ts_standard_destroy_i;
     ts->reset = &ts_reset;
     ts->ref_cnt = 1;
     return ts;
@@ -122,10 +123,12 @@ TokenStream *ts_clone(TokenStream *orig_ts)
         ts->token = ALLOC(Token);
         memcpy(ts->token, orig_ts->token, sizeof(Token));
     }
-    if (orig_ts->sub_ts)
+    if (orig_ts->sub_ts) {
         ts->sub_ts = ts_clone(orig_ts->sub_ts);
-    if (orig_ts->clone_i)
+    }
+    if (orig_ts->clone_i) {
         orig_ts->clone_i(orig_ts, ts);
+    }
     ts->ref_cnt = 1;
     return ts;
 }
@@ -147,17 +150,18 @@ inline Token *w_tk_set(Token *tk, wchar_t *text, int start, int end,
     return tk;
 }
 
-void mb_ts_standard_destroy(TokenStream *ts)
+void mb_ts_standard_destroy_i(TokenStream *ts)
 {
     tk_destroy(ts->token);
     free(ts->data);
     free(ts);
 }
 
-void mb_ts_reset(TokenStream *ts, char *text)
+TokenStream *mb_ts_reset(TokenStream *ts, char *text)
 {
     ZEROSET(ts->data, mbstate_t);
     ts_reset(ts, text);
+    return ts;
 }
 
 void mb_ts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
@@ -171,7 +175,7 @@ TokenStream *mb_ts_new()
     TokenStream *ts = ALLOC_AND_ZERO_N(TokenStream, 1);
     ts->data = ALLOC(mbstate_t);
     ts->token = tk_new();
-    ts->destroy = &mb_ts_standard_destroy;
+    ts->destroy_i = &mb_ts_standard_destroy_i;
     ts->reset = &mb_ts_reset;
     ts->clone_i = &mb_ts_clone_i;
     ts->ref_cnt = 1;
@@ -187,33 +191,36 @@ TokenStream *mb_ts_new()
 void a_deref(void *p)
 {
     Analyzer *a = (Analyzer *) p;
-    if (--a->ref_cnt <= 0)
-        a->destroy(a);
+    if (--a->ref_cnt <= 0) {
+        a->destroy_i(a);
+    }
 }
 
-void a_standard_destroy(Analyzer *a)
+void a_standard_destroy_i(Analyzer *a)
 {
-    if (a->current_ts)
+    if (a->current_ts) {
         ts_deref(a->current_ts);
+    }
     free(a);
 }
 
 TokenStream *a_standard_get_ts(Analyzer *a, char *field, char *text)
 {
+    TokenStream *ts;
     (void)field;
-    a->current_ts->reset(a->current_ts, text);
-    return a->current_ts;
+    ts = ts_clone(a->current_ts);
+    return ts->reset(ts, text);
 }
 
 Analyzer *analyzer_new(void *data, TokenStream *ts,
-                       void (*destroy) (Analyzer *a),
-                       TokenStream *(*get_ts) (Analyzer *a, char *field,
-                                               char *text))
+                       void (*destroy_i)(Analyzer *a),
+                       TokenStream *(*get_ts)(Analyzer *a, char *field,
+                                              char *text))
 {
     Analyzer *a = ALLOC(Analyzer);
     a->data = data;
     a->current_ts = ts;
-    a->destroy = (destroy ? destroy : &a_standard_destroy);
+    a->destroy_i = (destroy_i ? destroy_i : &a_standard_destroy_i);
     a->get_ts = (get_ts ? get_ts : &a_standard_get_ts);
     a->ref_cnt = 1;
     return a;
@@ -233,15 +240,18 @@ Token *wst_next(TokenStream *ts)
     char *t = ts->t;
     char *start;
 
-    while (*t != '\0' && isspace(*t))
+    while (*t != '\0' && isspace(*t)) {
         t++;
+    }
 
-    if (*t == '\0')
+    if (*t == '\0') {
         return NULL;
+    }
 
     start = t;
-    while (*t != '\0' && !isspace(*t))
+    while (*t != '\0' && !isspace(*t)) {
         t++;
+    }
 
     ts->t = t;
     tk_set_ts(ts->token, start, t, ts->text, 1);
@@ -270,8 +280,9 @@ Token *mb_wst_next(TokenStream *ts)
         t += i;
         MB_NEXT_CHAR;
     }
-    if (wchr == 0)
+    if (wchr == 0) {
         return NULL;
+    }
 
     start = t;
     t += i;
@@ -304,22 +315,23 @@ Token *mb_wst_next_lc(TokenStream *ts)
         t += i;
         MB_NEXT_CHAR;
     }
-    if (wchr == 0)
+    if (wchr == 0) {
         return NULL;
+    }
 
     start = t;
     t += i;
     *w++ = towlower(wchr);
     MB_NEXT_CHAR;
     while (wchr != 0 && !iswspace(wchr)) {
-        if (w < w_end)
+        if (w < w_end) {
             *w++ = towlower(wchr);
+        }
         t += i;
         MB_NEXT_CHAR;
     }
     *w = 0;
-    w_tk_set(ts->token, wbuf, (int)(start - ts->text), (int)(t - ts->text),
-             1);
+    w_tk_set(ts->token, wbuf, (int)(start - ts->text), (int)(t - ts->text), 1);
     ts->t = t;
     return ts->token;
 }
@@ -366,15 +378,18 @@ Token *lt_next(TokenStream *ts)
     char *start;
     char *t = ts->t;
 
-    while (*t != '\0' && !isalpha(*t))
+    while (*t != '\0' && !isalpha(*t)) {
         t++;
+    }
 
-    if (*t == '\0')
+    if (*t == '\0') {
         return NULL;
+    }
 
     start = t;
-    while (*t != '\0' && isalpha(*t))
+    while (*t != '\0' && isalpha(*t)) {
         t++;
+    }
 
     tk_set_ts(ts->token, start, t, ts->text, 1);
     ts->t = t;
@@ -403,8 +418,10 @@ Token *mb_lt_next(TokenStream *ts)
         t += i;
         MB_NEXT_CHAR;
     }
-    if (wchr == 0)
+
+    if (wchr == 0) {
         return NULL;
+    }
 
     start = t;
     t += i;
@@ -437,22 +454,23 @@ Token *mb_lt_next_lc(TokenStream *ts)
         t += i;
         MB_NEXT_CHAR;
     }
-    if (wchr == 0)
+    if (wchr == 0) {
         return NULL;
+    }
 
     start = t;
     t += i;
     *w++ = towlower(wchr);
     MB_NEXT_CHAR;
     while (wchr != 0 && iswalpha(wchr)) {
-        if (w < w_end)
+        if (w < w_end) {
             *w++ = towlower(wchr);
+        }
         t += i;
         MB_NEXT_CHAR;
     }
     *w = 0;
-    w_tk_set(ts->token, wbuf, (int)(start - ts->text), (int)(t - ts->text),
-             1);
+    w_tk_set(ts->token, wbuf, (int)(start - ts->text), (int)(t - ts->text), 1);
     ts->t = t;
     return ts->token;
 }
@@ -499,8 +517,9 @@ int std_get_alpha(TokenStream *ts, char *token)
     int i = 0;
     char *t = ts->t;
     while (t[i] != '\0' && isalpha(t[i])) {
-        if (i < MAX_WORD_SIZE)
+        if (i < MAX_WORD_SIZE) {
             token[i] = t[i];
+        }
         i++;
     }
     return i;
@@ -511,17 +530,21 @@ int mb_std_get_alpha(TokenStream *ts, char *token)
     char *t = ts->t;
     wchar_t w;
     int i;
-    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
         RAISE(IO_ERROR, ENC_ERR_MSG);
+    }
+
     while (w != 0 && iswalpha(w)) {
         t += i;
-        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
             RAISE(IO_ERROR, ENC_ERR_MSG);
+        }
     }
 
     i = (int)(t - ts->t);
-    if (i > MAX_WORD_SIZE)
+    if (i > MAX_WORD_SIZE) {
         i = MAX_WORD_SIZE - 1;
+    }
     memcpy(token, ts->t, i);
     return i;
 }
@@ -531,8 +554,9 @@ int std_get_alnum(TokenStream *ts, char *token)
     int i = 0;
     char *t = ts->t;
     while (t[i] != '\0' && isalnum(t[i])) {
-        if (i < MAX_WORD_SIZE)
+        if (i < MAX_WORD_SIZE) {
             token[i] = t[i];
+        }
         i++;
     }
     return i;
@@ -543,17 +567,21 @@ int mb_std_get_alnum(TokenStream *ts, char *token)
     char *t = ts->t;
     wchar_t w;
     int i;
-    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
         RAISE(IO_ERROR, ENC_ERR_MSG);
+    }
+
     while (w != 0 && iswalnum(w)) {
         t += i;
-        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
             RAISE(IO_ERROR, ENC_ERR_MSG);
+        }
     }
 
     i = (int)(t - ts->t);
-    if (i > MAX_WORD_SIZE)
+    if (i > MAX_WORD_SIZE) {
         i = MAX_WORD_SIZE - 1;
+    }
     memcpy(token, ts->t, i);
     return i;
 }
@@ -593,24 +621,29 @@ int isurlxatc(char c)
 
 bool std_is_tok_char(char *c)
 {
-    if (isspace(*c))
-        return false;           // most common so check first.
+    if (isspace(*c)) {
+        return false;           /* most common so check first. */
+    }
     if (isalnum(*c) || isnumpunc(*c) || *c == '&' ||
-        *c == '@' || *c == '\'' || *c == ':')
+        *c == '@' || *c == '\'' || *c == ':') {
         return true;
+    }
     return false;
 }
 
 bool w_std_is_tok_char(char *t)
 {
     wchar_t c;
-    if ((mbtowc(&c, t, MB_CUR_MAX)) < 0)
+    if ((mbtowc(&c, t, MB_CUR_MAX)) < 0) {
         RAISE(IO_ERROR, ENC_ERR_MSG);
-    if (iswspace(c))
-        return false;           // most common so check first.
+    }
+    if (iswspace(c)) {
+        return false;           /* most common so check first. */
+    }
     if (iswalnum(c) || w_isnumpunc(c) || c == L'&' ||
-        c == L'@' || c == L'\'' || c == L':')
+        c == L'@' || c == L'\'' || c == L':') {
         return true;
+    }
     return false;
 }
 
@@ -628,34 +661,40 @@ int std_get_number(char *input)
 
     while (last_seen_digit >= 0) {
         while ((input[i] != '\0') && isalnum(input[i])) {
-            if ((last_seen_digit < 2) && isdigit(input[i]))
+            if ((last_seen_digit < 2) && isdigit(input[i])) {
                 last_seen_digit = 2;
-            if ((seen_digit == false) && isdigit(input[i]))
+            }
+            if ((seen_digit == false) && isdigit(input[i])) {
                 seen_digit = true;
+            }
             i++;
         }
         last_seen_digit--;
         if (!isnumpunc(input[i]) || !isalnum(input[i + 1])) {
 
-            if (last_seen_digit >= 0)
+            if (last_seen_digit >= 0) {
                 count = i;
+            }
             break;
         }
         count = i;
         i++;
     }
-    if (seen_digit)
+    if (seen_digit) {
         return count;
-    else
+    }
+    else {
         return 0;
+    }
 }
 
 int std_get_apostrophe(char *input)
 {
     char *t = input;
 
-    while (isalpha(*t) || *t == '\'')
+    while (isalpha(*t) || *t == '\'') {
         t++;
+    }
 
     return (int)(t - input);
 }
@@ -666,12 +705,14 @@ int mb_std_get_apostrophe(char *input)
     wchar_t w;
     int i;
 
-    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+    if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
         RAISE(IO_ERROR, ENC_ERR_MSG);
+    }
     while (iswalpha(w) || w == L'\'') {
         t += i;
-        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0)
+        if ((i = mbtowc(&w, t, MB_CUR_MAX)) < 0) {
             RAISE(IO_ERROR, ENC_ERR_MSG);
+        }
     }
     return (int)(t - input);
 }
@@ -679,16 +720,19 @@ int mb_std_get_apostrophe(char *input)
 int std_get_url(char *input, char *token, int i)
 {
     while (isurlc(input[i])) {
-        if (isurlpunc(input[i]) && isurlpunc(input[i - 1]))
-            break;              // can't have to puncs in a row
-        if (i < MAX_WORD_SIZE)
+        if (isurlpunc(input[i]) && isurlpunc(input[i - 1])) {
+            break;              /* can't have to puncs in a row */
+        }
+        if (i < MAX_WORD_SIZE) {
             token[i] = input[i];
+        }
         i++;
     }
 
-    //strip trailing puncs
-    while (isurlpunc(input[i - 1]))
+    /* strip trailing puncs */
+    while (isurlpunc(input[i - 1])) {
         i--;
+    }
 
     return i;
 }
@@ -698,8 +742,9 @@ int std_get_url(char *input, char *token, int i)
 int std_get_company_name(char *input)
 {
     int i = 0;
-    while (isalpha(input[i]) || input[i] == '@' || input[i] == '&')
+    while (isalpha(input[i]) || input[i] == '@' || input[i] == '&') {
         i++;
+    }
 
     return i;
 }
@@ -722,8 +767,9 @@ int mb_std_get_company_name(char *input, TokenStream *ts)
 bool std_advance_to_start(TokenStream *ts)
 {
     char *t = ts->t;
-    while (*t != '\0' && !isalnum(*t))
+    while (*t != '\0' && !isalnum(*t)) {
         t++;
+    }
 
     ts->t = t;
 
@@ -735,8 +781,9 @@ bool mb_std_advance_to_start(TokenStream *ts)
     int i;
     wchar_t w;
 
-    if ((i = mbtowc(&w, ts->t, MB_CUR_MAX)) < 0)
+    if ((i = mbtowc(&w, ts->t, MB_CUR_MAX)) < 0) {
         RAISE(IO_ERROR, ENC_ERR_MSG);
+    }
     while (w != 0 && !iswalnum(w)) {
         ts->t += i;
         if ((i = mbtowc(&w, ts->t, MB_CUR_MAX)) < 0)
@@ -768,8 +815,9 @@ Token *std_next(TokenStream *ts)
     bool seen_at_symbol;
 
 
-    if (!std_tz->advance_to_start(ts))
+    if (!std_tz->advance_to_start(ts)) {
         return NULL;
+    }
 
     start = t = ts->t;
     if (isdigit(*t)) {
@@ -782,58 +830,60 @@ Token *std_next(TokenStream *ts)
         t += token_i;
 
         if (!std_tz->is_tok_char(t)) {
-            // very common case, ie a plain word, so check and return
+            /* very common case, ie a plain word, so check and return */
             tk_set_ts(ts->token, start, t, ts->text, 1);
             ts->t = t;
             return ts->token;
         }
 
-        if (*t == '\'') {       // apostrophe case. 
+        if (*t == '\'') {       /* apostrophe case. */
             t += std_tz->get_apostrophe(t);
             ts->t = t;
             len = (int)(t - start);
-            // strip possesive
-            if ((t[-1] == 's' || t[-1] == 'S') && t[-2] == '\'')
+            /* strip possesive */
+            if ((t[-1] == 's' || t[-1] == 'S') && t[-2] == '\'') {
                 t -= 2;
+            }
 
             tk_set_ts(ts->token, start, t, ts->text, 1);
             return ts->token;
         }
 
-        if (*t == '&') {        // apostrophe case. 
+        if (*t == '&') {        /* apostrophe case. */
             t += std_get_company_name(t);
             ts->t = t;
             tk_set_ts(ts->token, start, t, ts->text, 1);
             return ts->token;
         }
 
-        if (isdigit(*t) || isnumpunc(*t)) {     // possibly a number
+        if (isdigit(*t) || isnumpunc(*t)) {      /* possibly a number */
             num_end = start + std_get_number(start);
-            if (!std_tz->is_tok_char(num_end)) {        // we won't find a longer token
+            if (!std_tz->is_tok_char(num_end)) { /* we won't find a longer token */
                 ts->t = num_end;
                 tk_set_ts(ts->token, start, num_end, ts->text, 1);
                 return ts->token;
             }
-            // else there may be a longer token so check
+            /* else there may be a longer token so check */
         }
 
         if (t[0] == ':' && t[1] == '/' && t[2] == '/') {
-            // check for a known url start
+            /* check for a known url start */
             token[token_i] = '\0';
             t += 3;
-            while (*t == '/')
+            while (*t == '/') {
                 t++;
+            }
             if (isalpha(*t) &&
                 (memcmp(token, "ftp", 3) == 0 ||
                  memcmp(token, "http", 4) == 0 ||
                  memcmp(token, "https", 5) == 0 ||
                  memcmp(token, "file", 4) == 0)) {
-                len = std_get_url(t, token, 0); // dispose of first part of the URL
+                len = std_get_url(t, token, 0); /* dispose of first part of the URL */
             }
-            else {              //still treat as url but keep the first part
+            else {              /* still treat as url but keep the first part */
                 token_i = (int)(t - start);
                 memcpy(token, start, token_i * sizeof(char));
-                len = token_i + std_get_url(t, token, token_i); // keep start
+                len = token_i + std_get_url(t, token, token_i); /* keep start */
             }
             ts->t = t + len;
             token[len] = 0;
@@ -842,7 +892,7 @@ Token *std_next(TokenStream *ts)
             return ts->token;
         }
 
-        // now see how long a url we can find.
+        /* now see how long a url we can find. */
         is_acronym = true;
         seen_at_symbol = false;
         while (isurlxatc(*t)) {
@@ -850,11 +900,11 @@ Token *std_next(TokenStream *ts)
                 is_acronym = false;
             }
             if (isurlxatpunc(*t) && isurlxatpunc(t[-1])) {
-                break;          // can't have two punctuation characters in a row
+                break; /* can't have two punctuation characters in a row */
             }
             if (*t == '@') {
                 if (seen_at_symbol) {
-                    break;      // we can only have one @ symbol
+                    break; /* we can only have one @ symbol */
                 }
                 else {
                     seen_at_symbol = true;
@@ -862,19 +912,20 @@ Token *std_next(TokenStream *ts)
             }
             t++;
         }
-        while (isurlxatpunc(t[-1]))
-            t--;                // strip trailing punctuation
+        while (isurlxatpunc(t[-1])) {
+            t--;                /* strip trailing punctuation */
+        }
 
         if (t > num_end) {
             ts->t = t;
 
-            if (is_acronym) {   // check that it is one letter followed by one '.'
+            if (is_acronym) {   /* check that it is one letter followed by one '.' */
                 for (s = start; s < t - 1; s++) {
                     if (isalpha(*s) && (s[1] != '.'))
                         is_acronym = false;
                 }
             }
-            if (is_acronym) {   // strip '.'s
+            if (is_acronym) {   /* strip '.'s */
                 for (s = start + token_i; s < t; s++) {
                     if (*s != '.') {
                         token[token_i] = *s;
@@ -884,11 +935,11 @@ Token *std_next(TokenStream *ts)
                 tk_set(ts->token, token, token_i, (int)(start - ts->text),
                        (int)(t - ts->text), 1);
             }
-            else {              // just return the url as is
+            else { /* just return the url as is */
                 tk_set_ts(ts->token, start, t, ts->text, 1);
             }
         }
-        else {                  // return the number
+        else {                  /* return the number */
             ts->t = num_end;
             tk_set_ts(ts->token, start, num_end, ts->text, 1);
         }
@@ -897,10 +948,10 @@ Token *std_next(TokenStream *ts)
     return ts->token;
 }
 
-void std_ts_destroy(TokenStream *ts)
+void std_ts_destroy_i(TokenStream *ts)
 {
     free(ts->data);
-    ts_standard_destroy(ts);
+    ts_standard_destroy_i(ts);
 }
 
 void std_ts_clone_i(TokenStream *orig_ts, TokenStream *new_ts)
@@ -920,7 +971,7 @@ TokenStream *standard_tokenizer_new()
     std_tz->get_apostrophe = &std_get_apostrophe;
 
     ts->data = std_tz;
-    ts->destroy = &std_ts_destroy;
+    ts->destroy_i = &std_ts_destroy_i;
     ts->clone_i = &std_ts_clone_i;
     ts->next = &std_next;
     return ts;
@@ -937,30 +988,32 @@ TokenStream *mb_standard_tokenizer_new()
     std_tz->get_apostrophe = &mb_std_get_apostrophe;
 
     ts->data = std_tz;
-    ts->destroy = &std_ts_destroy;
+    ts->destroy_i = &std_ts_destroy_i;
     ts->clone_i = &std_ts_clone_i;
     ts->next = &std_next;
     return ts;
 }
 
-void filter_reset(TokenStream *ts, char *text)
+TokenStream *filter_reset(TokenStream *ts, char *text)
 {
     ts->sub_ts->reset(ts->sub_ts, text);
+    return ts;
 }
 
-void filter_destroy(TokenStream *tf)
+void filter_destroy_i(TokenStream *tf)
 {
     ts_deref(tf->sub_ts);
-    if (tf->token != NULL)
+    if (tf->token != NULL) {
         tk_destroy(tf->token);
+    }
     free(tf);
 }
 
-void sf_destroy(TokenStream *tf)
+void sf_destroy_i(TokenStream *tf)
 {
     HashTable *words = (HashTable *)tf->data;
     h_destroy(words);
-    filter_destroy(tf);
+    filter_destroy_i(tf);
 }
 
 void sf_clone_i_i(void *key, void *value, void *arg)
@@ -986,8 +1039,9 @@ Token *sf_next(TokenStream *tf)
         tk = tf->sub_ts->next(tf->sub_ts);
         pos_inc++;
     }
-    if (tk != NULL)
+    if (tk != NULL) {
         tk->pos_inc = pos_inc;
+    }
     return tk;
 }
 
@@ -1008,7 +1062,7 @@ TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
     tf->token = NULL;
     tf->next = &sf_next;
     tf->reset = &filter_reset;
-    tf->destroy = &sf_destroy;
+    tf->destroy_i = &sf_destroy_i;
     tf->clone_i = &sf_clone_i;
     tf->ref_cnt = 1;
     return tf;
@@ -1030,7 +1084,7 @@ TokenStream *stop_filter_new_with_words(TokenStream *ts,
     tf->token = NULL;
     tf->next = &sf_next;
     tf->reset = &filter_reset;
-    tf->destroy = &sf_destroy;
+    tf->destroy_i = &sf_destroy_i;
     tf->clone_i = &sf_clone_i;
     tf->ref_cnt = 1;
     return tf;
@@ -1044,11 +1098,12 @@ TokenStream *stop_filter_new(TokenStream *ts)
 Token *mb_lcf_next(TokenStream *ts)
 {
     wchar_t wbuf[MAX_WORD_SIZE], *w;
-    //mbstate_t state = {0};
+    /*mbstate_t state = {0}; */
     int i;
     Token *tk = ts->sub_ts->next(ts->sub_ts);
-    if (tk == NULL)
+    if (tk == NULL) {
         return tk;
+    }
 
     i = (int)mbstowcs(wbuf, tk->text, MAX_WORD_SIZE);
     w = wbuf;
@@ -1066,7 +1121,7 @@ TokenStream *mb_lowercase_filter_new(TokenStream *ts)
     tf->token = NULL;
     tf->next = &mb_lcf_next;
     tf->reset = &filter_reset;
-    tf->destroy = &filter_destroy;
+    tf->destroy_i = &filter_destroy_i;
     tf->sub_ts = ts;
     tf->clone_i = NULL;
     tf->ref_cnt = 1;
@@ -1077,8 +1132,9 @@ Token *lcf_next(TokenStream *ts)
 {
     int i = 0;
     Token *tk = ts->sub_ts->next(ts->sub_ts);
-    if (tk == NULL)
+    if (tk == NULL) {
         return tk;
+    }
     while (tk->text[i] != '\0') {
         tk->text[i] = tolower(tk->text[i]);
         i++;
@@ -1092,7 +1148,7 @@ TokenStream *lowercase_filter_new(TokenStream *ts)
     tf->token = NULL;
     tf->next = &lcf_next;
     tf->reset = &filter_reset;
-    tf->destroy = &filter_destroy;
+    tf->destroy_i = &filter_destroy_i;
     tf->sub_ts = ts;
     tf->clone_i = NULL;
     tf->ref_cnt = 1;
@@ -1106,14 +1162,14 @@ typedef struct StemFilter
     char *charenc;
 } StemFilter;
 
-void stemf_destroy(TokenStream *tf)
+void stemf_destroy_i(TokenStream *tf)
 {
     StemFilter *stemf = (StemFilter *)tf->data;
     sb_stemmer_delete(stemf->stemmer);
     free(stemf->algorithm);
     free(stemf->charenc);
     free(stemf);
-    filter_destroy(tf);
+    filter_destroy_i(tf);
 }
 
 Token *stemf_next(TokenStream *ts)
@@ -1122,14 +1178,16 @@ Token *stemf_next(TokenStream *ts)
     const sb_symbol *stemmed;
     struct sb_stemmer *stemmer = ((StemFilter *) ts->data)->stemmer;
     Token *tk = ts->sub_ts->next(ts->sub_ts);
-    if (tk == NULL)
+    if (tk == NULL) {
         return tk;
-    stemmed =
-        sb_stemmer_stem(stemmer, (sb_symbol *) tk->text,
-                        (int)strlen(tk->text));
+    }
+    stemmed = sb_stemmer_stem(stemmer, (sb_symbol *) tk->text,
+                              (int)strlen(tk->text));
     len = sb_stemmer_length(stemmer);
-    if (len >= MAX_WORD_SIZE)
+    if (len >= MAX_WORD_SIZE) {
         len = MAX_WORD_SIZE - 1;
+    }
+
     memcpy(tk->text, stemmed, len);
     tk->text[len] = '\0';
     return tk;
@@ -1161,7 +1219,7 @@ TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
     tf->token = NULL;
     tf->next = &stemf_next;
     tf->reset = &filter_reset;
-    tf->destroy = &stemf_destroy;
+    tf->destroy_i = &stemf_destroy_i;
     tf->clone_i = &stemf_clone_i;
     tf->sub_ts = ts;
     tf->ref_cnt = 1;
@@ -1250,7 +1308,7 @@ Analyzer *mb_standard_analyzer_new(bool lowercase)
  *
  ****************************************************************************/
 
-void pfa_destroy(Analyzer *self)
+void pfa_destroy_i(Analyzer *self)
 {
     PerFieldAnalyzer *pfa = (PerFieldAnalyzer *) self->data;
     h_destroy(pfa->dict);
@@ -1270,7 +1328,7 @@ TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
     return a_get_ts(a, field, text);
 }
 
-void pfa_sub_a_destroy(void *p)
+void pfa_sub_a_destroy_i(void *p)
 {
     Analyzer *a = (Analyzer *) p;
     a_deref(a);
@@ -1286,8 +1344,8 @@ Analyzer *per_field_analyzer_new(Analyzer *def)
 {
     PerFieldAnalyzer *pfa = ALLOC(PerFieldAnalyzer);
     pfa->def = def;
-    pfa->dict = h_new_str(&free, &pfa_sub_a_destroy);
-    return analyzer_new(pfa, NULL, &pfa_destroy, &pfa_get_ts);
+    pfa->dict = h_new_str(&free, &pfa_sub_a_destroy_i);
+    return analyzer_new(pfa, NULL, &pfa_destroy_i, &pfa_get_ts);
 }
 
 #ifdef ALONE
@@ -1298,11 +1356,12 @@ int main(int argc, char **argv)
     TokenStream *ts;
     Token *tk;
     while (fgets(buf, 9999, stdin) != NULL) {
-        ts = a->get_ts(a, "hello", buf);
+        ts = a_get_ts(a, "hello", buf);
         while ((tk = ts->next(ts)) != NULL) {
             printf("<%s:%ld:%ld> ", tk->text, tk->start, tk->end);
         }
         printf("\n");
+        ts_deref(ts);
     }
     return 0;
 }

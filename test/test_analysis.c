@@ -179,6 +179,7 @@ void test_whitespace_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "23#@$", 49, 54);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
+    ts_deref(ts);
     a_deref(a);
 }
 
@@ -201,6 +202,7 @@ void test_mb_whitespace_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "23#@$", 49, 54);
     test_token(ts_next(ts), "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     a = mb_whitespace_analyzer_new(true);
     ts = a_get_ts(a, "random", text);
@@ -216,6 +218,7 @@ void test_mb_whitespace_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "áägç®êëì¯úøã¬öîí", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
+    ts_deref(ts);
     a_deref(a);
 }
 
@@ -329,6 +332,7 @@ void test_letter_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "address", 40, 47);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
+    ts_deref(ts);
     a_deref(a);
 }
 
@@ -354,6 +358,7 @@ void test_mb_letter_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "ÚØÃ", 72, 78);
     test_token(ts_next(ts), "ÖÎÍ", 80, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     a = mb_letter_analyzer_new(true);
     ts = a_get_ts(a, "random", text);
@@ -371,6 +376,7 @@ void test_mb_letter_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "öîí", 80, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     a_deref(a);
+    ts_deref(ts);
     tk_destroy(tk);
 }
 
@@ -462,6 +468,7 @@ void test_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
+    ts_deref(ts);
     a_deref(a);
 }
 
@@ -490,6 +497,7 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "ÚØÃ", 134, 140);
     test_token(ts_next(ts), "ÖÎÍ", 142, 148);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     a = mb_standard_analyzer_new(true);
     ts = a_get_ts(a, "random", text);
@@ -506,10 +514,11 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "úøã", 134, 140);
     test_token(ts_next(ts), "öîí", 142, 148);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     a = mb_standard_analyzer_new_with_words(words, true);
-    ts = a_get_new_ts(a, "random", text);
-    ts2 = a_get_new_ts(a, "random", text);
+    ts = a_get_ts(a, "random", text);
+    ts2 = a_get_ts(a, "random", text);
     test_token(ts_next(ts), "dbalmán@gmail.com", 0, 18);
     test_token(ts_next(ts), "my", 22, 24);
     test_token(ts_next(ts), "e-mail", 25, 31);
@@ -566,12 +575,14 @@ void test_long_word(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), text, 0, 290, 1);        /* text gets truncated anyway */
     test_token_pi(ts_next(ts), "two", 291, 294, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     a = mb_standard_analyzer_new_with_words(ENGLISH_STOP_WORDS, true);
     ts = a_get_ts(a, "random", text);
     test_token_pi(ts_next(ts), text, 0, 290, 1);        /* text gets truncated anyway */
     test_token_pi(ts_next(ts), "two", 291, 294, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     a_deref(a);
     tk_destroy(tk);
 }
@@ -720,6 +731,7 @@ void test_per_field_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "address.", 40, 48);
     test_token(ts_next(ts), "23#@$", 49, 54);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     ts = a_get_ts(pfa, "white_l", text);
     test_token(ts_next(ts), "dbalmain@gmail.com", 0, 18);
     test_token(ts_next(ts), "is", 19, 21);
@@ -730,6 +742,7 @@ void test_per_field_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "address.", 40, 48);
     test_token(ts_next(ts), "23#@$", 49, 54);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
     ts = a_get_ts(pfa, "letter_u", text);
     test_token(ts_next(ts), "DBalmain", 0, 8);
     test_token(ts_next(ts), "gmail", 9, 14);
@@ -740,7 +753,8 @@ void test_per_field_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "mail", 27, 31);
     test_token(ts_next(ts), "address", 40, 47);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
-    ts = a_get_new_ts(pfa, "letter", text);
+    ts_deref(ts);
+    ts = a_get_ts(pfa, "letter", text);
     test_token(ts_next(ts), "dbalmain", 0, 8);
     test_token(ts_next(ts), "gmail", 9, 14);
     test_token(ts_next(ts), "com", 15, 18);
@@ -750,9 +764,8 @@ void test_per_field_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "mail", 27, 31);
     test_token(ts_next(ts), "address", 40, 47);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
-    /* used a_get_new_ts so must destroy ts */
     ts_deref(ts);
-    ts = a_get_new_ts(pfa, "XXX", text);        /* should use default analyzer */
+    ts = a_get_ts(pfa, "XXX", text);        /* should use default analyzer */
     test_token(ts_next(ts), "dbalmain@gmail.com", 0, 18);
     test_token(ts_next(ts), "e-mail", 25, 31);
     test_token(ts_next(ts), "52", 32, 34);
@@ -760,7 +773,6 @@ void test_per_field_analyzer(tst_case *tc, void *data)
     test_token(ts_next(ts), "23", 49, 51);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
-    /* used a_get_new_ts so must destroy ts */
     ts_deref(ts);
     a_deref(pfa);
 }

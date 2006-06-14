@@ -21,7 +21,7 @@ typedef struct Token
 Token *tk_new();
 void tk_destroy(void *p);
 Token *tk_set(Token *tk, char *text, int tlen, int start, int end, int pos_inc);
-Token *tk_set_no_len(Token * tk, char *text, int start, int end, int pos_inc);
+Token *tk_set_no_len(Token *tk, char *text, int start, int end, int pos_inc);
 int tk_eq(Token *tk1, Token *tk2);
 int tk_cmp(Token *tk1, Token *tk2);
 
@@ -39,10 +39,10 @@ struct TokenStream
     char *text;
     char *t;                    /* ptr used to scan text */
     Token *token;
-    Token *(*next) (TokenStream * ts);
-    void (*reset) (TokenStream * ts, char *text);
-    void (*clone_i) (TokenStream * orig_ts, TokenStream * new_ts);
-    void (*destroy) (TokenStream * ts);
+    Token *(*next)(TokenStream *ts);
+    TokenStream *(*reset)(TokenStream *ts, char *text);
+    void (*clone_i)(TokenStream *orig_ts, TokenStream *new_ts);
+    void (*destroy_i)(TokenStream *ts);
     TokenStream *sub_ts;        /* used by filters */
     int ref_cnt;
 };
@@ -60,8 +60,8 @@ TokenStream *mb_letter_tokenizer_new(bool lowercase);
 TokenStream *standard_tokenizer_new();
 TokenStream *mb_standard_tokenizer_new();
 
-TokenStream *lowercase_filter_new(TokenStream * ts);
-TokenStream *mb_lowercase_filter_new(TokenStream * ts);
+TokenStream *lowercase_filter_new(TokenStream *ts);
+TokenStream *mb_lowercase_filter_new(TokenStream *ts);
 
 extern const char *ENGLISH_STOP_WORDS[];
 extern const char *FULL_ENGLISH_STOP_WORDS[];
@@ -78,14 +78,14 @@ extern const char *FULL_DANISH_STOP_WORDS[];
 extern const char *FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FULL_FINNISH_STOP_WORDS[];
 
-TokenStream *stop_filter_new_with_words_len(TokenStream * ts,
+TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
                                             const char **words, int len);
-TokenStream *stop_filter_new_with_words(TokenStream * ts,
+TokenStream *stop_filter_new_with_words(TokenStream *ts,
                                         const char **words);
-TokenStream *stop_filter_new(TokenStream * ts);
-TokenStream *stem_filter_new(TokenStream * ts, const char *algorithm,
+TokenStream *stop_filter_new(TokenStream *ts);
+TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
                              const char *charenc);
-TokenStream *ts_clone(TokenStream * orig_ts);
+TokenStream *ts_clone(TokenStream *orig_ts);
 
 /****************************************************************************
  *
@@ -97,22 +97,21 @@ typedef struct Analyzer
 {
     void *data;
     TokenStream *current_ts;
-    TokenStream *(*get_ts) (struct Analyzer * a, char *field, char *text);
-    void (*destroy) (struct Analyzer * a);
+    TokenStream *(*get_ts)(struct Analyzer *a, char *field, char *text);
+    void (*destroy_i)(struct Analyzer *a);
     int ref_cnt;
 } Analyzer;
 
 void a_deref(void *p);
 
 #define a_get_ts(ma, field, text) ma->get_ts(ma, field, text)
-#define a_get_new_ts(ma, field, text) ts_clone(ma->get_ts(ma, field, text))
 
-Analyzer *analyzer_new(void *data, TokenStream * ts,
-                       void (*destroy) (Analyzer *),
-                       TokenStream * (*get_ts) (Analyzer * a,
-                                                char *field,
-                                                char *text));
-void a_standard_destroy(Analyzer * a);
+Analyzer *analyzer_new(void *data, TokenStream *ts,
+                       void (*destroy)(Analyzer *a),
+                       TokenStream *(*get_ts)(Analyzer *a,
+                                              char *field,
+                                              char *text));
+void a_standard_destroy(Analyzer *a);
 Analyzer *whitespace_analyzer_new(bool lowercase);
 Analyzer *mb_whitespace_analyzer_new(bool lowercase);
 
@@ -137,7 +136,7 @@ typedef struct PerFieldAnalyzer
     Analyzer *def;
 } PerFieldAnalyzer;
 
-Analyzer *per_field_analyzer_new(Analyzer * def);
-void pfa_add_field(Analyzer * self, char *field, Analyzer * analyzer);
+Analyzer *per_field_analyzer_new(Analyzer *a);
+void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer);
 
 #endif
