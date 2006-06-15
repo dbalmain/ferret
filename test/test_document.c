@@ -8,6 +8,7 @@ void test_df_standard(tst_case * tc, void *data)
     (void)data;
 
     df = df_add_data(df_new("title"), estrdup("Life of Pi"));
+    df->destroy_data = true;
     Aiequal(1, df->size);
     Asequal("title", df->name);
     Asequal("Life of Pi", df->data[0]);
@@ -18,7 +19,6 @@ void test_df_standard(tst_case * tc, void *data)
     df_destroy(df);
 
 	df = df_add_data_len(df_new("title"), "new title", 9);
-    df->destroy_data = false;
     Aiequal(1, df->size);
     Asequal("title", df->name);
     Asequal("new title", df->data[0]);
@@ -34,6 +34,7 @@ void test_df_multi_fields(tst_case * tc, void *data)
     (void)data;
 
     df = df_add_data(df_new("title"), estrdup("Vernon God Little"));
+    df->destroy_data = true;
     Aiequal(1, df->size);
     Asequal("title", df->name);
     Asequal("Vernon God Little", df->data[0]);
@@ -54,6 +55,7 @@ void test_df_multi_fields(tst_case * tc, void *data)
     df_destroy(df);
 
     df = df_add_data(df_new("data"), estrdup("start"));
+    df->destroy_data = true;
     Aiequal(1, df->size);
     for (i = 0; i < 1000; i++) {
         char buf[100];
@@ -72,10 +74,9 @@ void test_doc(tst_case * tc, void *data)
     (void)data;
 
     doc = doc_new();
-    doc_add_field(doc, df_add_data(df_new("title"), estrdup("title")));
+    doc_add_field(doc, df_add_data(df_new("title"), "title"));
     Aiequal(1, doc->size);
     df = df_add_data(df_new("data"), "data1");
-    df->destroy_data = false;
     df_add_data(df, "data2");
     df_add_data(df, "data3");
     df_add_data(df, "data4");
@@ -98,6 +99,7 @@ void test_doc(tst_case * tc, void *data)
         char buf[100];
         sprintf(buf, "<<%d>>", i);
         df = df_add_data(df_new(buf), estrdup(buf));
+        df->destroy_data = true;
         doc_add_field(doc, df);
         Aiequal(i + 1, doc->size);
     }
@@ -120,11 +122,10 @@ void test_double_field_exception(tst_case * tc, void *data)
     (void)data;
 
     doc = doc_new();
-    doc_add_field(doc, df_add_data(df_new("title"), estrdup("title")));
+    doc_add_field(doc, df_add_data(df_new("title"), "title"));
 
     TRY
         df = df_add_data_len(df_new("title"), "title", 5);
-        df->destroy_data = false;
         doc_add_field(doc, df);
     case EXCEPTION:
         exception_thrown = true;

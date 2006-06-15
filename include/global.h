@@ -10,7 +10,7 @@
 #define MAX_WORD_SIZE 255
 #define MAX_FILE_PATH 1024
 
-typedef void (*free_ft) (void *key);
+typedef void (*free_ft)(void *key);
 
 #define NELEMS(array) (sizeof(array)/sizeof(array[0]))
 

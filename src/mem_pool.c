@@ -42,13 +42,13 @@ inline void *mp_alloc(MemoryPool *mp, int size)
     return p;
 }
 
-char *mp_strdup(MemoryPool *mp, char *str)
+char *mp_strdup(MemoryPool *mp, const char *str)
 {
     int len = strlen(str) + 1;
     return memcpy(mp_alloc(mp, len), str, len);
 }
 
-void *mp_memdup(MemoryPool *mp, void *p, int len)
+void *mp_memdup(MemoryPool *mp, const void *p, int len)
 {
     return memcpy(mp_alloc(mp, len), p, len);
 }

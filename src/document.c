@@ -15,7 +15,7 @@ DocField *df_new(const char *name)
     df->capa = DF_INIT_CAPA;
     df->data = ALLOC_N(char *, df->capa);
     df->lengths = ALLOC_N(int, df->capa);
-    df->destroy_data = true;
+    df->destroy_data = false;
     df->boost = 1.0;
     return df;
 }

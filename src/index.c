@@ -1432,7 +1432,7 @@ static inline Occurence *occ_wo_offsets_new(MemoryPool *mp, int position)
  *
  ****************************************************************************/
 
-Posting *p_new(MemoryPool *mp, char *term, int term_len, int position)
+Posting *p_new(MemoryPool *mp, const char *term, int term_len, int position)
 {
     Posting *p = MP_ALLOC(mp, Posting);
     p->term = term;
@@ -1443,7 +1443,7 @@ Posting *p_new(MemoryPool *mp, char *term, int term_len, int position)
 }
 
 Posting *p_new_with_offsets(MemoryPool *mp,
-                            char *term,
+                            const char *term,
                             int term_len,
                             int position,
                             int start,
@@ -1658,9 +1658,66 @@ TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
     }
     return tv;
 }
+static HashTable *di_get_postings_lists(HashTable *field_postings, int field_num)
+{
+    HashTable *postings_lists = h_get_int(field_postings, field_num);
 
+    if (NULL == postings_lists) {
+        postings_lists = h_new_str(NULL, NULL);
+        h_set_int(field_postings, field_num, postings_lists);
+    }
+    return postings_lists;
+}
+
+
+static inline void di_add_posting(MemoryPool *mp,
+                                  HashTable *postings,
+                                  HashTable *postings_lists,
+                                  const char *text,
+                                  int len,
+                                  int pos,
+                                  int start,
+                                  int end,
+                                  bool store_offsets)
+{
+    HashEntry *he = h_set_ext(postings, text);
+    if (he->value) {
+        if (store_offsets) {
+            p_add_occurence_with_offsets(mp, he->value, pos, start, end);
+        }
+        else {
+            p_add_occurence(mp, he->value, pos);
+        }
+    } else {
+        HashEntry *plist_he = h_set_ext(postings_lists, text);
+        PostingList *pl = NULL;
+        const char *txt;
+        if (!plist_he->value) {
+            plist_he->value = pl = MP_ALLOC(mp, PostingList);
+            txt = pl->term = plist_he->key = he->key =
+                mp_memdup(mp, text, len + 1);
+            pl->first = NULL;
+        }
+        else {
+            txt = he->key = (char *)pl->term;
+            pl = plist_he->value;
+        }
+        if (store_offsets) {
+            he->value = p_new_with_offsets(mp, txt, len, pos, start, end);
+        }
+        else {
+            he->value = p_new(mp, txt, len, pos);
+        }
+        if (NULL == pl->first) {
+            pl->last = pl->first = he->value;
+        }
+        else {
+            pl->last = pl->last->next = he->value;
+        }
+    }
+}
 #define DI_ADD_POSTING(text, len, pos, start, end) do {\
-    he = postings->lookup_i(postings, text);\
+    he = h_set_ext(postings, text);\
     if (he->value) {\
         if (store_offsets) {\
             p_add_occurence_with_offsets(mp, he->value, pos, start, end);\
@@ -1669,26 +1726,45 @@ TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
             p_add_occurence(mp, he->value, pos);\
         }\
     } else {\
-        char *txt = he->key = mp_memdup(mp, text, len);\
+        HashEntry *plist_he = h_set_ext(postings_lists, text);\
+        PostingList *pl = NULL;\
+        const char *txt;\
+        if (!plist_he->value) {\
+            plist_he->value = pl = MP_ALLOC(mp, PostingList);\
+            txt = pl->term = plist_he->key = he->key =\
+                mp_memdup(mp, text, len + 1);\
+            pl->first = NULL;\
+        }\
+        else {\
+            txt = he->key = (char *)pl->term;\
+            pl = plist_he->value;\
+        }\
         if (store_offsets) {\
             he->value = p_new_with_offsets(mp, txt, len, pos, start, end);\
         }\
         else {\
             he->value = p_new(mp, txt, len, pos);\
         }\
+        if (NULL == pl->first) {\
+            pl->last = pl->first = he->value;\
+        }\
+        else {\
+            pl->last = pl->last->next = he->value;\
+        }\
     }\
 } while (0)
 
-HashTable *di_invert_field(DocumentInverter *di,
+HashTable *di_invert_field(DocInverter *di,
                            DocField *df,
                            FieldInfo *fi)
 {
     MemoryPool *mp = di->mp;
     Analyzer *a = di->analyzer;
     HashTable *postings = di->postings;
-    HashEntry *he;
-    bool is_tokenized = fi_is_tokenized(fi);
-    bool store_offsets = fi_store_offsets(fi);
+    HashTable *postings_lists =
+        di_get_postings_lists(di->field_postings, fi->number);
+    const bool is_tokenized = fi_is_tokenized(fi);
+    const bool store_offsets = fi_store_offsets(fi);
     int i;
     if (is_tokenized) {
         Token *tk;
@@ -1698,14 +1774,16 @@ HashTable *di_invert_field(DocumentInverter *di,
             ts->reset(ts, df->data[i]);
             while (NULL != (tk = ts->next(ts))) {
                 position += tk->pos_inc;
-                DI_ADD_POSTING(tk->text, tk->len, position, tk->start, tk->end);
+                di_add_posting(mp, postings, postings_lists, tk->text, tk->len,
+                               position, tk->start, tk->end, store_offsets);
             }
         }
         ts_deref(ts);
     }
     else {
         for (i = 0; i < df->size; i++) {
-            DI_ADD_POSTING(df->data[i], df->lengths[i], i, 0, df->lengths[i]);
+            di_add_posting(mp, postings, postings_lists, df->data[i],
+                           df->lengths[i], i, 0, df->lengths[i], store_offsets);
         }
     }
     return postings;

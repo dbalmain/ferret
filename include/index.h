@@ -398,16 +398,20 @@ typedef struct OccurenceWithoutOffsets
 
 typedef struct Posting
 {
-    char *term;
+    const char *term;
     int term_len;
     int freq;
     Occurence *first_occ;
     Occurence *last_occ;
+    struct Posting *next;
 } Posting;
 
-extern Posting *p_new(MemoryPool *mp, char *term, int term_len, int position);
+extern Posting *p_new(MemoryPool *mp,
+                      const char *term,
+                      int term_len,
+                      int position);
 extern Posting *p_new_with_offsets(MemoryPool *mp,
-                                   char *term,
+                                   const char *term,
                                    int term_len,
                                    int position,
                                    int start,
@@ -519,18 +523,32 @@ extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
 
 /****************************************************************************
  *
- * DocumentInverter
+ * PostingList
  *
  ****************************************************************************/
 
-typedef struct DocumentInverter
+typedef struct PostingList
+{
+    const char *term;
+    Posting *first;
+    Posting *last;
+} PostingList;
+
+/****************************************************************************
+ *
+ * DocInverter
+ *
+ ****************************************************************************/
+
+typedef struct DocInverter
 {
     MemoryPool *mp;
     Analyzer *analyzer;
     HashTable *postings;
-} DocumentInverter;
+    HashTable *field_postings;
+} DocInverter;
 
-extern HashTable *di_invert_field(DocumentInverter *di,
+extern HashTable *di_invert_field(DocInverter *di,
                                   DocField *df,
                                   FieldInfo *fi);
 

@@ -62,11 +62,11 @@ static FieldInfos *create_tv_fis()
     fis_add_field(fis, fi_new("tv", 0, 1, TERM_VECTOR_YES));
     fis_add_field(fis, fi_new("tv2", 0, 1, TERM_VECTOR_YES));
     fis_add_field(fis, fi_new("tv_with_positions", 0, 1,
-                                 TERM_VECTOR_WITH_POSITIONS));
+                              TERM_VECTOR_WITH_POSITIONS));
     fis_add_field(fis, fi_new("tv_with_offsets", 0, 1,
-                                 TERM_VECTOR_WITH_OFFSETS));
+                              TERM_VECTOR_WITH_OFFSETS));
     fis_add_field(fis, fi_new("tv_with_positions_offsets", 0, 1,
-                                 TERM_VECTOR_WITH_POSITIONS_OFFSETS));
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS));
     return fis;
 
 }

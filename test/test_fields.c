@@ -317,12 +317,9 @@ static Document *prepare_doc()
     DocField *df;
     char *bin_data = prepare_bin_data(BIN_DATA_LEN);
 
-    doc_add_field(doc, df_add_data(df_new("ignored"),
-                                   "this fld's ignored"))->destroy_data = false;
-    doc_add_field(doc, df_add_data(df_new("unstored"),
-                                   "unstored ignored"))->destroy_data = false;
-    doc_add_field(doc, df_add_data(df_new("stored"),
-                                   "Yay, a stored field"))->destroy_data = false;
+    doc_add_field(doc, df_add_data(df_new("ignored"), "this fld's ignored"));
+    doc_add_field(doc, df_add_data(df_new("unstored"), "unstored ignored"));
+    doc_add_field(doc, df_add_data(df_new("stored"), "Yay, a stored field"));
     df = doc_add_field(doc, df_add_data(df_new("stored_array"), "one"));
     df->destroy_data = false;
     df_add_data(df, "two");
@@ -330,13 +327,12 @@ static Document *prepare_doc()
     df_add_data(df, "four");
     df_add_data_len(df, bin_data, BIN_DATA_LEN);
     doc_add_field(doc, df_add_data_len(df_new("binary"), bin_data,
-                                       BIN_DATA_LEN));
+                                       BIN_DATA_LEN))->destroy_data = true;
     df = doc_add_field(doc, df_add_data(df_new("array"), "ichi"));
     df_add_data(df, "ni");
     df_add_data(df, "san");
     df_add_data(df, "yon");
     df_add_data(df, "go");
-    df->destroy_data = false;
 
     return doc;
 }
@@ -437,8 +433,7 @@ static void test_fields_rw_multi(tst_case *tc, void *data)
         char buf[100];
         sprintf(buf, "<<%d>>", i);
         doc = doc_new();
-        doc_add_field(doc, df_add_data(df_new(buf), buf)
-                      )->destroy_data = false;
+        doc_add_field(doc, df_add_data(df_new(buf), buf));
         fw_add_doc(fw, doc);
         doc_destroy(doc);
     }

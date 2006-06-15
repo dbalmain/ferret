@@ -383,8 +383,11 @@ int h_set(HashTable *ht, const void *key, void *value)
 {
     int ret_val = HASH_KEY_DOES_NOT_EXIST;
     HashEntry *he = ht->lookup_i(ht, key);
-    int fill = ht->fill;
     if (he->key == NULL) {
+        if (ht->fill * 3 > ht->mask * 2) {
+            h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
+            he = ht->lookup_i(ht, key);
+        }
         ht->fill++;
         ht->size++;
     }
@@ -408,10 +411,28 @@ int h_set(HashTable *ht, const void *key, void *value)
     he->key = (void *)key;
     he->value = value;
 
-    if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
-        h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-    }
+    //if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
+    //    h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
+    //}
     return ret_val;
+}
+
+HashEntry *h_set_ext(HashTable *ht, const void *key)
+{
+    HashEntry *he = ht->lookup_i(ht, key);
+    if (he->key == NULL) {
+        if (ht->fill * 3 > ht->mask * 2) {
+            h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
+            he = ht->lookup_i(ht, key);
+        }
+        ht->fill++;
+        ht->size++;
+    }
+    else if (he->key == dummy_key) {
+        ht->size++;
+    }
+
+    return he;
 }
 
 int h_set_safe(HashTable *ht, const void *key, void *value)

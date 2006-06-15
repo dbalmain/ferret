@@ -250,6 +250,20 @@ extern int h_set(HashTable *self, const void *key, void *value);
 extern int h_set_safe(HashTable *self, const void *key, void *value);
 
 /**
+ * Return a hash entry object so you can handle the insert yourself. This can
+ * be used for performance reasons or for more control over how a value is
+ * added. Say, for example, you wanted to append a value to an array, or add a
+ * new array if non-existed, you could use this method by checking the value
+ * of the HashEntry returned.
+ *
+ * @param self the HashTable to add the value to
+ * @param key the key to use to reference the value
+ * @return HashEntry a pointer to the hash entry object now reserved for this
+ * value. Be sure to set both the *key* and the *value*
+ */
+extern HashEntry *h_set_ext(HashTable *ht, const void *key);
+
+/**
  * Check whether key +key+ exists in the HashTable.
  *
  * @param self the HashTable to check in
