@@ -82,7 +82,7 @@ static void test_segment_field_index_single_field(tst_case *tc, void *data)
     Store *store = (Store *)data;
     SegmentFieldIndex *sfi;
     SegmentTermIndex *sti;
-    TermIndexWriter *tiw = tiw_open(store, "_0", 32, SKIP_INTERVAL);
+    TermInfosWriter *tiw = tiw_open(store, "_0", 32, SKIP_INTERVAL);
 
     tiw_start_field(tiw, 0);
 
@@ -109,7 +109,7 @@ static void add_multi_field_terms(Store *store)
 {
     int i;
     int field_num = 0;
-    TermIndexWriter *tiw = tiw_open(store, "_0", 8, 8);
+    TermInfosWriter *tiw = tiw_open(store, "_0", 8, 8);
 
     for (i = 0; i < DICT_LEN; i++) {
         TermInfo term_info = {(i % 20) + 1, i, i, i};
@@ -169,8 +169,8 @@ void test_segment_term_enum(tst_case *tc, void *data)
         int doc_count = i % 20 + 1;
         Asequal(DICT[i], te->next(te));
         Aiequal(doc_count, te->curr_ti.doc_freq);
-        Aiequal(i, te->curr_ti.freq_pointer);
-        Aiequal(i, te->curr_ti.prox_pointer);
+        Aiequal(i, te->curr_ti.frq_pointer);
+        Aiequal(i, te->curr_ti.prx_pointer);
         if (doc_count > 8) {
             Aiequal(i, te->curr_ti.skip_offset);
         }
@@ -181,8 +181,8 @@ void test_segment_term_enum(tst_case *tc, void *data)
         int doc_count = i % 20 + 1;
         Asequal(DICT[i], te->next(te));
         Aiequal(doc_count, te->curr_ti.doc_freq);
-        Aiequal(i, te->curr_ti.freq_pointer);
-        Aiequal(i, te->curr_ti.prox_pointer);
+        Aiequal(i, te->curr_ti.frq_pointer);
+        Aiequal(i, te->curr_ti.prx_pointer);
         if (doc_count > 8) {
             Aiequal(i, te->curr_ti.skip_offset);
         }
@@ -193,8 +193,8 @@ void test_segment_term_enum(tst_case *tc, void *data)
         int doc_count = i % 20 + 1;
         Asequal(DICT[i], te->next(te));
         Aiequal(doc_count, te->curr_ti.doc_freq);
-        Aiequal(i, te->curr_ti.freq_pointer);
-        Aiequal(i, te->curr_ti.prox_pointer);
+        Aiequal(i, te->curr_ti.frq_pointer);
+        Aiequal(i, te->curr_ti.prx_pointer);
         if (doc_count > 8) {
             Aiequal(i, te->curr_ti.skip_offset);
         }
@@ -206,8 +206,8 @@ void test_segment_term_enum(tst_case *tc, void *data)
         int doc_count = i % 20 + 1;
         Asequal(DICT[i], te->next(te));
         Aiequal(doc_count, te->curr_ti.doc_freq);
-        Aiequal(i, te->curr_ti.freq_pointer);
-        Aiequal(i, te->curr_ti.prox_pointer);
+        Aiequal(i, te->curr_ti.frq_pointer);
+        Aiequal(i, te->curr_ti.prx_pointer);
         if (doc_count > 8) {
             Aiequal(i, te->curr_ti.skip_offset);
         }
@@ -218,8 +218,8 @@ void test_segment_term_enum(tst_case *tc, void *data)
         int doc_count = i % 20 + 1;
         Asequal(DICT[i], te->next(te));
         Aiequal(doc_count, te->curr_ti.doc_freq);
-        Aiequal(i, te->curr_ti.freq_pointer);
-        Aiequal(i, te->curr_ti.prox_pointer);
+        Aiequal(i, te->curr_ti.frq_pointer);
+        Aiequal(i, te->curr_ti.prx_pointer);
         if (doc_count > 8) {
             Aiequal(i, te->curr_ti.skip_offset);
         }
@@ -228,38 +228,38 @@ void test_segment_term_enum(tst_case *tc, void *data)
     te_clone = te->clone(te);
     Asequal("dulcet", te->skip_to(te, "dulcet"));
     Aiequal(15, te->curr_ti.doc_freq);
-    Aiequal(94, te->curr_ti.freq_pointer);
-    Aiequal(94, te->curr_ti.prox_pointer);
+    Aiequal(94, te->curr_ti.frq_pointer);
+    Aiequal(94, te->curr_ti.prx_pointer);
     Aiequal(94, te->curr_ti.skip_offset);
     Asequal("duffer", te->skip_to(te, "duf"));
     Aiequal(1, te->curr_ti.doc_freq);
-    Aiequal(80, te->curr_ti.freq_pointer);
-    Aiequal(80, te->curr_ti.prox_pointer);
+    Aiequal(80, te->curr_ti.frq_pointer);
+    Aiequal(80, te->curr_ti.prx_pointer);
     Aiequal(0, te->curr_ti.skip_offset);
     Asequal("dugong", te->skip_to(te, "dugo"));
     Aiequal(5, te->curr_ti.doc_freq);
-    Aiequal(84, te->curr_ti.freq_pointer);
-    Aiequal(84, te->curr_ti.prox_pointer);
+    Aiequal(84, te->curr_ti.frq_pointer);
+    Aiequal(84, te->curr_ti.prx_pointer);
     Aiequal(0, te->curr_ti.skip_offset);
     Asequal("dumb", te->skip_to(te, "dumb"));
     Aiequal(20, te->curr_ti.doc_freq);
-    Aiequal(119, te->curr_ti.freq_pointer);
-    Aiequal(119, te->curr_ti.prox_pointer);
+    Aiequal(119, te->curr_ti.frq_pointer);
+    Aiequal(119, te->curr_ti.prx_pointer);
     Aiequal(119, te->curr_ti.skip_offset);
     Apnull(te->next(te));
 
     /* test clone */
     Asequal("dugong", te_clone->skip_to(te_clone, "dugo"));
     Aiequal(5, te_clone->curr_ti.doc_freq);
-    Aiequal(84, te_clone->curr_ti.freq_pointer);
-    Aiequal(84, te_clone->curr_ti.prox_pointer);
+    Aiequal(84, te_clone->curr_ti.frq_pointer);
+    Aiequal(84, te_clone->curr_ti.prx_pointer);
     Aiequal(0, te_clone->curr_ti.skip_offset);
     /* test clone after original is closed */
     te->close(te);
     Asequal("dumb", te_clone->skip_to(te_clone, "dumb"));
     Aiequal(20, te_clone->curr_ti.doc_freq);
-    Aiequal(119, te_clone->curr_ti.freq_pointer);
-    Aiequal(119, te_clone->curr_ti.prox_pointer);
+    Aiequal(119, te_clone->curr_ti.frq_pointer);
+    Aiequal(119, te_clone->curr_ti.prx_pointer);
     Aiequal(119, te_clone->curr_ti.skip_offset);
     Apnull(te_clone->next(te_clone));
 
@@ -267,26 +267,26 @@ void test_segment_term_enum(tst_case *tc, void *data)
     te_clone->set_field(te_clone, (DICT_LEN / 40) * 2);
     Asequal(DICT[DICT_LEN-1], te_clone->skip_to(te_clone, DICT[DICT_LEN-1]));
     Aiequal((DICT_LEN - 1) % 20 + 1, te_clone->curr_ti.doc_freq);
-    Aiequal(DICT_LEN - 1, te_clone->curr_ti.freq_pointer);
-    Aiequal(DICT_LEN - 1, te_clone->curr_ti.prox_pointer);
+    Aiequal(DICT_LEN - 1, te_clone->curr_ti.frq_pointer);
+    Aiequal(DICT_LEN - 1, te_clone->curr_ti.prx_pointer);
     Apnull(te_clone->next(te_clone));
 
     /* test first term */
     te_clone->set_field(te_clone, 0);
     Asequal(DICT[0], te_clone->skip_to(te_clone, DICT[0]));
     Aiequal(1, te_clone->curr_ti.doc_freq);
-    Aiequal(0, te_clone->curr_ti.freq_pointer);
-    Aiequal(0, te_clone->curr_ti.prox_pointer);
+    Aiequal(0, te_clone->curr_ti.frq_pointer);
+    Aiequal(0, te_clone->curr_ti.prx_pointer);
 
     te_clone->close(te_clone);
     sfi_close(sfi);
 }
 
-static void test_term_index_reader(tst_case *tc, void *data)
+static void test_term_infos_reader(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     SegmentFieldIndex *sfi;
-    TermIndexReader *tir;
+    TermInfosReader *tir;
     TermInfo *ti;
     add_multi_field_terms(store);
 
@@ -295,8 +295,8 @@ static void test_term_index_reader(tst_case *tc, void *data)
     tir_set_field(tir, 0); 
     ti = tir_get_ti(tir, DICT[0]);
     Aiequal(1, ti->doc_freq);
-    Aiequal(0, ti->freq_pointer);
-    Aiequal(0, ti->prox_pointer);
+    Aiequal(0, ti->frq_pointer);
+    Aiequal(0, ti->prx_pointer);
 
     /* try term not in this field */
     ti = tir_get_ti(tir, DICT[DICT_LEN - 1]);
@@ -329,8 +329,8 @@ static void test_term_index_reader(tst_case *tc, void *data)
     tir_set_field(tir, (DICT_LEN / 40) * 2);
     ti = tir_get_ti(tir, DICT[DICT_LEN - 1]);
     Aiequal((DICT_LEN - 1) % 20 + 1, ti->doc_freq);
-    Aiequal(DICT_LEN - 1, ti->freq_pointer);
-    Aiequal(DICT_LEN - 1, ti->prox_pointer);
+    Aiequal(DICT_LEN - 1, ti->frq_pointer);
+    Aiequal(DICT_LEN - 1, ti->prx_pointer);
 
     tir_close(tir);
     sfi_close(sfi);
@@ -345,7 +345,7 @@ tst_suite *ts_term(tst_suite *suite)
     tst_run_test(suite, test_segment_field_index_single_field, store);
     tst_run_test(suite, test_segment_field_index_multi_field, store);
     tst_run_test(suite, test_segment_term_enum, store);
-    tst_run_test(suite, test_term_index_reader, store);
+    tst_run_test(suite, test_term_infos_reader, store);
 
     store_deref(store);
 

@@ -76,6 +76,7 @@
 #define STATE_ERROR 6
 #define PARSE_ERROR 7
 #define MEM_ERROR 8
+#define INDEX_ERROR 9
 
 extern char *const UNSUPPORTED_ERROR_MSG;
 extern char *const EOF_ERROR_MSG;

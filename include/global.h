@@ -12,7 +12,7 @@
 
 typedef void (*free_ft)(void *key);
 
-#define NELEMS(array) (sizeof(array)/sizeof(array[0]))
+#define NELEMS(array) ((int)(sizeof(array)/sizeof(array[0])))
 
 #define ALLOC_N(type,n) (type *)emalloc(sizeof(type)*(n))
 #define ALLOC(type) (type *)emalloc(sizeof(type))
@@ -22,10 +22,8 @@ typedef void (*free_ft)(void *key);
 #define ZEROSET(ptr, type) memset(ptr, 0, sizeof(type))
 #define ZEROSET_N(ptr, type, n) memset(ptr, 0, sizeof(type)*(n))
 
-#define ALLOC_AND_ZERO(type)\
-    (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
-#define ALLOC_AND_ZERO_N(type,n)\
-    (type*)memset(emalloc(sizeof(type)*(n)), 0, (sizeof(type)*(n)))
+#define ALLOC_AND_ZERO(type) (type*)ecalloc(sizeof(type))
+#define ALLOC_AND_ZERO_N(type,n) (type*)ecalloc(sizeof(type)*(n))
 
 #define REF(a) (a)->ref_cnt++
 #define DEREF(a) (a)->ref_cnt--
@@ -84,6 +82,7 @@ extern char *progname();
 extern void setprogname(const char *str);
 
 extern void *emalloc(size_t n);
+extern void *ecalloc(size_t n);
 extern void *erealloc(void *ptr, size_t n);
 extern char *estrdup(const char *s);
 extern char *estrcat(char *str, char *str_cat);

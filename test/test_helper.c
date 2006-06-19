@@ -1,7 +1,7 @@
 #include "helper.h"
 #include "test.h"
 
-static void test_hlp_string_diff(tst_case * tc, void *data)
+static void test_hlp_string_diff(tst_case *tc, void *data)
 {
     (void)data; /* suppress unused argument warning */
 
@@ -35,7 +35,7 @@ void test_int2float(tst_case *tc, void *data)
     }
 }
 
-tst_suite *ts_helper(tst_suite * suite)
+tst_suite *ts_helper(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

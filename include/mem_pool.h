@@ -9,17 +9,19 @@ typedef struct MemoryPool {
     int buf_capa;
     int buf_pointer;
     int pointer;
+    int chunk_size;
     char *curr_buffer;
     char **buffers;
 } MemoryPool;
 
 extern MemoryPool *mp_new();
-extern MemoryPool *mp_new_capa(int init_capa);
+extern MemoryPool *mp_new_capa(int chunk_size, int init_capa);
 extern inline void *mp_alloc(MemoryPool *mp, int size);
 extern void mp_reset(MemoryPool *mp);
 extern void mp_destroy(MemoryPool *mp);
 extern char *mp_strdup(MemoryPool *mp, const char *str);
 extern void *mp_memdup(MemoryPool *mp, const void *p, int len);
+extern int mp_used(MemoryPool *mp);
 
 #define MP_ALLOC_N(mp,type,n) (type *)mp_alloc(mp, sizeof(type)*(n))
 #define MP_ALLOC(mp,type) (type *)mp_alloc(mp, sizeof(type))

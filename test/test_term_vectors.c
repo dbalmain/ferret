@@ -8,52 +8,59 @@
 static void test_posting(tst_case *tc, void *data)
 {
     MemoryPool *mp = (MemoryPool *)data;
-    Posting *p = p_new_with_offsets(mp, "term", 4, 0, 0, 5); 
+    PostingList *pl;
+    Posting *p = p_new_wo(mp, 0, 0, 0, 5); 
+    Aiequal(0, p->doc_num);
     Aiequal(1, p->freq);
-    Aiequal(4, p->term_len);
-    Asequal("term", p->term);
-    Apequal(p->first_occ, p->last_occ);
-    Aiequal(0, p->first_occ->position);
+    Aiequal(0, p->first_occ->pos);
     Aiequal(0, p->first_occ->offset.start);
     Aiequal(5, p->first_occ->offset.end);
     Apnull(p->first_occ->next);
 
-    p_add_occurence_with_offsets(mp, p, 50, 154, 158);
-    Apequal(p->last_occ, p->first_occ->next);
-    Aiequal(2, p->freq);
-    Aiequal(50,  p->last_occ->position);
-    Aiequal(154, p->last_occ->offset.start);
-    Aiequal(158, p->last_occ->offset.end);
-    Apnull(p->last_occ->next);
+    pl = pl_new(mp, "four", 4, p);
+    Aiequal(4, pl->term_len);
+    Asequal("four", pl->term);
+    Apequal(p->first_occ, pl->last_occ);
 
-    p_add_occurence_with_offsets(mp, p, 345, 912, 916);
-    Apequal(p->last_occ, p->first_occ->next->next);
+    pl_add_occ_wo(mp, pl, 50, 154, 158);
+    Apequal(pl->last_occ, p->first_occ->next);
+    Aiequal(2, p->freq);
+    Aiequal(50,  pl->last_occ->pos);
+    Aiequal(154, pl->last_occ->offset.start);
+    Aiequal(158, pl->last_occ->offset.end);
+    Apnull(pl->last_occ->next);
+
+    pl_add_occ_wo(mp, pl, 345, 912, 916);
+    Apequal(pl->last_occ, p->first_occ->next->next);
     Aiequal(3, p->freq);
-    Aiequal(345, p->last_occ->position);
-    Aiequal(912, p->last_occ->offset.start);
-    Aiequal(916, p->last_occ->offset.end);
-    Apnull(p->last_occ->next);
+    Aiequal(345,  pl->last_occ->pos);
+    Aiequal(912, pl->last_occ->offset.start);
+    Aiequal(916, pl->last_occ->offset.end);
+    Apnull(pl->last_occ->next);
 
     mp_reset(mp);
-    p = p_new(mp, "term", 4, 10);
+    p = p_new(mp, 0, 10);
+    Aiequal(0, p->doc_num);
     Aiequal(1, p->freq);
-    Aiequal(4, p->term_len);
-    Asequal("term", p->term);
-    Apequal(p->first_occ, p->last_occ);
-    Aiequal(10, p->first_occ->position);
-    Apnull(p->last_occ->next);
+    Aiequal(10, p->first_occ->pos);
+    Apnull(p->first_occ->next);
 
-    p_add_occurence(mp, p, 50);
-    Apequal(p->last_occ, p->first_occ->next);
+    pl = pl_new(mp, "seven", 5, p);
+    Aiequal(5, pl->term_len);
+    Asequal("seven", pl->term);
+    Apequal(p->first_occ, pl->last_occ);
+
+    pl_add_occ(mp, pl, 50);
+    Apequal(pl->last_occ, p->first_occ->next);
     Aiequal(2, p->freq);
-    Aiequal(50,  p->last_occ->position);
-    Apnull(p->last_occ->next);
+    Aiequal(50,  pl->last_occ->pos);
+    Apnull(pl->last_occ->next);
 
-    p_add_occurence(mp, p, 345);
-    Apequal(p->last_occ, p->first_occ->next->next);
+    pl_add_occ(mp, pl, 345);
+    Apequal(pl->last_occ, p->first_occ->next->next);
     Aiequal(3, p->freq);
-    Aiequal(345, p->last_occ->position);
-    Apnull(p->last_occ->next);
+    Aiequal(345, pl->last_occ->pos);
+    Apnull(pl->last_occ->next);
 }
 
 static FieldInfos *create_tv_fis()
@@ -83,19 +90,19 @@ static char **create_tv_terms(MemoryPool *mp)
     return terms;
 }
 
-static Posting **create_tv_postings(MemoryPool *mp, char **terms)
+static PostingList **create_tv_plists(MemoryPool *mp, char **terms)
 {
     int i, j;
-    Posting **postings, *p;
-    postings = MP_ALLOC_N(mp, Posting *, NUM_TERMS);
+    PostingList **plists, *pl;
+    plists = MP_ALLOC_N(mp, PostingList *, NUM_TERMS);
     for (i = 0; i < NUM_TERMS; i++) {
-        p = postings[i] =
-            p_new_with_offsets(mp, terms[i], 9, 0, 0, 5);
+        pl = plists[i] =
+            pl_new(mp, terms[i], 9, p_new_wo(mp, 0, 0, 0, 5));
         for (j = 1; j <= i; j++) {
-            p_add_occurence_with_offsets(mp, p, j, j * 6, j * 6 + 5);
+            pl_add_occ_wo(mp, pl, j, j * 6, j * 6 + 5);
         }
     }
-    return postings;
+    return plists;
 }
 
 static void test_tv_single_doc(tst_case *tc, void *data)
@@ -109,7 +116,7 @@ static void test_tv_single_doc(tst_case *tc, void *data)
     HashTable *tvs;
     FieldInfos *fis = create_tv_fis();
     char **terms = create_tv_terms(mp);
-    Posting **postings = create_tv_postings(mp, terms);
+    PostingList **plists = create_tv_plists(mp, terms);
 
     tvw = tvw_open(store, "_0", fis);
     tvw_close(tvw);
@@ -122,14 +129,14 @@ static void test_tv_single_doc(tst_case *tc, void *data)
     tvw = tvw_open(store, "_0", fis);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw, fis_get_field(fis, "tv")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_positions")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw,
                      fis_get_field(fis, "tv_with_positions_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_close(tvw);
 
@@ -250,36 +257,36 @@ static void test_tv_multi_doc(tst_case *tc, void *data)
     HashTable *tvs;
     FieldInfos *fis = create_tv_fis();
     char **terms = create_tv_terms(mp);
-    Posting **postings = create_tv_postings(mp, terms);
+    PostingList **plists = create_tv_plists(mp, terms);
 
     tvw = tvw_open(store, "_0", fis);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw, fis_get_field(fis, "tv")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_positions")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw,
                      fis_get_field(fis, "tv_with_positions_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_open_doc(tvw);
     tvw_add_postings(tvw, fis_get_field(fis, "tv")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_positions")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw, fis_get_field(fis, "tv_with_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_add_postings(tvw,
                      fis_get_field(fis, "tv_with_positions_offsets")->number,
-                     postings, NUM_TERMS);
+                     plists, NUM_TERMS);
     tvw_close_doc(tvw);
     tvw_close(tvw);
 

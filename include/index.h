@@ -5,8 +5,58 @@
 #include "document.h"
 #include "analysis.h"
 #include "hash.h"
+#include "hashset.h"
 #include "store.h"
 #include "mem_pool.h"
+#include "similarity.h"
+#include "bitvector.h"
+
+typedef struct IndexReader IndexReader;
+
+/***************************************************************************
+ *
+ * CacheObject
+ *
+ ***************************************************************************/
+
+typedef struct CacheObject {
+  HashTable *ref_tab1;
+  HashTable *ref_tab2;
+  void *ref1;
+  void *ref2;
+  void *obj;
+  void (*destroy)(void *p);
+} CacheObject;
+
+extern void cache_destroy(CacheObject *co);
+extern CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
+            void *ref1, void *ref2, void (*destroy)(void *p), void *obj);
+extern HashTable *co_hash_create();
+
+/****************************************************************************
+ *
+ * Config
+ *
+ ****************************************************************************/
+
+typedef struct Config
+{
+    int chunk_size;
+    int max_buffer_memory;
+    int index_interval;
+    int skip_interval;
+    int merge_factor;
+    int max_field_length;
+    bool use_compound_file;
+} Config;
+
+extern const Config const default_config;
+
+/****************************************************************************
+ *
+ * FieldInfo
+ *
+ ****************************************************************************/
 
 enum StoreValues
 {
@@ -42,12 +92,6 @@ enum TermVectorValues
 #define FI_STORE_POSITIONS_BM   0x040
 #define FI_STORE_OFFSETS_BM     0x080
 
-/****************************************************************************
- *
- * FieldInfo
- *
- ****************************************************************************/
-
 typedef struct FieldInfo
 {
     char *name;
@@ -56,12 +100,12 @@ typedef struct FieldInfo
     unsigned int bits;
 } FieldInfo;
 
-extern FieldInfo *fi_new(char *name,
+extern FieldInfo *fi_new(const char *name,
                          int store,
                          int index,
                          int term_vector);
-extern char *fi_to_s(FieldInfo *self);
-extern void fi_destroy(FieldInfo *self);
+extern char *fi_to_s(FieldInfo *fi);
+extern void fi_destroy(FieldInfo *fi);
 #define fi_is_stored(fi)         (((fi)->bits & FI_IS_STORED_BM) != 0)
 #define fi_is_compressed(fi)     (((fi)->bits & FI_IS_COMPRESSED_BM) != 0)
 #define fi_is_indexed(fi)        (((fi)->bits & FI_IS_INDEXED_BM) != 0)
@@ -70,6 +114,8 @@ extern void fi_destroy(FieldInfo *self);
 #define fi_store_term_vector(fi) (((fi)->bits & FI_STORE_TERM_VECTOR_BM) != 0)
 #define fi_store_positions(fi)   (((fi)->bits & FI_STORE_POSITIONS_BM) != 0)
 #define fi_store_offsets(fi)     (((fi)->bits & FI_STORE_OFFSETS_BM) != 0)
+#define fi_has_norms(fi)\
+    (((fi)->bits & (FI_OMIT_NORMS_BM|FI_IS_INDEXED_BM)) == FI_IS_INDEXED_BM)
 
 /****************************************************************************
  *
@@ -90,13 +136,13 @@ typedef struct FieldInfos
 } FieldInfos;
 
 extern FieldInfos *fis_new(int store, int index, int term_vector);
-extern FieldInfo *fis_add_field(FieldInfos *self, FieldInfo *fi);
-extern FieldInfo *fis_get_field(FieldInfos *self, char *name);
-extern FieldInfo *fis_get_or_add_field(FieldInfos *self, char *name);
+extern FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi);
+extern FieldInfo *fis_get_field(FieldInfos *fis, const char *name);
+extern FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name);
 extern void fis_write(FieldInfos *fis, Store *store);
 extern FieldInfos *fis_read(Store *store);
-extern char *fis_to_s(FieldInfos *self);
-extern void fis_destroy(FieldInfos *self);
+extern char *fis_to_s(FieldInfos *fis);
+extern void fis_destroy(FieldInfos *fis);
 
 /****************************************************************************
  *
@@ -153,13 +199,14 @@ extern void sis_destroy(SegmentInfos *sis);
 
 typedef struct FieldsReader
 {
-  int len;
+  int size;
   FieldInfos *fis;
   InStream *fdt_in;
   InStream *fdx_in;
 } FieldsReader;
 
-extern FieldsReader *fr_open(Store *store, char *seg_name, FieldInfos *fis);
+extern FieldsReader *fr_open(Store *store,
+                             const char *segment, FieldInfos *fis);
 extern void fr_close(FieldsReader *fr);
 extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
 
@@ -176,7 +223,8 @@ typedef struct FieldsWriter
   OutStream *fdx_out;
 } FieldsWriter;
 
-extern FieldsWriter *fw_open(Store *store, char *seg_name, FieldInfos *fis);
+extern FieldsWriter *fw_open(Store *store,
+                             const char *segment, FieldInfos *fis);
 extern void fw_close(FieldsWriter *fw);
 extern void fw_add_doc(FieldsWriter *fw, Document *doc);
 
@@ -189,16 +237,16 @@ extern void fw_add_doc(FieldsWriter *fw, Document *doc);
 typedef struct TermInfo
 {
     int doc_freq;
-    long freq_pointer;
-    long prox_pointer;
+    long frq_pointer;
+    long prx_pointer;
     long skip_offset;
 } TermInfo;
 
 #define ti_set(ti, mdf, mfp, mpp, mso) do {\
-    ti->doc_freq = mdf;\
-    ti->freq_pointer = mfp;\
-    ti->prox_pointer = mpp;\
-    ti->skip_offset = mso;\
+    (ti).doc_freq = mdf;\
+    (ti).frq_pointer = mfp;\
+    (ti).prx_pointer = mpp;\
+    (ti).skip_offset = mso;\
 } while (0)
 
 /****************************************************************************
@@ -215,8 +263,8 @@ struct TermEnum
     char        prev_term[MAX_WORD_SIZE];
     TermInfo    curr_ti;
     int         curr_term_len;
-    char     *(*next)(TermEnum *te);
     TermEnum *(*set_field)(TermEnum *te, int field_num);
+    char     *(*next)(TermEnum *te);
     char     *(*skip_to)(TermEnum *te, const char *term);
     void      (*close)(TermEnum *te);
     TermEnum *(*clone)(TermEnum *te);
@@ -231,7 +279,7 @@ TermInfo *te_get_ti(struct TermEnum *te);
  *
  ****************************************************************************/
 
-/* * SegmentFieldIndex * */
+/* * SegmentTermIndex * */
 
 typedef struct SegmentTermIndex
 {
@@ -259,7 +307,7 @@ typedef struct SegmentFieldIndex
     HashTable       *field_dict;
 } SegmentFieldIndex;
 
-extern SegmentFieldIndex *sfi_open(Store *store, char *seg_name);
+extern SegmentFieldIndex *sfi_open(Store *store, const char *segment);
 extern void sfi_close(SegmentFieldIndex *sfi);
 
 
@@ -292,35 +340,35 @@ TermEnum *mte_new(IndexReader **readers, int *starts, int rcnt, Term *term);
 
 /****************************************************************************
  *
- * TermIndexReader
+ * TermInfosReader
  *
  ****************************************************************************/
 
 #define TE_BUCKET_INIT_CAPA 1
 
-typedef struct TermIndexReader
+typedef struct TermInfosReader
 {
     thread_key_t        thread_ste;
-    SegmentTermEnum   **ste_bucket;
-    int                 ste_bucket_size;
-    int                 ste_bucket_capa;
+    void              **ste_bucket;
     SegmentTermEnum    *orig_te;
-} TermIndexReader;
+    int                 field_num;
+} TermInfosReader;
 
-extern TermIndexReader *tir_open(Store *store,
+extern TermInfosReader *tir_open(Store *store,
                                  SegmentFieldIndex *sfi,
-                                 char *seg_name);
-extern void tir_set_field(TermIndexReader *tir, int field_num);
-extern TermInfo *tir_get_ti(TermIndexReader *tir, const char *term);
-extern char *tir_get_term(TermIndexReader *tir, int pos);
-extern void tir_close(TermIndexReader *tir);
+                                 const char *segment);
+extern TermInfosReader *tir_set_field(TermInfosReader *tir, int field_num);
+extern TermInfo *tir_get_ti(TermInfosReader *tir, const char *term);
+extern char *tir_get_term(TermInfosReader *tir, int pos);
+extern void tir_close(TermInfosReader *tir);
 
 /****************************************************************************
  *
- * TermIndexWriter
+ * TermInfosWriter
  *
  ****************************************************************************/
 
+#define INDEX_INTERVAL 128
 #define SKIP_INTERVAL 16
 
 typedef struct TermWriter
@@ -331,7 +379,7 @@ typedef struct TermWriter
     OutStream *os;
 } TermWriter;
 
-typedef struct TermIndexWriter
+typedef struct TermInfosWriter
 {
     int field_count;
     int index_interval;
@@ -340,18 +388,89 @@ typedef struct TermIndexWriter
     OutStream *tfx_out;
     TermWriter *tix_writer;
     TermWriter *tis_writer;
-} TermIndexWriter;
+} TermInfosWriter;
 
-extern TermIndexWriter *tiw_open(Store *store,
-                                 const char *seg_name,
+extern TermInfosWriter *tiw_open(Store *store,
+                                 const char *segment,
                                  int index_interval, 
                                  int skip_interval);
-extern void tiw_start_field(TermIndexWriter *tiw, int field_num);
-extern void tiw_add(TermIndexWriter *tiw,
+extern void tiw_start_field(TermInfosWriter *tiw, int field_num);
+extern void tiw_add(TermInfosWriter *tiw,
                     const char *term,
                     int t_len,
                     TermInfo *ti);
-extern void tiw_close(TermIndexWriter *tiw);
+extern void tiw_close(TermInfosWriter *tiw);
+
+/****************************************************************************
+ *
+ * TermDocEnum
+ *
+ ****************************************************************************/
+
+typedef struct TermDocEnum TermDocEnum;
+struct TermDocEnum
+{
+    void (*seek)(TermDocEnum *tde, int field_num, const char *term);
+    int  (*doc_num)(TermDocEnum *tde);
+    int  (*freq)(TermDocEnum *tde);
+    bool (*next)(TermDocEnum *tde);
+    int  (*read)(TermDocEnum *tde, int *docs, int *freqs, int req_num);
+    bool (*skip_to)(TermDocEnum *tde, int target);
+    int  (*next_position)(TermDocEnum *tde);
+    void (*close)(TermDocEnum *tde);
+};
+
+/* * SegmentTermDocEnum * */
+
+typedef struct SegmentTermDocEnum SegmentTermDocEnum;
+struct SegmentTermDocEnum
+{
+    TermDocEnum tde;
+    void (*seek_prox)(SegmentTermDocEnum *stde, int prx_pointer);
+    void (*skip_prox)(SegmentTermDocEnum *stde);
+    TermInfosReader *tir;
+    InStream        *frq_in;
+    InStream        *prx_in;
+    InStream        *skip_in;
+    BitVector       *deleted_docs;
+    int count;               /* number of docs for this term  skipped */
+    int doc_freq;            /* number of doc this term appears in */
+    int doc_num;
+    int freq;
+    int num_skips;
+    int skip_interval;
+    int skip_count;
+    int skip_doc;
+    int frq_pointer;
+    int prx_pointer;
+    int skip_pointer;
+    int prx_cnt;
+    int position;
+    bool have_skipped : 1;
+};
+
+extern TermDocEnum *stde_new(TermInfosReader *tir, InStream *frq_in,
+                             BitVector *deleted_docs);
+
+/* * SegmentTermDocEnum * */
+extern TermDocEnum *stpe_new(TermInfosReader *tir, InStream *frq_in,
+                             InStream *prx_in, BitVector *deleted_docs);
+
+/* * MultiTermDocEnum * */
+
+typedef struct MultiTermDocEnum MultiTermDocEnum;
+struct MultiTermDocEnum
+{
+    int *starts;
+    int cnt;
+    char *term;
+    int field_num;
+    int base;
+    int pointer;
+    TermDocEnum **irs_tde;
+    TermDocEnum *curr_tde;
+};
+
 
 /****************************************************************************
  *
@@ -374,7 +493,7 @@ typedef struct Offset
 typedef struct Occurence
 {
     struct Occurence *next;
-    int position;
+    int pos;
     Offset offset;
 } Occurence;
 
@@ -387,7 +506,7 @@ typedef struct Occurence
 typedef struct OccurenceWithoutOffsets
 {
     struct Occurence *next;
-    int position;
+    int pos;
 } OccurenceWithoutOffsets;
 
 /****************************************************************************
@@ -398,30 +517,36 @@ typedef struct OccurenceWithoutOffsets
 
 typedef struct Posting
 {
-    const char *term;
-    int term_len;
     int freq;
+    int doc_num;
     Occurence *first_occ;
-    Occurence *last_occ;
     struct Posting *next;
 } Posting;
 
-extern Posting *p_new(MemoryPool *mp,
-                      const char *term,
-                      int term_len,
-                      int position);
-extern Posting *p_new_with_offsets(MemoryPool *mp,
-                                   const char *term,
-                                   int term_len,
-                                   int position,
-                                   int start,
-                                   int end);
-extern void p_add_occurence(MemoryPool *mp, Posting *p, int position);
-extern void p_add_occurence_with_offsets(MemoryPool *mp,
-                                         Posting *p,
-                                         int position,
-                                         int start_offset,
-                                         int end_offset);
+extern inline Posting *p_new(MemoryPool *mp, int doc_num, int pos);
+extern inline Posting *p_new_wo(MemoryPool *mp, int doc_num, int pos,
+                                int start, int end);
+
+/****************************************************************************
+ *
+ * PostingList
+ *
+ ****************************************************************************/
+
+typedef struct PostingList
+{
+    const char *term;
+    int term_len;
+    Posting *first;
+    Posting *last;
+    Occurence *last_occ;
+} PostingList;
+
+extern PostingList *pl_new(MemoryPool *mp, const char *term,
+                           int term_len, Posting *p);
+extern void pl_add_occ(MemoryPool *mp, PostingList *pl, int pos);
+extern void pl_add_occ_wo(MemoryPool *mp, PostingList *pl, int pos,
+                          int start_offset, int end_offset);
 
 /****************************************************************************
  *
@@ -487,13 +612,13 @@ typedef struct TermVectorsWriter
 } TermVectorsWriter;
 
 extern TermVectorsWriter *tvw_open(Store *store,
-                                   const char *seg_name,
+                                   const char *segment,
                                    FieldInfos *fis);
 extern void tvw_open_doc(TermVectorsWriter *tvw);
 extern void tvw_close_doc(TermVectorsWriter *tvw);
 extern void tvw_add_postings(TermVectorsWriter *tvw,
                              int field_num,
-                             Posting **postings,
+                             PostingList **plists,
                              int size);
 extern void tvw_close(TermVectorsWriter *tvw);
 
@@ -512,7 +637,7 @@ typedef struct TermVectorsReader
 } TermVectorsReader;
 
 extern TermVectorsReader *tvr_open(Store *store,
-                                   const char *seg_name,
+                                   const char *segment,
                                    FieldInfos *fis);
 extern TermVectorsReader *tvr_clone(TermVectorsReader *orig);
 extern void tvr_close(TermVectorsReader *tvr);
@@ -523,33 +648,194 @@ extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
 
 /****************************************************************************
  *
- * PostingList
+ * IndexReader
  *
  ****************************************************************************/
 
-typedef struct PostingList
+#define WRITE_LOCK_NAME "write"
+#define COMMIT_LOCK_NAME "commit"
+
+struct IndexReader
 {
-    const char *term;
-    Posting *first;
-    Posting *last;
-} PostingList;
+    int           (*num_docs)(IndexReader *ir);
+    int           (*max_doc)(IndexReader *ir);
+    Document     *(*get_doc)(IndexReader *ir, int doc_num);
+    uchar        *(*get_norms)(IndexReader *ir, int field_num);
+    void          (*get_norms_into)(IndexReader *ir, int field_num, uchar *buf);
+    TermEnum     *(*terms)(IndexReader *ir, int field_num);
+    TermEnum     *(*terms_from)(IndexReader *ir, int field_num, char *term);
+    int           (*doc_freq)(IndexReader *ir, int field_num, char *term);
+    TermDocEnum  *(*term_docs)(IndexReader *ir);
+    TermDocEnum  *(*term_positions)(IndexReader *ir);
+    TermVector   *(*term_vector)(IndexReader *ir, int doc_num,
+                        char *field);
+    HashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
+    bool          (*is_deleted)(IndexReader *ir, int doc_num);
+    bool          (*has_deletions)(IndexReader *ir);
+    void          (*acquire_write_lock)(IndexReader *ir);
+    void          (*set_norm_i)(IndexReader *ir, int doc_num, int field_num,
+                        uchar val);
+    void          (*delete_doc_i)(IndexReader *ir, int doc_num);
+    void          (*undelete_all_i)(IndexReader *ir);
+    void          (*commit_i)(IndexReader *ir);
+    void          (*close_i)(IndexReader *ir);
+    Store *store;
+    Lock *write_lock;
+    SegmentInfos *sis;
+    FieldInfos *fis;
+    HashTable *cache;
+    HashTable *sort_cache;
+    mutex_t mutex;
+    bool has_changes : 1;
+    bool is_stale    : 1;
+    bool is_owner    : 1;
+};
+
+extern IndexReader *ir_create(Store *store, SegmentInfos *sis, int is_owner);
+extern IndexReader *ir_open(Store *store);
+extern bool ir_index_exists(Store *store);
+extern void ir_close(IndexReader *ir);
+extern void ir_commit(IndexReader *ir);
+extern void ir_delete_doc(IndexReader *ir, int doc_num);
+extern void ir_undelete_all(IndexReader *ir);
+extern void ir_set_norm(IndexReader *ir, int doc_num, int field_num, uchar val);
+extern void ir_destroy(IndexReader *self);
+extern Document *ir_get_doc_with_term(IndexReader *ir, int field, char *term);
+extern TermDocEnum *ir_term_docs_for(IndexReader *ir, int field, char *term);
+extern TermDocEnum *ir_term_positions_for(IndexReader *ir, int field, char *t);
+extern void ir_add_cache(IndexReader *ir);
+extern bool ir_is_latest(IndexReader *ir);
 
 /****************************************************************************
  *
- * DocInverter
+ * SegmentReader
  *
  ****************************************************************************/
 
-typedef struct DocInverter
+typedef struct SegmentReader {
+    IndexReader *ir;
+    char *segment;
+    FieldsReader *fr;
+    BitVector *deleted_docs;
+    InStream *frq_in;
+    InStream *prx_in;
+    SegmentFieldIndex *sfi;
+    TermInfosReader *tir;
+    TermVectorsReader *orig_tvr;
+    thread_key_t thread_tvr;
+    TermVectorsReader **tvr_bucket;
+    int tvr_bucket_size;
+    int tvr_bucket_capa;
+    HashTable *norms;
+    Store *cfs_store;
+    uchar *fake_norms;
+    bool deleted_docs_dirty : 1;
+    bool undelete_all : 1;
+    bool norms_dirty : 1;
+} SegmentReader;
+
+/****************************************************************************
+ *
+ * Boost
+ *
+ ****************************************************************************/
+
+typedef struct Boost
 {
+    float val;
+    int doc_num;
+    struct Boost *next;
+} Boost;
+
+/****************************************************************************
+ *
+ * FieldInverter
+ *
+ ****************************************************************************/
+
+typedef struct FieldInverter
+{
+    HashTable *plists;
+    Boost *boosts;
+    FieldInfo *fi;
+    int length;
+    bool is_tokenized : 1;
+    bool store_term_vector : 1;
+    bool store_offsets : 1;
+} FieldInverter;
+
+/****************************************************************************
+ *
+ * DocWriter
+ *
+ ****************************************************************************/
+
+typedef struct IndexWriter IndexWriter;
+
+typedef struct DocWriter
+{
+    Store *store;
+    const char *segment;
+    FieldInfos *fis;
+    TermVectorsWriter *tvw;
+    FieldsWriter *fw;
     MemoryPool *mp;
     Analyzer *analyzer;
-    HashTable *postings;
-    HashTable *field_postings;
-} DocInverter;
+    HashTable *curr_plists;
+    HashTable *fields;
+    Similarity *similarity;
+    int doc_num;
+    int index_interval;
+    int skip_interval;
+    int max_field_length;
+} DocWriter;
 
-extern HashTable *di_invert_field(DocInverter *di,
-                                  DocField *df,
-                                  FieldInfo *fi);
+extern DocWriter *dw_open(IndexWriter *is, const char *segment);
+extern void dw_close(DocWriter *dw);
+extern void dw_add_doc(DocWriter *dw, Document *doc);
+extern void dw_new_segment(DocWriter *dw, char *segment);
+
+/****************************************************************************
+ *
+ * IndexWriter
+ *
+ ****************************************************************************/
+
+struct IndexWriter
+{
+    mutex_t mutex;
+    Store *store;
+    Analyzer *analyzer;
+    Config *config;
+    SegmentInfos *sis;
+    FieldInfos *fis;
+    DocWriter *dw;
+    Similarity *similarity;
+    Lock *write_lock;
+};
+
+void index_create(Store *store, FieldInfos *fis);
+IndexWriter *iw_open(Store *store, Analyzer *analyzer, const Config *config);
+void iw_close(IndexWriter *iw);
+void iw_add_doc(IndexWriter *iw, Document *doc);
+
+/****************************************************************************
+ *
+ * CompoundWriter
+ *
+ ****************************************************************************/
+
+typedef struct CompoundWriter {
+    Store *store;
+    const char *name;
+    HashSet *ids;
+    void **file_entries;
+    bool merged;
+} CompoundWriter;
+
+extern CompoundWriter *open_cw(Store *store, char *name);
+extern void cw_add_file(CompoundWriter *cw, char *id);
+extern void cw_close(CompoundWriter *cw);
+
 
 #endif

@@ -2,13 +2,14 @@
 #include "mem_pool.h"
 #include <string.h>
 
-MemoryPool *mp_new_capa(int init_buf_capa)
+MemoryPool *mp_new_capa(int chuck_size, int init_buf_capa)
 {
     MemoryPool *mp = ALLOC(MemoryPool);
+    mp->chunk_size = chuck_size;
     mp->buf_capa = init_buf_capa;
     mp->buffers = ALLOC_N(char *, init_buf_capa);
 
-    mp->buffers[0] = mp->curr_buffer = emalloc(MP_BUF_SIZE);
+    mp->buffers[0] = mp->curr_buffer = emalloc(mp->chunk_size);
     mp->buf_alloc = 1;
     mp->buf_pointer = 0;
     mp->pointer = 0;
@@ -17,7 +18,7 @@ MemoryPool *mp_new_capa(int init_buf_capa)
 
 MemoryPool *mp_new()
 {
-    return mp_new_capa(MP_INIT_CAPA);
+    return mp_new_capa(MP_BUF_SIZE, MP_INIT_CAPA);
 }
 
 inline void *mp_alloc(MemoryPool *mp, int size)
@@ -26,7 +27,7 @@ inline void *mp_alloc(MemoryPool *mp, int size)
     p = mp->curr_buffer + mp->pointer;
     mp->pointer += size;
 
-    if (mp->pointer > MP_BUF_SIZE) {
+    if (mp->pointer > mp->chunk_size) {
         mp->buf_pointer++;
         if (mp->buf_pointer >= mp->buf_alloc) {
             mp->buf_alloc++;
@@ -34,7 +35,7 @@ inline void *mp_alloc(MemoryPool *mp, int size)
                 mp->buf_capa <<= 1;
                 REALLOC_N(mp->buffers, char *, mp->buf_capa);
             }
-            mp->buffers[mp->buf_pointer] = emalloc(MP_BUF_SIZE);
+            mp->buffers[mp->buf_pointer] = emalloc(mp->chunk_size);
         }
         p = mp->curr_buffer = mp->buffers[mp->buf_pointer];
         mp->pointer = size;
@@ -51,6 +52,11 @@ char *mp_strdup(MemoryPool *mp, const char *str)
 void *mp_memdup(MemoryPool *mp, const void *p, int len)
 {
     return memcpy(mp_alloc(mp, len), p, len);
+}
+
+int mp_used(MemoryPool *mp)
+{
+    return mp->buf_pointer * mp->chunk_size + mp->pointer;
 }
 
 void mp_reset(MemoryPool *mp)

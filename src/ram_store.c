@@ -382,10 +382,12 @@ static InStream *ram_open_input(Store *store, const char *filename)
         RAISE(IO_ERROR, "tried to open \"%s\" but it doesn't exist", filename);
     }
     REF(rf);
+
     is->file.p = rf;
     is->d.pointer = 0;
     is->is_clone = false;
     is->m = &RAM_IN_STREAM_METHODS;
+
     return is;
 }
 

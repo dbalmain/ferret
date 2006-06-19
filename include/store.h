@@ -668,6 +668,18 @@ extern f_u64 is_read_u64(InStream *is);
 extern inline unsigned int is_read_vint(InStream *is);
 
 /**
+ * Skip _cnt_ vints. This is a convenience method used for performance reasons
+ * to skip large numbers of vints. It is mostly used by TermDocEnums. When
+ * skipping positions os the proximity index file.
+ *
+ * @param is the InStream to read from
+ * @param cnt the number of vints to skip
+ * @raise IO_ERROR if there is a error reading from the file-system
+ * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ */
+extern inline void is_skip_vints(InStream *is, register int cnt);
+
+/**
  * Read a compressed (VINT) unsigned long from the InStream.
  * TODO: describe VINT format
  *

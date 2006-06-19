@@ -180,6 +180,18 @@ void *emalloc(size_t size)
     return p;
 }
 
+/* ecalloc: malloc, zeroset and report if error */
+void *ecalloc(size_t size)
+{
+    void *p = calloc(1, size);
+
+    if (p == NULL) {
+        RAISE(MEM_ERROR, "failed to allocate %d bytes", size);
+    }
+
+    return p;
+}
+
 /* erealloc: realloc and report if error */
 void *erealloc(void *ptr, size_t size)
 {

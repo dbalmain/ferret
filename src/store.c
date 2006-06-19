@@ -380,6 +380,14 @@ inline unsigned long is_read_vlong(InStream *is)
     return res;
 }
 
+inline void is_skip_vints(InStream *is, register int cnt)
+{
+  for (; cnt > 0; cnt--) {
+    while ((is_read_byte(is) & 0x80) != 0) {
+    }
+  }
+}
+
 inline void is_read_chars(InStream *is, char *buffer,
                                   int off, int len)
 {

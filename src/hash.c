@@ -257,14 +257,17 @@ void h_clear(HashTable *ht)
     free_ft free_value = ht->free_value_i;
 
     /* Clear all the hash values and keys as necessary */
-    for (i = 0; i <= ht->mask; i++) {
-        he = &ht->table[i];
-        if (he->key != NULL && he->key != dummy_key) {
-            free_value(he->value);
-            free_key(he->key);
+    if (free_key != dummy_free || free_value != dummy_free) {
+        for (i = 0; i <= ht->mask; i++) {
+            he = &ht->table[i];
+            if (he->key != NULL && he->key != dummy_key) {
+                free_value(he->value);
+                free_key(he->key);
+            }
+            he->key = NULL;
         }
-        he->key = NULL;
     }
+    ZEROSET_N(ht->table, HashEntry, ht->mask + 1);
     ht->size = 0;
     ht->fill = 0;
 }
@@ -411,9 +414,11 @@ int h_set(HashTable *ht, const void *key, void *value)
     he->key = (void *)key;
     he->value = value;
 
-    //if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
-    //    h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-    //}
+    /*
+    if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
+        h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
+    }
+    */
     return ret_val;
 }
 

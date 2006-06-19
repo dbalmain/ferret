@@ -44,21 +44,22 @@ static void do_mp_test(tst_case *tc, MemoryPool *mp)
             }
         }
     }
-    if (!Atrue(total_bytes < (mp->buf_alloc * MP_BUF_SIZE))) {
+    if (!Atrue(total_bytes < (mp->buf_alloc * mp->chunk_size))) {
         Tmsg("total bytes allocated <%d> > memory used <%d>",
-             total_bytes, mp->buf_alloc * MP_BUF_SIZE);
+             total_bytes, mp->buf_alloc * mp->chunk_size);
     }
 
-    max_necessary = (mp->buf_alloc - 1) * (MP_BUF_SIZE-(MAX_SIZE+sizeof(int)));
+    max_necessary =
+        (mp->buf_alloc - 1) * (mp->chunk_size - (MAX_SIZE+sizeof(int)));
     if (!Atrue(total_bytes > max_necessary)) {
         Tmsg("total bytes allocated <%d> < max memory needed <%d>",
              total_bytes, max_necessary);
     }
 }
 
-static void test_mp_alloc(tst_case *tc, void *data)
+static void test_mp_dup(tst_case *tc, void *data)
 {
-    MemoryPool *mp = mp_new_capa(16);
+    MemoryPool *mp = mp_new_capa(2000, 16);
     (void)data;
 
     do_mp_test(tc, mp);
@@ -67,6 +68,22 @@ static void test_mp_alloc(tst_case *tc, void *data)
     mp_destroy(mp);
 }
 
+static void test_mp_alloc(tst_case *tc, void *data)
+{
+    MemoryPool *mp = mp_new_capa(20, 16);
+    char *t;
+    (void)data;
+
+    t = mp_strdup(mp, "012345678901234");
+
+    Asequal("012345678901234", t);
+    Aiequal(strlen(t) + 1, mp_used(mp));
+
+    t = mp_memdup(mp, "012345678901234", 10);
+    Asnequal("012345678901234", t, 10);
+    Aiequal(30, mp_used(mp));
+    mp_destroy(mp);
+}
 
 tst_suite *ts_mem_pool(tst_suite *suite)
 {
@@ -74,6 +91,7 @@ tst_suite *ts_mem_pool(tst_suite *suite)
 
     tst_run_test(suite, test_mp_default_capa, NULL);
     tst_run_test(suite, test_mp_alloc, NULL);
+    tst_run_test(suite, test_mp_dup, NULL);
 
     return suite;
 }
