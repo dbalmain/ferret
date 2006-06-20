@@ -672,6 +672,7 @@ static DocField *fr_df_new(char *name, int size)
     df->data = ALLOC_N(char *, df->capa);
     df->lengths = ALLOC_N(int, df->capa);
     df->destroy_data = true;
+    df->boost = 1.0;
     return df;
 }
 
@@ -2804,6 +2805,7 @@ void tv_destroy(TermVector *tv)
         free(tv->terms[i].positions);
         free(tv->terms[i].offsets);
     }
+    free(tv->field);
     free(tv->terms);
     free(tv);
 }
@@ -2854,13 +2856,14 @@ TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
     TermVector *tv = ALLOC_AND_ZERO(TermVector);
     InStream *tvd_in = tvr->tvd_in;
     int num_terms;
+    FieldInfo *fi = tvr->fis->fields[field_num];
     
     tv->field_num = field_num;
+    tv->field = estrdup(fi->name);
 
     num_terms = is_read_vint(tvd_in);
     if (num_terms > 0) {
         int i, j, delta_start, delta_len, total_len, freq;
-        FieldInfo *fi = tvr->fis->fields[field_num];
         int store_positions = fi_store_positions(fi);
         int store_offsets = fi_store_offsets(fi);
         uchar buffer[MAX_WORD_SIZE];
@@ -2907,7 +2910,7 @@ TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
 
 HashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num)
 {
-    HashTable *term_vectors = h_new_int((free_ft)&tv_destroy);
+    HashTable *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
     int i;
     InStream *tvx_in = tvr->tvx_in;
     InStream *tvd_in = tvr->tvd_in;
@@ -2931,11 +2934,13 @@ HashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num)
         is_read_vint(tvd_in); /* skip space, we don't need it */
     }
     is_seek(tvd_in, data_pointer);
+
     for (i = 0; i < field_cnt; i++) {
-        h_set_int(term_vectors, field_nums[i],
-                  tvr_read_term_vector(tvr, field_nums[i]));
+        TermVector *tv = tvr_read_term_vector(tvr, field_nums[i]);
+        h_set(term_vectors, tv->field, tv);
     }
     free(field_nums);
+
     return term_vectors;
 }
 
@@ -3364,10 +3369,13 @@ HashTable *dw_invert_field(DocWriter *dw,
     else {
         for (i = 0; i < df->size; i++) {
             int len = df->lengths[i];
+            char buf[MAX_WORD_SIZE];
+            char *data_ptr = df->data[i];
             if (len > MAX_WORD_SIZE) {
                 len = MAX_WORD_SIZE - 1;
+                data_ptr = memcpy(buf, df->data[i], len);
             }
-            dw_add_posting(mp, curr_plists, fld_plists, doc_num, df->data[i],
+            dw_add_posting(mp, curr_plists, fld_plists, doc_num, data_ptr,
                            len, i, 0, df->lengths[i], store_offsets);
         }
         fld_inv->length = i;
@@ -3391,6 +3399,7 @@ void dw_add_doc(DocWriter *dw, Document *doc)
 
     fw_add_doc(dw->fw, doc);
 
+    tvw_open_doc(dw->tvw);
     for (i = 0; i < doc->size; i++) {
         df = doc->fields[i];
         fld_inv = dw_get_fld_inv(dw, df->name);
@@ -3411,6 +3420,7 @@ void dw_add_doc(DocWriter *dw, Document *doc)
 
         dw_reset_postings(postings);
     }
+    tvw_close_doc(dw->tvw);
     dw->doc_num++;
 }
 

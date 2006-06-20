@@ -583,6 +583,7 @@ typedef struct Term
 typedef struct TermVector
 {
     int field_num;
+    char *field;
     int size;
     Term *terms;
 } TermVector;

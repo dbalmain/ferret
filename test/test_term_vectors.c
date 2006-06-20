@@ -223,8 +223,7 @@ static void test_tv_single_doc(tst_case *tc, void *data)
     tv = h_get_int(tvs, fis_get_or_add_field(fis, "other")->number);
     Apnull(tv);
 
-    tv = h_get_int(tvs, fis_get_field(fis, "tv_with_positions_offsets"
-                                     )->number);
+    tv = h_get(tvs, "tv_with_positions_offsets");
     if (Apnotnull(tv)) {
         Aiequal(fis_get_field(fis, "tv_with_positions_offsets")->number,
                 tv->field_num);
@@ -344,8 +343,7 @@ static void test_tv_multi_doc(tst_case *tc, void *data)
     tv = h_get_int(tvs, fis_get_or_add_field(fis, "other")->number);
     Apnull(tv);
 
-    tv = h_get_int(tvs, fis_get_field(fis, "tv_with_positions_offsets"
-                                     )->number);
+    tv = h_get(tvs, "tv_with_positions_offsets");
     if (Apnotnull(tv)) {
         Aiequal(fis_get_field(fis, "tv_with_positions_offsets")->number,
                 tv->field_num);

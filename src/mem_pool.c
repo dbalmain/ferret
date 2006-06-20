@@ -49,6 +49,13 @@ char *mp_strdup(MemoryPool *mp, const char *str)
     return memcpy(mp_alloc(mp, len), str, len);
 }
 
+char *mp_strndup(MemoryPool *mp, const char *str, int len)
+{
+    char *s = memcpy(mp_alloc(mp, len + 1), str, len);
+    s[len] = '\0';
+    return s;
+}
+
 void *mp_memdup(MemoryPool *mp, const void *p, int len)
 {
     return memcpy(mp_alloc(mp, len), p, len);

@@ -545,3 +545,16 @@ HashTable *h_clone(HashTable *ht,
     }
     return ht_clone;
 }
+
+void h_str_print_keys(HashTable *ht)
+{
+    HashEntry *he;
+    int i = ht->size;
+    printf("keys:\n");
+    for (he = ht->table; i > 0; he++) {
+        if (he->key && he->key != dummy_key) {        /* active entry */
+            printf("\t%s\n", (char *)he->key);
+            i--;
+        }
+    }
+}

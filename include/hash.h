@@ -441,7 +441,7 @@ extern HashTable *h_clone(HashTable *self,
  * @param key the key to lookup
  * @return the HashEntry that was found
  */
-HashEntry *h_lookup_str(HashTable *ht, register const char *key);
+extern HashEntry *h_lookup_str(HashTable *ht, register const char *key);
 
 /**
  * This is the lookup function for a hash table with non-string keys. The
@@ -453,8 +453,10 @@ HashEntry *h_lookup_str(HashTable *ht, register const char *key);
  * @param key the key to lookup
  * @return the HashEntry that was found
  */
-HashEntry *h_lookup(HashTable *ht, register const void *key);
+extern HashEntry *h_lookup(HashTable *ht, register const void *key);
 
 typedef HashEntry *(*h_lookup_ft)(HashTable *ht, register const void *key);
+
+extern void h_str_print_keys(HashTable *ht);
 
 #endif

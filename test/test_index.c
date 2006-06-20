@@ -541,7 +541,7 @@ static void test_postings_sorter(tst_case *tc, void *data)
     PostingList plists[NUM_POSTINGS], *p_ptr[NUM_POSTINGS];
     (void)data;
     for (i = 0; i < NUM_POSTINGS; i++) {
-        plists[i].term = test_word_list[i];
+        plists[i].term = (char *)test_word_list[i];
         p_ptr[i] = &plists[i];
     }
 
@@ -768,6 +768,14 @@ void write_ir_test_docs(Store *store, int is_for_segment_reader)
     Document **docs;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+    fis_add_field(fis, fi_new("author", STORE_YES, INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS));
+    fis_add_field(fis, fi_new("title", STORE_YES, INDEX_UNTOKENIZED,
+                              TERM_VECTOR_WITH_OFFSETS));
+    fis_add_field(fis, fi_new("year", STORE_YES, INDEX_UNTOKENIZED,
+                              TERM_VECTOR_NO));
+    fis_add_field(fis, fi_new("text", STORE_NO, INDEX_YES,
+                              TERM_VECTOR_NO));
     index_create(store, fis);
     fis_destroy(fis);
 
@@ -945,6 +953,116 @@ void test_ir_term_doc_enum(tst_case *tc, void *data)
     tde->close(tde);
 }
 
+void test_ir_term_vectors(tst_case *tc, void *data)
+{ 
+    IndexReader *ir = (IndexReader *)data;
+
+    TermVector *tv = ir->term_vector(ir, 3, "body");
+    HashTable *tvs;
+
+    Asequal("body", tv->field);
+    Aiequal(4, tv->size);
+    Asequal("word1", tv->terms[0].text);
+    Asequal("word2", tv->terms[1].text);
+    Asequal("word3", tv->terms[2].text);
+    Asequal("word4", tv->terms[3].text);
+    Aiequal(3, tv->terms[0].freq);
+    Aiequal(2, tv->terms[0].positions[0]);
+    Aiequal(4, tv->terms[0].positions[1]);
+    Aiequal(7, tv->terms[0].positions[2]);
+    Aiequal(12, tv->terms[0].offsets[0].start);
+    Aiequal(17, tv->terms[0].offsets[0].end);
+    Aiequal(24, tv->terms[0].offsets[1].start);
+    Aiequal(29, tv->terms[0].offsets[1].end);
+    Aiequal(42, tv->terms[0].offsets[2].start);
+    Aiequal(47, tv->terms[0].offsets[2].end);
+
+    Aiequal(1, tv->terms[1].freq);
+    Aiequal(3, tv->terms[1].positions[0]);
+    Aiequal(18, tv->terms[1].offsets[0].start);
+    Aiequal(23, tv->terms[1].offsets[0].end);
+
+    Aiequal(4, tv->terms[2].freq);
+    Aiequal(0, tv->terms[2].positions[0]);
+    Aiequal(5, tv->terms[2].positions[1]);
+    Aiequal(8, tv->terms[2].positions[2]);
+    Aiequal(9, tv->terms[2].positions[3]);
+    Aiequal(0, tv->terms[2].offsets[0].start);
+    Aiequal(5, tv->terms[2].offsets[0].end);
+    Aiequal(30, tv->terms[2].offsets[1].start);
+    Aiequal(35, tv->terms[2].offsets[1].end);
+    Aiequal(48, tv->terms[2].offsets[2].start);
+    Aiequal(53, tv->terms[2].offsets[2].end);
+    Aiequal(54, tv->terms[2].offsets[3].start);
+    Aiequal(59, tv->terms[2].offsets[3].end);
+
+    Aiequal(2, tv->terms[3].freq);
+    Aiequal(1, tv->terms[3].positions[0]);
+    Aiequal(6, tv->terms[3].positions[1]);
+    Aiequal(6, tv->terms[3].offsets[0].start);
+    Aiequal(11, tv->terms[3].offsets[0].end);
+    Aiequal(36, tv->terms[3].offsets[1].start);
+    Aiequal(41, tv->terms[3].offsets[1].end);
+
+    tv_destroy(tv);
+
+    tvs = ir->term_vectors(ir, 3);
+    Aiequal(3, tvs->size);
+    tv = h_get(tvs, "author");
+    if (Apnotnull(tv)) {
+        Asequal("author", tv->field);
+        Aiequal(2, tv->size);
+        Apnull(tv->terms[0].offsets);
+    }
+    tv = h_get(tvs, "body");
+    if (Apnotnull(tv)) {
+        Asequal("body", tv->field);
+        Aiequal(4, tv->size);
+    }
+    tv = h_get(tvs, "title");
+    if (Apnotnull(tv)) {
+        Asequal("title", tv->field);
+        Aiequal(1, tv->size); /* untokenized */
+        Asequal("War And Peace", tv->terms[0].text);
+        Apnull(tv->terms[0].positions);
+        Aiequal(0, tv->terms[0].offsets[0].start);
+        Aiequal(13, tv->terms[0].offsets[0].end);
+    }
+    h_destroy(tvs);
+}
+
+void test_ir_get_doc(tst_case *tc, void *data)
+{ 
+    IndexReader *ir = (IndexReader *)data;
+    Document *doc = ir->get_doc(ir, 3);
+    DocField *df;
+    Aiequal(4, doc->size);
+
+    df = doc_get_field(doc, author);
+    Asequal(author, df->name);
+    Asequal("Leo Tolstoy", df->data[0]);
+    Afequal(df->boost, 1.0);
+
+    df = doc_get_field(doc, body);
+    Asequal(body, df->name);
+    Asequal("word3 word4 word1 word2 word1 "
+            "word3 word4 word1 word3 word3", df->data[0]);
+    Afequal(df->boost, 1.0);
+    df = doc_get_field(doc, title);
+    Asequal(title, df->name);
+    Asequal("War And Peace", df->data[0]);
+    Afequal(df->boost, 1.0);
+
+    df = doc_get_field(doc, year);
+    Asequal(year, df->name);
+    Asequal("1865", df->data[0]);
+    Afequal(df->boost, 1.0);
+
+    df = doc_get_field(doc, text);
+    Apnull(df); /* text is not stored */
+
+    doc_destroy(doc);
+}
 
 tst_suite *ts_index(tst_suite * suite)
 {
@@ -964,6 +1082,8 @@ tst_suite *ts_index(tst_suite * suite)
 
     tst_run_test(suite, test_ir_basic_ops, ir);
     tst_run_test(suite, test_ir_term_doc_enum, ir);
+    tst_run_test(suite, test_ir_term_vectors, ir);
+    tst_run_test(suite, test_ir_get_doc, ir);
 
     ir_close(ir);
 

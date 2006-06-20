@@ -20,6 +20,7 @@ extern inline void *mp_alloc(MemoryPool *mp, int size);
 extern void mp_reset(MemoryPool *mp);
 extern void mp_destroy(MemoryPool *mp);
 extern char *mp_strdup(MemoryPool *mp, const char *str);
+extern char *mp_strndup(MemoryPool *mp, const char *str, int len);
 extern void *mp_memdup(MemoryPool *mp, const void *p, int len);
 extern int mp_used(MemoryPool *mp);
 
