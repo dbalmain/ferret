@@ -23,6 +23,7 @@ extern tst_suite *ts_term(tst_suite *suite);
 extern tst_suite *ts_term_vectors(tst_suite *suite);
 extern tst_suite *ts_similarity(tst_suite *suite);
 extern tst_suite *ts_index(tst_suite *suite);
+extern tst_suite *ts_compound_io(tst_suite *suite);
 
 const struct test_list
 {
@@ -40,6 +41,7 @@ const struct test_list
     {ts_mem_pool},
     {ts_fs_store},
     {ts_ram_store},
+    {ts_compound_io},
     {ts_fields},
     {ts_segments},
     {ts_document},

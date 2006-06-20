@@ -2,6 +2,7 @@
 #define FRT_ARRAY_H
 
 #define ARY_INIT_CAPA 8
+#define ary_size(ary)      ary_sz(ary)
 #define ary_sz(ary)        (((int *)ary)[-1])
 #define ary_capa(ary)      (((int *)ary)[-2])
 #define ary_type_size(ary) (((int *)ary)[-3])
@@ -13,11 +14,13 @@
 #define ary_new_type(type)      (type *)ary_new_i(sizeof(type), 0)
 #define ary_new_capa(init_capa) ary_new_i(sizeof(void *), init_capa)
 #define ary_new()               ary_new_i(sizeof(void *), 0)
-#define ary_resize(ary, size)   ary_set_i(((void ***)&ary), size)
-#define ary_set(ary, i, val)    ary_set_i(((void ***)&ary), i, val)
-#define ary_push(ary, val)      ary_push_i(((void ***)&ary), val)
-#define ary_unshift(ary, val)   ary_unshift_i(((void ***)&ary), val)
-
+#define ary_resize(ary, size)   ary_resize_i(((void ***)(void *)&ary), size)
+#define ary_set(ary, i, val)    ary_set_i(((void ***)(void *)&ary), i, val)
+#define ary_push(ary, val)      ary_push_i(((void ***)(void *)&ary), val)
+#define ary_unshift(ary, val)   ary_unshift_i(((void ***)(void *)&ary), val)
+#define ary_rsz(ary, size)      ary_resize(ary, size)
+#define ary_grow(ary)           ary_resize(ary, ary_sz(ary))
+#define ary_last(ary)           ary[ary_sz(ary) - 1]
 
 extern inline void ary_resize_i(void ***ary, int size);
 extern void **ary_new_i(int type_size, int init_capa);

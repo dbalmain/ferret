@@ -73,6 +73,24 @@ static void test_bv(tst_case *tc, void *data)
         Aiequal(0, bv_get(bv, i + 1));
     }
 
+    /* test setting all bits */
+    bv_clear(bv);
+    for (i = 0; i < BV_SIZE; i++) {
+        bv_set(bv, i);
+    }
+    for (i = 0; i < BV_SIZE; i++) {
+        Aiequal(1, bv_get(bv, i));
+    }
+
+    /* test random bits */
+    bv_clear(bv);
+    for (i = 0; i < BV_SIZE; i++) {
+        if ((rand() % 2) == 0) {
+            bv_set(bv, i);
+            Aiequal(1, bv_get(bv, i));
+        }
+    }
+
     bv_destroy(bv);
 }
 

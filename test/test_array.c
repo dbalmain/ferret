@@ -187,6 +187,59 @@ void stress_ary(tst_case *tc, void *data)
     ary_destroy(ary, &free);
 }
 
+struct TestPoint {
+    int x;
+    int y;
+};
+
+#define tp_ary_set(ary, i, x_val, y_val) do {\
+    ary_resize(ary, i);\
+    ary[i].x = x_val;\
+    ary[i].y = y_val;\
+} while (0)
+
+void test_typed_ary(tst_case *tc, void *data)
+{
+    struct TestPoint *points = ary_new_type_capa(struct TestPoint, 5);
+    (void)data;
+
+    Aiequal(5, ary_capa(points));
+    Aiequal(0, ary_sz(points));
+    Aiequal(sizeof(struct TestPoint), ary_type_size(points));
+
+    tp_ary_set(points, 0, 1, 2);
+    Aiequal(5, ary_capa(points));
+    Aiequal(1, ary_sz(points));
+    Aiequal(sizeof(struct TestPoint), ary_type_size(points));
+    Aiequal(1, points[0].x);
+    Aiequal(2, points[0].y);
+
+    tp_ary_set(points, 5, 15, 20);
+    Aiequal(6, ary_size(points));
+    Aiequal(15, points[5].x);
+    Aiequal(20, points[5].y);
+
+    tp_ary_set(points, 1, 1, 1);
+    tp_ary_set(points, 2, 2, 2);
+    tp_ary_set(points, 3, 3, 3);
+    tp_ary_set(points, 4, 4, 4);
+
+    Aiequal(6, ary_size(points));
+    Aiequal(1, points[0].x);
+    Aiequal(2, points[0].y);
+    Aiequal(1, points[1].x);
+    Aiequal(1, points[1].y);
+    Aiequal(2, points[2].x);
+    Aiequal(2, points[2].y);
+    Aiequal(3, points[3].x);
+    Aiequal(3, points[3].y);
+    Aiequal(4, points[4].x);
+    Aiequal(4, points[4].y);
+    Aiequal(15, points[5].x);
+    Aiequal(20, points[5].y);
+    ary_free(points);
+}
+
 tst_suite *ts_array(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
@@ -194,6 +247,7 @@ tst_suite *ts_array(tst_suite *suite)
     tst_run_test(suite, test_ary, NULL);
     tst_run_test(suite, test_ary_destroy, NULL);
     tst_run_test(suite, stress_ary, NULL);
+    tst_run_test(suite, test_typed_ary, NULL);
 
     return suite;
 }

@@ -138,6 +138,7 @@ typedef struct xcontext_t
 #else
 extern void RAISE(int excode, const char *fmt, ...);
 #endif
+#define RAISE_HELL() RAISE(ERROR, "Hell")
 
 
 extern void xraise(int excode, const char *const msg);

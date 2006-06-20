@@ -34,7 +34,7 @@ void bv_set(BitVector * bv, int bit)
     f_u32 bitmask = 1 << (bit & 31);
     
     /* Check to see if we need to grow the BitVector */
-    if (bit > bv->size) {
+    if (bit >= bv->size) {
         bv->size = bit + 1; /* size is max range of bits set */
         if (word >= bv->capa) {
             int capa = bv->capa << 1;

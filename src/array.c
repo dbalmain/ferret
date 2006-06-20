@@ -18,6 +18,7 @@ void **ary_new_i(int type_size, int init_capa)
 
 inline void ary_resize_i(void ***ary, int size)
 {
+    size++;
     if (size >= ary_sz(*ary)) {
         int capa = ary_capa(*ary);
         if (size >= capa) {
@@ -45,7 +46,7 @@ void ary_set_i(void ***ary, int index, void *value)
             RAISE(INDEX_ERROR, "index %d out array", index);
         }
     }
-    ary_resize_i(ary, index + 1);
+    ary_resize_i(ary, index);
     (*ary)[index] = value;
 }
 
@@ -65,7 +66,7 @@ void *ary_get(void **ary, int index)
 void ary_push_i(void ***ary, void *value)
 {
     int size = ary_sz(*ary);
-    ary_resize_i(ary, size + 1);
+    ary_resize_i(ary, size);
     (*ary)[size] = value;
 }
 
@@ -79,7 +80,7 @@ void *ary_pop(void **ary)
 void ary_unshift_i(void ***ary, void *value)
 {
     int size = ary_sz(*ary);
-    ary_resize_i(ary, size + 1);
+    ary_resize_i(ary, size);
     memmove(*ary, *ary + 1, size * sizeof(void *));
     (*ary)[0] = value;
 }

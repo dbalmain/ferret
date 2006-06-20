@@ -41,7 +41,7 @@ static int f_cnt = 0;/* number of failures */
  */
 #define MAX_MSG_SIZE 100000
 static char msg_buf[MAX_MSG_SIZE] = "";
-static char tmp_buf[1000] = "";
+static char tmp_buf[2000] = "";
 
 /* Check to see if +testname+ was specified on the command line */
 static bool find_test_name(const char *testname)

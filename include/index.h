@@ -606,8 +606,6 @@ typedef struct TermVectorsWriter
     OutStream *tvd_out;
     FieldInfos *fis;
     TVField *fields;
-    int f_size;
-    int f_capa;
     long tvd_pointer;
 } TermVectorsWriter;
 
@@ -698,11 +696,11 @@ extern void ir_close(IndexReader *ir);
 extern void ir_commit(IndexReader *ir);
 extern void ir_delete_doc(IndexReader *ir, int doc_num);
 extern void ir_undelete_all(IndexReader *ir);
-extern void ir_set_norm(IndexReader *ir, int doc_num, int field_num, uchar val);
+extern void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val);
 extern void ir_destroy(IndexReader *self);
-extern Document *ir_get_doc_with_term(IndexReader *ir, int field, char *term);
-extern TermDocEnum *ir_term_docs_for(IndexReader *ir, int field, char *term);
-extern TermDocEnum *ir_term_positions_for(IndexReader *ir, int field, char *t);
+extern Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term);
+extern TermDocEnum *ir_term_docs_for(IndexReader *ir, char *field, char *term);
+extern TermDocEnum *ir_term_positions_for(IndexReader *ir, char *fld, char *t);
 extern void ir_add_cache(IndexReader *ir);
 extern bool ir_is_latest(IndexReader *ir);
 
@@ -713,7 +711,7 @@ extern bool ir_is_latest(IndexReader *ir);
  ****************************************************************************/
 
 typedef struct SegmentReader {
-    IndexReader *ir;
+    IndexReader ir;
     char *segment;
     FieldsReader *fr;
     BitVector *deleted_docs;
@@ -723,9 +721,7 @@ typedef struct SegmentReader {
     TermInfosReader *tir;
     TermVectorsReader *orig_tvr;
     thread_key_t thread_tvr;
-    TermVectorsReader **tvr_bucket;
-    int tvr_bucket_size;
-    int tvr_bucket_capa;
+    void **tvr_bucket;
     HashTable *norms;
     Store *cfs_store;
     uchar *fake_norms;
@@ -825,12 +821,19 @@ void iw_add_doc(IndexWriter *iw, Document *doc);
  *
  ****************************************************************************/
 
+#define CW_INIT_CAPA 16
+typedef struct CWFileEntry
+{
+    char *name;
+    long dir_offset;
+    long data_offset;
+} CWFileEntry;
+
 typedef struct CompoundWriter {
     Store *store;
     const char *name;
     HashSet *ids;
-    void **file_entries;
-    bool merged;
+    CWFileEntry *file_entries;
 } CompoundWriter;
 
 extern CompoundWriter *open_cw(Store *store, char *name);

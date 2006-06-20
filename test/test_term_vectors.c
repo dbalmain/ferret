@@ -154,8 +154,8 @@ static void test_tv_single_doc(tst_case *tc, void *data)
             Apnull(tv->terms[i].positions);
             Apnull(tv->terms[i].offsets);
         }
+        tv_destroy(tv);
     }
-    tv_destroy(tv);
     
     tv = tvr_get_field_tv(tvr, 0,
                           fis_get_field(fis, "tv_with_positions")->number);

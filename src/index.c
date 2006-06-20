@@ -179,8 +179,8 @@ char *fi_to_s(FieldInfo *fi)
             fi_is_tokenized(fi) ? "is_tokenized, " : "",
             fi_omit_norms(fi) ? "omit_norms, " : "",
             fi_store_term_vector(fi) ? "store_term_vector, " : "",
-            fi_store_offsets(fi) ? "store_offsets, " : "",
-            fi_store_positions(fi) ? "store_positions, " : "");
+            fi_store_positions(fi) ? "store_positions, " : "",
+            fi_store_offsets(fi) ? "store_offsets, " : "");
     s += (int)strlen(str) - 2;
     if (*s != ',') {
         s += 2;
@@ -342,7 +342,7 @@ static const char *term_vector_str[] = {
 
 static const char *fi_term_vector_str(FieldInfo *fi)
 {
-    return term_vector_str[(fi->bits >> 2) & 0x7];
+    return term_vector_str[(fi->bits >> 5) & 0x7];
 }
 
 char *fis_to_s(FieldInfos *fis)
@@ -980,11 +980,11 @@ static char *ste_next(SegmentTermEnum *ste)
     te->curr_term_len = term_read(te->curr_term, is);
 
     ti = &(te->curr_ti);
-    ti->doc_freq = (long)is_read_vint(is);     /* read doc freq */
-    ti->frq_pointer += (long)is_read_vint(is);/* read freq pointer */
-    ti->prx_pointer += (long)is_read_vint(is);/* read prox pointer */
+    ti->doc_freq = is_read_vint(is);     /* read doc freq */
+    ti->frq_pointer += is_read_vlong(is);/* read freq pointer */
+    ti->prx_pointer += is_read_vlong(is);/* read prox pointer */
     if (ti->doc_freq >= ste->skip_interval) {
-        ti->skip_offset = (int)is_read_vint(is);
+        ti->skip_offset = is_read_vlong(is);
     }
 
     return te->curr_term;
@@ -1213,7 +1213,7 @@ char *tir_get_term(TermInfosReader *tir, int pos)
 
 void tir_close(TermInfosReader *tir)
 {
-    ary_destroy(tir->ste_bucket, &ste_close);
+    ary_destroy(tir->ste_bucket, (free_ft)&ste_close);
     ste_close(tir->orig_te);
     thread_key_delete(tir->thread_ste);
     free(tir);
@@ -1310,8 +1310,8 @@ static void tw_add(TermWriter *tw,
 
     tw_write_term(tw, os, term, term_len);  /* write term */
     os_write_vint(os, ti->doc_freq);        /* write doc freq */
-    os_write_vint(os, ti->frq_pointer - tw->last_term_info.frq_pointer);
-    os_write_vint(os, ti->prx_pointer - tw->last_term_info.prx_pointer);
+    os_write_vlong(os, ti->frq_pointer - tw->last_term_info.frq_pointer);
+    os_write_vlong(os, ti->prx_pointer - tw->last_term_info.prx_pointer);
 
     tw->last_term_info = *ti;
     tw->counter++;
@@ -1342,7 +1342,7 @@ void tiw_add(TermInfosWriter *tiw,
     tw_add(tiw->tis_writer, term, term_len, ti);
 
     if (ti->doc_freq >= tiw->skip_interval) {
-        os_write_vint(tiw->tis_writer->os, ti->skip_offset);
+        os_write_vlong(tiw->tis_writer->os, ti->skip_offset);
     }
 }
 
@@ -1393,9 +1393,7 @@ TermVectorsWriter *tvw_open(Store *store, const char *segment, FieldInfos *fis)
     TermVectorsWriter *tvw = ALLOC(TermVectorsWriter);
     char file_name[SEGMENT_NAME_MAX_LENGTH];
     tvw->fis = fis;
-    tvw->f_size = 0;
-    tvw->f_capa = TV_FIELD_INIT_CAPA;
-    tvw->fields = ALLOC_N(TVField, tvw->f_capa);
+    tvw->fields = ary_new_type_capa(TVField, TV_FIELD_INIT_CAPA);
 
     sprintf(file_name, "%s"TVX_EXTENSION, segment);
     tvw->tvx_out = store->new_output(store, file_name);
@@ -1410,13 +1408,13 @@ void tvw_close(TermVectorsWriter *tvw)
 {
     os_close(tvw->tvx_out);
     os_close(tvw->tvd_out);
-    free(tvw->fields);
+    ary_free(tvw->fields);
     free(tvw);
 }
 
 void tvw_open_doc(TermVectorsWriter *tvw)
 {
-    tvw->f_size = 0;
+    ary_size(tvw->fields) = 0;
     tvw->tvd_pointer = os_pos(tvw->tvd_out);
     os_write_u64(tvw->tvx_out, tvw->tvd_pointer);
 }
@@ -1426,18 +1424,10 @@ void tvw_close_doc(TermVectorsWriter *tvw)
     int i;
     OutStream *tvd_out = tvw->tvd_out;
     os_write_u32(tvw->tvx_out, (f_u32)(os_pos(tvw->tvd_out) - tvw->tvd_pointer));
-    os_write_vint(tvd_out, tvw->f_size);
-    for (i = 0; i < tvw->f_size; i++) {
+    os_write_vint(tvd_out, ary_size(tvw->fields));
+    for (i = 0; i < ary_size(tvw->fields); i++) {
         os_write_vint(tvd_out, tvw->fields[i].field_num);
         os_write_vint(tvd_out, tvw->fields[i].size);
-    }
-}
-
-static inline void check_fields_capa(TermVectorsWriter *tvw)
-{
-    if (tvw->f_size >= tvw->f_capa) {
-        tvw->f_capa <<= 1;
-        REALLOC_N(tvw->fields, TVField, tvw->f_capa);
     }
 }
 
@@ -1457,8 +1447,8 @@ void tvw_add_postings(TermVectorsWriter *tvw,
     int store_positions = fi_store_positions(fi);
     int store_offsets = fi_store_offsets(fi);
 
-    check_fields_capa(tvw);
-    tvw->fields[tvw->f_size].field_num = field_num;
+    ary_grow(tvw->fields);
+    ary_last(tvw->fields).field_num = field_num;
 
     os_write_vint(tvd_out, size);
     for (i = 0; i < size; i++) {
@@ -1495,7 +1485,7 @@ void tvw_add_postings(TermVectorsWriter *tvw,
             }
         }
     }
-    tvw->fields[tvw->f_size++].size = os_pos(tvd_out) - tvd_start_pos;
+    ary_last(tvw->fields).size = os_pos(tvd_out) - tvd_start_pos;
 }
 
 /****************************************************************************
@@ -1558,7 +1548,8 @@ static bool stde_next(TermDocEnum *tde)
         stde->doc_num += doc_code >> 1;    /* shift off low bit */
         if ((doc_code & 1) != 0) {         /* if low bit is set */
             stde->freq = 1;                /* freq is one */
-        } else {
+        }
+        else {
             stde->freq = (int)is_read_vint(stde->frq_in); /* read freq */
         }
 
@@ -1640,9 +1631,9 @@ static bool stde_skip_to(TermDocEnum *tde, int target_doc_num)
                 break;
             }
 
-            stde->skip_doc += (int)is_read_vint(stde->skip_in);
-            stde->frq_pointer += (int)is_read_vint(stde->skip_in);
-            stde->prx_pointer += (int)is_read_vint(stde->skip_in);
+            stde->skip_doc += is_read_vint(stde->skip_in);
+            stde->frq_pointer += is_read_vint(stde->skip_in);
+            stde->prx_pointer += is_read_vint(stde->skip_in);
 
             stde->skip_count++;
         }
@@ -1975,7 +1966,9 @@ void ir_acquire_write_lock(IndexReader *ir)
 {
     if (ir->is_stale) {
         RAISE(STATE_ERROR, "IndexReader out of date and no longer valid for "
-                           "delete, undelete, or set_norm operations");
+                           "delete, undelete, or set_norm operations. To "
+                           "perform any of these operations on the index you "
+                           "need to close and reopen the index");
     }
 
     if (ir->write_lock == NULL) {
@@ -1984,7 +1977,9 @@ void ir_acquire_write_lock(IndexReader *ir)
             RAISE(STATE_ERROR, "Could not obtain write lock when trying to "
                                "write changes to the index. Check that there "
                                "are no stale locks in the index. Look for "
-                               "files with the \".lck\" prefix.");
+                               "files with the \".lck\" prefix. If you know "
+                               "there are no processes writing to the index "
+                               "you can safely delete these files.");
         }
 
         /* we have to check whether index has changed since this reader was opened.
@@ -1997,7 +1992,9 @@ void ir_acquire_write_lock(IndexReader *ir)
             RAISE(STATE_ERROR, "IndexReader out of date and no longer valid "
                                "for delete, undelete, or set_norm operations. "
                                "The current version is <%"I64_PFX"d>, but this "
-                               "readers version is <%"I64_PFX"d>",
+                               "readers version is <%"I64_PFX"d>. To perform "
+                               "any of these operations on the index you need "
+                               "to close and reopen the index",
                                sis_read_current_version(ir->store),
                                ir->sis->version);
         }
@@ -2009,6 +2006,10 @@ IndexReader *ir_setup(IndexReader *ir, Store *store, SegmentInfos *sis,
 {
     mutex_init(&ir->mutex, NULL);
 
+    ir->store = store;
+    ir->sis = sis;
+    ir->fis = fis;
+
     ir->is_owner = is_owner;
     if (is_owner) {
         ir->acquire_write_lock = &ir_acquire_write_lock;
@@ -2017,44 +2018,6 @@ IndexReader *ir_setup(IndexReader *ir, Store *store, SegmentInfos *sis,
         ir->acquire_write_lock = &ir_acquire_not_necessary;
     }
 
-    ir->store = store;
-    ir->sis = sis;
-    ir->fis = fis;
-
-    return ir;
-}
-
-static IndexReader *sr_open(SegmentInfos *sis, FieldInfos *fis, int si_num,
-                            bool is_owner);
-
-/**
- * Will keep a reference to the store. To let this method delete the store
- * make sure you deref the store that you pass to it
- */
-IndexReader *ir_open(Store *store)
-{
-    int i;
-    IndexReader *ir;
-    SegmentInfos *sis;
-    FieldInfos *fis;
-
-    mutex_lock(&store->mutex);
-    sis = sis_read(store);
-    fis = fis_read(store);
-    if (sis->size == 1) {
-        ir = sr_open(sis, fis, 0, true);
-    }
-    else {
-        IndexReader **readers = ALLOC_N(IndexReader *, sis->size);
-        for (i = 0; i < sis->size; i++) {
-            readers[i] = sr_open(sis, fis, i, false);
-        }
-        REF(store);
-        // TODO: undo
-        //ir = mr_open(store, sis, fis, readers, sis->size);
-        ir = NULL;
-    }
-    mutex_unlock(&store->mutex);
     return ir;
 }
 
@@ -2063,11 +2026,11 @@ bool ir_index_exists(Store *store)
     return store->exists(store, "segments");
 }
 
-void ir_set_norm(IndexReader *ir, int doc_num, int field_num, uchar val)
+void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val)
 {
     mutex_lock(&ir->mutex);
     ir->acquire_write_lock(ir);
-    ir->set_norm_i(ir, doc_num, field_num, val);
+    ir->set_norm_i(ir, doc_num, fis_get_field(ir->fis, field)->number, val);
     ir->has_changes = true;
     mutex_unlock(&ir->mutex);
 }
@@ -2090,9 +2053,9 @@ void ir_delete_doc(IndexReader *ir, int doc_num)
     mutex_unlock(&ir->mutex);
 }
 
-Document *ir_get_doc_with_term(IndexReader *ir, int field_num, char *term)
+Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term)
 {
-    TermDocEnum *tde = ir_term_docs_for(ir, field_num, term);
+    TermDocEnum *tde = ir_term_docs_for(ir, field, term);
     Document *doc = NULL;
 
     if (tde) {
@@ -2104,17 +2067,17 @@ Document *ir_get_doc_with_term(IndexReader *ir, int field_num, char *term)
     return doc;
 }
 
-TermDocEnum *ir_term_docs_for(IndexReader *ir, int field_num, char *term)
+TermDocEnum *ir_term_docs_for(IndexReader *ir, char *field, char *term)
 {
     TermDocEnum *tde = ir->term_docs(ir);
-    tde->seek(tde, field_num, term);
+    tde->seek(tde, fis_get_field(ir->fis, field)->number, term);
     return tde;
 }
 
-TermDocEnum *ir_term_positions_for(IndexReader *ir, int field_num, char *term)
+TermDocEnum *ir_term_positions_for(IndexReader *ir, char *field, char *term)
 {
     TermDocEnum *tde = ir->term_positions(ir);
-    tde->seek(tde, field_num, term);
+    tde->seek(tde, fis_get_field(ir->fis, field)->number, term);
     return tde;
 }
 
@@ -2208,9 +2171,7 @@ bool ir_is_latest(IndexReader *ir)
 }
 
 /****************************************************************************
- *
  * Norm
- *
  ****************************************************************************/
 
 typedef struct Norm {
@@ -2268,9 +2229,7 @@ static void norm_rewrite(Norm *norm, Store *store, char *segment,
 }
 
 /****************************************************************************
- *
  * SegmentReader
- *
  ****************************************************************************/
 
 #define IR(ir) ((IndexReader *)ir)
@@ -2284,11 +2243,7 @@ static inline TermVectorsReader *sr_tvr(SegmentReader *sr)
 
     if ((tvr = thread_getspecific(sr->thread_tvr)) == NULL) {
         tvr = tvr_clone(sr->orig_tvr);
-        if (sr->tvr_bucket_size >= sr->tvr_bucket_capa) {
-            sr->tvr_bucket_capa <<= 1;
-            REALLOC_N(sr->tvr_bucket, TermVectorsReader *, sr->tvr_bucket_capa);
-        }
-        sr->tvr_bucket[sr->tvr_bucket_size++] = tvr;
+        ary_push(sr->tvr_bucket, tvr);
         thread_setspecific(sr->thread_tvr, tvr);
     }
     return tvr;
@@ -2434,13 +2389,9 @@ static void sr_close_i(IndexReader *ir)
     h_destroy(sr->norms);
 
     if (sr->orig_tvr) {
-        int i;
         tvr_close(sr->orig_tvr);
         thread_key_delete(sr->thread_tvr);
-        for (i = 0; i < sr->tvr_bucket_size; i++) {
-            tvr_close(sr->tvr_bucket[i]);
-        }
-        free(sr->tvr_bucket);
+        ary_destroy(sr->tvr_bucket, (free_ft)&tvr_close);
     }
     if (sr->deleted_docs) {
         bv_destroy(sr->deleted_docs);
@@ -2451,7 +2402,6 @@ static void sr_close_i(IndexReader *ir)
     if (sr->fake_norms) {
         free(sr->fake_norms);
     }
-    free(sr);
 }
 
 static int sr_num_docs(IndexReader *ir)
@@ -2690,7 +2640,7 @@ static IndexReader *sr_setup_i(SegmentReader *sr, SegmentInfo *si)
     if (fis_has_vectors(ir->fis)) {
         sr->orig_tvr = tvr_open(store, sr->segment, ir->fis);
         thread_key_create(&sr->thread_tvr, NULL);
-        sr->tvr_bucket = ALLOC_N(TermVectorsReader *, sr->tvr_bucket_capa);
+        sr->tvr_bucket = ary_new();
     } else {
         sr->orig_tvr = NULL;
     }
@@ -2709,8 +2659,44 @@ static IndexReader *sr_open(SegmentInfos *sis, FieldInfos *fis, int si_num,
 {
     SegmentReader *sr = ALLOC_AND_ZERO(SegmentReader);
     SegmentInfo *si = sis->segs[si_num];
+    IndexReader *ir = ir_setup(IR(sr), si->store, sis, fis, is_owner);
     REF(si->store);
-    return sr_setup_i(SR(ir_setup(IR(sr), si->store, sis, fis, is_owner)), si);
+    return sr_setup_i(SR(ir), si);
+}
+
+/****************************************************************************
+ * IndexReader
+ ****************************************************************************/
+
+/**
+ * Will keep a reference to the store. To let this method delete the store
+ * make sure you deref the store that you pass to it
+ */
+IndexReader *ir_open(Store *store)
+{
+    int i;
+    IndexReader *ir;
+    SegmentInfos *sis;
+    FieldInfos *fis;
+
+    mutex_lock(&store->mutex);
+    sis = sis_read(store);
+    fis = fis_read(store);
+    if (sis->size == 1) {
+        ir = sr_open(sis, fis, 0, true);
+    }
+    else {
+        IndexReader **readers = ALLOC_N(IndexReader *, sis->size);
+        for (i = 0; i < sis->size; i++) {
+            readers[i] = sr_open(sis, fis, i, false);
+        }
+        REF(store);
+        // TODO: undo
+        //ir = mr_open(store, sis, fis, readers, sis->size);
+        ir = NULL;
+    }
+    mutex_unlock(&store->mutex);
+    return ir;
 }
 
 
@@ -3204,7 +3190,7 @@ static void dw_flush(DocWriter *dw)
             skip_buf_reset(skip_buf);
             for (p = pl->first; p != NULL; p = p->next) {
                 doc_freq++;
-                if (doc_freq % dw->skip_interval) {
+                if ((doc_freq % dw->skip_interval) == 0) {
                     skip_buf_add(skip_buf, last_doc);
                 }
 
@@ -3225,7 +3211,7 @@ static void dw_flush(DocWriter *dw)
                     last_pos = occ->pos;
                 }
             }
-            ti.skip_offset = ti.frq_pointer - skip_buf_write(skip_buf);
+            ti.skip_offset = skip_buf_write(skip_buf) - ti.frq_pointer;
             ti.doc_freq = doc_freq;
             tiw_add(tiw, pl->term, pl->term_len, &ti);
         }
@@ -3450,7 +3436,6 @@ IndexWriter *iw_open(Store *store, Analyzer *analyzer, const Config *config)
     mutex_init(&iw->mutex, NULL);
     iw->store = store;
     iw->analyzer = analyzer;
-    REF(analyzer);
     if (!config) {
         config = &default_config;
     }
@@ -3470,8 +3455,11 @@ void iw_close(IndexWriter *iw)
         dw_close(iw->dw);
     }
     a_deref(iw->analyzer);
+    sis_write(iw->sis, iw->store);
+    fis_write(iw->fis, iw->store);
     sis_destroy(iw->sis);
     fis_destroy(iw->fis);
+    sim_destroy(iw->similarity);
     free(iw->config);
     free(iw);
 }

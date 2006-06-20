@@ -1,4 +1,5 @@
 #include "index.h" 
+#include "array.h" 
 
 extern void store_destroy(Store *store);
 extern InStream *is_new();
@@ -244,12 +245,6 @@ Store *open_cmpd_store(Store *store, const char *name)
         entry->length = is_length(is) - entry->offset;
     }
 
-    free(new_store);
-    free(cmpd);
-    if (is) {
-        is_close(is);
-    }
-
     new_store->dir.cmpd     = cmpd;
     new_store->touch        = &cmpd_touch;
     new_store->exists       = &cmpd_exists;
@@ -273,47 +268,29 @@ Store *open_cmpd_store(Store *store, const char *name)
  *
  ****************************************************************************/
 
-typedef struct WFileEntry {
-    char *name;
-    long dir_offset;
-    long data_offset;
-} WFileEntry;
-
-static WFileEntry *wfe_create(char *name)
-{
-    WFileEntry *wfe = ALLOC(WFileEntry);
-    wfe->name = name;
-    return wfe;
-}
-
 CompoundWriter *open_cw(Store *store, char *name)
 {
     CompoundWriter *cw = ALLOC(CompoundWriter);
     cw->store = store;
     cw->name = name;
-    cw->ids = hs_str_new(NULL);
-    // TODO: FIXME
-    cw->file_entries = NULL;//ary_create(1, &free);
-    cw->merged = false;
+    cw->ids = hs_str_new(&free);
+    cw->file_entries = ary_new_type_capa(CWFileEntry, CW_INIT_CAPA);
     return cw;
 }
 
 void cw_add_file(CompoundWriter *cw, char *id)
 {
-    if (cw->merged) {
-        RAISE(IO_ERROR, "Tried to merge already merged compound store");
-    }
+    id = estrdup(id);
     if (hs_add(cw->ids, id) != HASH_KEY_DOES_NOT_EXIST) {
         RAISE(IO_ERROR, "Tried to add file \"%s\" which has already been "
               "added to the compound store", id);
     }
 
-    hs_add(cw->ids, id);
-    //FIXME
-    //ary_append(cw->file_entries, wfe_create(id));
+    ary_grow(cw->file_entries);
+    ary_last(cw->file_entries).name = id;
 }
 
-static void cw_copy_file(CompoundWriter *cw, WFileEntry *src, OutStream *os)
+static void cw_copy_file(CompoundWriter *cw, CWFileEntry *src, OutStream *os)
 {
     long start_ptr = os_pos(os);
     long end_ptr;
@@ -353,53 +330,35 @@ void cw_close(CompoundWriter *cw)
 {
     OutStream *os = NULL;
     int i;
-    WFileEntry *wfe;
-
-    if (cw->merged) {
-        RAISE(STATE_ERROR, "Tried to merge already merged compound file");
-    }
 
     if (cw->ids->size <= 0) {
         RAISE(STATE_ERROR, "Tried to merge compound file with no entries");
     }
 
-    cw->merged = true;
-
     os = cw->store->new_output(cw->store, cw->name);
 
-    // FIXME: file_entries is an array
-    //os_write_vint(os, cw->file_entries->size);
+    os_write_vint(os, ary_size(cw->file_entries));
 
     /* Write the directory with all offsets at 0.
      * Remember the positions of directory entries so that we can adjust the
      * offsets later */
-
-    // FIXME: file_entries is an array
-    //for (i = 0; i < cw->file_entries->size; i++) {
-    for (i = 0; i < 10; i++) {
-        wfe = (WFileEntry *)cw->file_entries[i];
-        wfe->dir_offset = os_pos(os);
+    for (i = 0; i < ary_size(cw->file_entries); i++) {
+        cw->file_entries[i].dir_offset = os_pos(os);
         os_write_u64(os, 0);  /* for now */
-        os_write_string(os, wfe->name);
+        os_write_string(os, cw->file_entries[i].name);
     }
 
     /* Open the files and copy their data into the stream.  Remember the
      * locations of each file's data section. */
-    // FIXME: file_entries is an array
-    //for (i = 0; i < cw->file_entries->size; i++) {
-    for (i = 0; i < 10; i++) {
-        wfe = (WFileEntry *)cw->file_entries[i];
-        wfe->data_offset = os_pos(os);
-        cw_copy_file(cw, wfe, os);
+    for (i = 0; i < ary_size(cw->file_entries); i++) {
+        cw->file_entries[i].data_offset = os_pos(os);
+        cw_copy_file(cw, &cw->file_entries[i], os);
     }
 
     /* Write the data offsets into the directory of the compound stream */
-    // FIXME: file_entries is an array
-    //for (i = 0; i < cw->file_entries->size; i++) {
-    for (i = 0; i < 10; i++) {
-        wfe = (WFileEntry *)cw->file_entries[i];
-        os_seek(os, wfe->dir_offset);
-        os_write_u64(os, wfe->data_offset);
+    for (i = 0; i < ary_size(cw->file_entries); i++) {
+        os_seek(os, cw->file_entries[i].dir_offset);
+        os_write_u64(os, cw->file_entries[i].data_offset);
     }
 
     if (os) {
@@ -407,7 +366,6 @@ void cw_close(CompoundWriter *cw)
     }
 
     hs_destroy(cw->ids);
-    //FIXME
-    //ary_destroy(cw->file_entries);
+    ary_free(cw->file_entries);
     free(cw);
 }

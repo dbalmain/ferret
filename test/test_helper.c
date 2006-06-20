@@ -28,7 +28,7 @@ void test_int2float(tst_case *tc, void *data)
     (void)data;
 
     for (i = 0; i < 256; i++) {
-        int x = rand();
+        int x = rand() % 20000000;
         float f = (float)i;
         Aiequal(x, float2int(int2float(x)));
         Afequal(f, int2float(float2int(f)));
