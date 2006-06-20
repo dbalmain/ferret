@@ -3373,7 +3373,7 @@ HashTable *dw_invert_field(DocWriter *dw,
             char *data_ptr = df->data[i];
             if (len > MAX_WORD_SIZE) {
                 len = MAX_WORD_SIZE - 1;
-                data_ptr = memcpy(buf, df->data[i], len);
+                data_ptr = memcpy(buf, df->data[i], MAX_WORD_SIZE);
             }
             dw_add_posting(mp, curr_plists, fld_plists, doc_num, data_ptr,
                            len, i, 0, df->lengths[i], store_offsets);
