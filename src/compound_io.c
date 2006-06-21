@@ -12,8 +12,8 @@ extern Store *store_new();
  ****************************************************************************/
 
 typedef struct FileEntry {
-    long offset;
-    long length;
+    off_t offset;
+    off_t length;
 } FileEntry;
 
 static void cmpd_touch(Store *store, char *file_name)
@@ -82,7 +82,7 @@ static void cmpd_close_i(Store *store)
     store_destroy(store);
 }
 
-static long cmpd_length(Store *store, char *file_name)
+static off_t cmpd_length(Store *store, char *file_name)
 {
     FileEntry *fe = h_get(store->dir.cmpd->entries, file_name);
     if (fe != NULL) {
@@ -93,7 +93,7 @@ static long cmpd_length(Store *store, char *file_name)
     }
 }
 
-static void cmpdi_seek_i(InStream *is, long pos)
+static void cmpdi_seek_i(InStream *is, off_t pos)
 {
     (void)is;
     (void)pos;
@@ -113,7 +113,7 @@ static void cmpdi_clone_i(InStream *is, InStream *new_is)
     new_is->d.cis = cis;
 }
 
-static long cmpdi_length_i(InStream *is)
+static off_t cmpdi_length_i(InStream *is)
 {
     return (is->d.cis->length);
 }
@@ -124,11 +124,12 @@ static long cmpdi_length_i(InStream *is)
 static void cmpdi_read_i(InStream *is, uchar *b, int len)
 {
     CompoundInStream *cis = is->d.cis;
-    long start = is_pos(is);
+    off_t start = is_pos(is);
 
     if ((start + len) > cis->length) {
         RAISE(EOF_ERROR, "Tried to read past end of file. File length is "
-              "<%ld> and tried to read to <%ld>", cis->length, start + len);
+              "<%"F_OFF_T_PFX"d> and tried to read to <%"F_OFF_T_PFX"d>",
+              cis->length, start + len);
     }
 
     is_seek(cis->sub, cis->offset + start);
@@ -143,7 +144,7 @@ static const struct InStreamMethods CMPD_IN_STREAM_METHODS = {
     cmpdi_close_i
 };
 
-static InStream *cmpd_create_input(InStream *sub_is, long offset, long length)
+static InStream *cmpd_create_input(InStream *sub_is, off_t offset, off_t length)
 {
     InStream *is = is_new();
     CompoundInStream *cis = ALLOC(CompoundInStream);
@@ -208,7 +209,7 @@ static void cmpd_close_lock(Lock *lock)
 Store *open_cmpd_store(Store *store, const char *name)
 {
     int count, i;
-    long offset;
+    off_t offset;
     char *fname;
     FileEntry *entry;
     Store *new_store = NULL;
@@ -227,7 +228,7 @@ Store *open_cmpd_store(Store *store, const char *name)
     count = is_read_vint(is);
     entry = NULL;
     for (i = 0; i < count; i++) {
-        offset = (long)is_read_i64(is);
+        offset = (off_t)is_read_i64(is);
         fname = is_read_string(is);
 
         if (entry != NULL) {
@@ -292,9 +293,9 @@ void cw_add_file(CompoundWriter *cw, char *id)
 
 static void cw_copy_file(CompoundWriter *cw, CWFileEntry *src, OutStream *os)
 {
-    long start_ptr = os_pos(os);
-    long end_ptr;
-    long remainder, length, len;
+    off_t start_ptr = os_pos(os);
+    off_t end_ptr;
+    off_t remainder, length, len;
     uchar buffer[BUFFER_SIZE];
 
     InStream *is = cw->store->open_input(cw->store, src->name);
@@ -311,16 +312,17 @@ static void cw_copy_file(CompoundWriter *cw, CWFileEntry *src, OutStream *os)
     /* Verify that remainder is 0 */
     if (remainder != 0) {
         RAISE(IO_ERROR, "There seems to be an error in the compound file "
-              "should have read to the end but there are <%ld> bytes left",
-              remainder);
+              "should have read to the end but there are <%"F_OFF_T_PFX"d> "
+              "bytes left", remainder);
     }
 
     /* Verify that the output length diff is equal to original file */
     end_ptr = os_pos(os);
     len = end_ptr - start_ptr;
     if (len != length) {
-        RAISE(IO_ERROR, "Difference in compound file output file offsets <%ld> "
-              "does not match the original file lenght <%ld>", len, length);
+        RAISE(IO_ERROR, "Difference in compound file output file offsets "
+              "<%"F_OFF_T_PFX"d> does not match the original file lenght "
+              "<%"F_OFF_T_PFX"d>", len, length);
     }
 
     is_close(is);

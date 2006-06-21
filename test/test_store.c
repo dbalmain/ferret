@@ -261,23 +261,29 @@ static void test_rw_vints(tst_case *tc, void *data)
 /**
  * Test reading and writing of variable size 64-bit integers
  */
-static void test_rw_vlongs(tst_case *tc, void *data)
+static void test_rw_voff_ts(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    unsigned long vlongs[4] =
-        { ULONG_MAX, 0, 1000000, 1 };
-    OutStream *ostream = store->new_output(store, "rw_vlong.test");
+    f_i64 voff_ts[4] =
+        { LONG_MAX, 0, 1000000, 1 };
+    if (sizeof(off_t) == 8) {
+        voff_ts[0] = POSH_I64_MAX;
+    }
+    else {
+        voff_ts[0] = POSH_I32_MAX;
+    }
+    OutStream *ostream = store->new_output(store, "rw_voff_t.test");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
-        os_write_vlong(ostream, vlongs[i]);
+        os_write_voff_t(ostream, (off_t)voff_ts[i]);
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_vlong.test");
+    istream = store->open_input(store, "rw_voff_t.test");
     for (i = 0; i < 4; i++) {
-        Aiequal(vlongs[i], is_read_vlong(istream));
+        Aiequal(voff_ts[i], is_read_voff_t(istream));
     }
     is_close(istream);
 }
@@ -375,7 +381,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     os_write_vint(ostream, 12345);
     os_seek(ostream, 4000);
     Aiequal(4000, os_pos(ostream));
-    os_write_vlong(ostream, 98763210);
+    os_write_voff_t(ostream, 98763210);
     os_close(ostream);
 
     istream = store->open_input(store, "rw_seek.test");
@@ -384,7 +390,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     Aiequal(12345, is_read_vint(istream));
     is_seek(istream, 4000);
     Aiequal(4000, is_pos(istream));
-    Aiequal(98763210, is_read_vlong(istream));
+    Aiequal(98763210, is_read_voff_t(istream));
     is_seek(istream, 987);
     Aiequal(987, is_pos(istream));
     Aiequal(555, is_read_vint(istream));
@@ -460,7 +466,7 @@ void create_test_store_suite(tst_suite *suite, Store *store)
     tst_run_test(suite, test_rw_u32, store);
     tst_run_test(suite, test_rw_u64, store);
     tst_run_test(suite, test_rw_vints, store);
-    tst_run_test(suite, test_rw_vlongs, store);
+    tst_run_test(suite, test_rw_voff_ts, store);
     tst_run_test(suite, test_rw_strings, store);
     tst_run_test(suite, test_rw_funny_strings, store);
     tst_run_test(suite, test_buffer_seek, store);

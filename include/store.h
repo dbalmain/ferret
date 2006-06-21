@@ -1,6 +1,7 @@
 #ifndef FRT_STORE_H
 #define FRT_STORE_H
 
+#include <sys/types.h>
 #include "global.h"
 #include "hash.h"
 #include "threading.h"
@@ -15,9 +16,9 @@
 typedef struct Buffer
 {
     uchar buf[BUFFER_SIZE];
-    long  start;
-    long  pos;
-    long  len;
+    off_t start;
+    off_t pos;
+    off_t len;
 } Buffer;
 
 typedef struct OutStream OutStream;
@@ -40,7 +41,7 @@ struct OutStreamMethods {
      * @param pos the position to seek in the stream
      * @raise IO_ERROR if there is an error seeking in the output stream
      */
-    void (*seek_i)(struct OutStream *os, long pos);
+    void (*seek_i)(struct OutStream *os, off_t pos);
 
     /**
      * Close any resources used by the output stream +os+
@@ -55,7 +56,7 @@ struct OutStream
 {
     Buffer buf;
     void  *file;
-    long   pointer;             /* only used by RAMOut */
+    off_t  pointer;             /* only used by RAMOut */
     const struct OutStreamMethods *m;
 };
 
@@ -84,7 +85,7 @@ struct InStreamMethods
      * @param pos the position to seek
      * @raise IO_ERROR if the seek fails
      */
-    void (*seek_i)(struct InStream *is, long pos);
+    void (*seek_i)(struct InStream *is, off_t pos);
 
     /**
      * Returns the length of the input stream +is+
@@ -92,7 +93,7 @@ struct InStreamMethods
      * @param is self
      * @raise IO_ERROR if there is an error getting the file length
      */
-    long (*length_i)(struct InStream *is);
+    off_t (*length_i)(struct InStream *is);
 
     /**
      * Do internal cloning processing for this particular type of InStream.
@@ -122,7 +123,7 @@ struct InStream
     } file;
     union
     {
-        long pointer;           /* only used by RAMIn */
+        off_t pointer;           /* only used by RAMIn */
         char *path;             /* only used by FSIn */
         CompoundInStream *cis;
     } d;
@@ -132,8 +133,8 @@ struct InStream
 struct CompoundInStream
 {
     InStream *sub;
-    long offset;
-    long length;
+    off_t offset;
+    off_t length;
 };
 
 #define is_length(mis) mis->m->length_i(mis)
@@ -264,7 +265,7 @@ struct Store
      * @return the length of the file in bytes
      * @raise IO_ERROR if there is an error checking the file length
      */
-    long (*length)(Store *store, char *filename);
+    off_t (*length)(Store *store, char *filename);
 
     /**
      * Allocate the resources needed for the output stream in the +store+ with
@@ -371,7 +372,7 @@ extern Store *open_cmpd_store(Store *store, const char *filename);
  * @param os the OutStream who's length you want
  * @return the length of +os+ in bytes
  */
-extern long ramo_length(OutStream *os);
+extern off_t ramo_length(OutStream *os);
 
 /**
  * Reset the OutStream removing any data written to it. Since it is a RAM
@@ -465,7 +466,7 @@ extern void os_close(OutStream *os);
  * @param os the OutStream to get the position from
  * @return the current position in OutStream +os+
  */
-extern long os_pos(OutStream *os);
+extern off_t os_pos(OutStream *os);
 
 /**
  * Set the current position in OutStream +os+.
@@ -474,7 +475,7 @@ extern long os_pos(OutStream *os);
  * @param pos the new position in the OutStream
  * @raise IO_ERROR if there is a file-system IO error seeking the file
  */
-extern void os_seek(OutStream *os, long new_pos);
+extern void os_seek(OutStream *os, off_t new_pos);
 
 /**
  * Write a single byte +b+ to the OutStream +os+
@@ -541,14 +542,14 @@ extern void os_write_u64(OutStream *os, f_u64 num);
 extern void os_write_vint(OutStream *os, register unsigned int num);
 
 /**
- * Write an unsigned long to OutStream in compressed VINT format.
+ * Write an unsigned off_t to OutStream in compressed VINT format.
  * TODO: describe VINT format
  *
  * @param os OutStream to write to
- * @param num the long to write
+ * @param num the off_t to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vlong(OutStream *os, register unsigned long num);
+extern void os_write_voff_t(OutStream *os, register off_t num);
 
 /**
  * Write a string to the OutStream. A string is an integer +length+ in VINT
@@ -566,7 +567,7 @@ extern void os_write_string(OutStream *os, char *str);
  * @param is the InStream to get the current position from
  * @return the current position within the InStream +is+
  */
-extern long is_pos(InStream *is);
+extern off_t is_pos(InStream *is);
 
 /**
  * Set the current position in InStream +is+ to +pos+.
@@ -576,7 +577,7 @@ extern long is_pos(InStream *is);
  * @raise IO_ERROR if there is a error seeking from the file-system
  * @raise EOF_ERROR if there is an attempt to seek past the end of the file
  */
-extern void is_seek(InStream *is, long pos);
+extern void is_seek(InStream *is, off_t pos);
 
 /**
  * Close the InStream freeing all allocated resources.
@@ -680,15 +681,15 @@ extern inline unsigned int is_read_vint(InStream *is);
 extern inline void is_skip_vints(InStream *is, register int cnt);
 
 /**
- * Read a compressed (VINT) unsigned long from the InStream.
+ * Read a compressed (VINT) unsigned off_t from the InStream.
  * TODO: describe VINT format
  *
  * @param is the InStream to read from
- * @return a long
+ * @return a off_t
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern inline unsigned long is_read_vlong(InStream *is);
+extern inline off_t is_read_voff_t(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint
@@ -701,5 +702,25 @@ extern inline unsigned long is_read_vlong(InStream *is);
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern char *is_read_string(InStream *is);
+
+/**
+ * Copy cnt bytes from Instream _is_ to OutStream _os_.
+ *
+ * @param is the InStream to read from
+ * @param os the OutStream to write to
+ * @raise IO_ERROR
+ * @raise EOF_ERROR
+ */
+extern void is2os_copy_bytes(InStream *is, OutStream *os, int cnt);
+
+/**
+ * Copy cnt vints from Instream _is_ to OutStream _os_.
+ *
+ * @param is the InStream to read from
+ * @param os the OutStream to write to
+ * @raise IO_ERROR
+ * @raise EOF_ERROR
+ */
+extern void is2os_copy_vints(InStream *is, OutStream *os, int cnt);
 
 #endif

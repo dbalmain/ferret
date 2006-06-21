@@ -1,6 +1,7 @@
 #ifndef FRT_DEFINES_H
 #define FRT_DEFINES_H
 
+#include <sys/types.h>
 #include "posh.h"
 
 #ifndef false
@@ -21,6 +22,11 @@ typedef posh_i32_t f_i32;
 typedef posh_u64_t f_u64;
 typedef posh_i64_t f_i64;
 
+#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+#define F_OFF_T_PFX "ll"
+#else
+#define F_OFF_T_PFX ""
+#endif
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 #define FRT_HAS_INLINE

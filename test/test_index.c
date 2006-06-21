@@ -603,6 +603,7 @@ static void test_segment_term_doc_enum(tst_case *tc, void *data)
     FieldInfo *fi;
     SegmentFieldIndex *sfi;
     TermInfosReader *tir;
+    int skip_interval;
     InStream *frq_in, *prx_in;
     BitVector *bv = NULL;
     TermDocEnum *tde, *tde_reader, *tde_skip_to;
@@ -615,11 +616,12 @@ static void test_segment_term_doc_enum(tst_case *tc, void *data)
 
     sfi = sfi_open(store, "_0");
     tir = tir_open(store, sfi, "_0");
+    skip_interval = tir->orig_te->skip_interval;
     frq_in = store->open_input(store, "_0.frq");
     prx_in = store->open_input(store, "_0.prx");
-    tde = stde_new(tir, frq_in, bv);
-    tde_reader = stde_new(tir, frq_in, bv);
-    tde_skip_to = stde_new(tir, frq_in, bv);
+    tde = stde_new(tir, frq_in, bv, skip_interval);
+    tde_reader = stde_new(tir, frq_in, bv, skip_interval);
+    tde_skip_to = stde_new(tir, frq_in, bv, skip_interval);
 
     fi = fis_get_field(fis, "tv");
     for (i = 0; i < 300; i++) {
@@ -655,8 +657,8 @@ static void test_segment_term_doc_enum(tst_case *tc, void *data)
     tde_skip_to->close(tde_skip_to);
 
 
-    tde = stpe_new(tir, frq_in, prx_in, bv);
-    tde_skip_to = stpe_new(tir, frq_in, prx_in, bv);
+    tde = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
+    tde_skip_to = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
 
     fi = fis_get_field(fis, "tv+offsets");
     for (i = 0; i < 200; i++) {
@@ -735,7 +737,7 @@ static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
     tir = tir_open(store, sfi, "_0");
     frq_in = store->open_input(store, "_0.frq");
     prx_in = store->open_input(store, "_0.prx");
-    tde = stpe_new(tir, frq_in, prx_in, bv);
+    tde = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
 
     tde->seek(tde, 0, "word");
     doc_num_expected = 0;

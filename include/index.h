@@ -13,26 +13,6 @@
 
 typedef struct IndexReader IndexReader;
 
-/***************************************************************************
- *
- * CacheObject
- *
- ***************************************************************************/
-
-typedef struct CacheObject {
-  HashTable *ref_tab1;
-  HashTable *ref_tab2;
-  void *ref1;
-  void *ref2;
-  void *obj;
-  void (*destroy)(void *p);
-} CacheObject;
-
-extern void cache_destroy(CacheObject *co);
-extern CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
-            void *ref1, void *ref2, void (*destroy)(void *p), void *obj);
-extern HashTable *co_hash_create();
-
 /****************************************************************************
  *
  * Config
@@ -46,11 +26,33 @@ typedef struct Config
     int index_interval;
     int skip_interval;
     int merge_factor;
+    int max_buffered_docs;
+    int max_merged_docs;
     int max_field_length;
     bool use_compound_file;
 } Config;
 
 extern const Config const default_config;
+
+/***************************************************************************
+ *
+ * CacheObject
+ *
+ ***************************************************************************/
+
+typedef struct CacheObject {
+    HashTable *ref_tab1;
+    HashTable *ref_tab2;
+    void *ref1;
+    void *ref2;
+    void *obj;
+    void (*destroy)(void *p);
+} CacheObject;
+
+extern void cache_destroy(CacheObject *co);
+extern CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
+            void *ref1, void *ref2, void (*destroy)(void *p), void *obj);
+extern HashTable *co_hash_create();
 
 /****************************************************************************
  *
@@ -237,9 +239,9 @@ extern void fw_add_doc(FieldsWriter *fw, Document *doc);
 typedef struct TermInfo
 {
     int doc_freq;
-    long frq_pointer;
-    long prx_pointer;
-    long skip_offset;
+    off_t frq_pointer;
+    off_t prx_pointer;
+    off_t skip_offset;
 } TermInfo;
 
 #define ti_set(ti, mdf, mfp, mpp, mso) do {\
@@ -283,14 +285,14 @@ TermInfo *te_get_ti(struct TermEnum *te);
 
 typedef struct SegmentTermIndex
 {
-    long        index_pointer;
-    long        pointer;
+    off_t       index_pointer;
+    off_t       pointer;
     int         index_size;
     int         size;
     char      **index_terms;
     int        *index_term_lens;
     TermInfo   *index_term_infos;
-    long       *index_pointers;
+    off_t      *index_pointers;
 } SegmentTermIndex;
 
 /* * SegmentFieldIndex * */
@@ -302,7 +304,7 @@ typedef struct SegmentFieldIndex
     mutex_t          mutex;
     int              skip_interval;
     int              index_interval;
-    long             index_pointer;
+    off_t            index_pointer;
     SegmentTermEnum *index_ste;
     HashTable       *field_dict;
 } SegmentFieldIndex;
@@ -384,7 +386,7 @@ typedef struct TermInfosWriter
     int field_count;
     int index_interval;
     int skip_interval;
-    long last_index_pointer;
+    off_t last_index_pointer;
     OutStream *tfx_out;
     TermWriter *tix_writer;
     TermWriter *tis_writer;
@@ -450,11 +452,12 @@ struct SegmentTermDocEnum
 };
 
 extern TermDocEnum *stde_new(TermInfosReader *tir, InStream *frq_in,
-                             BitVector *deleted_docs);
+                             BitVector *deleted_docs, int skip_interval);
 
 /* * SegmentTermDocEnum * */
 extern TermDocEnum *stpe_new(TermInfosReader *tir, InStream *frq_in,
-                             InStream *prx_in, BitVector *deleted_docs);
+                             InStream *prx_in, BitVector *deleted_docs,
+                             int skip_interval);
 
 /* * MultiTermDocEnum * */
 
@@ -607,7 +610,7 @@ typedef struct TermVectorsWriter
     OutStream *tvd_out;
     FieldInfos *fis;
     TVField *fields;
-    long tvd_pointer;
+    off_t tvd_pointer;
 } TermVectorsWriter;
 
 extern TermVectorsWriter *tvw_open(Store *store,
@@ -800,10 +803,10 @@ extern void dw_new_segment(DocWriter *dw, char *segment);
 
 struct IndexWriter
 {
+    Config config;
     mutex_t mutex;
     Store *store;
     Analyzer *analyzer;
-    Config *config;
     SegmentInfos *sis;
     FieldInfos *fis;
     DocWriter *dw;
@@ -826,8 +829,8 @@ void iw_add_doc(IndexWriter *iw, Document *doc);
 typedef struct CWFileEntry
 {
     char *name;
-    long dir_offset;
-    long data_offset;
+    off_t dir_offset;
+    off_t data_offset;
 } CWFileEntry;
 
 typedef struct CompoundWriter {

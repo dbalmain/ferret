@@ -12,7 +12,7 @@ typedef struct RamFile
     char   *name;
     uchar **buffers;
     int     bufcnt;
-    long    len;
+    off_t   len;
     int     ref_cnt;
 } RamFile;
 
@@ -186,7 +186,7 @@ static void ram_clear_all(Store *store)
     }
 }
 
-static long ram_length(Store *store, char *filename)
+static off_t ram_length(Store *store, char *filename)
 {
     RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
     if (rf != NULL) {
@@ -197,7 +197,7 @@ static long ram_length(Store *store, char *filename)
     }
 }
 
-long ramo_length(OutStream *os)
+off_t ramo_length(OutStream *os)
 {
     return ((RamFile *)os->file)->len;
 }
@@ -208,7 +208,7 @@ static void ramo_flush_i(OutStream *os, uchar *src, int len)
     RamFile *rf = (RamFile *)os->file;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
     int src_offset;
-    long pointer = os->pointer;
+    off_t pointer = os->pointer;
 
     buffer_number = (int)(pointer / BUFFER_SIZE);
     buffer_offset = pointer % BUFFER_SIZE;
@@ -236,7 +236,7 @@ static void ramo_flush_i(OutStream *os, uchar *src, int len)
     }
 }
 
-static void ramo_seek_i(OutStream *os, long pos)
+static void ramo_seek_i(OutStream *os, off_t pos)
 {
     os->pointer = pos;
 }
@@ -318,7 +318,7 @@ static void rami_read_i(InStream *is, uchar *b, int len)
     int offset = 0;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
     int remainder = len;
-    long start = is->d.pointer;
+    off_t start = is->d.pointer;
     uchar *buffer;
 
     while (remainder > 0) {
@@ -342,12 +342,12 @@ static void rami_read_i(InStream *is, uchar *b, int len)
     is->d.pointer += len;
 }
 
-static long rami_length_i(InStream *is)
+static off_t rami_length_i(InStream *is)
 {
     return ((RamFile *)is->file.p)->len;
 }
 
-static void rami_seek_i(InStream *is, long pos)
+static void rami_seek_i(InStream *is, off_t pos)
 {
     is->d.pointer = pos;
 }

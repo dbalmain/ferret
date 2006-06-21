@@ -5,6 +5,18 @@
 #include <string.h>
 #include <limits.h>
 
+#define GET_LOCK(lock, name, store, err_msg) do {\
+    lock = store->open_lock(store, name);\
+    if (!lock->obtain(lock)) {\
+        RAISE(LOCK_ERROR, err_msg);\
+    }\
+} while(0)
+
+#define RELEASE_LOCK(lock, store) do {\
+    lock->release(lock);\
+    store->close_lock(lock);\
+} while (0)
+
 const char *INDEX_EXTENSIONS[] = {
     "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
     "tvx", "tvd", "tvf", "tvp"
@@ -21,9 +33,11 @@ const char *VECTOR_EXTENSIONS[] = {
 const Config const default_config = {
     0x100000,       /* chunk size is 1Mb */
     0x1000000,      /* Max memory used for buffer is 16 Mb */
-    INDEX_INTERVAL,
-    SKIP_INTERVAL,
+    INDEX_INTERVAL, /* index interval */
+    SKIP_INTERVAL,  /* skip interval */
     10,             /* default merge factor */
+    10000,          /* max_buffered_docs */
+    INT_MAX,        /* max_merged_docs */
     10000,          /* maximum field length (number of terms) */
     true            /* use compound file by default */
 };
@@ -562,7 +576,7 @@ void sis_clear(SegmentInfos *sis)
 SegmentInfos *sis_read(Store *store)
 {
     int doc_cnt;
-    int seg_count;
+    int seg_cnt;
     int i;
     char *name;
     InStream *is = store->open_input(store, SEGMENTS_FILENAME);
@@ -572,15 +586,15 @@ SegmentInfos *sis_read(Store *store)
     sis->format = is_read_u32(is); /* do nothing. it's the first version */
     sis->version = is_read_u64(is);
     sis->counter = is_read_u64(is);
-    seg_count = is_read_vint(is);
+    seg_cnt = is_read_vint(is);
 
     /* allocate space for segments */
-    for (sis->capa = 4; sis->capa < seg_count; sis->capa <<= 1) {
+    for (sis->capa = 4; sis->capa < seg_cnt; sis->capa <<= 1) {
     }
     sis->size = 0;
     sis->segs = ALLOC_N(SegmentInfo *, sis->capa);
 
-    for (i = 0; i < seg_count; i++) {
+    for (i = 0; i < seg_cnt; i++) {
         name = is_read_string(is);
         doc_cnt = is_read_vint(is);
         sis_add_si(sis, si_new(name, doc_cnt, store));
@@ -680,7 +694,7 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
 {
     int i, j;
     FieldInfo *fi;
-    f_u64 pos;
+    off_t pos;
     int stored_cnt, field_num;
     DocField *df;
     Document *doc = doc_new();
@@ -688,8 +702,8 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
     InStream *fdt_in = fr->fdt_in;
 
     is_seek(fdx_in, doc_num * 8);
-    pos = is_read_u64(fdx_in);
-    is_seek(fdt_in, (long)pos);
+    pos = (off_t)is_read_u64(fdx_in);
+    is_seek(fdt_in, pos);
     stored_cnt = is_read_vint(fdt_in);
 
     for (i = 0; i < stored_cnt; i++) {
@@ -848,7 +862,7 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
     if (sti->index_terms == NULL) {
         int i;
         int index_size = sti->index_size;
-        long index_pointer = 0;
+        off_t index_pointer = 0;
         ste_reset(index_ste);
         is_seek(index_ste->is, sti->index_pointer);
         index_ste->size = sti->index_size;
@@ -856,7 +870,7 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
         sti->index_terms = ALLOC_N(char *, index_size);
         sti->index_term_lens = ALLOC_N(int, index_size);
         sti->index_term_infos = ALLOC_N(TermInfo, index_size);
-        sti->index_pointers = ALLOC_N(long, index_size);
+        sti->index_pointers = ALLOC_N(off_t, index_size);
         
         for (i = 0; NULL != ste_next(index_ste); i++) {
 #ifdef DEBUG
@@ -867,7 +881,7 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
             sti->index_terms[i] = te_get_term((TermEnum *)index_ste);
             sti->index_term_lens[i] = TE(index_ste)->curr_term_len;
             sti->index_term_infos[i] = TE(index_ste)->curr_ti;
-            index_pointer += is_read_vlong(index_ste->is);
+            index_pointer += is_read_voff_t(index_ste->is);
             sti->index_pointers[i] = index_pointer;
         }
     }
@@ -928,8 +942,8 @@ SegmentFieldIndex *sfi_open(Store *store, const char *segment)
     for (; field_count > 0; field_count--) {
         int field_num = is_read_vint(is);
         SegmentTermIndex *sti = ALLOC_AND_ZERO(SegmentTermIndex);
-        sti->index_pointer = is_read_vlong(is);
-        sti->pointer = is_read_vlong(is);
+        sti->index_pointer = is_read_voff_t(is);
+        sti->pointer = is_read_voff_t(is);
         sti->index_size = is_read_vint(is);
         sti->size = is_read_vint(is);
         h_set_int(sfi->field_dict, field_num, sti);
@@ -982,10 +996,10 @@ static char *ste_next(SegmentTermEnum *ste)
 
     ti = &(te->curr_ti);
     ti->doc_freq = is_read_vint(is);     /* read doc freq */
-    ti->frq_pointer += is_read_vlong(is);/* read freq pointer */
-    ti->prx_pointer += is_read_vlong(is);/* read prox pointer */
+    ti->frq_pointer += is_read_voff_t(is);/* read freq pointer */
+    ti->prx_pointer += is_read_voff_t(is);/* read prox pointer */
     if (ti->doc_freq >= ste->skip_interval) {
-        ti->skip_offset = is_read_vlong(is);
+        ti->skip_offset = is_read_voff_t(is);
     }
 
     return te->curr_term;
@@ -1300,19 +1314,19 @@ static void tw_add(TermWriter *tw,
         RAISE(STATE_ERROR, "\"%s\" > \"%s\"", tw->last_term, term);
     }
     if (ti->frq_pointer < tw->last_term_info.frq_pointer) {
-        RAISE(STATE_ERROR, "%ld > %ld", ti->frq_pointer,
+        RAISE(STATE_ERROR, "%"F_OFF_T_PFX"d > %"F_OFF_T_PFX"d", ti->frq_pointer,
               tw->last_term_info.frq_pointer);
     }
     if (ti->prx_pointer < tw->last_term_info.prx_pointer) {
-        RAISE(STATE_ERROR, "%ld > %ld", ti->prx_pointer,
+        RAISE(STATE_ERROR, "%"F_OFF_T_PFX"d > %"F_OFF_T_PFX"d", ti->prx_pointer,
               tw->last_term_info.prx_pointer);
     }
 #endif
 
     tw_write_term(tw, os, term, term_len);  /* write term */
     os_write_vint(os, ti->doc_freq);        /* write doc freq */
-    os_write_vlong(os, ti->frq_pointer - tw->last_term_info.frq_pointer);
-    os_write_vlong(os, ti->prx_pointer - tw->last_term_info.prx_pointer);
+    os_write_voff_t(os, ti->frq_pointer - tw->last_term_info.frq_pointer);
+    os_write_voff_t(os, ti->prx_pointer - tw->last_term_info.prx_pointer);
 
     tw->last_term_info = *ti;
     tw->counter++;
@@ -1323,7 +1337,7 @@ void tiw_add(TermInfosWriter *tiw,
              int term_len,
              TermInfo *ti)
 {
-    long tis_pos;
+    off_t tis_pos;
 
     /*
     printf("%s:%d:%d:%d:%d\n", term, term_len, ti->doc_freq,
@@ -1336,14 +1350,14 @@ void tiw_add(TermInfosWriter *tiw,
                strlen(tiw->tis_writer->last_term),
                &(tiw->tis_writer->last_term_info));
         tis_pos = os_pos(tiw->tis_writer->os);
-        os_write_vlong(tiw->tix_writer->os, tis_pos - tiw->last_index_pointer);
+        os_write_voff_t(tiw->tix_writer->os, tis_pos - tiw->last_index_pointer);
         tiw->last_index_pointer = tis_pos;  /* write pointer */
     }
 
     tw_add(tiw->tis_writer, term, term_len, ti);
 
     if (ti->doc_freq >= tiw->skip_interval) {
-        os_write_vlong(tiw->tis_writer->os, ti->skip_offset);
+        os_write_voff_t(tiw->tis_writer->os, ti->skip_offset);
     }
 }
 
@@ -1360,8 +1374,8 @@ void tiw_start_field(TermInfosWriter *tiw, int field_num)
     os_write_vint(tfx_out, tiw->tix_writer->counter);    /* write tix size */
     os_write_vint(tfx_out, tiw->tis_writer->counter);    /* write tis size */
     os_write_vint(tfx_out, field_num);
-    os_write_vlong(tfx_out, os_pos(tiw->tix_writer->os)); /* write tix pointer */
-    os_write_vlong(tfx_out, os_pos(tiw->tis_writer->os)); /* write tis pointer */
+    os_write_voff_t(tfx_out, os_pos(tiw->tix_writer->os)); /* write tix pointer */
+    os_write_voff_t(tfx_out, os_pos(tiw->tis_writer->os)); /* write tis pointer */
     tw_reset(tiw->tix_writer);
     tw_reset(tiw->tis_writer);
     tiw->last_index_pointer = 0;
@@ -1439,7 +1453,7 @@ void tvw_add_postings(TermVectorsWriter *tvw,
 {
     int i, delta_start, delta_length;
     const char *last_term = EMPTY_STRING;
-    long tvd_start_pos = os_pos(tvw->tvd_out);
+    off_t tvd_start_pos = os_pos(tvw->tvd_out);
     OutStream *tvd_out = tvw->tvd_out;
     PostingList *plist;
     Posting *posting;
@@ -1683,7 +1697,8 @@ static void stde_seek_prox(SegmentTermDocEnum *stde, int prx_pointer)
 
 TermDocEnum *stde_new(TermInfosReader *tir,
                       InStream *frq_in,
-                      BitVector *deleted_docs)
+                      BitVector *deleted_docs,
+                      int skip_interval)
 {
     SegmentTermDocEnum *stde = ALLOC_AND_ZERO(SegmentTermDocEnum);
     TermDocEnum *tde         = (TermDocEnum *)stde;
@@ -1706,7 +1721,7 @@ TermDocEnum *stde_new(TermInfosReader *tir,
     stde->tir                = tir;
     stde->frq_in             = is_clone(frq_in);
     stde->deleted_docs       = deleted_docs;
-    stde->skip_interval      = tir->orig_te->sfi->skip_interval;
+    stde->skip_interval      = skip_interval;
 
     return tde;
 }
@@ -1776,9 +1791,10 @@ static void stpe_seek_prox(SegmentTermDocEnum *stde, int prx_pointer)
 TermDocEnum *stpe_new(TermInfosReader *tir,
                       InStream *frq_in,
                       InStream *prx_in,
-                      BitVector *deleted_docs)
+                      BitVector *del_docs,
+                      int skip_interval)
 {
-    TermDocEnum *tde         = stde_new(tir, frq_in, deleted_docs);
+    TermDocEnum *tde         = stde_new(tir, frq_in, del_docs, skip_interval);
     SegmentTermDocEnum *stde = (SegmentTermDocEnum *)tde;
 
     /* TermDocEnum methods */
@@ -1950,12 +1966,12 @@ TermDocEnum *stpe_new(TermInfosReader *tir,
 //    return tde;
 //}
 
+
 /****************************************************************************
  *
  * IndexReader
  *
  ****************************************************************************/
-
 
 void ir_acquire_not_necessary(IndexReader *ir)
 {
@@ -1975,12 +1991,12 @@ void ir_acquire_write_lock(IndexReader *ir)
     if (ir->write_lock == NULL) {
         ir->write_lock = ir->store->open_lock(ir->store, WRITE_LOCK_NAME);
         if (!ir->write_lock->obtain(ir->write_lock)) {/* obtain write lock */
-            RAISE(STATE_ERROR, "Could not obtain write lock when trying to "
-                               "write changes to the index. Check that there "
-                               "are no stale locks in the index. Look for "
-                               "files with the \".lck\" prefix. If you know "
-                               "there are no processes writing to the index "
-                               "you can safely delete these files.");
+            RAISE(LOCK_ERROR, "Could not obtain write lock when trying to "
+                              "write changes to the index. Check that there "
+                              "are no stale locks in the index. Look for "
+                              "files with the \".lck\" prefix. If you know "
+                              "there are no processes writing to the index "
+                              "you can safely delete these files.");
         }
 
         /* we have to check whether index has changed since this reader was opened.
@@ -2091,8 +2107,8 @@ void ir_commit_i(IndexReader *ir)
             mutex_lock(&ir->store->mutex);
             commit_lock = ir->store->open_lock(ir->store, COMMIT_LOCK_NAME);
             if (!commit_lock->obtain(commit_lock)) { /* obtain write lock */
-                RAISE(STATE_ERROR, "Error trying to commit the index. Commit "
-                                   "lock already obtained");
+                RAISE(LOCK_ERROR, "Error trying to commit the index. Commit "
+                                  "lock already obtained");
             }
 
             ir->commit_i(ir);
@@ -2158,15 +2174,12 @@ bool ir_is_latest(IndexReader *ir)
     Lock *commit_lock = ir->store->open_lock(ir->store, COMMIT_LOCK_NAME);
     if (!commit_lock->obtain(commit_lock)) {
         ir->store->close_lock(commit_lock);
-        RAISE(STATE_ERROR, "Error trying to commit the index. Commit "
-                           "lock already obtained");
+        RAISE(LOCK_ERROR, "Error trying to commit the index. Commit "
+                          "lock already obtained");
     }
-    TRY
-        is_latest = (sis_read_current_version(ir->store) == ir->sis->version);
-    XFINALLY
-        commit_lock->release(commit_lock);
-        ir->store->close_lock(commit_lock);
-    XENDTRY
+    is_latest = (sis_read_current_version(ir->store) == ir->sis->version);
+    commit_lock->release(commit_lock);
+    ir->store->close_lock(commit_lock);
 
     return is_latest;
 }
@@ -2477,13 +2490,15 @@ static int sr_doc_freq(IndexReader *ir, int field_num, char *term)
 
 static TermDocEnum *sr_term_docs(IndexReader *ir)
 {
-    return stde_new(SR(ir)->tir, SR(ir)->frq_in, SR(ir)->deleted_docs);
+    return stde_new(SR(ir)->tir, SR(ir)->frq_in, SR(ir)->deleted_docs,
+                    SR(ir)->tir->orig_te->skip_interval);
 }
 
 static TermDocEnum *sr_term_positions(IndexReader *ir)
 {
     SegmentReader *sr = SR(ir);
-    return stpe_new(sr->tir, sr->frq_in, sr->prx_in, sr->deleted_docs);
+    return stpe_new(sr->tir, sr->frq_in, sr->prx_in, sr->deleted_docs,
+                    sr->tir->orig_te->skip_interval);
 }
 
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num, char *field)
@@ -2525,39 +2540,6 @@ static bool sr_has_deletions(IndexReader *ir)
     return (SR(ir)->deleted_docs != NULL);
 }
 
-/*
- * TODO: FIXME
- */
-//static char **sr_file_names(IndexReader *ir, int *cnt)
-//{
-//    char **file_names;
-//    FieldInfo *fi;
-//    int i;
-//    char file_name[SEGMENT_NAME_MAX_LENGTH];
-//
-//    for (i = 0; i < NELEMS(INDEX_EXTENSIONS); i++) {
-//        sprintf(file_name, "%s.%s", SR(ir)->segment, INDEX_EXTENSIONS[i]);
-//        if (ir->store->exists(ir->store, file_name)) {
-//            file_names[i] = estrdup(file_name);
-//        }
-//    }
-//
-//    for (i = 0; i < ir->fis->size; i++) {
-//        fi = ir->fis->fields[i];
-//        if (fi_has_norms(fi)) {
-//            if (SR(ir)->cfs_store) {
-//                sprintf(file_name, "%s.s%d", SR(ir)->segment, i);
-//            } else {
-//                sprintf(file_name, "%s.f%d", SR(ir)->segment, i);
-//            }
-//            if (ir->store->exists(ir->store, file_name)) {
-//                file_names[*cnt] = estrdup(file_name);
-//            }
-//        }
-//    }
-//    return file_names;
-//}
-
 static void sr_open_norms(IndexReader *ir, Store *cfs_store)
 {
     int i;
@@ -2569,11 +2551,7 @@ static void sr_open_norms(IndexReader *ir, Store *cfs_store)
         tmp_store = ir->store;
         fi = ir->fis->fields[i];
         if (fi_has_norms(fi)) {
-            sprintf(file_name, "%s.s%d", SR(ir)->segment, fi->number);
-            if (!tmp_store->exists(tmp_store, file_name)) {
-                sprintf(file_name, "%s.f%d", SR(ir)->segment, fi->number);
-                tmp_store = cfs_store;
-            }
+            sprintf(file_name, "%s.f%d", SR(ir)->segment, fi->number);
             h_set(SR(ir)->norms, fi->name,
                   norm_create(tmp_store->open_input(tmp_store, file_name),
                               fi->number));
@@ -2699,7 +2677,6 @@ IndexReader *ir_open(Store *store)
     mutex_unlock(&store->mutex);
     return ir;
 }
-
 
 /****************************************************************************
  *
@@ -2914,14 +2891,14 @@ HashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num)
     int i;
     InStream *tvx_in = tvr->tvx_in;
     InStream *tvd_in = tvr->tvd_in;
-    long data_pointer, field_index_pointer;
+    off_t data_pointer, field_index_pointer;
     int field_cnt;
     int *field_nums;
 
     is_seek(tvx_in, 12 * doc_num);
 
-    data_pointer = (long)is_read_u64(tvx_in);
-    field_index_pointer = data_pointer + (long)is_read_u32(tvx_in);
+    data_pointer = (off_t)is_read_u64(tvx_in);
+    field_index_pointer = data_pointer + (off_t)is_read_u32(tvx_in);
 
     /* scan fields to get position of field_num's term vector */
     is_seek(tvd_in, field_index_pointer);
@@ -2951,15 +2928,15 @@ TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
     int i;
     InStream *tvx_in = tvr->tvx_in;
     InStream *tvd_in = tvr->tvd_in;
-    long data_pointer, field_index_pointer;
+    off_t data_pointer, field_index_pointer;
     int field_cnt;
     int offset = 0;
     TermVector *tv = NULL;
 
     is_seek(tvx_in, 12 * doc_num);
 
-    data_pointer = (long)is_read_u64(tvx_in);
-    field_index_pointer = data_pointer + (long)is_read_u32(tvx_in);
+    data_pointer = (off_t)is_read_u64(tvx_in);
+    field_index_pointer = data_pointer + (off_t)is_read_u32(tvx_in);
 
     /* scan fields to get position of field_num's term vector */
     is_seek(tvd_in, field_index_pointer);
@@ -3051,11 +3028,9 @@ static void skip_buf_reset(SkipBuffer *skip_buf)
     skip_buf->last_prx_pointer = os_pos(skip_buf->prx_out);
 }
 
-static SkipBuffer *skip_buf_new(MemoryPool *mp,
-                                OutStream *frq_out,
-                                OutStream *prx_out)
+static SkipBuffer *skip_buf_new(OutStream *frq_out, OutStream *prx_out)
 {
-    SkipBuffer *skip_buf = MP_ALLOC(mp, SkipBuffer);
+    SkipBuffer *skip_buf = ALLOC(SkipBuffer);
     skip_buf->buf = ram_new_buffer();
     skip_buf->frq_out = frq_out;
     skip_buf->prx_out = prx_out;
@@ -3086,6 +3061,7 @@ static int skip_buf_write(SkipBuffer *skip_buf)
 static void skip_buf_destroy(SkipBuffer *skip_buf)
 {
     ram_destroy_buffer(skip_buf->buf);
+    free(skip_buf);
 }
 
 /****************************************************************************
@@ -3115,18 +3091,6 @@ static void dw_write_norms(DocWriter *dw, FieldInverter *fld_inv)
     os_close(norms_out);
     free(norms);
 }
-
-//static void dw_write_dummy_norms(DocWriter *dw, int field_num)
-//{
-//    uchar *norms = ALLOC_AND_ZERO_N(uchar, dw->doc_num);
-//    char file_name[SEGMENT_NAME_MAX_LENGTH];
-//    OutStream *norms_out;
-//    sprintf(file_name, "%s.f%d", dw->segment, field_num);
-//    norms_out = dw->store->new_output(dw->store, file_name);
-//    os_write_bytes(norms_out, norms, dw->doc_num);
-//    os_close(norms_out);
-//    free(norms);
-//}
 
 /* we'll use the postings HashTable's table area to sort the postings as it is
  * going to be zeroset soon anyway */
@@ -3170,7 +3134,7 @@ static void dw_flush(DocWriter *dw)
     frq_out = store->new_output(store, file_name);
     sprintf(file_name, "%s.prx", dw->segment);
     prx_out = store->new_output(store, file_name);
-    skip_buf = skip_buf_new(dw->mp, frq_out, prx_out);
+    skip_buf = skip_buf_new(frq_out, prx_out);
 
     for (i = 0; i < fis->size; i++) {
         fi = fis->fields[i];
@@ -3230,9 +3194,8 @@ static void dw_flush(DocWriter *dw)
 DocWriter *dw_open(IndexWriter *iw, const char *segment)
 {
     Store *store = iw->store;
-    Config *config = iw->config;
-    MemoryPool *mp = mp_new_capa(config->chunk_size,
-             config->max_buffer_memory/config->chunk_size);
+    MemoryPool *mp = mp_new_capa(iw-config.chunk_size,
+        iw->config.max_buffer_memory/iw->config.chunk_size);
 
     DocWriter *dw = ALLOC(DocWriter);
 
@@ -3248,9 +3211,9 @@ DocWriter *dw_open(IndexWriter *iw, const char *segment)
     dw->fields = h_new_str(NULL, (free_ft)fld_inv_destroy);
     dw->doc_num = 0;
 
-    dw->index_interval = config->index_interval;
-    dw->skip_interval = config->skip_interval;
-    dw->max_field_length = config->max_field_length;
+    dw->index_interval = iw->config.index_interval;
+    dw->skip_interval = iw->config.skip_interval;
+    dw->max_field_length = iw->config.max_field_length;
 
     dw->similarity = iw->similarity;
     return dw;
@@ -3429,6 +3392,476 @@ void dw_add_doc(DocWriter *dw, Document *doc)
  * IndexWriter
  *
  ****************************************************************************/
+/****************************************************************************
+ * SegmentMergeInfo
+ ****************************************************************************/
+
+typedef struct SegmentMergeInfo {
+    int base;
+    int max_doc;
+    int doc_cnt;
+    char *name;
+    Store *store;
+    BitVector *deleted_docs;
+    SegmentFieldIndex *sfi;
+    TermEnum *te;
+    char *term;
+    int *doc_map;
+    InStream *frq_in;
+    InStream *prx_in;
+} SegmentMergeInfo;
+
+static bool smi_lt(SegmentMergeInfo *smi1, SegmentMergeInfo *smi2)
+{
+    int cmpres = strcmp(smi1->term, smi2->term);
+    if (cmpres == 0) {
+        return smi1->base < smi2->base;
+    }
+    else {
+        return cmpres < 0;
+    }
+}
+
+static void smi_load_doc_map(SegmentMergeInfo *smi)
+{
+    BitVector *bv = smi->deleted_docs;
+    int max_doc = smi->max_doc;
+    int j = 0, i;
+
+    smi->doc_map = ALLOC_N(int, max_doc);
+    for (i = 0; i < max_doc; i++) {
+        if (bv_get(deleted, i)) {
+            smi->doc_map[i] = -1;
+        }
+        else {
+            smi->doc_map[i] = j++;
+        }
+    }
+    smi->doc_cnt = max_doc - bv->count;
+    return smi->doc_map;
+}
+
+static SegmentMergeInfo *smi_new(int base, Store *store, char *segment)
+{
+    SegmentMergeInfo *smi = ALLOC_AND_ZERO(SegmentMergeInfo);
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+    smi->base = base;
+    smi->name = segment;
+    smi->store = store;
+
+    smi->max_doc = store->length(store, file_name) / 8;
+
+    sprintf(file_name, "%s.del", segment);
+    if (store->exists(store, file_name)) {
+        smi->deleted_docs = bv_read(store, file_name);
+        smi_load_doc_map(smi);
+    }
+    return smi;
+}
+
+static void smi_load_term_input(SegmentMergeInfo *smi)
+{
+    Store *store = smi->store;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+    smi->sfi = sfi_open(store, smi->segment);
+    sprintf(file_name, "%s.tis", smi->segment);
+    smi->te = ste_new(smi->sfi, store->open_input(store, file_name));
+    sprintf(file_name, "%s.frq", smi->segment);
+    smi->frq_in = store->open_input(store, file_name);
+    sprintf(file_name, "%s.prx", smi->segment);
+    smi->prx_in = store->open_input(store, file_name);
+}
+
+static void smi_close_term_input(SegmentMergeInfo *smi)
+{
+    ste_close(smi->te);
+    sfi_close(smi->sfi);
+    is_close(smi->frq_in);
+    is_close(smi->prx_in);
+}
+
+static void smi_destroy(SegmentMergeInfo *smi)
+{
+    if (smi->deleted_docs) {
+        bv_destroy(smi->deleted_docs);
+        free(smi->doc_map);
+    }
+    free(smi);
+}
+
+static char *smi_next(SegmentMergeInfo *smi)
+{
+    return (smi->term = ste_next(smi->te));
+}
+
+/****************************************************************************
+ * SegmentMerger
+ ****************************************************************************/
+
+typedef struct SegmentMerger {
+    TermInfo ti;
+    Store *store;
+    FieldInfos *fis;
+    char *segment;
+    SegmentMergeInfo **smis;
+    int seg_cnt;
+    int doc_cnt;
+    Config *config;
+    OutStream *frq_out;
+    OutStream *prx_out;
+    TermInfosWriter *tiw;
+    char *term_buf;
+    int term_buf_pointer;
+    int term_buf_size;
+    PriorityQueue *queue;
+    SkipBuffer *skip_buf;
+} SegmentMerger;
+
+SegmentMerger *sm_create(IndexWriter *iw, char *segment,
+                         SegmentInfo **seg_infos, int seg_cnt)
+{
+    int i;
+    SegmentMerger *sm = ALLOC_AND_ZERO_N(SegmentMerger);
+    sm->store = iw->store;
+    sm->fis = iw->fis;
+    sm->segment = estrdup(segment);
+    sm->doc_cnt = 0;
+    sm->smis = ALLOC_N(SegmentMergeInfo *, seg_cnt);
+    for (i = 0; i < seg_cnt; i++) {
+        sm->smis[i] = smi_new(sm->doc_cnt, seg_infos[i]->store,
+                              seg_infos[i]->name);
+        sm->doc_cnt += sm->smis[i]->doc_cnt;
+    }
+    sm->seg_cnt = seg_cnt;
+    sm->config = iw->config;
+    return sm;
+}
+
+void sm_close(SegmentMerger *sm)
+{
+    int i;
+    if (sm->frq_out != NULL) {
+        os_close(sm->frq_out);
+    }
+    if (sm->prx_out != NULL) {
+        os_close(sm->prx_out);
+    }
+    if (sm->tiw != NULL) {
+        tiw_close(sm->tiw);
+    }
+    if (sm->queue != NULL) {
+        pq_destroy(sm->queue);
+    }
+}
+
+void sm_destroy(SegmentMerger *sm)
+{
+    sm_close(sm);
+    free(sm->name);
+    free(sm);
+}
+
+void sm_add_si(SegmentMerger *sm, SegmentInfo *si)
+{
+    ary_push(sm->seg_infos, si);
+}
+
+static void sm_merge_fields(SegmentMerger *sm)
+{
+    int i, j, max_doc;
+    off_t start, len;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+    OutStream *fdt_out, fdx_out;
+
+    sprintf(file_name, "%s.fdt", sm->segment);
+    fdt_out = store->new_output(store, file_name);
+
+    sprintf(file_name, "%s.fdx", sm->segment);
+    fdx_out = store->new_output(store, file_name);
+
+    for (i = 0; i < sm->seg_cnt; i++) {
+        SegmentMergeInfo *smi = sm->smis[i];
+        InStream *fdt_in, fdx_in;
+        sprintf(file_name, "%s.fdt", smi->segment);
+        fdt_in = store->open_input(smi->store, file_name);
+        sprintf(file_name, "%s.fdx", smi->segment);
+        fdx_in = store->open_input(smi->store, file_name);
+
+        if ((maxdoc = smi->max_doc) > 0) {
+            end = (off_t)is_read_u64(fdx_in);
+        }
+        for (j = 0; j < maxdoc; j++) {
+            start = end;
+            if (j == maxdoc - 1) {
+                end = is_length(fdt_in);
+            }
+            else {
+                end = (off_t)is_read_u64(fdx_in);
+            }
+            /* skip deleted docs */
+            if (!bv->deleted_docs || !bv_get(smi->deleted_docs, j)) {
+                os_write_u64(fdx_out, os_pos(fdt_out));
+                is_seek(fdt_in, start);
+                is2os_copy_bytes(fdt_in, fdt_out, end - start);
+            }
+        }
+        is_close(fdt_in);
+        is_close(fdx_in);
+    }
+    os_close(fdt_out);
+    os_close(fdx_out);
+}
+
+int sm_append_postings(SegmentMerger *sm, int cnt)
+{
+    int i, j, k;
+    int last_doc = 0, base, doc, doc_code, freq, last_position, position;
+    int *doc_map = NULL;
+    int df = 0;            /* number of docs w/ term */
+    TermEnum *ste;
+    SegmentMergeInfo *smi;
+    InStream *frq_in, *prx_in;
+    skip_buf_reset(sm->skip_buf);
+    for (i = 0; i < cnt; i++) {
+        smi = smis[i];
+        frq_in = smi->frq_in;
+        prx_in = smi->prx_in;
+        base = smi->base;
+        doc_map = smi->doc_map;
+        te = smi->te;
+
+        for (j = 0; j < te->curr_te.doc_freq; j++) {
+            doc = postings->doc_num(postings);
+            if (doc_map != NULL) {
+                doc = doc_map[doc]; /* work around deletions */
+            }
+            doc += base;          /* convert to merged space */
+
+            if (doc < last_doc) {
+                RAISE(STATE_ERROR, DOC_ORDER_ERROR_MSG);
+            }
+
+            df++;
+
+            if ((df % sm->skip_interval) == 0) {
+                sm_buffer_skip(sm, last_doc);
+            }
+
+            doc_code = (doc - last_doc) << 1;    /* use low bit to flag freq=1 */
+            last_doc = doc;
+
+            freq = postings->freq(postings);
+            if (freq == 1) {
+                os_write_vint(sm->frq_out, doc_code | 1); /* write doc & freq=1 */
+            } else {
+                os_write_vint(sm->frq_out, doc_code); /* write doc */
+                os_write_vint(sm->frq_out, freq);     /* write freqency in doc */
+            }
+
+
+            last_position = 0;        /* write position deltas */
+            for (k = 0; k < freq; k++) {
+                position = postings->next_position(postings);
+                os_write_vint(sm->prx_out, position - last_position);
+                last_position = position;
+            }
+        }
+    }
+    return df;
+}
+
+Term *sm_cache_term(SegmentMerger *sm, char *term, int term_len)
+{
+    term = memcpy(sm->term_buf + sm->term_buf_pointer, term, term_len + 1);
+    sm->terms_buf_pointer += term_len + 1;
+    if (sm->terms_buf_pointer > sm->terms_buf_size) {
+        sm->terms_buf_pointer = 0;
+    }
+    return term;
+}
+
+void sm_merge_term_info(SegmentMerger *sm, int cnt)
+{
+    int freq_pointer = os_pos(sm->frq_out);
+    int prox_pointer = os_pos(sm->prx_out);
+
+    int df = sm_append_postings(sm, cnt);      /* append posting data */
+
+    int skip_pointer = skip_buf_write(sm->skip_buf);
+
+    if (df > 0) {
+        /* add an entry to the dictionary with pointers to prox and freq files */
+        SegmentMergeInfo *first_smi = sm->smis[0];
+        int term_len = first_smi->te->curr_term_len;
+
+        ti_set(sm->ti, df, freq_pointer, prox_pointer, (skip_pointer - freq_pointer));
+        tiw_add(sm->tiw, sm_cache_term(sm, first_smi->term, term_len),
+                term_len, &sm->ti);
+    }
+}
+
+void sm_merge_term_infos(SegmentMerger *sm)
+{
+    int i, j, match_size;
+    SegmentMergeInfo *smi, *top, **match;
+    char *term;
+
+    match = ALLOC_N(SegmentMergeInfo *, sm->seg_cnt);
+
+    for (j = 0; j < sm->seg_cnt; j++) {
+        smi_load_term_input(sm->smis[j]);
+    }
+
+    for (i = 0; i < sm->fis->size; i++) {
+        tiw_start_field(sm->tiw, i);
+        for (j = 0; j < sm->seg_cnt; j++) {
+            smi = sm->smis[j];
+            ste_set_field(smi->ti, i);
+            if (smi_next(smi) != NULL) {
+                pq_push(sm->queue, smi); /* initialize @queue */
+            }
+        }
+        while (sm->queue->count > 0) {
+            /*
+               for (i = 1; i <= sm->queue->count; i++) {
+               printf("<{%s:%s}>", ((SegmentMergeInfo *)sm->queue->heap[i])->tb->field,
+               ((SegmentMergeInfo *)sm->queue->heap[i])->tb->text);
+               }printf("\n\n");
+               */
+            match_size = 0;     /* pop matching terms */
+            match[0] = pq_pop(sm->queue);
+            match_size++;
+            term = match[0]->term;
+            top = pq_top(sm->queue);
+            while ((top != NULL) && (strcmp(term, top->term) == 0)) {
+                match[match_size] = pq_pop(sm->queue);
+                match_size++;
+                top = pq_top(sm->queue);
+            }
+
+            /* printf(">%s:%s<\n", match[0]->tb->field, match[0]->tb->text); */
+            sm_merge_term_info(sm, match, match_size);      /* add new TermInfo */
+
+            while (match_size > 0) {
+                match_size--;
+                smi = match[match_size];
+                if (smi_next(smi) != NULL) {
+                    pq_push(sm->queue, smi);   /* restore queue */
+                }
+            }
+        }
+    }
+    free(match);
+    for (j = 0; j < sm->seg_cnt; j++) {
+        smi_close_term_input(sm->smis[j]);
+    }
+}
+
+void sm_merge_terms(SegmentMerger *sm)
+{
+    int i;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+
+    sprintf(file_name, "%s.frq", sm->segment);
+    sm->frq_out = sm->store->new_output(sm->store, file_name);
+    sprintf(file_name, "%s.prx", sm->segment);
+    sm->prx_out = sm->store->new_output(sm->store, file_name);
+
+    sm->tiw = tiw_open(sm->store, sm->segment, sm->term_index_interval);
+    sm->skip_buf = skip_buf_new(sm->frq_out, sm->prx_out);
+
+    /* terms_buf_pointer holds a buffer of terms since the TermInfosWriter needs
+     * to keep the last index_interval terms so that it can compare the last term
+     * put in the index with the next one. So the size of the buffer must by 
+     * index_interval + 2. */
+    sm->terms_buf_pointer = 0;
+    sm->terms_buf_size = sm->config->index_interval + 1 * MAX_WORD_SIZE;
+    sm->terms_buf = ALLOC_N(char, sm->terms_buf_size + MAX_WORD_SIZE);
+
+    sm->queue = pq_create(sm->seg_cnt, (lt_ft)&smi_lt);
+
+    sm_merge_term_infos(sm);
+
+    os_close(sm->frq_out);
+    os_close(sm->prx_out);
+    tiw_close(sm->tiw);
+    pq_destroy(sm->queue);
+    skip_buf_destroy(sm->skip_buf);
+}
+
+void sm_merge_norms(SegmentMerger *sm)
+{
+    int i, j, k, max_doc;
+    uchar *norm_buf;
+    FieldInfo *fi;
+    OutStream *os;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+    IndexReader *ir;
+    for (i = 0; i < sm->fis->fcnt; i++) {
+        fi = sm->fis->by_number[i];
+        if (fi->is_indexed && !fi->omit_norms)  {
+            sprintf(file_name, "%s.f%d", sm->name, i);
+            os = sm->store->new_output(sm->store, file_name);
+            TRY
+                for (j = 0; j < sm->readers->size; j++) {
+                    ir = sm->readers->elems[j];
+                    max_doc = ir->max_doc(ir);
+                    norm_buf = ALLOC_AND_ZERO_N(uchar, max_doc);
+                    ir->get_norms_into(ir, fi->name, norm_buf, 0);
+                    for (k = 0; k < max_doc; k++) {
+                        if (!ir->is_deleted(ir, k)) {
+                            os_write_byte(os, norm_buf[k]);
+                        }
+                    }
+                    free(norm_buf);
+                }
+            XFINALLY
+                os_close(os);
+            XENDTRY
+        }
+    }
+}
+
+void sm_merge_vectors(SegmentMerger *sm)
+{
+    int i, j, max_doc;
+    TermVectorsWriter *tvw = tvw_open(sm->store, sm->name, sm->fis);
+    IndexReader *ir;
+    Array *tvs;
+    TRY
+        for (i = 0; i < sm->readers->size; i++) {
+            ir = sm->readers->elems[i];
+            max_doc = ir->max_doc(ir);
+            for (j = 0; j < max_doc; j++) {
+                /* skip deleted docs */
+                if (! ir->is_deleted(ir, j)) {
+                    tvs = ir->get_term_vectors(ir, j);
+                    if (tvs) {
+                        tvw_add_all_doc_vectors(tvw, tvs);
+                        ary_destroy(tvs);
+                    }
+                }
+            }
+        }
+    XFINALLY
+        tvw_close(tvw);
+    XENDTRY
+}
+
+int sm_merge(SegmentMerger *sm)
+{
+    sm_merge_fields(sm);
+    sm_merge_terms(sm);
+    sm_merge_norms(sm);
+    if (fis_has_vectors(sm->fis))
+        sm_merge_vectors(sm);
+    return sm->doc_cnt;
+}
+
+
+/****************************************************************************
+ * IndexWriter
+ ****************************************************************************/
 
 /* prepare an index ready for writing */
 void index_create(Store *store, FieldInfos *fis)
@@ -3449,7 +3882,7 @@ IndexWriter *iw_open(Store *store, Analyzer *analyzer, const Config *config)
     if (!config) {
         config = &default_config;
     }
-    iw->config = memcpy(ALLOC(Config), config, sizeof(Config));
+    iw->config = *config;
 
     iw->sis = sis_read(store);
     iw->fis = fis_read(store);
@@ -3470,18 +3903,229 @@ void iw_close(IndexWriter *iw)
     sis_destroy(iw->sis);
     fis_destroy(iw->fis);
     sim_destroy(iw->similarity);
-    free(iw->config);
     free(iw);
 }
 
-static void iw_maybe_flush_segment(IndexWriter *iw)
+int iw_doc_count(IndexWriter *iw)
 {
-    DocWriter *dw = iw->dw;
-    SegmentInfos *sis = iw->sis;
-    if (mp_used(dw->mp) > iw->config->max_buffer_memory) {
-        sis->segs[sis->size - 1]->doc_cnt = dw->doc_num;
-        dw_new_segment(dw, sis_new_segment(sis, 1, iw->store)->name);
+    int i, doc_cnt = 0;
+    mutex_lock(&iw->mutex);
+    for (i = 0; i < iw->sis->size; i++) {
+        doc_cnt += iw->sis->segs[i]->doc_cnt;
     }
+    mutex_unlock(&iw->mutex);
+    return doc_cnt;
+}
+
+static void delete_files(char **file_names, Store *store)
+{
+    int i;
+    for (i = 0; i < ary_size(file_names); i++) {
+        store->remove(store, file_names[i]);
+    }
+    ary_destroy(file_names, &free);
+}
+
+char **iw_create_compound_file(Store *store, FieldInfos *fis, char *segment,
+                               char *cfs_file_name)
+{
+    char **file_names = ary_new_capa(16);
+    CompoundWriter *cw;
+    FieldInfo *fi;
+    int i;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+
+    cw = open_cw(store, cfs_file_name);
+    for (i = 0; i < NELEMS(COMPOUND_EXTENSIONS); i++) {
+        sprintf(file_name, "%s.%s", segment, COMPOUND_EXTENSIONS[i]);
+        ary_push(file_names, estrdup(file_name));
+    }
+
+    /* Field norm file_names */
+    for (i = 0; i < sm->fis->size; i++) {
+        fi = fis->fields[i];
+        if (fi_has_norms(fi)) {
+            sprintf(file_name, "%s.f%d", segment, i);
+            ary_push(file_names, estrdup(file_name));
+        }
+    }
+
+    /* Vector file_names */
+    if (fis_has_vectors(fis)) {
+        for (i = 0; i < NELEMS(VECTOR_EXTENSIONS); i++) {
+            sprintf(file_name, "%s.%s", segment, VECTOR_EXTENSIONS[i]);
+            ary_push(file_names, estrdup(file_name));
+        }
+    }
+
+    /* Now merge all added file_names */
+    for (i = 0; i < ary_size(file_names); i++) {
+        cw_add_file(cw, file_names[i]);
+    }
+
+    /* Perform the merge */
+    cw_close(cw);
+
+    return file_names;
+}
+
+static void iw_commit_compound_file(IndexWriter *iw, char *segment,
+                                    Lock *commit_lock)
+{
+    char tmp_name[SEGMENT_NAME_MAX_LENGTH];
+    char cfs_name[SEGMENT_NAME_MAX_LENGTH];
+    char *files_to_delete;
+    sprintf(tmp_name, "%s.tmp", segment);
+    sprintf(cfs_name, "%s.cfs", segment);
+
+    files_to_delete =
+        iw_create_compound_file(iw->store, iw->fis, si->name, tmp_name);
+    if (!commit_lock->obtain(lock)) {
+        RAISE(LOCK_ERROR,
+              "Couldn't obtain commit lock to write compound file");
+    }
+
+    delete_files(files_to_delete, iw->store);
+    iw->store->rename(iw->store, tmp_name, cfs_name);
+
+    commit_lock->release(lock);
+}
+
+static char **iw_seg_file_names(FieldInfos *fis, Store *store, char *segment)
+{
+    char **file_names = ary_new_capa(16);
+    FieldInfo *fi;
+    int i;
+    char file_name[SEGMENT_NAME_MAX_LENGTH];
+
+    for (i = 0; i < NELEMS(INDEX_EXTENSIONS); i++) {
+        sprintf(file_name, "%s.%s", segment, INDEX_EXTENSIONS[i]);
+        if (store->exists(store, file_name)) {
+            ary_push(file_names, estrdup(file_name));
+        }
+    }
+
+    for (i = 0; i < fis->size; i++) {
+        fi = fis->fields[i];
+        if (fi_has_norms(fi)) {
+            sprintf(file_name, "%s.f%d", segment, i);
+            if (store->exists(store, file_name)) {
+                ary_push(file_names, estrdup(file_name));
+            }
+        }
+    }
+    return file_names;
+}
+
+static void iw_merge_segments(IndexWriter *iw, int min_seg, int max_seg)
+{
+    int i;
+    Lock *commit_lock;
+    SegmentInfo *sis = iw->sis;
+    SegmentInfo *si = sis_new_segment(sis, 0, iw->store);
+
+    SegmentMerger *merger = sm_create(iw->config, iw->store, si->name,
+                                      &sis->si[min_seg], max_seg - min_seg);
+
+    si->doc_cnt = sm_merge(merger);
+
+    mutex_lock(&iw->store->mutex);
+    commit_lock = iw->store->open_lock(iw->store, COMMIT_LOCK_NAME);
+    if (!commit_lock->obtain(commit_lock)) {
+        RAISE(STATE_ERROR, COMMIT_LOCK_ERROR_MSG);
+    }
+    
+    /* delete merged segments */
+    for (i = min_seg; i < max_seg; i++) {
+        delete_files(iw->fis, sis->segs[i]->store, sis->segs[i]->name);
+    }
+    sis_del_from_to(sis, min_segment, max_segment);
+
+    /* commit the index */
+    sis_write(sis, iw->store);
+
+    commit_lock->release(commit_lock);
+
+    if (iw->config.use_compound_file) {
+        iw_commit_compound_file(iw, si->name, commit_lock);
+    }
+
+    iw->store->close_lock(commit_lock);
+
+    mutex_unlock(&iw->store->mutex);
+
+    free(segments_to_delete);
+    sm_destroy(merger);
+
+}
+
+static void iw_merge_segments_from(IndexWriter *iw, int min_segment)
+{
+    iw_merge_segments(iw, min_segment, iw->sis->size);
+}
+
+static void iw_maybe_merge_segments(IndexWriter *iw)
+{
+    int target_merge_docs = iw->config.merge_factor;
+    int min_segment, merge_docs;
+    SegmentInfo *si;
+
+    while (target_merge_docs <= iw->config.max_merge_docs) {
+        /* find segments smaller than current target size */
+        min_segment = iw->sis->size - 1;
+        merge_docs = 0;
+        while (min_segment >= 0) {
+            si = iw->sis->segs[min_segment];
+            if (si->doc_cnt >= target_merge_docs) {
+                break;
+            }
+            merge_docs += si->doc_cnt;
+            min_segment--;
+        }
+
+        if (merge_docs >= target_merge_docs) { /* found a merge to do */
+            iw_merge_segments_from(iw, min_segment + 1);
+        } else {
+            break;
+        }
+
+        target_merge_docs *= iw->config.merge_factor;
+    }
+}
+
+static void iw_flush_ram_segment(IndexWriter *iw)
+{
+    SegmentInfos *sis = iw->sis;
+    SegmentInfo *si;
+    Lock *commit_lock;
+
+    mutex_lock(&iw->mutex);
+
+    si = sis->segs[sis->size - 1];
+    si->doc_cnt = iw->dw->doc_num;
+    dw_new_segment(iw->dw, sis_new_segment(sis, 1, iw->store)->name);
+    iw_commit_segment(iw, si->name);
+
+    commit_lock = iw->store->open_lock(iw->store, COMMIT_LOCK_NAME);
+
+    mutex_lock(&iw->store->mutex);
+
+    if (!commit_lock->obtain(lock)) {
+        RAISE(LOCK_ERROR, "Couldn't obtain commit lock to write segments file");
+    }
+
+    sis_write(iw->sis, iw->store);
+
+    commit_lock->release(lock);
+
+    if (iw->config.use_compound_file) {
+        iw_commit_compound_file(iw, si->name, commit_lock);
+    }
+    iw->store->close_lock(commit_lock);
+    mutex_unlock(&iw->store->mutex);
+
+    iw_maybe_merge(iw);
+    mutex_unlock(&iw->mutex);
 }
 
 void iw_add_doc(IndexWriter *iw, Document *doc)
@@ -3492,6 +4136,8 @@ void iw_add_doc(IndexWriter *iw, Document *doc)
             dw_open(iw, sis_new_segment(iw->sis, 0, iw->store)->name);
     }
     dw_add_doc(iw->dw, doc);
-    iw_maybe_flush_segment(iw);
+    if (mp_used(iw->dw->mp) > iw->config.max_buffer_memory) {
+        iw_flush_ram_segment(iw);
+    }
     mutex_unlock(&iw->mutex);
 }

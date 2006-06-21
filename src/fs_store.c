@@ -203,7 +203,7 @@ static void fs_destroy(Store *store)
     store_destroy(store);
 }
 
-static long fs_length(Store *store, char *filename)
+static off_t fs_length(Store *store, char *filename)
 {
     char path[MAX_FILE_PATH];
     struct stat stt;
@@ -213,7 +213,7 @@ static long fs_length(Store *store, char *filename)
               strerror(errno));
     }
 
-    return (long)stt.st_size;
+    return stt.st_size;
 }
 
 static void fso_flush_i(OutStream *os, uchar *src, int len)
@@ -223,10 +223,10 @@ static void fso_flush_i(OutStream *os, uchar *src, int len)
     }
 }
 
-static void fso_seek_i(OutStream *os, long pos)
+static void fso_seek_i(OutStream *os, off_t pos)
 {
     if (fseek((FILE *)os->file, pos, SEEK_SET)) {
-        RAISE(IO_ERROR, "seeking position %ld: <%s>",
+        RAISE(IO_ERROR, "seeking position %"F_OFF_T_PFX"d: <%s>",
               pos, strerror(errno));
     }
 }
@@ -276,10 +276,11 @@ static void fsi_read_i(InStream *is, uchar *path, int len)
     }
 }
 
-static void fsi_seek_i(InStream *is, long pos)
+static void fsi_seek_i(InStream *is, off_t pos)
 {
     if (lseek(is->file.fd, pos, SEEK_SET) < 0) {
-        RAISE(IO_ERROR, "seeking pos %ld: <%s>", pos, strerror(errno));
+        RAISE(IO_ERROR, "seeking pos %"F_OFF_T_PFX"d: <%s>",
+              pos, strerror(errno));
     }
 }
 
@@ -293,13 +294,13 @@ static void fsi_close_i(InStream *is)
     }
 }
 
-static long fsi_length_i(InStream *is)
+static off_t fsi_length_i(InStream *is)
 {
     struct stat stt;
     if (fstat(is->file.fd, &stt)) {
         RAISE(IO_ERROR, "fstat failed: <%s>", strerror(errno));
     }
-    return (long)stt.st_size;
+    return stt.st_size;
 }
 
 /*

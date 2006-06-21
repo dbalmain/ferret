@@ -24,7 +24,7 @@ void with_lock_name(Store *store, char *lock_name,
 {
     Lock *lock = store->open_lock(store, lock_name);
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, "couldn't obtain lock \"%s\"", lock->name);
+        RAISE(LOCK_ERROR, "couldn't obtain lock \"%s\"", lock->name);
     }
     func(arg);
     lock->release(lock);
@@ -99,12 +99,12 @@ void os_close(OutStream *os)
     free(os);
 }
 
-long os_pos(OutStream *os)
+off_t os_pos(OutStream *os)
 {
     return os->buf.start + os->buf.pos;
 }
 
-void os_seek(OutStream *os, long new_pos)
+void os_seek(OutStream *os, off_t new_pos)
 {
     os_flush(os);
     os->buf.start = new_pos;
@@ -182,9 +182,9 @@ InStream *is_new()
  */
 void is_refill(InStream *is)
 {
-    long start = is->buf.start + is->buf.pos;
-    long last = start + BUFFER_SIZE;
-    long flen = is->m->length_i(is);
+    off_t start = is->buf.start + is->buf.pos;
+    off_t last = start + BUFFER_SIZE;
+    off_t flen = is->m->length_i(is);
 
     if (last > flen) {          /* don't read past EOF */
         last = flen;
@@ -192,7 +192,8 @@ void is_refill(InStream *is)
 
     is->buf.len = last - start;
     if (is->buf.len <= 0) {
-        RAISE(EOF_ERROR, "current pos = %ld, file length = %ld", start, flen);
+        RAISE(EOF_ERROR, "current pos = %"F_OFF_T_PFX"d, "
+              "file length = %"F_OFF_T_PFX"d", start, flen);
     }
 
     is->m->read_i(is, is->buf.buf, is->buf.len);
@@ -225,7 +226,7 @@ inline uchar is_read_byte(InStream *is)
     return read_byte(is);
 }
 
-long is_pos(InStream *is)
+off_t is_pos(InStream *is)
 {
     return is->buf.start + is->buf.pos;
 }
@@ -233,7 +234,7 @@ long is_pos(InStream *is)
 uchar *is_read_bytes(InStream *is, uchar *buf, int len)
 {
     int i;
-    long start;
+    off_t start;
 
     if ((is->buf.pos + len) < is->buf.len) {
         for (i = 0; i < len; i++) {
@@ -252,7 +253,7 @@ uchar *is_read_bytes(InStream *is, uchar *buf, int len)
     return buf;
 }
 
-void is_seek(InStream *is, long pos)
+void is_seek(InStream *is, off_t pos)
 {
     if (pos >= is->buf.start && pos < (is->buf.start + is->buf.len)) {
         is->buf.pos = pos - is->buf.start;  /* seek within buffer */
@@ -351,9 +352,9 @@ inline unsigned int is_read_vint(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-inline unsigned long is_read_vlong(InStream *is)
+inline off_t is_read_voff_t(InStream *is)
 {
-    register unsigned long res, b;
+    register off_t res, b;
     register int shift = 7;
 
     if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
@@ -382,10 +383,10 @@ inline unsigned long is_read_vlong(InStream *is)
 
 inline void is_skip_vints(InStream *is, register int cnt)
 {
-  for (; cnt > 0; cnt--) {
-    while ((is_read_byte(is) & 0x80) != 0) {
+    for (; cnt > 0; cnt--) {
+        while ((is_read_byte(is) & 0x80) != 0) {
+        }
     }
-  }
 }
 
 inline void is_read_chars(InStream *is, char *buffer,
@@ -480,7 +481,7 @@ inline void os_write_vint(OutStream *os, register unsigned int num)
 }
 
 /* optimized to use an unchecked write if there is space */
-inline void os_write_vlong(OutStream *os, register unsigned long num)
+inline void os_write_voff_t(OutStream *os, register off_t num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {
@@ -517,4 +518,27 @@ int file_is_lock(char *filename)
 {
     int start = (int) strlen(filename) - 4;
     return ((start > 0) && (strcmp(LOCK_EXT, &filename[start]) == 0));
+}
+
+void is2os_copy_bytes(InStream *is, OutStream *os, int cnt)
+{
+    int len;
+    char buf[BUFFER_SIZE];
+
+    for (; cnt > 0; cnt -= BUFFER_SIZE) {
+        len = ((cnt > BUFFER_SIZE) ? BUFFER_SIZE : cnt);
+        is_read_bytes(is, buf, len);
+        os_write_bytes(os, buf, len);
+    }
+}
+
+void is2os_copy_vints(InStream *is, OutStream *os, int cnt)
+{
+    uchar b;
+    for (; cnt > 0; cnt--) {
+        while (((b = is_read_byte(is)) & 0x80) != 0) {
+            os_write_byte(os, b);
+        }
+        os_write_byte(os, b);
+    }
 }

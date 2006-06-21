@@ -1,5 +1,4 @@
-
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG -D_FILE_OFFSET_BITS=64
 
 LFLAGS = -lm -lpthread
 
