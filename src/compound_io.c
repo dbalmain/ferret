@@ -153,7 +153,6 @@ static InStream *cmpd_create_input(InStream *sub_is, off_t offset, off_t length)
     cis->offset = offset;
     cis->length = length;
     is->d.cis = cis;
-    is->file.p = NULL;
     is->m = &CMPD_IN_STREAM_METHODS;
 
     return is;

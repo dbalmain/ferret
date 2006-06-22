@@ -15,10 +15,10 @@
 #   define DIR_SEPARATOR "\\"
 # endif
 # ifndef S_IRUSR
-#   define S_IRUSR _S_IREAD
+#   define S_IRUSR _S_IRUSR
 # endif
 # ifndef S_IWUSR
-#   define S_IWUSR _S_IWRITE
+#   define S_IWUSR _S_IWUSR
 # endif
 #else
 # define DIR_SEPARATOR "/"
@@ -218,14 +218,14 @@ static off_t fs_length(Store *store, char *filename)
 
 static void fso_flush_i(OutStream *os, uchar *src, int len)
 {
-    if (len != (int)fwrite(src, sizeof(uchar), len, (FILE *)os->file)) {
+    if (len != write(os->file.fd, src, len)) {
         RAISE(IO_ERROR, "flushing src of length %d", len);
     }
 }
 
 static void fso_seek_i(OutStream *os, off_t pos)
 {
-    if (fseek((FILE *)os->file, pos, SEEK_SET)) {
+    if (lseek(os->file.fd, pos, SEEK_SET) < 0) {
         RAISE(IO_ERROR, "seeking position %"F_OFF_T_PFX"d: <%s>",
               pos, strerror(errno));
     }
@@ -233,7 +233,7 @@ static void fso_seek_i(OutStream *os, off_t pos)
 
 static void fso_close_i(OutStream *os)
 {
-    if (fclose((FILE *)os->file)) {
+    if (close(os->file.fd)) {
         RAISE(IO_ERROR, "closing file: <%s>", strerror(errno));
     }
 }
@@ -247,15 +247,16 @@ const struct OutStreamMethods FS_OUT_STREAM_METHODS = {
 static OutStream *fs_new_output(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
-    FILE *f = fopen(join_path(path, store->dir.path, filename), "wb");
+    int fd = open(join_path(path, store->dir.path, filename),
+                  O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
     OutStream *os;
-    if (!f) {
+    if (fd < 0) {
         RAISE(IO_ERROR, "couldn't create OutStream %s: <%s>",
-              filename, strerror(errno));
+              path, strerror(errno));
     }
 
     os = os_new();
-    os->file = f;
+    os->file.fd = fd;
     os->m = &FS_OUT_STREAM_METHODS;
     return os;
 }
@@ -326,7 +327,7 @@ static InStream *fs_open_input(Store *store, const char *filename)
     char path[MAX_FILE_PATH];
     int fd = open(join_path(path, store->dir.path, filename), O_RDONLY);
     if (fd < 0) {
-        RAISE(IO_ERROR, "couldn't open %s to read: <%s>", 
+        RAISE(IO_ERROR, "couldn't create InStream %s: <%s>",
               path, strerror(errno));
     }
     is = is_new();
@@ -360,7 +361,7 @@ static int fs_lock_obtain(Lock *lock)
 
 static int fs_lock_is_locked(Lock *lock)
 {
-    int f = open(lock->name, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
+    int f = open(lock->name, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR, S_IWUSR);
     if (f >= 0) {
         if (close(f) || remove(lock->name)) {
             RAISE(IO_ERROR, "couldn't close lock \"%s\": <%s>", lock->name,

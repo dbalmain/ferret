@@ -22,7 +22,7 @@ testall: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
 
 valgrind: testall
-	valgrind --leak-check=yes -v testall -q test_index
+	valgrind --leak-check=yes -v testall -q
 
 libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
 	$(AR) -cru $@ $^

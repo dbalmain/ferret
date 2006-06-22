@@ -52,10 +52,23 @@ struct OutStreamMethods {
     void (*close_i)(struct OutStream *os);
 };
 
+typedef struct RAMFile
+{
+    char   *name;
+    uchar **buffers;
+    int     bufcnt;
+    off_t   len;
+    int     ref_cnt;
+} RAMFile;
+
 struct OutStream
 {
     Buffer buf;
-    void  *file;
+    union
+    {
+        int fd;
+        RAMFile *rf;
+    } file;
     off_t  pointer;             /* only used by RAMOut */
     const struct OutStreamMethods *m;
 };
@@ -119,7 +132,7 @@ struct InStream
     union
     {
         int fd;
-        void *p;
+        RAMFile *rf;
     } file;
     union
     {

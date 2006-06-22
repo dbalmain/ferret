@@ -7,18 +7,9 @@ extern OutStream *os_new();
 extern InStream *is_new();
 extern int file_is_lock(char *filename);
 
-typedef struct RamFile
+static RAMFile *rf_new(const char *name)
 {
-    char   *name;
-    uchar **buffers;
-    int     bufcnt;
-    off_t   len;
-    int     ref_cnt;
-} RamFile;
-
-static RamFile *rf_new(const char *name)
-{
-    RamFile *rf = ALLOC(RamFile);
+    RAMFile *rf = ALLOC(RAMFile);
     rf->buffers = ALLOC(uchar *);
     rf->buffers[0] = ALLOC_N(uchar, BUFFER_SIZE);
     rf->name = estrdup(name);
@@ -28,7 +19,7 @@ static RamFile *rf_new(const char *name)
     return rf;
 }
 
-static void rf_extend_if_necessary(RamFile *rf, int buf_num)
+static void rf_extend_if_necessary(RAMFile *rf, int buf_num)
 {
     while (rf->bufcnt <= buf_num) {
         REALLOC_N(rf->buffers, uchar *, (rf->bufcnt + 1));
@@ -39,7 +30,7 @@ static void rf_extend_if_necessary(RamFile *rf, int buf_num)
 static void rf_close(void *p)
 {
     int i;
-    RamFile *rf = (RamFile *)p;
+    RAMFile *rf = (RAMFile *)p;
     if (rf->ref_cnt > 0) {
         return;
     }
@@ -70,7 +61,7 @@ static int ram_exists(Store *store, char *filename)
 
 static int ram_remove(Store *store, char *filename)
 {
-    RamFile *rf = h_rem(store->dir.ht, filename, false);
+    RAMFile *rf = h_rem(store->dir.ht, filename, false);
     if (rf != NULL) {
         DEREF(rf);
         rf_close(rf);
@@ -83,8 +74,8 @@ static int ram_remove(Store *store, char *filename)
 
 static void ram_rename(Store *store, char *from, char *to)
 {
-    RamFile *rf = (RamFile *)h_rem(store->dir.ht, from, false);
-    RamFile *tmp;
+    RAMFile *rf = (RAMFile *)h_rem(store->dir.ht, from, false);
+    RAMFile *tmp;
 
     if (rf == NULL) {
         RAISE(IO_ERROR, "couldn't rename \"%s\" to \"%s\". \"%s\""
@@ -96,7 +87,7 @@ static void ram_rename(Store *store, char *from, char *to)
     rf->name = estrdup(to);
 
     /* clean up the file we are overwriting */
-    tmp = (RamFile *)h_get(store->dir.ht, to);
+    tmp = (RAMFile *)h_get(store->dir.ht, to);
     if (tmp != NULL) {
         DEREF(tmp);
     }
@@ -113,10 +104,9 @@ static void ram_each(Store *store,
                      void (*func)(char *fname, void *arg), void *arg)
 {
     HashTable *ht = store->dir.ht;
-    RamFile *rf;
     int i;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *)ht->table[i].value;
+        RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf) {
             if (strncmp(rf->name, LOCK_PREFIX, strlen(LOCK_PREFIX)) == 0) {
                 continue;
@@ -129,10 +119,9 @@ static void ram_each(Store *store,
 static void ram_close_i(Store *store)
 {
     HashTable *ht = store->dir.ht;
-    RamFile *rf;
     int i;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *)ht->table[i].value;
+        RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf) {
             DEREF(rf);
         }
@@ -148,9 +137,8 @@ static void ram_clear(Store *store)
 {
     int i;
     HashTable *ht = store->dir.ht;
-    RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *)ht->table[i].value;
+        RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf && !file_is_lock(rf->name)) {
             DEREF(rf);
             h_del(ht, rf->name);
@@ -162,9 +150,8 @@ static void ram_clear_locks(Store *store)
 {
     int i;
     HashTable *ht = store->dir.ht;
-    RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *)ht->table[i].value;
+        RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf && file_is_lock(rf->name)) {
             DEREF(rf);
             h_del(ht, rf->name);
@@ -176,9 +163,8 @@ static void ram_clear_all(Store *store)
 {
     int i;
     HashTable *ht = store->dir.ht;
-    RamFile *rf;
     for (i = 0; i <= ht->mask; i++) {
-        rf = (RamFile *)ht->table[i].value;
+        RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf) {
             DEREF(rf);
             h_del(ht, rf->name);
@@ -188,7 +174,7 @@ static void ram_clear_all(Store *store)
 
 static off_t ram_length(Store *store, char *filename)
 {
-    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
+    RAMFile *rf = (RAMFile *)h_get(store->dir.ht, filename);
     if (rf != NULL) {
         return rf->len;
     }
@@ -199,13 +185,13 @@ static off_t ram_length(Store *store, char *filename)
 
 off_t ramo_length(OutStream *os)
 {
-    return ((RamFile *)os->file)->len;
+    return os->file.rf->len;
 }
 
 static void ramo_flush_i(OutStream *os, uchar *src, int len)
 {
     uchar *buffer;
-    RamFile *rf = (RamFile *)os->file;
+    RAMFile *rf = os->file.rf;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
     int src_offset;
     off_t pointer = os->pointer;
@@ -243,14 +229,13 @@ static void ramo_seek_i(OutStream *os, off_t pos)
 
 void ramo_reset(OutStream *os)
 {
-    RamFile *rf = (RamFile *)os->file;
     os_seek(os, 0);
-    rf->len = 0;
+    os->file.rf->len = 0;
 }
 
 static void ramo_close_i(OutStream *os)
 {
-    RamFile *rf = (RamFile *)os->file;
+    RAMFile *rf = os->file.rf;
     DEREF(rf);
     rf_close(rf);
 }
@@ -258,7 +243,7 @@ static void ramo_close_i(OutStream *os)
 void ramo_write_to(OutStream *os, OutStream *other_o)
 {
     int i, len;
-    RamFile *rf = (RamFile *)os->file;
+    RAMFile *rf = os->file.rf;
     int last_buffer_number;
     int last_buffer_offset;
 
@@ -279,11 +264,11 @@ const struct OutStreamMethods RAM_OUT_STREAM_METHODS = {
 
 OutStream *ram_new_buffer()
 {
-    RamFile *rf = rf_new("");
+    RAMFile *rf = rf_new("");
     OutStream *os = os_new();
 
     DEREF(rf);
-    os->file = rf;
+    os->file.rf = rf;
     os->pointer = 0;
     os->m = &RAM_OUT_STREAM_METHODS;
     return os;
@@ -291,13 +276,13 @@ OutStream *ram_new_buffer()
 
 void ram_destroy_buffer(OutStream *os)
 {
-    rf_close(os->file);
+    rf_close(os->file.rf);
     free(os);
 }
 
 static OutStream *ram_new_output(Store *store, const char *filename)
 {
-    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
+    RAMFile *rf = (RAMFile *)h_get(store->dir.ht, filename);
     OutStream *os = os_new();
 
     if (rf == NULL) {
@@ -306,14 +291,14 @@ static OutStream *ram_new_output(Store *store, const char *filename)
     }
     REF(rf);
     os->pointer = 0;
-    os->file = rf;
+    os->file.rf = rf;
     os->m = &RAM_OUT_STREAM_METHODS;
     return os;
 }
 
 static void rami_read_i(InStream *is, uchar *b, int len)
 {
-    RamFile *rf = (RamFile *)is->file.p;
+    RAMFile *rf = is->file.rf;
 
     int offset = 0;
     int buffer_number, buffer_offset, bytes_in_buffer, bytes_to_copy;
@@ -344,7 +329,7 @@ static void rami_read_i(InStream *is, uchar *b, int len)
 
 static off_t rami_length_i(InStream *is)
 {
-    return ((RamFile *)is->file.p)->len;
+    return is->file.rf->len;
 }
 
 static void rami_seek_i(InStream *is, off_t pos)
@@ -354,7 +339,7 @@ static void rami_seek_i(InStream *is, off_t pos)
 
 static void rami_close_i(InStream *is)
 {
-    RamFile *rf = (RamFile *)is->file.p;
+    RAMFile *rf = is->file.rf;
     DEREF(rf);
     rf_close(rf);
 }
@@ -362,7 +347,7 @@ static void rami_close_i(InStream *is)
 static void rami_clone_i(InStream *is, InStream *new_is)
 {
     (void)new_is; /* suppress unused parameter warning */
-    REF((RamFile *)is->file.p);
+    REF(is->file.rf);
 }
 
 static const struct InStreamMethods RAM_IN_STREAM_METHODS = {
@@ -375,7 +360,7 @@ static const struct InStreamMethods RAM_IN_STREAM_METHODS = {
 
 static InStream *ram_open_input(Store *store, const char *filename)
 {
-    RamFile *rf = (RamFile *)h_get(store->dir.ht, filename);
+    RAMFile *rf = (RAMFile *)h_get(store->dir.ht, filename);
     InStream *is = is_new();
 
     if (rf == NULL) {
@@ -383,7 +368,7 @@ static InStream *ram_open_input(Store *store, const char *filename)
     }
     REF(rf);
 
-    is->file.p = rf;
+    is->file.rf = rf;
     is->d.pointer = 0;
     is->is_clone = false;
     is->m = &RAM_IN_STREAM_METHODS;
