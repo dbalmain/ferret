@@ -48,6 +48,12 @@ int icmp(const void *p1, const void *p2)
     return 0;
 }
 
+int icmp_risky(const void *p1, const void *p2)
+{
+  return (*(int *)p1) - *((int *)p2);
+}
+
+
 /* frt_exit: print error message and exit */
 #ifdef FRT_HAS_VARARGS
 void vfrt_exit(const char *file, int line_num, const char *func,

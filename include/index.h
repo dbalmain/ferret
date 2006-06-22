@@ -454,6 +454,13 @@ extern TermDocEnum *stpe_new(TermInfosReader *tir, InStream *frq_in,
                              int skip_interval);
 
 /****************************************************************************
+ * MultipleTermDocPosEnum
+ ****************************************************************************/
+
+extern TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms,
+                              int t_cnt);
+
+/****************************************************************************
  *
  * Offset
  *

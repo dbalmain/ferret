@@ -1028,7 +1028,8 @@ static TermEnum *ste_set_field(TermEnum *te, int field_num)
     if (sti) {
         STE(te)->size = sti->size;
         is_seek(STE(te)->is, sti->ptr);
-    } else {
+    }
+    else {
         STE(te)->size = 0;
     }
     return te;
@@ -1327,7 +1328,8 @@ TermEnum *mte_new(IndexReader **readers, int *starts, int r_cnt,
 
         if (t != NULL) {
             sub_te = reader->terms_from(reader, field_num, t);
-        } else {
+        }
+        else {
             sub_te = reader->terms(reader, field_num);
         }
 
@@ -1421,7 +1423,8 @@ char *tir_get_term(TermInfosReader *tir, int pos)
 { 
     if (pos < 0) {
         return NULL;
-    } else {
+    }
+    else {
         return ste_get_term(tir_enum(tir), pos);
     }
 }
@@ -1727,7 +1730,8 @@ static void stde_seek_ti(SegmentTermDocEnum *stde, TermInfo *ti)
 {
     if (ti == NULL) {
         stde->doc_freq = 0;
-    } else {
+    }
+    else {
         stde->count = 0;
         stde->doc_freq = ti->doc_freq;
         stde->doc_num = 0;
@@ -1803,7 +1807,8 @@ static int stde_read(TermDocEnum *tde, int *docs, int *freqs, int req_num)
         stde->doc_num += (doc_code >> 1);            /* shift off low bit */
         if ((doc_code & 1) != 0) {                   /* if low bit is set */
             stde->freq = 1;                            /* freq is one */
-        } else {
+        }
+        else {
             stde->freq = is_read_vint(stde->frq_in);  /* else read freq */
         }
 
@@ -1945,7 +1950,8 @@ static void stpe_seek_ti(SegmentTermDocEnum *stde, TermInfo *ti)
 {
     if (ti == NULL) {
         stde->doc_freq = 0;
-    } else {
+    }
+    else {
         stde_seek_ti(stde, ti);
         is_seek(stde->prx_in, ti->prx_ptr);
     }
@@ -2249,56 +2255,79 @@ TermDocEnum *mtpe_new(IndexReader **irs, int *starts, int ir_cnt)
  * This enumerator is used by MultiPhraseQuery
  ****************************************************************************/
 
-#define GET_MTDPE MultipleTermDocPosEnum *mtdpe = (MultipleTermDocPosEnum *)self->data
-void tde_destroy(TermDocEnum *self) {
-    self->close(self);
+#define MTDPE(tde) ((MultipleTermDocPosEnum *)(tde))
+#define  MTDPE_POS_QUEUE_INIT_CAPA 8
+
+typedef struct
+{
+    TermDocEnum tde;
+    int doc_num;
+    int freq;
+    PriorityQueue *pq;
+    int *pos_queue;
+    int pos_queue_index;
+    int pos_queue_capa;
+    int field_num;
+} MultipleTermDocPosEnum;
+
+static void tde_destroy(TermDocEnum *tde) {
+    tde->close(tde);
 }
 
-void mtdpe_close(TermDocEnum *self)
+static void mtdpe_seek(TermDocEnum *tde, int field_num, const char *term)
 {
-    GET_MTDPE;
-
-    pq_clear(mtdpe->pq);
-    pq_destroy(mtdpe->pq);
-    free(mtdpe->pos_queue);
-    free(mtdpe);
-    free(self);
+    (void)tde;
+    (void)field_num;
+    (void)term;
+    RAISE(UNSUPPORTED_ERROR, "MultipleTermDocPosEnum does not support "
+          " the #seek operation");
 }
 
-void mtdpe_seek(TermDocEnum *tde, Term *term)
-{ RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);}
-
-bool mtdpe_next(TermDocEnum *self)
+static int mtdpe_doc_num(TermDocEnum *tde)
 {
-    TermDocEnum *tde;
-    int i = 0, freq = 0;
+    return MTDPE(tde)->doc_num;
+}
+
+static int mtdpe_freq(TermDocEnum *tde)
+{
+    return MTDPE(tde)->freq;
+}
+
+static bool mtdpe_next(TermDocEnum *tde)
+{
+    TermDocEnum *sub_tde;
+    int pos = 0, freq = 0;
     int doc;
-    GET_MTDPE;
+    MultipleTermDocPosEnum *mtdpe = MTDPE(tde);
 
-    if (mtdpe->pq->count == 0) return false;
+    if (mtdpe->pq->size == 0) {
+        return false;
+    }
 
-    tde = (TermDocEnum *)pq_top(mtdpe->pq);
-    doc = tde->doc_num(tde);
+    sub_tde = (TermDocEnum *)pq_top(mtdpe->pq);
+    doc = sub_tde->doc_num(sub_tde);
 
     do {
-        freq += tde->freq(tde);
+        freq += sub_tde->freq(sub_tde);
         if (freq > mtdpe->pos_queue_capa) {
-            mtdpe->pos_queue_capa *= 2;
+            mtdpe->pos_queue_capa <<= 1;
             REALLOC_N(mtdpe->pos_queue, int, mtdpe->pos_queue_capa);
         }
 
-        for (; i < freq; i++) {
-            mtdpe->pos_queue[i] = tde->next_position(tde);
+        /* pos starts from where it was up to last time */
+        for (; pos < freq; pos++) {
+            mtdpe->pos_queue[pos] = sub_tde->next_position(sub_tde);
         }
 
-        if (tde->next(tde)) {
+        if (sub_tde->next(sub_tde)) {
             pq_down(mtdpe->pq);
-        } else {
-            tde = pq_pop(mtdpe->pq);
-            tde->close(tde);
         }
-        tde = (TermDocEnum *)pq_top(mtdpe->pq);
-    } while ((mtdpe->pq->count > 0) && (tde->doc_num(tde) == doc));
+        else {
+            sub_tde = pq_pop(mtdpe->pq);
+            sub_tde->close(sub_tde);
+        }
+        sub_tde = (TermDocEnum *)pq_top(mtdpe->pq);
+    } while ((mtdpe->pq->size > 0) && (sub_tde->doc_num(sub_tde) == doc));
 
     qsort(mtdpe->pos_queue, freq, sizeof(int), &icmp_risky);
 
@@ -2309,80 +2338,84 @@ bool mtdpe_next(TermDocEnum *self)
     return true;
 }
 
-int mtdpe_doc_num(TermDocEnum *self)
-{ return ((MultipleTermDocPosEnum *)self->data)->doc_num; }
-
-int mtdpe_freq(TermDocEnum *self)
-{ return ((MultipleTermDocPosEnum *)self->data)->freq; }
-
-
 bool tdpe_less_than(void *p1, void *p2)
 {
     return ((TermDocEnum *)p1)->doc_num((TermDocEnum *)p1) <
         ((TermDocEnum *)p2)->doc_num((TermDocEnum *)p2);
 }
 
-bool mtdpe_skip_to(TermDocEnum *self, int target_doc_num)
+bool mtdpe_skip_to(TermDocEnum *tde, int target_doc_num)
 {
-    GET_MTDPE;
-    TermDocEnum *tde;
-    while ((tde = pq_top(mtdpe->pq)) != NULL &&
-           (target_doc_num > tde->doc_num(tde))) {
-        if (tde->skip_to(tde, target_doc_num)) {
-            pq_down(mtdpe->pq);
-        } else {
-            tde = pq_pop(mtdpe->pq);
-            tde->close(tde);
+    TermDocEnum *sub_tde;
+    while ((sub_tde = (TermDocEnum *)pq_top(MTDPE(tde)->pq)) != NULL &&
+           (target_doc_num > sub_tde->doc_num(sub_tde))) {
+        if (sub_tde->skip_to(sub_tde, target_doc_num)) {
+            pq_down(MTDPE(tde)->pq);
+        }
+        else {
+            sub_tde = pq_pop(MTDPE(tde)->pq);
+            sub_tde->close(sub_tde);
         }
     }
-    return self->next(self);
+    return tde->next(tde);
 }
 
-int mtdpe_read(TermDocEnum *tde, int *docs, int *freqs, int req_num)
+static int mtdpe_read(TermDocEnum *tde, int *docs, int *freqs, int req_num)
 {
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
-    return -1;
+    (void)tde;
+    (void)docs;
+    (void)freqs;
+    RAISE(UNSUPPORTED_ERROR, "MultipleTermDocPosEnum does not support "
+          " the #read operation");
+    return req_num;
 }
 
-int mtdpe_next_position(TermDocEnum *self)
+static int mtdpe_next_position(TermDocEnum *tde)
 {
-    GET_MTDPE;
-    return mtdpe->pos_queue[mtdpe->pos_queue_index++];
+    return MTDPE(tde)->pos_queue[MTDPE(tde)->pos_queue_index++];
 }
 
-TermDocEnum *mtdpe_create(IndexReader *ir, int field_num, char **terms,
-                          int t_cnt)
+static void mtdpe_close(TermDocEnum *tde)
+{
+    pq_clear(MTDPE(tde)->pq);
+    pq_destroy(MTDPE(tde)->pq);
+    free(MTDPE(tde)->pos_queue);
+    free(tde);
+}
+
+TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms, int t_cnt)
 {
     int i;
-    MultipleTermDocPosEnum *mtdpe = ALLOC_AND_ZERO_N(MultipleTermDocPosEnum, 1);
+    MultipleTermDocPosEnum *mtdpe = ALLOC_AND_ZERO(MultipleTermDocPosEnum);
+    TermDocEnum *tde = TDE(mtdpe);
     PriorityQueue *pq;
-    TermDocEnum *tpe;
 
-    pq = mtdpe->pq = pq_create(t_cnt, &tdpe_less_than);
+    pq = mtdpe->pq = pq_new(t_cnt, &tdpe_less_than, (free_ft)&tde_destroy);
     mtdpe->pos_queue_capa = MTDPE_POS_QUEUE_INIT_CAPA;
     mtdpe->pos_queue = ALLOC_N(int, MTDPE_POS_QUEUE_INIT_CAPA);
+    mtdpe->field_num = field_num;
     for (i = 0; i < t_cnt; i++) {
-        tpe = ir_term_positions_for(ir, terms[i]);
+        TermDocEnum *tpe = ir->term_positions(ir);
+        tpe->seek(tpe, field_num, terms[i]);
         if (tpe->next(tpe)) {
             pq_push(pq, tpe);
-        } else {
+        }
+        else {
             tpe->close(tpe);
         }
     }
-    pq->free_elem       = (free_ft)&tde_destroy;
+    tde->close          = &mtdpe_close;
+    tde->seek           = &mtdpe_seek;
+    tde->next           = &mtdpe_next;
+    tde->doc_num        = &mtdpe_doc_num;
+    tde->freq           = &mtdpe_freq;
+    tde->skip_to        = &mtdpe_skip_to;
+    tde->read           = &mtdpe_read;
+    tde->next_position  = &mtdpe_next_position;
 
-    self->data          = mtdpe;
-    self->close         = &mtdpe_close;
-    self->seek          = &mtdpe_seek;
-    self->next          = &mtdpe_next;
-    self->doc_num       = &mtdpe_doc_num;
-    self->freq          = &mtdpe_freq;
-    self->skip_to       = &mtdpe_skip_to;
-    self->read          = &mtdpe_read;
-    self->next_position = &mtdpe_next_position;
-
-    return self;
+    return tde;
 }
+
 /****************************************************************************
  *
  * IndexReader
@@ -2555,7 +2588,8 @@ void ir_commit_i(IndexReader *ir)
                 ir->store->close_lock(ir->write_lock);
                 ir->write_lock = NULL;
             }
-        } else {
+        }
+        else {
             ir->commit_i(ir);
         }
         ir->has_changes = false;
@@ -3079,7 +3113,8 @@ static IndexReader *sr_setup_i(SegmentReader *sr, SegmentInfo *si)
         sr->orig_tvr = tvr_open(store, sr->segment, ir->fis);
         thread_key_create(&sr->thread_tvr, NULL);
         sr->tvr_bucket = ary_new();
-    } else {
+    }
+    else {
         sr->orig_tvr = NULL;
     }
     return ir;
@@ -3201,7 +3236,8 @@ static uchar *mr_get_norms_into(IndexReader *ir, int field_num, uchar *buf)
     bytes = h_get_int(MR(ir)->norms_cache, field_num);
     if (bytes != NULL) {
         memcpy(buf, bytes, MR(ir)->max_doc);
-    } else {
+    }
+    else {
         int i;
         const int mr_reader_cnt = MR(ir)->r_cnt;
         for (i = 0; i < mr_reader_cnt; i++) {
@@ -3990,7 +4026,8 @@ static void dw_add_posting(MemoryPool *mp,
         else {
             pl_add_occ(mp, pl_he->value, pos);
         }
-    } else {
+    }
+    else {
         HashEntry *fld_pl_he = h_set_ext(fld_plists, text);
         PostingList *pl = fld_pl_he->value;
         Posting *p;
@@ -4372,7 +4409,8 @@ static int sm_append_postings(SegmentMerger *sm, SegmentMergeInfo **matches,
             freq = stde_freq(tde);
             if (freq == 1) {
                 os_write_vint(sm->frq_out, doc_code | 1); /* doc & freq=1 */
-            } else {
+            }
+            else {
                 os_write_vint(sm->frq_out, doc_code); /* write doc */
                 os_write_vint(sm->frq_out, freq);     /* write freqency in doc */
             }
@@ -4850,7 +4888,8 @@ static void iw_maybe_merge_segments(IndexWriter *iw)
 
         if (merge_docs >= target_merge_docs) { /* found a merge to do */
             iw_merge_segments_from(iw, min_segment + 1);
-        } else {
+        }
+        else {
             break;
         }
 

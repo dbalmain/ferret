@@ -1198,7 +1198,29 @@ static void test_ir_get_doc(tst_case *tc, void *data)
     doc_destroy(doc);
 }
 
-void test_ir_norms(tst_case *tc, void *data)
+static void test_ir_mtdpe(tst_case *tc, void *data)
+{ 
+    IndexReader *ir = (IndexReader *)data;
+    char *terms[3] = {"Where", "is", "books."};
+
+    TermDocEnum *tde = mtdpe_new(ir, fis_get_field(ir->fis, body)->number,
+                                 terms, 3);
+
+    Atrue(tde->next(tde));
+    Aiequal(0, tde->doc_num(tde));
+    Aiequal(2, tde->freq(tde));
+    Aiequal(0, tde->next_position(tde));
+    Aiequal(1, tde->next_position(tde));
+    Atrue(tde->next(tde));
+    Aiequal(20, tde->doc_num(tde));
+    Aiequal(2, tde->freq(tde));
+    Aiequal(1, tde->next_position(tde));
+    Aiequal(17, tde->next_position(tde));
+    Atrue(!tde->next(tde));
+    tde->close(tde);
+}
+
+static void test_ir_norms(tst_case *tc, void *data)
 { 
     uchar *norms;
     Store *store = open_ram_store();
@@ -1278,7 +1300,7 @@ void test_ir_norms(tst_case *tc, void *data)
     store_deref(store);
 }
 
-void test_ir_delete(tst_case *tc, void *data)
+static void test_ir_delete(tst_case *tc, void *data)
 { 
     Store *store = open_ram_store();
     IndexReader *ir;
@@ -1406,7 +1428,7 @@ static void test_ir_read_while_optimizing(tst_case *tc, void *data)
     ir_close(ir);
 }
 
-void test_ir_multivalue_fields(tst_case *tc, void *data)
+static void test_ir_multivalue_fields(tst_case *tc, void *data)
 { 
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -1526,6 +1548,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_segment_term_vectors");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_segment_get_doc");
+    tst_run_test_with_name(suite, test_ir_mtdpe, ir,
+                           "test_segment_multiple_term_doc_pos_enum");
 
     tst_run_test_with_name(suite, test_ir_norms, (void *)true,
                            "test_segment_norms");
@@ -1545,6 +1569,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_multi_term_vectors");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_multi_get_doc");
+    tst_run_test_with_name(suite, test_ir_mtdpe, ir,
+                           "test_multi_multiple_term_doc_pos_enum");
 
     tst_run_test_with_name(suite, test_ir_norms, (void *)true,
                            "test_multi_norms");
