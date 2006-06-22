@@ -442,7 +442,7 @@ static void prep_stde_test_docs(Document **docs, int doc_cnt, int num_words,
                             FieldInfos *fis)
 {
     int i, j;
-    char buf[num_words * (TEST_WORD_LIST_MAX_LEN + 1)];
+    char *buf = ALLOC_N(char, num_words * (TEST_WORD_LIST_MAX_LEN + 1));
     for (i = 0; i < doc_cnt; i++) {
         docs[i] = doc_new();
         for (j = 0; j < fis->size; j++) {
@@ -454,6 +454,7 @@ static void prep_stde_test_docs(Document **docs, int doc_cnt, int num_words,
             }
         }
     }
+	free(buf);
 }
 
 static void prep_test_1seg_index(Store *store, Document **docs,
@@ -687,12 +688,13 @@ static void test_fld_inverter(tst_case *tc, void *data)
     PostingList *pl;
     DocWriter *dw;
     IndexWriter *iw;
+	DocField *df;
 
     index_create(store, fis);
     iw = iw_open(store, whitespace_analyzer_new(true), NULL);
     dw = dw_open(iw, "_0");
 
-    DocField *df = df_new("no tv");
+    df = df_new("no tv");
     df_add_data(df, "one two three four five two three four five three "
                 "four five four five");
     df_add_data(df, "ichi ni san yon go ni san yon go san yon go yon go go");

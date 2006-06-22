@@ -31,7 +31,7 @@ const char *VECTOR_EXTENSIONS[] = {
     "tvx", "tvd"
 };
 
-const Config const default_config = {
+const Config default_config = {
     0x100000,       /* chunk size is 1Mb */
     0x1000000,      /* Max memory used for buffer is 16 Mb */
     INDEX_INTERVAL, /* index interval */
@@ -3265,8 +3265,7 @@ int mr_doc_freq(IndexReader *ir, int field_num, char *t)
 {
     int total = 0;          /* sum freqs in segments */
     int i = MR(ir)->r_cnt;
-    while (i > 0) {
-        i--;
+    for (i = MR(ir)->r_cnt - 1; i >= 0; i--) {
         IndexReader *reader = MR(ir)->sub_readers[i];
         total += reader->doc_freq(reader, field_num, t);
     }

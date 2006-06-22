@@ -22,7 +22,7 @@
 #define ary_grow(ary)           ary_resize(ary, ary_sz(ary))
 #define ary_last(ary)           ary[ary_sz(ary) - 1]
 
-extern inline void ary_resize_i(void ***ary, int size);
+extern void   ary_resize_i(void ***ary, int size);
 extern void **ary_new_i(int type_size, int init_capa);
 extern void   ary_set_i(void ***ary, int index, void *value);
 extern void  *ary_get(void **ary, int index);

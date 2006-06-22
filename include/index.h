@@ -33,7 +33,7 @@ typedef struct Config
     bool use_compound_file;
 } Config;
 
-extern const Config const default_config;
+extern const Config default_config;
 
 /***************************************************************************
  *

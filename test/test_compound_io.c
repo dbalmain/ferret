@@ -112,10 +112,11 @@ void test_compound_io(tst_case *tc, void *data)
     store_deref(c_reader);
 }
 
+#define MAX_TEST_WORDS 50
+#define TEST_FILE_CNT 100
+
 void test_compound_io_many_files(tst_case *tc, void *data)
 {
-    static const int MAX_TEST_WORDS = 50;
-    static const int TEST_FILE_CNT = 100;
     static const int MAGIC = 250777;
 
     Store *store = (Store *)data;

@@ -265,6 +265,8 @@ static void test_rw_voff_ts(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
+    OutStream *ostream;
+    InStream *istream;
     f_i64 voff_ts[4] =
         { LONG_MAX, 0, 1000000, 1 };
     if (sizeof(off_t) == 8) {
@@ -273,8 +275,7 @@ static void test_rw_voff_ts(tst_case *tc, void *data)
     else {
         voff_ts[0] = POSH_I32_MAX;
     }
-    OutStream *ostream = store->new_output(store, "rw_voff_t.test");
-    InStream *istream;
+    ostream = store->new_output(store, "rw_voff_t.test");
 
     for (i = 0; i < 4; i++) {
         os_write_voff_t(ostream, (off_t)voff_ts[i]);
