@@ -25,7 +25,7 @@ typedef posh_i64_t f_i64;
 #if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
 #define F_OFF_T_PFX "ll"
 #else
-#define F_OFF_T_PFX ""
+#define F_OFF_T_PFX "l"
 #endif
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)

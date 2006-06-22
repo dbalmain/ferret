@@ -110,7 +110,7 @@ void bv_unset(BitVector * bv, int bit)
 
 /* Table of bits per char. This table is used by the bv_recount method to
  * optimize the counting of bits */
-const uchar BYTE_COUNTS[] = {
+static const uchar BYTE_COUNTS[] = {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -134,7 +134,8 @@ int bv_recount(BitVector * bv)
     /* if the vector has been modified */
     int i, c = 0;
     uchar *bytes = (uchar *)bv->bits; /* count by character */
-    for (i = ((bv->size >> 5) + 1) << 2; i >= 0; i--) {
+    const int num_bytes = (((bv->size >> 5) + 1) << 2);
+    for (i = 0; i < num_bytes; i++) {
         c += BYTE_COUNTS[bytes[i]];     /* sum bits per char */
     }
     bv->count = c;

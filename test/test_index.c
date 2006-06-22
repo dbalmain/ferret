@@ -13,7 +13,7 @@ static char *tag = "tag";
 extern HashTable *dw_invert_field(DocWriter *dw,
                                   FieldInverter *fld_inv,
                                   DocField *df);
-extern FieldInverter *dw_get_fld_inv(DocWriter *dw, const char *fld_name);
+extern FieldInverter *dw_get_fld_inv(DocWriter *dw, FieldInfo *fi);
 extern void dw_reset_postings(HashTable *postings);
 
 static FieldInfos *prep_all_fis()
@@ -39,12 +39,11 @@ static void destroy_docs(Document **docs, int len)
   free(docs);
 }
 
-/*
 static FieldInfos *prep_book_fis()
 {
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_new("date", STORE_YES, INDEX_NO, TERM_VECTOR_NO));
+    fis_add_field(fis, fi_new("year", STORE_YES, INDEX_NO, TERM_VECTOR_NO));
     return fis;
 
 }
@@ -315,7 +314,6 @@ Document **prep_book_list()
 
     return docs;
 }
-*/
 
 #define IR_TEST_DOC_CNT 256
 
@@ -437,123 +435,6 @@ Document **prep_ir_test_docs()
     return docs;
 }
 
-
-static void test_fld_inverter(tst_case *tc, void *data)
-{
-    Store *store = (Store *)data;
-    FieldInfos *fis = prep_all_fis();
-    HashTable *plists;
-    HashTable *curr_plists;
-    Posting *p;
-    PostingList *pl;
-    DocWriter *dw;
-    IndexWriter *iw;
-
-    index_create(store, fis);
-    iw = iw_open(store, whitespace_analyzer_new(true), NULL);
-    dw = dw_open(iw, "_0");
-
-    DocField *df = df_new("no tv");
-    df_add_data(df, "one two three four five two three four five three "
-                "four five four five");
-    df_add_data(df, "ichi ni san yon go ni san yon go san yon go yon go go");
-    df_add_data(df, "The quick brown fox jumped over five lazy dogs");
-
-    curr_plists = dw_invert_field(dw, dw_get_fld_inv(dw, df->name), df);
-
-    Aiequal(18, curr_plists->size);
-    
-    plists = ((FieldInverter *)h_get(dw->fields, df->name))->plists;
-
-
-    pl = h_get(curr_plists, "one");
-    if (Apnotnull(pl)) {
-        Asequal("one", pl->term);
-        Aiequal(3, pl->term_len);
-
-        p = pl->last;
-        Aiequal(1, p->freq);
-        Apequal(p->first_occ, pl->last_occ);
-        Apnull(p->first_occ->next);
-        Aiequal(0, p->first_occ->pos);
-        Apequal(pl, ((PostingList *)h_get(plists, "one")));
-    }
-
-    pl = h_get(curr_plists, "five");
-    if (Apnotnull(pl)) {
-        Asequal("five", pl->term);
-        Aiequal(4, pl->term_len);
-        Apnull(pl->last_occ->next);
-        p = pl->last;
-        Aiequal(5, p->freq);
-        Aiequal(4, p->first_occ->pos);
-        Aiequal(8, p->first_occ->next->pos);
-        Aiequal(11, p->first_occ->next->next->pos);
-        Aiequal(13, p->first_occ->next->next->next->pos);
-        Aiequal(35, p->first_occ->next->next->next->next->pos);
-        Apequal(pl, ((PostingList *)h_get(plists, "five")));
-    }
-
-    df_destroy(df);
-
-    df = df_new("no tv");
-    df_add_data(df, "seven new words and six old ones");
-    df_add_data(df, "ichi ni one two quick dogs");
-
-    dw->doc_num++;
-    dw_reset_postings(dw->curr_plists);
-
-    curr_plists = dw_invert_field(dw, dw_get_fld_inv(dw, df->name), df);
-
-    Aiequal(13, curr_plists->size);
-
-    pl = h_get(curr_plists, "one");
-    if (Apnotnull(pl)) {
-        Asequal("one", pl->term);
-        Aiequal(3, pl->term_len);
-
-        p = pl->first;
-        Aiequal(1, p->freq);
-        Apnull(p->first_occ->next);
-        Aiequal(0, p->first_occ->pos);
-
-        p = pl->last;
-        Aiequal(1, p->freq);
-        Apequal(p->first_occ, pl->last_occ);
-        Apnull(p->first_occ->next);
-        Aiequal(9, p->first_occ->pos);
-        Apequal(pl, ((PostingList *)h_get(plists, "one")));
-    }
-
-    df_destroy(df);
-
-    dw_close(dw);
-    iw_close(iw);
-    fis_destroy(fis);
-}
-
-extern int pl_cmp(Posting *p1, Posting *p2);
-
-#define NUM_POSTINGS TEST_WORD_LIST_SIZE
-static void test_postings_sorter(tst_case *tc, void *data)
-{
-    int i;
-    PostingList plists[NUM_POSTINGS], *p_ptr[NUM_POSTINGS];
-    (void)data;
-    for (i = 0; i < NUM_POSTINGS; i++) {
-        plists[i].term = (char *)test_word_list[i];
-        p_ptr[i] = &plists[i];
-    }
-
-    qsort(p_ptr, NUM_POSTINGS, sizeof(PostingList *),
-          (int (*)(const void *, const void *))&pl_cmp);
-
-    for (i = 1; i < NUM_POSTINGS; i++) {
-        Assert(strcmp(p_ptr[i - 1]->term, p_ptr[i]->term) <= 0,
-               "\"%s\" > \"%s\"", p_ptr[i - 1]->term, p_ptr[i]->term);
-    }
-}
-
 #define NUM_STDE_TEST_DOCS 50
 #define MAX_TEST_WORDS 1000
 
@@ -595,6 +476,12 @@ static void prep_test_1seg_index(Store *store, Document **docs,
     iw_close(iw);
 }
 
+/****************************************************************************
+ *
+ * TermDocEnum
+ *
+ ****************************************************************************/
+
 static void test_segment_term_doc_enum(tst_case *tc, void *data)
 {
     int i, j;
@@ -616,7 +503,7 @@ static void test_segment_term_doc_enum(tst_case *tc, void *data)
 
     sfi = sfi_open(store, "_0");
     tir = tir_open(store, sfi, "_0");
-    skip_interval = tir->orig_te->skip_interval;
+    skip_interval = ((SegmentTermEnum *)tir->orig_te)->skip_interval;
     frq_in = store->open_input(store, "_0.frq");
     prx_in = store->open_input(store, "_0.prx");
     tde = stde_new(tir, frq_in, bv, skip_interval);
@@ -700,7 +587,7 @@ static void test_segment_term_doc_enum(tst_case *tc, void *data)
 
 static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
 {
-    int i, doc_num_expected;
+    int i, doc_num_expected, skip_interval;
     Store *store = (Store *)data;
     FieldInfos *fis = fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_NO);
     DocWriter *dw;
@@ -713,6 +600,7 @@ static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
     TermDocEnum *tde;
 
     index_create(store, fis);
+    fis_destroy(fis);
     iw = iw_open(store, whitespace_analyzer_new(false), NULL);
     dw = dw_open(iw, "_0");
 
@@ -737,6 +625,7 @@ static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
     tir = tir_open(store, sfi, "_0");
     frq_in = store->open_input(store, "_0.frq");
     prx_in = store->open_input(store, "_0.prx");
+    skip_interval = sfi->skip_interval;
     tde = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
 
     tde->seek(tde, 0, "word");
@@ -756,16 +645,257 @@ static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
     tde->close(tde);
 
     bv_destroy(bv);
-    fis_destroy(fis);
     is_close(frq_in);
     is_close(prx_in);
     tir_close(tir);
     sfi_close(sfi);
 }
 
-void write_ir_test_docs(Store *store, int is_for_segment_reader)
+/****************************************************************************
+ *
+ * Index
+ *
+ ****************************************************************************/
+
+static void test_index_create(tst_case *tc, void *data)
+{
+    Store *store = (Store *)data;
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+
+    store->clear_all(store);
+    Assert(!store->exists(store, "segments"), "segments shouldn't exist yet");
+    Assert(!store->exists(store, "fields"), "fields shouldn't exist yet");
+    index_create(store, fis);
+    Assert(store->exists(store, "segments"), "segments should now exist");
+    Assert(store->exists(store, "fields"), "fields should now exist");
+    fis_destroy(fis);
+}
+
+/****************************************************************************
+ *
+ * IndexWriter
+ *
+ ****************************************************************************/
+
+static void test_fld_inverter(tst_case *tc, void *data)
+{
+    Store *store = (Store *)data;
+    FieldInfos *fis = prep_all_fis();
+    HashTable *plists;
+    HashTable *curr_plists;
+    Posting *p;
+    PostingList *pl;
+    DocWriter *dw;
+    IndexWriter *iw;
+
+    index_create(store, fis);
+    iw = iw_open(store, whitespace_analyzer_new(true), NULL);
+    dw = dw_open(iw, "_0");
+
+    DocField *df = df_new("no tv");
+    df_add_data(df, "one two three four five two three four five three "
+                "four five four five");
+    df_add_data(df, "ichi ni san yon go ni san yon go san yon go yon go go");
+    df_add_data(df, "The quick brown fox jumped over five lazy dogs");
+
+    curr_plists = dw_invert_field(
+        dw,
+        dw_get_fld_inv(dw, fis_get_or_add_field(dw->fis, df->name)),
+        df);
+
+    Aiequal(18, curr_plists->size);
+    
+    plists = ((FieldInverter *)h_get_int(
+            dw->fields, fis_get_field(dw->fis, df->name)->number))->plists;
+
+
+    pl = h_get(curr_plists, "one");
+    if (Apnotnull(pl)) {
+        Asequal("one", pl->term);
+        Aiequal(3, pl->term_len);
+
+        p = pl->last;
+        Aiequal(1, p->freq);
+        Apequal(p->first_occ, pl->last_occ);
+        Apnull(p->first_occ->next);
+        Aiequal(0, p->first_occ->pos);
+        Apequal(pl, ((PostingList *)h_get(plists, "one")));
+    }
+
+    pl = h_get(curr_plists, "five");
+    if (Apnotnull(pl)) {
+        Asequal("five", pl->term);
+        Aiequal(4, pl->term_len);
+        Apnull(pl->last_occ->next);
+        p = pl->last;
+        Aiequal(5, p->freq);
+        Aiequal(4, p->first_occ->pos);
+        Aiequal(8, p->first_occ->next->pos);
+        Aiequal(11, p->first_occ->next->next->pos);
+        Aiequal(13, p->first_occ->next->next->next->pos);
+        Aiequal(35, p->first_occ->next->next->next->next->pos);
+        Apequal(pl, ((PostingList *)h_get(plists, "five")));
+    }
+
+    df_destroy(df);
+
+    df = df_new("no tv");
+    df_add_data(df, "seven new words and six old ones");
+    df_add_data(df, "ichi ni one two quick dogs");
+
+    dw->doc_num++;
+    dw_reset_postings(dw->curr_plists);
+
+    curr_plists = dw_invert_field(
+        dw,
+        dw_get_fld_inv(dw, fis_get_or_add_field(dw->fis, df->name)),
+        df);
+
+    Aiequal(13, curr_plists->size);
+
+    pl = h_get(curr_plists, "one");
+    if (Apnotnull(pl)) {
+        Asequal("one", pl->term);
+        Aiequal(3, pl->term_len);
+
+        p = pl->first;
+        Aiequal(1, p->freq);
+        Apnull(p->first_occ->next);
+        Aiequal(0, p->first_occ->pos);
+
+        p = pl->last;
+        Aiequal(1, p->freq);
+        Apequal(p->first_occ, pl->last_occ);
+        Apnull(p->first_occ->next);
+        Aiequal(9, p->first_occ->pos);
+        Apequal(pl, ((PostingList *)h_get(plists, "one")));
+    }
+
+    df_destroy(df);
+
+    dw_close(dw);
+    iw_close(iw);
+    fis_destroy(fis);
+}
+
+extern int pl_cmp(Posting *p1, Posting *p2);
+
+#define NUM_POSTINGS TEST_WORD_LIST_SIZE
+static void test_postings_sorter(tst_case *tc, void *data)
 {
     int i;
+    PostingList plists[NUM_POSTINGS], *p_ptr[NUM_POSTINGS];
+    (void)data;
+    for (i = 0; i < NUM_POSTINGS; i++) {
+        plists[i].term = (char *)test_word_list[i];
+        p_ptr[i] = &plists[i];
+    }
+
+    qsort(p_ptr, NUM_POSTINGS, sizeof(PostingList *),
+          (int (*)(const void *, const void *))&pl_cmp);
+
+    for (i = 1; i < NUM_POSTINGS; i++) {
+        Assert(strcmp(p_ptr[i - 1]->term, p_ptr[i]->term) <= 0,
+               "\"%s\" > \"%s\"", p_ptr[i - 1]->term, p_ptr[i]->term);
+    }
+}
+
+static void test_iw_add_doc(tst_case *tc, void *data)
+{
+    Store *store = (Store *)data;
+    IndexWriter *iw;
+    Document **docs = prep_book_list();
+    FieldInfos *fis = prep_book_fis();
+
+    index_create(store, fis);
+    fis_destroy(fis);
+    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    iw_add_doc(iw, docs[0]);
+    Aiequal(1, iw_doc_count(iw));
+    Assert(!store->exists(store, "_0.cfs"),
+           "data shouldn't have been written yet");
+    iw_commit(iw);
+    Assert(store->exists(store, "_0.cfs"), "data should now be written");
+    iw_close(iw);
+    Assert(store->exists(store, "_0.cfs"), "data should still be there");
+
+    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    iw_add_doc(iw, docs[1]);
+    Aiequal(2, iw_doc_count(iw));
+    Assert(!store->exists(store, "_1.cfs"),
+           "data shouldn't have been written yet");
+    Assert(store->exists(store, "_0.cfs"), "data should still be there");
+    iw_commit(iw);
+    Assert(store->exists(store, "_1.cfs"), "data should now be written");
+    iw_close(iw);
+    Assert(store->exists(store, "_1.cfs"), "data should still be there");
+    Assert(store->exists(store, "_0.cfs"), "data should still be there");
+
+    destroy_docs(docs, BOOK_LIST_LENGTH);
+}
+
+static void test_iw_add_docs(tst_case *tc, void *data)
+{
+    int i;
+    Config config = default_config;
+    Store *store = (Store *)data;
+    IndexWriter *iw;
+    Document **docs = prep_book_list();
+    FieldInfos *fis = prep_book_fis();
+    config.merge_factor = 4;
+    config.max_buffered_docs = 3;
+
+    index_create(store, fis);
+    fis_destroy(fis);
+    iw = iw_open(store, whitespace_analyzer_new(false), &config);
+    for (i = 0; i < BOOK_LIST_LENGTH; i++) {
+        iw_add_doc(iw, docs[i]);
+    }
+    iw_optimize(iw);
+    Aiequal(BOOK_LIST_LENGTH, iw_doc_count(iw));
+    
+    iw_close(iw);
+    destroy_docs(docs, BOOK_LIST_LENGTH);
+    if (!Aiequal(3, store->count(store))) {
+        char buf[1000];
+        Tmsg("To many files: %s\n", store_to_s(store, buf, 1000));
+    }
+}
+
+void test_iw_add_empty_tv(tst_case *tc, void *data)
+{
+    Store *store = (Store *)data;
+    IndexWriter *iw;
+    Document *doc;
+    FieldInfos *fis = fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_YES);
+    fis_add_field(fis, fi_new("no_tv", STORE_YES, INDEX_YES, TERM_VECTOR_NO));
+    index_create(store, fis);
+    fis_destroy(fis);
+
+    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    doc = doc_new();
+    doc_add_field(doc, df_add_data(df_new("tv1"), ""));
+    doc_add_field(doc, df_add_data(df_new("tv2"), ""));
+    doc_add_field(doc, df_add_data(df_new("no_tv"), "one two three"));
+
+    iw_add_doc(iw, doc);
+    iw_commit(iw);
+    Aiequal(1, iw_doc_count(iw));
+    iw_close(iw);
+    doc_destroy(doc);
+}
+
+
+/****************************************************************************
+ *
+ * IndexReader
+ *
+ ****************************************************************************/
+
+static void write_ir_test_docs(Store *store, int is_for_segment_reader)
+{
+    int i;
+    Config config = default_config;
     IndexWriter *iw;
     Document **docs;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
@@ -780,8 +910,9 @@ void write_ir_test_docs(Store *store, int is_for_segment_reader)
                               TERM_VECTOR_NO));
     index_create(store, fis);
     fis_destroy(fis);
+    config.max_buffered_docs = 3;
 
-    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    iw = iw_open(store, whitespace_analyzer_new(false), &config);
     docs = prep_ir_test_docs();
 
     for (i = 0; i < IR_TEST_DOC_CNT; i++) {
@@ -789,7 +920,7 @@ void write_ir_test_docs(Store *store, int is_for_segment_reader)
     }
 
     if (is_for_segment_reader) {
-        //iw_optimize(iw);
+        iw_optimize(iw);
     }
     iw_close(iw);
 
@@ -806,7 +937,9 @@ static void test_ir_basic_ops(tst_case *tc, void *data)
     Aiequal(4, ir->doc_freq(ir, fis_get_field(ir->fis, body)->number, "Wally"));
 }
 
-void test_ir_term_docpos_enum_skip_to(tst_case *tc, TermDocEnum *tde, int field_num)
+static void test_ir_term_docpos_enum_skip_to(tst_case *tc,
+                                             TermDocEnum *tde,
+                                             int field_num)
 {
     /* test skip_to working skip interval */
     tde->seek(tde, field_num, "skip");
@@ -841,13 +974,12 @@ void test_ir_term_docpos_enum_skip_to(tst_case *tc, TermDocEnum *tde, int field_
 
 #define AA3(x, a, b, c) x[0] = a; x[1] = b; x[2] = c;
 
-void test_ir_term_doc_enum(tst_case *tc, void *data)
+static void test_ir_term_doc_enum(tst_case *tc, void *data)
 {
     IndexReader *ir = (IndexReader *)data;
 
     TermDocEnum *tde;
-    Document *doc =
-        ir_get_doc_with_term(ir, tag, "id_test");
+    Document *doc = ir_get_doc_with_term(ir, tag, "id_test");
     int docs[3], expected_docs[3];
     int freqs[3], expected_freqs[3];
 
@@ -955,7 +1087,7 @@ void test_ir_term_doc_enum(tst_case *tc, void *data)
     tde->close(tde);
 }
 
-void test_ir_term_vectors(tst_case *tc, void *data)
+static void test_ir_term_vectors(tst_case *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
 
@@ -1033,7 +1165,7 @@ void test_ir_term_vectors(tst_case *tc, void *data)
     h_destroy(tvs);
 }
 
-void test_ir_get_doc(tst_case *tc, void *data)
+static void test_ir_get_doc(tst_case *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
     Document *doc = ir->get_doc(ir, 3);
@@ -1066,28 +1198,371 @@ void test_ir_get_doc(tst_case *tc, void *data)
     doc_destroy(doc);
 }
 
+void test_ir_norms(tst_case *tc, void *data)
+{ 
+    uchar *norms;
+    Store *store = open_ram_store();
+    IndexReader *ir;
+    IndexWriter *iw;
+
+    write_ir_test_docs(store, (int)data);
+
+    ir = ir_open(store);
+
+    ir_set_norm(ir, 3, title, 1);
+    ir_set_norm(ir, 3, body, 12);
+    ir_set_norm(ir, 3, author, 145);
+    ir_set_norm(ir, 3, year, 31);
+    ir_set_norm(ir, 5, text, 202);
+    ir_set_norm(ir, 25, text, 20);
+    ir_set_norm(ir, 50, text, 200);
+    ir_set_norm(ir, 75, text, 155);
+    ir_set_norm(ir, 80, text, 0);
+    ir_set_norm(ir, 150, text, 255);
+    ir_set_norm(ir, 255, text, 76);
+
+    norms = ir_get_norms(ir, text);
+
+    Aiequal(202, norms[5]);
+    Aiequal(20, norms[25]);
+    Aiequal(200, norms[50]);
+    Aiequal(155, norms[75]);
+    Aiequal(0, norms[80]);
+    Aiequal(255, norms[150]);
+    Aiequal(76, norms[255]);
+
+    norms = ir_get_norms(ir, title);
+    Aiequal(1, norms[3]);
+
+    norms = ir_get_norms(ir, body);
+    Aiequal(12, norms[3]);
+
+    norms = ir_get_norms(ir, author);
+    Aiequal(145, norms[3]);
+
+    norms = ir_get_norms(ir, year);
+    /* Apnull(norms); */
+
+    norms = ALLOC_N(uchar, 356);
+    ir_get_norms_into(ir, text, norms + 100);
+    Aiequal(202, norms[105]);
+    Aiequal(20, norms[125]);
+    Aiequal(200, norms[150]);
+    Aiequal(155, norms[175]);
+    Aiequal(0, norms[180]);
+    Aiequal(255, norms[250]);
+    Aiequal(76, norms[355]);
+
+    ir_close(ir);
+
+    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    iw_optimize(iw);
+    iw_close(iw);
+
+    ir = ir_open(store);
+
+    memset(norms, 0, 356);
+    ir_get_norms_into(ir, text, norms + 100);
+    Aiequal(0, norms[102]);
+    Aiequal(202, norms[105]);
+    Aiequal(0, norms[104]);
+    Aiequal(20, norms[125]);
+    Aiequal(200, norms[150]);
+    Aiequal(155, norms[175]);
+    Aiequal(0, norms[180]);
+    Aiequal(255, norms[250]);
+    Aiequal(76, norms[355]);
+
+    ir_close(ir);
+    free(norms);
+    store_deref(store);
+}
+
+void test_ir_delete(tst_case *tc, void *data)
+{ 
+    Store *store = open_ram_store();
+    IndexReader *ir;
+    IndexWriter *iw;
+
+    write_ir_test_docs(store, (int)data);
+
+    ir = ir_open(store);
+
+    Aiequal(false, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->num_docs(ir));
+    Aiequal(false, ir->is_deleted(ir, 10));
+
+    ir_delete_doc(ir, 10);
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 1, ir->num_docs(ir));
+    Aiequal(true, ir->is_deleted(ir, 10));
+
+    ir_delete_doc(ir, 10);
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 1, ir->num_docs(ir));
+    Aiequal(true, ir->is_deleted(ir, 10));
+
+    ir_delete_doc(ir, IR_TEST_DOC_CNT - 1);
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 2, ir->num_docs(ir));
+    Aiequal(true, ir->is_deleted(ir, IR_TEST_DOC_CNT - 1));
+
+    ir_delete_doc(ir, IR_TEST_DOC_CNT - 2);
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 3, ir->num_docs(ir));
+    Aiequal(true, ir->is_deleted(ir, IR_TEST_DOC_CNT - 2));
+
+    ir_undelete_all(ir);
+    Aiequal(false, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->num_docs(ir));
+    Aiequal(false, ir->is_deleted(ir, 10));
+    Aiequal(false, ir->is_deleted(ir, IR_TEST_DOC_CNT - 2));
+    Aiequal(false, ir->is_deleted(ir, IR_TEST_DOC_CNT - 1));
+
+    ir_delete_doc(ir, 10);
+    ir_delete_doc(ir, 20);
+    ir_delete_doc(ir, 30);
+    ir_delete_doc(ir, 40);
+    ir_delete_doc(ir, 50);
+    ir_delete_doc(ir, IR_TEST_DOC_CNT - 1);
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 6, ir->num_docs(ir));
+
+    ir_commit(ir);
+    ir_close(ir);
+
+    ir = ir_open(store);
+
+    Aiequal(true, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 6, ir->num_docs(ir));
+    Aiequal(true, ir->is_deleted(ir, 10));
+    Aiequal(true, ir->is_deleted(ir, 20));
+    Aiequal(true, ir->is_deleted(ir, 30));
+    Aiequal(true, ir->is_deleted(ir, 40));
+    Aiequal(true, ir->is_deleted(ir, 50));
+    Aiequal(true, ir->is_deleted(ir, IR_TEST_DOC_CNT - 1));
+
+    ir_undelete_all(ir);
+    Aiequal(false, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT, ir->num_docs(ir));
+    Aiequal(false, ir->is_deleted(ir, 10));
+    Aiequal(false, ir->is_deleted(ir, 20));
+    Aiequal(false, ir->is_deleted(ir, 30));
+    Aiequal(false, ir->is_deleted(ir, 40));
+    Aiequal(false, ir->is_deleted(ir, 50));
+    Aiequal(false, ir->is_deleted(ir, IR_TEST_DOC_CNT - 1));
+
+    ir_delete_doc(ir, 10);
+    ir_delete_doc(ir, 20);
+    ir_delete_doc(ir, 30);
+    ir_delete_doc(ir, 40);
+    ir_delete_doc(ir, 50);
+    ir_delete_doc(ir, IR_TEST_DOC_CNT - 1);
+
+    ir_commit(ir);
+    ir_close(ir);
+
+    iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
+    iw_optimize(iw);
+    iw_close(iw);
+
+    ir = ir_open(store);
+
+    Aiequal(false, ir->has_deletions(ir));
+    Aiequal(IR_TEST_DOC_CNT - 6, ir->max_doc(ir));
+    Aiequal(IR_TEST_DOC_CNT - 6, ir->num_docs(ir));
+
+    ir_close(ir);
+    store_deref(store);
+}
+
+static void test_ir_read_while_optimizing(tst_case *tc, void *data)
+{ 
+    Store *store = (Store *)data;
+    IndexReader *ir;
+    IndexWriter *iw;
+
+    write_ir_test_docs(store, false);
+
+    ir = ir_open(store);
+
+    test_ir_term_doc_enum(tc, ir);
+
+    iw = iw_open(store, whitespace_analyzer_new(false), false);
+    iw_optimize(iw);
+    iw_close(iw);
+
+    test_ir_term_doc_enum(tc, ir);
+
+    ir_close(ir);
+}
+
+void test_ir_multivalue_fields(tst_case *tc, void *data)
+{ 
+    Store *store = (Store *)data;
+    IndexReader *ir;
+    FieldInfo *fi;
+    Document *doc = doc_new();
+    DocField *df;
+    IndexWriter *iw;
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+    char *body_text = "this is the body Document Field";
+    char *title_text = "this is the title Document Field";
+    char *author_text = "this is the author Document Field";
+    
+    index_create(store, fis);
+    fis_destroy(fis);
+    iw = iw_open(store, whitespace_analyzer_new(false), NULL);
+
+    df = doc_add_field(doc, df_add_data(df_new(tag), "Ruby"));
+    df_add_data(df, "C");
+    doc_add_field(doc, df_add_data(df_new(body), body_text));
+    df_add_data(df, "Lucene");
+    doc_add_field(doc, df_add_data(df_new(title), title_text));
+    df_add_data(df, "Ferret");
+    doc_add_field(doc, df_add_data(df_new(author), author_text));
+
+    Aiequal(0, iw->fis->size);
+
+    iw_add_doc(iw, doc);
+
+    fi = fis_get_field(iw->fis, tag);
+    Aiequal(true, fi_is_stored(fi));
+    Aiequal(false, fi_is_compressed(fi));
+    Aiequal(true, fi_is_indexed(fi));
+    Aiequal(true, fi_is_tokenized(fi));
+    Aiequal(true, fi_has_norms(fi));
+    Aiequal(true, fi_store_term_vector(fi));
+    Aiequal(true, fi_store_offsets(fi));
+    Aiequal(true, fi_store_positions(fi));
+
+    doc_destroy(doc);
+    iw_close(iw);
+
+    ir = ir_open(store);
+
+    doc = ir->get_doc(ir, 0);
+    Aiequal(4, doc->size);
+    df = doc_get_field(doc, tag);
+    Aiequal(4, df->size);
+    Asequal("Ruby",   df->data[0]);
+    Asequal("C",      df->data[1]);
+    Asequal("Lucene", df->data[2]);
+    Asequal("Ferret", df->data[3]);
+
+    df = doc_get_field(doc, body);
+    Aiequal(1, df->size);
+    Asequal(body_text, df->data[0]);
+
+    df = doc_get_field(doc, title);
+    Aiequal(1, df->size);
+    Asequal(title_text, df->data[0]);
+
+    df = doc_get_field(doc, author);
+    Aiequal(1, df->size);
+    Asequal(author_text, df->data[0]);
+
+    doc_destroy(doc);
+    ir_delete_doc(ir, 0);
+    ir_close(ir);
+}
+
+/***************************************************************************
+ *
+ * IndexSuite
+ *
+ ***************************************************************************/
+#ifdef POSH_OS_WIN32
+#define TEST_DIR ".\\test\\testdir\\store"
+#else
+#define TEST_DIR "./test/testdir/store"
+#endif
+
 tst_suite *ts_index(tst_suite * suite)
 {
     IndexReader *ir;
-    Store *store = open_ram_store();
+    Store *fs_store, *store = open_ram_store();
+    /* Store *store = open_fs_store(TEST_DIR); */
 
     srand(5);
-    suite = ADD_SUITE(suite);
+    suite = tst_add_suite(suite, "test_term_doc_enum");
 
-    tst_run_test(suite, test_fld_inverter, store);
-    tst_run_test(suite, test_postings_sorter, NULL);
+    /* TermDocEnum */
     tst_run_test(suite, test_segment_term_doc_enum, store);
     tst_run_test(suite, test_segment_tde_deleted_docs, store);
 
+    suite = ADD_SUITE(suite);
+    /* Index */
+    tst_run_test(suite, test_index_create, store);
+
+    /* IndexWriter */
+    tst_run_test(suite, test_fld_inverter, store);
+    tst_run_test(suite, test_postings_sorter, NULL);
+    tst_run_test(suite, test_iw_add_doc, store);
+    tst_run_test(suite, test_iw_add_docs, store);
+    tst_run_test(suite, test_iw_add_empty_tv, store);
+
+    /* IndexReader */
+
+    /* Test SEGMENT Reader */
+    write_ir_test_docs(store, true);
+    ir = ir_open(store);
+
+    tst_run_test_with_name(suite, test_ir_basic_ops, ir,
+                           "test_segment_reader_basic_ops");
+    tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,
+                           "test_segment_term_doc_enum");
+    tst_run_test_with_name(suite, test_ir_term_vectors, ir,
+                           "test_segment_term_vectors");
+    tst_run_test_with_name(suite, test_ir_get_doc, ir,
+                           "test_segment_get_doc");
+
+    tst_run_test_with_name(suite, test_ir_norms, (void *)true,
+                           "test_segment_norms");
+    tst_run_test_with_name(suite, test_ir_delete, (void *)true,
+                           "test_segment_reader_delete");
+    ir_close(ir);
+
+    /* Test MULTI Reader */
     write_ir_test_docs(store, false);
     ir = ir_open(store);
 
-    tst_run_test(suite, test_ir_basic_ops, ir);
-    tst_run_test(suite, test_ir_term_doc_enum, ir);
-    tst_run_test(suite, test_ir_term_vectors, ir);
-    tst_run_test(suite, test_ir_get_doc, ir);
+    tst_run_test_with_name(suite, test_ir_basic_ops, ir,
+                           "test_multi_reader_basic_ops");
+    tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,
+                           "test_multi_term_doc_enum");
+    tst_run_test_with_name(suite, test_ir_term_vectors, ir,
+                           "test_multi_term_vectors");
+    tst_run_test_with_name(suite, test_ir_get_doc, ir,
+                           "test_multi_get_doc");
 
+    tst_run_test_with_name(suite, test_ir_norms, (void *)true,
+                           "test_multi_norms");
+    tst_run_test_with_name(suite, test_ir_delete, (void *)true,
+                           "test_multi_reader_delete");
     ir_close(ir);
+
+    /* Other IndexReader Tests */
+    tst_run_test_with_name(suite, test_ir_read_while_optimizing, store,
+                           "test_ir_read_while_optimizing_in_ram");
+
+    fs_store = open_fs_store(TEST_DIR);
+    tst_run_test_with_name(suite, test_ir_read_while_optimizing, fs_store,
+                           "test_ir_read_while_optimizing_on_disk");
+    fs_store->clear_all(fs_store);
+    store_deref(fs_store);
+
+    tst_run_test(suite, test_ir_multivalue_fields, store);
 
     store_deref(store);
     return suite;

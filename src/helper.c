@@ -14,29 +14,15 @@ f_i32 float2int(float f)
 {
     union { f_i32 i; float f; } tmp;
     tmp.f = f;
-    return tmp.i;
+    return POSH_LittleU32(tmp.i);
 }
 
 float int2float(f_i32 i32)
 {
     union { f_i32 i; float f; } tmp;
-    tmp.i = i32;
+    tmp.i = POSH_LittleU32(i32);
     return tmp.f;
 }
-
-//f_u32 float2int(float f)
-//{
-//    union { f_u32 i; float f; } tmp;
-//    tmp.f = f;
-//    return POSH_LittleU32(tmp.i);
-//}
-//
-//float int2float(f_u32 i32)
-//{
-//    union { f_u32 i; float f; } tmp;
-//    tmp.i = POSH_LittleU32(i32);
-//    return tmp.f;
-//}
 
 float byte2float(unsigned char b)
 {

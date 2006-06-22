@@ -1,4 +1,5 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG -D_FILE_OFFSET_BITS=64
+
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG #-D_FILE_OFFSET_BITS=64
 
 LFLAGS = -lm -lpthread
 
@@ -21,7 +22,7 @@ testall: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
 
 valgrind: testall
-	valgrind --leak-check=yes -v testall -q
+	valgrind --leak-check=yes -v testall -q test_index
 
 libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
 	$(AR) -cru $@ $^
@@ -82,7 +83,7 @@ document.o: defines.h hash.h except.h posh.h global.h document.h
 
 bitvector.o: defines.h except.h posh.h global.h bitvector.h
 
-test_compound_io.o: mem_pool.h analysis.h defines.h threading.h hash.h except.h index.h posh.h test.h similarity.h hashset.h global.h test_store.h store.h bitvector.h document.h
+test_compound_io.o: mem_pool.h analysis.h defines.h threading.h hash.h except.h index.h posh.h testhelper.h test.h similarity.h hashset.h global.h store.h bitvector.h document.h
 
 test_segments.o: mem_pool.h analysis.h defines.h threading.h hash.h except.h index.h posh.h test.h similarity.h hashset.h global.h store.h bitvector.h document.h
 
@@ -92,7 +93,7 @@ analysis.o: defines.h analysis.h except.h hash.h posh.h global.h
 
 priorityqueue.o: defines.h priorityqueue.h except.h posh.h global.h
 
-index.o: mem_pool.h analysis.h defines.h threading.h hash.h except.h index.h posh.h hashset.h global.h similarity.h helper.h array.h store.h bitvector.h document.h
+index.o: mem_pool.h analysis.h threading.h defines.h priorityqueue.h hash.h except.h index.h posh.h hashset.h global.h similarity.h helper.h array.h store.h bitvector.h document.h
 
 except.o: defines.h threading.h except.h posh.h global.h
 

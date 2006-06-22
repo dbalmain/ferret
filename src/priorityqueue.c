@@ -1,8 +1,8 @@
 #include "priorityqueue.h"
 
 PriorityQueue *pq_new(int capa,
-                         bool (*less_than)(void *p1, void *p2),
-                         void (*free_elem)(void *elem))
+                      bool (*less_than)(void *p1, void *p2),
+                      void (*free_elem)(void *elem))
 {
     PriorityQueue *pq = ALLOC(PriorityQueue);
     pq->size = 0;

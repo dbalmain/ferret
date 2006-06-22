@@ -22,6 +22,10 @@ typedef void (*free_ft)(void *key);
 #define ZEROSET(ptr, type) memset(ptr, 0, sizeof(type))
 #define ZEROSET_N(ptr, type, n) memset(ptr, 0, sizeof(type)*(n))
 
+/*
+#define ALLOC_AND_ZERO(type) (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
+#define ALLOC_AND_ZERO_N(type,n) (type*)memset(emalloc(sizeof(type)*(n)), 0, sizeof(type)*(n))
+*/
 #define ALLOC_AND_ZERO(type) (type*)ecalloc(sizeof(type))
 #define ALLOC_AND_ZERO_N(type,n) (type*)ecalloc(sizeof(type)*(n))
 

@@ -314,12 +314,6 @@ struct Store
 };
 
 /**
- * Print the store in a human readable format. Basically this will print all
- * files listed in the store. It is mainly used for debugging purposes
- */
-extern char *store_to_s(Store *store);
-
-/**
  * Create a newly allocated file-system Store at the pathname designated. The
  * pathname must be the name of an existing directory.
  *
@@ -723,4 +717,12 @@ extern void is2os_copy_bytes(InStream *is, OutStream *os, int cnt);
  */
 extern void is2os_copy_vints(InStream *is, OutStream *os, int cnt);
 
+/**
+ * Print the filenames in a store to a buffer.
+ *
+ * @param store  the store to get the filenames from
+ * @param buf the buffer to print the filenames to
+ * @paran len the length of the buffer
+ */
+extern char *store_to_s(Store *store, char *buf, int buf_size);
 #endif

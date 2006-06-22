@@ -10,6 +10,7 @@
 #include "mem_pool.h"
 #include "similarity.h"
 #include "bitvector.h"
+#include "priorityqueue.h"
 
 typedef struct IndexReader IndexReader;
 
@@ -27,7 +28,7 @@ typedef struct Config
     int skip_interval;
     int merge_factor;
     int max_buffered_docs;
-    int max_merged_docs;
+    int max_merge_docs;
     int max_field_length;
     bool use_compound_file;
 } Config;
@@ -239,15 +240,15 @@ extern void fw_add_doc(FieldsWriter *fw, Document *doc);
 typedef struct TermInfo
 {
     int doc_freq;
-    off_t frq_pointer;
-    off_t prx_pointer;
+    off_t frq_ptr;
+    off_t prx_ptr;
     off_t skip_offset;
 } TermInfo;
 
 #define ti_set(ti, mdf, mfp, mpp, mso) do {\
     (ti).doc_freq = mdf;\
-    (ti).frq_pointer = mfp;\
-    (ti).prx_pointer = mpp;\
+    (ti).frq_ptr = mfp;\
+    (ti).prx_ptr = mpp;\
     (ti).skip_offset = mso;\
 } while (0)
 
@@ -285,14 +286,14 @@ TermInfo *te_get_ti(struct TermEnum *te);
 
 typedef struct SegmentTermIndex
 {
-    off_t       index_pointer;
-    off_t       pointer;
+    off_t       index_ptr;
+    off_t       ptr;
     int         index_size;
     int         size;
     char      **index_terms;
     int        *index_term_lens;
     TermInfo   *index_term_infos;
-    off_t      *index_pointers;
+    off_t      *index_ptrs;
 } SegmentTermIndex;
 
 /* * SegmentFieldIndex * */
@@ -301,12 +302,12 @@ typedef struct SegmentTermEnum SegmentTermEnum;
 
 typedef struct SegmentFieldIndex
 {
-    mutex_t          mutex;
-    int              skip_interval;
-    int              index_interval;
-    off_t            index_pointer;
-    SegmentTermEnum *index_ste;
-    HashTable       *field_dict;
+    mutex_t     mutex;
+    int         skip_interval;
+    int         index_interval;
+    off_t       index_ptr;
+    TermEnum   *index_te;
+    HashTable  *field_dict;
 } SegmentFieldIndex;
 
 extern SegmentFieldIndex *sfi_open(Store *store, const char *segment);
@@ -316,29 +317,22 @@ extern void sfi_close(SegmentFieldIndex *sfi);
 /* * SegmentTermEnum * */
 struct SegmentTermEnum
 {
-    TermEnum te;
-    InStream *is;
-    int size;
-    int pos;
-    int skip_interval;
-    int field_num;
+    TermEnum    te;
+    InStream   *is;
+    int         size;
+    int         pos;
+    int         skip_interval;
+    int         field_num;
     SegmentFieldIndex *sfi;
 };
 
-extern void ste_close(SegmentTermEnum *ste);
-extern SegmentTermEnum *ste_new(InStream *is, SegmentFieldIndex *sfi);
+extern void ste_close(TermEnum *te);
+extern TermEnum *ste_clone(TermEnum *te);
+extern TermEnum *ste_new(InStream *is, SegmentFieldIndex *sfi);
 
 /* * MultiTermEnum * */
-/*
-typedef struct MultiTermEnum
-{
-    TermEnum te;
-    int doc_freq;
-    PriorityQueue *smi_queue;
-} MultiTermEnum;
-
-TermEnum *mte_new(IndexReader **readers, int *starts, int rcnt, Term *term);
-*/
+extern TermEnum *mte_new(IndexReader **readers, int *starts, int r_cnt,
+                         int field_num, char *t);
 
 /****************************************************************************
  *
@@ -350,10 +344,10 @@ TermEnum *mte_new(IndexReader **readers, int *starts, int rcnt, Term *term);
 
 typedef struct TermInfosReader
 {
-    thread_key_t        thread_ste;
-    void              **ste_bucket;
-    SegmentTermEnum    *orig_te;
-    int                 field_num;
+    thread_key_t thread_te;
+    void       **te_bucket;
+    TermEnum     *orig_te;
+    int          field_num;
 } TermInfosReader;
 
 extern TermInfosReader *tir_open(Store *store,
@@ -386,7 +380,7 @@ typedef struct TermInfosWriter
     int field_count;
     int index_interval;
     int skip_interval;
-    off_t last_index_pointer;
+    off_t last_index_ptr;
     OutStream *tfx_out;
     TermWriter *tix_writer;
     TermWriter *tis_writer;
@@ -428,7 +422,7 @@ typedef struct SegmentTermDocEnum SegmentTermDocEnum;
 struct SegmentTermDocEnum
 {
     TermDocEnum tde;
-    void (*seek_prox)(SegmentTermDocEnum *stde, int prx_pointer);
+    void (*seek_prox)(SegmentTermDocEnum *stde, int prx_ptr);
     void (*skip_prox)(SegmentTermDocEnum *stde);
     TermInfosReader *tir;
     InStream        *frq_in;
@@ -443,9 +437,9 @@ struct SegmentTermDocEnum
     int skip_interval;
     int skip_count;
     int skip_doc;
-    int frq_pointer;
-    int prx_pointer;
-    int skip_pointer;
+    int frq_ptr;
+    int prx_ptr;
+    int skip_ptr;
     int prx_cnt;
     int position;
     bool have_skipped : 1;
@@ -458,22 +452,6 @@ extern TermDocEnum *stde_new(TermInfosReader *tir, InStream *frq_in,
 extern TermDocEnum *stpe_new(TermInfosReader *tir, InStream *frq_in,
                              InStream *prx_in, BitVector *deleted_docs,
                              int skip_interval);
-
-/* * MultiTermDocEnum * */
-
-typedef struct MultiTermDocEnum MultiTermDocEnum;
-struct MultiTermDocEnum
-{
-    int *starts;
-    int cnt;
-    char *term;
-    int field_num;
-    int base;
-    int pointer;
-    TermDocEnum **irs_tde;
-    TermDocEnum *curr_tde;
-};
-
 
 /****************************************************************************
  *
@@ -599,9 +577,6 @@ extern void tv_destroy(TermVector *tv);
  *
  ****************************************************************************/
 
-#define TVX_EXTENSION ".tvx"
-#define TVD_EXTENSION ".tvd"
-
 #define TV_FIELD_INIT_CAPA 8
 
 typedef struct TermVectorsWriter
@@ -610,7 +585,7 @@ typedef struct TermVectorsWriter
     OutStream *tvd_out;
     FieldInfos *fis;
     TVField *fields;
-    off_t tvd_pointer;
+    off_t tvd_ptr;
 } TermVectorsWriter;
 
 extern TermVectorsWriter *tvw_open(Store *store,
@@ -663,14 +638,13 @@ struct IndexReader
     int           (*max_doc)(IndexReader *ir);
     Document     *(*get_doc)(IndexReader *ir, int doc_num);
     uchar        *(*get_norms)(IndexReader *ir, int field_num);
-    void          (*get_norms_into)(IndexReader *ir, int field_num, uchar *buf);
+    uchar        *(*get_norms_into)(IndexReader *ir, int field_num, uchar *buf);
     TermEnum     *(*terms)(IndexReader *ir, int field_num);
     TermEnum     *(*terms_from)(IndexReader *ir, int field_num, char *term);
     int           (*doc_freq)(IndexReader *ir, int field_num, char *term);
     TermDocEnum  *(*term_docs)(IndexReader *ir);
     TermDocEnum  *(*term_positions)(IndexReader *ir);
-    TermVector   *(*term_vector)(IndexReader *ir, int doc_num,
-                        char *field);
+    TermVector   *(*term_vector)(IndexReader *ir, int doc_num, char *field);
     HashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
     bool          (*is_deleted)(IndexReader *ir, int doc_num);
     bool          (*has_deletions)(IndexReader *ir);
@@ -701,38 +675,14 @@ extern void ir_commit(IndexReader *ir);
 extern void ir_delete_doc(IndexReader *ir, int doc_num);
 extern void ir_undelete_all(IndexReader *ir);
 extern void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val);
+extern uchar *ir_get_norms(IndexReader *ir, char *field);
+extern uchar *ir_get_norms_into(IndexReader *ir, char *field, uchar *buf);
 extern void ir_destroy(IndexReader *self);
 extern Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term);
 extern TermDocEnum *ir_term_docs_for(IndexReader *ir, char *field, char *term);
 extern TermDocEnum *ir_term_positions_for(IndexReader *ir, char *fld, char *t);
 extern void ir_add_cache(IndexReader *ir);
 extern bool ir_is_latest(IndexReader *ir);
-
-/****************************************************************************
- *
- * SegmentReader
- *
- ****************************************************************************/
-
-typedef struct SegmentReader {
-    IndexReader ir;
-    char *segment;
-    FieldsReader *fr;
-    BitVector *deleted_docs;
-    InStream *frq_in;
-    InStream *prx_in;
-    SegmentFieldIndex *sfi;
-    TermInfosReader *tir;
-    TermVectorsReader *orig_tvr;
-    thread_key_t thread_tvr;
-    void **tvr_bucket;
-    HashTable *norms;
-    Store *cfs_store;
-    uchar *fake_norms;
-    bool deleted_docs_dirty : 1;
-    bool undelete_all : 1;
-    bool norms_dirty : 1;
-} SegmentReader;
 
 /****************************************************************************
  *
@@ -756,12 +706,13 @@ typedef struct Boost
 typedef struct FieldInverter
 {
     HashTable *plists;
-    Boost *boosts;
+    uchar *norms;
     FieldInfo *fi;
     int length;
     bool is_tokenized : 1;
     bool store_term_vector : 1;
     bool store_offsets : 1;
+    bool has_norms : 1;
 } FieldInverter;
 
 /****************************************************************************
@@ -788,6 +739,7 @@ typedef struct DocWriter
     int index_interval;
     int skip_interval;
     int max_field_length;
+    int max_buffered_docs;
 } DocWriter;
 
 extern DocWriter *dw_open(IndexWriter *is, const char *segment);
@@ -814,10 +766,13 @@ struct IndexWriter
     Lock *write_lock;
 };
 
-void index_create(Store *store, FieldInfos *fis);
-IndexWriter *iw_open(Store *store, Analyzer *analyzer, const Config *config);
-void iw_close(IndexWriter *iw);
-void iw_add_doc(IndexWriter *iw, Document *doc);
+extern void index_create(Store *store, FieldInfos *fis);
+extern IndexWriter *iw_open(Store *store, Analyzer *analyzer, const Config *config);
+extern void iw_close(IndexWriter *iw);
+extern void iw_add_doc(IndexWriter *iw, Document *doc);
+extern int iw_doc_count(IndexWriter *iw);
+extern void iw_commit(IndexWriter *iw);
+extern void iw_optimize(IndexWriter *iw);
 
 /****************************************************************************
  *

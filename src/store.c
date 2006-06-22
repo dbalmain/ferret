@@ -523,7 +523,7 @@ int file_is_lock(char *filename)
 void is2os_copy_bytes(InStream *is, OutStream *os, int cnt)
 {
     int len;
-    char buf[BUFFER_SIZE];
+    uchar buf[BUFFER_SIZE];
 
     for (; cnt > 0; cnt -= BUFFER_SIZE) {
         len = ((cnt > BUFFER_SIZE) ? BUFFER_SIZE : cnt);
@@ -542,3 +542,40 @@ void is2os_copy_vints(InStream *is, OutStream *os, int cnt)
         os_write_byte(os, b);
     }
 }
+
+/**
+ * Test argument used to test the store->each function
+ */
+struct FileNameConcatArg
+{
+    char *p;
+    char *end;
+};
+
+/**
+ * Test function used to test store->each function
+ */
+static void concat_filenames(char *fname, void *arg)
+{
+    struct FileNameConcatArg *fnca = (struct FileNameConcatArg *)arg;
+    if (fnca->p + strlen(fname) + 2 < fnca->end) {
+        strcpy(fnca->p, fname);
+        fnca->p += strlen(fname);
+        *(fnca->p++) = ',';
+        *(fnca->p++) = ' ';
+    }
+}
+
+char *store_to_s(Store *store, char *buf, int buf_size)
+{
+    struct FileNameConcatArg fnca;
+
+    fnca.p = buf;
+    fnca.end = buf + buf_size;
+    store->each(store, &concat_filenames, &fnca);
+    if (fnca.p > buf + 2) {
+        fnca.p[-2] = '\0';
+    }
+    return buf;
+}
+

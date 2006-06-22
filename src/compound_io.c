@@ -175,7 +175,7 @@ static InStream *cmpd_open_input(Store *store, const char *file_name)
     entry = h_get(cmpd->entries, file_name);
     if (entry == NULL) {
         mutex_unlock(&store->mutex);
-        RAISE(IO_ERROR, "File %s does not exist", file_name);
+        RAISE(IO_ERROR, "File %s does not exist: ", file_name);
     }
 
     is = cmpd_create_input(cmpd->stream, entry->offset, entry->length);
