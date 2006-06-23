@@ -2508,7 +2508,11 @@ void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val)
 
 uchar *ir_get_norms(IndexReader *ir, char *field)
 {
-    return ir->get_norms(ir, fis_get_field(ir->fis, field)->number);
+    uchar *norms = ir->get_norms(ir, fis_get_field(ir->fis, field)->number);
+    if (!norms) {
+        norms = (uchar *)ecalloc(ir->max_doc(ir));
+    }
+    return norms;
 }
 
 uchar *ir_get_norms_into(IndexReader *ir, char *field, uchar *buf)
@@ -2629,7 +2633,9 @@ void ir_close(IndexReader *ir)
  **/
 void ir_add_cache(IndexReader *ir)
 {
-    ir->cache = co_hash_create();
+    if (ir->cache == NULL) {
+        ir->cache = co_hash_create();
+    }
 }
 
 bool ir_is_latest(IndexReader *ir)

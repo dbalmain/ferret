@@ -17,6 +17,10 @@ struct Similarity
     float (*query_norm)(Similarity *self, float sum_of_squared_weights);
     float (*tf)(Similarity *self, float freq);
     float (*sloppy_freq)(Similarity *self, int distance);
+    float (*idf_term)(Similarity *self, int field_num, char *term,
+                      Searcher *searcher);
+    float (*idf_phrase)(Similarity *self, int field_num, char **terms,
+                        int tcnt, Searcher *searcher);
     float (*idf)(Similarity *self, int doc_freq, int num_docs);
     float (*coord)(Similarity *self, int overlap, int max_overlap);
     float (*decode_norm)(Similarity *self, unsigned char b);
@@ -28,6 +32,10 @@ struct Similarity
 #define sim_query_norm(msim, sosw) msim->query_norm(msim, sosw)
 #define sim_tf(msim, freq) msim->tf(msim, freq)
 #define sim_sloppy_freq(msim, distance) msim->sloppy_freq(msim, distance)
+#define sim_idf_term(msim, field_num, term, searcher)\
+    msim->idf_term(msim, field_num, term, searcher)
+#define sim_idf_phrase(msim, field_num, terms, tcnt, searcher)\
+    msim->idf_phrase(msim, field_num, terms, tcnt, searcher)
 #define sim_idf(msim, doc_freq, num_docs) msim->idf(msim, doc_freq, num_docs)
 #define sim_coord(msim, overlap, max_overlap) msim->coord(msim, overlap, max_overlap)
 #define sim_decode_norm(msim, b) msim->decode_norm(msim, b)

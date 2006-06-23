@@ -13,7 +13,6 @@
 
 typedef unsigned int bool;
 typedef unsigned char uchar;
-typedef unsigned int uint;
 
 typedef posh_u16_t f_u16;
 typedef posh_i16_t f_i16;

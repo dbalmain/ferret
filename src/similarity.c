@@ -29,6 +29,24 @@ float simdef_sloppy_freq(struct Similarity *s, int distance)
     return (float)(1.0 / (double)(distance + 1));
 }
 
+float simdef_idf_term(struct Similarity *s, int field_num, char *term,
+                      Searcher *searcher)
+{
+    return s->idf(s, searcher->doc_freq(searcher, field_num, term),
+                  searcher->max_doc(searcher));
+}
+
+float simdef_idf_phrase(struct Similarity *s, int field_num, char **terms,
+                        int tcnt, Searcher *searcher)
+{
+    float idf = 0.0;
+    int i;
+    for (i = 0; i < tcnt; i++) {
+        idf += s->idf_term(s, field_num, terms[i], searcher);
+    }
+    return idf;
+}
+
 float simdef_idf(struct Similarity *s, int doc_freq, int num_docs)
 {
     (void)s;

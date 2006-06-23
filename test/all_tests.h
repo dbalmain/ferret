@@ -15,15 +15,16 @@ extern tst_suite *ts_helper(tst_suite *suite);
 extern tst_suite *ts_mem_pool(tst_suite *suite);
 extern tst_suite *ts_fs_store(tst_suite *suite);
 extern tst_suite *ts_ram_store(tst_suite *suite);
+extern tst_suite *ts_compound_io(tst_suite *suite);
 extern tst_suite *ts_fields(tst_suite *suite);
+extern tst_suite *ts_segments(tst_suite *suite);
 extern tst_suite *ts_document(tst_suite *suite);
 extern tst_suite *ts_analysis(tst_suite *suite);
-extern tst_suite *ts_segments(tst_suite *suite);
 extern tst_suite *ts_term(tst_suite *suite);
 extern tst_suite *ts_term_vectors(tst_suite *suite);
 extern tst_suite *ts_similarity(tst_suite *suite);
 extern tst_suite *ts_index(tst_suite *suite);
-extern tst_suite *ts_compound_io(tst_suite *suite);
+extern tst_suite *ts_search(tst_suite *suite);
 
 const struct test_list
 {
@@ -49,7 +50,8 @@ const struct test_list
     {ts_term},
     {ts_term_vectors},
     {ts_similarity},
-    {ts_index}
+    {ts_index},
+    {ts_search}
 };
 
 #endif

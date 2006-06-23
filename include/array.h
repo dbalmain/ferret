@@ -21,6 +21,7 @@
 #define ary_rsz(ary, size)      ary_resize(ary, size)
 #define ary_grow(ary)           ary_resize(ary, ary_sz(ary))
 #define ary_last(ary)           ary[ary_sz(ary) - 1]
+#define ary_sort(ary, cmp)      qsort(ary, ary_size(ary), ary_type_size(ary), cmp)
 
 extern void   ary_resize_i(void ***ary, int size);
 extern void **ary_new_i(int type_size, int init_capa);
