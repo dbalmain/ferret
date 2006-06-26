@@ -30,6 +30,7 @@ extern tst_suite *ts_q_filtered(tst_suite *suite);
 extern tst_suite *ts_q_span(tst_suite *suite);
 extern tst_suite *ts_q_const_score(tst_suite *suite);
 extern tst_suite *ts_filter(tst_suite *suite);
+extern tst_suite *ts_sort(tst_suite *suite);
 
 const struct test_list
 {
@@ -61,7 +62,8 @@ const struct test_list
     {ts_q_filtered},
     {ts_q_span},
     {ts_q_const_score},
-    {ts_filter}
+    {ts_filter},
+    {ts_sort}
 };
 
 #endif

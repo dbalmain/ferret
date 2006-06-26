@@ -436,7 +436,7 @@ void *field_cache_get_index(IndexReader *ir, SortField *sf)
 
     if (field_num < 0) {
         RAISE(ARG_ERROR,
-              "Cannot sort by field \"%s\" It doesn't exist in the index.",
+              "Cannot sort by field \"%s\". It doesn't exist in the index.",
               sf->field);
     }
 
@@ -453,6 +453,11 @@ void *field_cache_get_index(IndexReader *ir, SortField *sf)
             TRY
                 tde = ir->term_docs(ir);
                 te = ir->terms(ir, field_num);
+                if (!te->next(te)) {
+                    RAISE(ARG_ERROR,
+                          "Cannot sort by field \"%s\" as there are no terms "
+                          "in that field in the index.", sf->field);
+                }
 
                 if (sf->type == SORT_TYPE_AUTO) {
                     sort_field_auto_evaluate(sf, te->curr_term);
@@ -460,10 +465,10 @@ void *field_cache_get_index(IndexReader *ir, SortField *sf)
 
                 index = sf->create_index(length);
 
-                while (te->next(te)) {
+                do {
                     tde->seek_te(tde, te);
                     sf->handle_term(index, tde, te->curr_term);
-                }
+                } while (te->next(te));
             XFINALLY
                 tde->close(tde);
             te->close(te);
@@ -655,7 +660,7 @@ void fshq_pq_destroy(PriorityQueue *self)
 
 PriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir)
 {
-    PriorityQueue *self = pq_new(size, &fshq_less_than, NULL);
+    PriorityQueue *self = pq_new(size, &fshq_less_than, &free);
     int i;
     Sorter *sorter = sorter_new(sort->sf_cnt);
     SortField *sf;
