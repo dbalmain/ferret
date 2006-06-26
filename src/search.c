@@ -353,7 +353,7 @@ void q_destroy_i(Query *self)
 
 void q_deref(Query *self)
 {  
-    if (--self->ref_cnt == 0) {
+    if (--(self->ref_cnt) == 0) {
         self->destroy_i(self);
     }
 }
@@ -425,7 +425,6 @@ Query *q_combine(Query **queries, int q_cnt)
         ret_q = bq_new(true);
         for (i = 0; i < uniques->size; i++) {
             q = (Query *)uniques->elems[i];
-            REF(q);
             bq_add_query(ret_q, q, BC_SHOULD);
         }
     }
@@ -456,7 +455,6 @@ Query *q_create(size_t size)
               "size of a Query struct <%d>", size, sizeof(Query));
     }
 #endif
-    self->destroy_all       = true;
     self->boost             = 1.0;
     self->rewrite           = &q_rewrite;
     self->get_similarity    = &q_get_similarity_i;

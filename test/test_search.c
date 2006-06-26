@@ -370,39 +370,39 @@ static void test_boolean_query(tst_case *tc, void *data)
     Query *tq1 = tq_new(field, "word1");
     Query *tq2 = tq_new(field, "word3");
     Query *tq3 = tq_new(field, "word2");
-    bq_add_query(bq, tq1, BC_MUST);
-    bq_add_query(bq, tq2, BC_MUST);
+    bq_add_query_nr(bq, tq1, BC_MUST);
+    bq_add_query_nr(bq, tq2, BC_MUST);
     check_hits(tc, searcher, bq, "2, 3, 6, 8, 11, 14", 14);
 
-    bq_add_query(bq, tq3, BC_SHOULD);
+    bq_add_query_nr(bq, tq3, BC_SHOULD);
     check_hits(tc, searcher, bq, "2, 3, 6, 8, 11, 14", 8);
     q_deref(bq);
 
     tq2 = tq_new(field, "word3");
     tq3 = tq_new(field, "word2");
     bq = bq_new(false);
-    bq_add_query(bq, tq2, BC_MUST);
-    bq_add_query(bq, tq3, BC_MUST_NOT);
+    bq_add_query_nr(bq, tq2, BC_MUST);
+    bq_add_query_nr(bq, tq3, BC_MUST_NOT);
     check_hits(tc, searcher, bq, "2, 3, 6, 11, 14", -1);
     q_deref(bq);
 
     tq2 = tq_new(field, "word3");
     bq = bq_new(false);
-    bq_add_query(bq, tq2, BC_MUST_NOT);
+    bq_add_query_nr(bq, tq2, BC_MUST_NOT);
     check_hits(tc, searcher, bq, "", -1);
     q_deref(bq);
 
     tq2 = tq_new(field, "word3");
     bq = bq_new(false);
-    bq_add_query(bq, tq2, BC_SHOULD);
+    bq_add_query_nr(bq, tq2, BC_SHOULD);
     check_hits(tc, searcher, bq, "2, 3, 6, 8, 11, 14", 14);
     q_deref(bq);
 
     tq2 = tq_new(field, "word3");
     tq3 = tq_new(field, "word2");
     bq = bq_new(false);
-    bq_add_query(bq, tq2, BC_SHOULD);
-    bq_add_query(bq, tq3, BC_SHOULD);
+    bq_add_query_nr(bq, tq2, BC_SHOULD);
+    bq_add_query_nr(bq, tq3, BC_SHOULD);
     check_hits(tc, searcher, bq, "1, 2, 3, 4, 6, 8, 11, 14", -1);
     q_deref(bq);
 
@@ -410,11 +410,11 @@ static void test_boolean_query(tst_case *tc, void *data)
     tq1 = tq_new("not a field", "word1");
     tq2 = tq_new("not a field", "word3");
     tq3 = tq_new(field, "word2");
-    bq_add_query(bq, tq1, BC_SHOULD);
-    bq_add_query(bq, tq2, BC_SHOULD);
+    bq_add_query_nr(bq, tq1, BC_SHOULD);
+    bq_add_query_nr(bq, tq2, BC_SHOULD);
     check_hits(tc, searcher, bq, "", -1);
 
-    bq_add_query(bq, tq3, BC_SHOULD);
+    bq_add_query_nr(bq, tq3, BC_SHOULD);
     check_hits(tc, searcher, bq, "1, 4, 8", 4);
 
     q_deref(bq);
@@ -429,12 +429,10 @@ static void test_boolean_query_hash(tst_case *tc, void *data)
     tq2 = tq_new("B", "2");
     tq3 = tq_new("C", "3");
     q1 = bq_new(false);
-    q1->destroy_all = false;
     bq_add_query(q1, tq1, BC_MUST);
     bq_add_query(q1, tq2, BC_MUST);
 
     q2 = bq_new(false);
-    q2->destroy_all = false;
     bq_add_query(q2, tq1, BC_MUST);
     bq_add_query(q2, tq2, BC_MUST);
 
@@ -447,7 +445,6 @@ static void test_boolean_query_hash(tst_case *tc, void *data)
     q_deref(q2);
 
     q2 = bq_new(true);
-    q2->destroy_all = false;
     bq_add_query(q2, tq1, BC_MUST);
     bq_add_query(q2, tq2, BC_MUST);
 
@@ -456,7 +453,6 @@ static void test_boolean_query_hash(tst_case *tc, void *data)
     q_deref(q2);
 
     q2 = bq_new(false);
-    q2->destroy_all = false;
     bq_add_query(q2, tq1, BC_SHOULD);
     bq_add_query(q2, tq2, BC_MUST_NOT);
 
@@ -465,7 +461,6 @@ static void test_boolean_query_hash(tst_case *tc, void *data)
     q_deref(q2);
 
     q2 = bq_new(false);
-    q2->destroy_all = false;
     bq_add_query(q2, tq1, BC_MUST);
     bq_add_query(q2, tq2, BC_MUST);
     bq_add_query(q2, tq3, BC_MUST);

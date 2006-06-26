@@ -87,19 +87,21 @@ extern char *td_to_s(TopDocs *td);
 
 typedef struct Filter
 {
-    char      *name;
-    HashTable *cache;
-    BitVector *(*get_bv)(struct Filter *self, IndexReader *ir);
-    char      *(*to_s)(struct Filter *self);
-    f_u32      (*hash)(struct Filter *self);
-    int        (*eq)(struct Filter *self, struct Filter *o);
-    void       (*destroy)(struct Filter *self);
+    char       *name;
+    HashTable  *cache;
+    BitVector  *(*get_bv)(struct Filter *self, IndexReader *ir);
+    char       *(*to_s)(struct Filter *self);
+    f_u32       (*hash)(struct Filter *self);
+    int         (*eq)(struct Filter *self, struct Filter *o);
+    void        (*destroy_i)(struct Filter *self);
+    int         ref_cnt;
 } Filter;
 
 #define filt_new(type) filt_create(sizeof(type), #type)
 extern Filter *filt_create(size_t size, const char *name);
 extern BitVector *filt_get_bv(Filter *filt, IndexReader *ir);
-extern void filt_destroy(Filter *filt);
+extern void filt_destroy_i(Filter *filt);
+extern void filt_deref(Filter *filt);
 extern f_u32 filt_hash(Filter *filt);
 extern int filt_eq(Filter *filt, Filter *o);
 
@@ -120,6 +122,7 @@ extern Filter *rfilt_new(const char *field,
  ***************************************************************************/
 
 extern Filter *qfilt_new(Query *query);
+extern Filter *qfilt_new_nr(Query *query);
 
 /***************************************************************************
  *
@@ -193,7 +196,6 @@ struct Query
     void        (*destroy_i)(Query *self);
     Weight     *(*create_weight_i)(Query *self, Searcher *searcher);
     uchar       type;
-    bool        destroy_all : 1;
 };
 
 /* Internal Query Functions */
@@ -270,7 +272,10 @@ typedef struct BooleanQuery
 extern Query *bq_new(bool coord_disabled);
 extern BooleanClause *bq_add_query(Query *self, Query *sub_query,
                                    unsigned int occur);
+extern BooleanClause *bq_add_query_nr(Query *self, Query *sub_query,
+                                      unsigned int occur);
 extern BooleanClause *bq_add_clause(Query *self, BooleanClause *bc);
+extern BooleanClause *bq_add_clause_nr(Query *self, BooleanClause *bc);
 
 /***************************************************************************
  * PhraseQuery
@@ -385,6 +390,7 @@ typedef struct ConstantScoreQuery
 } ConstantScoreQuery;
 
 extern Query *csq_new(Filter *filter);
+extern Query *csq_new_nr(Filter *filter);
 
 /***************************************************************************
  * FilteredQuery

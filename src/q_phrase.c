@@ -767,7 +767,7 @@ static Query *phq_rewrite(Query *self, IndexReader *ir)
             Query *bq = bq_new(true);
             int i;
             for (i = 0; i < t_cnt; i++) {
-                bq_add_query(bq, tq_new(phq->field, terms[i]), BC_SHOULD);
+                bq_add_query_nr(bq, tq_new(phq->field, terms[i]), BC_SHOULD);
             }
             bq->boost = self->boost;
             return bq;

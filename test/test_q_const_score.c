@@ -1,0 +1,84 @@
+#include "test.h"
+#include "search.h"
+
+static const char *num = "num";
+
+extern void prepare_filter_index(Store *store);
+
+extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+                       char *expected_hits, char top);
+
+void test_const_score_query(tst_case *tc, void *data)
+{
+    Searcher *searcher = (Searcher *)data;
+    Query *q;
+    q = csq_create(rfilt_create(num, "2", "6", true, true));
+    check_hits(tc, searcher, q, "2,3,4,5,6", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, "2", "6", true, false));
+    check_hits(tc, searcher, q, "2,3,4,5", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, "2", "6", false, true));
+    check_hits(tc, searcher, q, "3,4,5,6", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, "2", "6", false, false));
+    check_hits(tc, searcher, q, "3,4,5", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, "6", NULL, true, false));
+    check_hits(tc, searcher, q, "6,7,8,9", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, "6", NULL, false, false));
+    check_hits(tc, searcher, q, "7,8,9", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, NULL, "2", false, true));
+    check_hits(tc, searcher, q, "0,1,2", -1);
+    q_deref(q);
+    q = csq_create(rfilt_create(num, NULL, "2", false, false));
+    check_hits(tc, searcher, q, "0,1", -1);
+    q_deref(q);
+}
+
+void test_const_score_query_hash(tst_case *tc, void *data)
+{
+    Filter *f;
+    Query *q1, *q2;
+    f = rfilt_create(num, "2", "6", true, true);
+    q1 = csq_create(f);
+    q2 = csq_create(f);
+
+    Assert(q_eq(q1, q1), "Test same queries are equal");
+    Aiequal(q_hash(q1), q_hash(q2));
+    Assert(q_eq(q1, q2), "Queries are equal");
+    q_deref(q2);
+
+    q2 = csq_create(rfilt_create(num, "2", "6", true, true));
+    Aiequal(q_hash(q1), q_hash(q2));
+    Assert(q_eq(q1, q2), "Queries are equal");
+    q_deref(q2);
+
+    q2 = csq_create(rfilt_create(num, "3", "6", true, true));
+    Assert(q_hash(q1) != q_hash(q2), "Queries are not equal");
+    Assert(!q_eq(q1, q2), "Queries are not equal");
+    q_deref(q2);
+    q_deref(q1);
+}
+
+tst_suite *ts_q_const_score(tst_suite *suite)
+{
+    Store *store = open_ram_store();
+    IndexReader *ir;
+    Searcher *searcher;
+
+    suite = ADD_SUITE(suite);
+
+    prepare_filter_index(store);
+    ir = ir_open(store);
+    searcher = sea_create(ir);
+
+    tst_run_test(suite, test_const_score_query, (void *)searcher);
+    tst_run_test(suite, test_const_score_query_hash, NULL);
+
+    store_deref(store);
+    searcher->close(searcher);
+    return suite;
+}

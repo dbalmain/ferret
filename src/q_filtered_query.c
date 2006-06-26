@@ -182,10 +182,8 @@ static char *fq_to_s(Query *self, const char *field)
 
 void fq_destroy(Query *self)
 {
-    if (self->destroy_all) {
-        FQQ(self)->filter->destroy(FQQ(self)->filter);
-        q_deref(FQQ(self)->query);
-    }
+    filt_deref(FQQ(self)->filter);
+    q_deref(FQQ(self)->query);
     q_destroy_i(self);
 }
 

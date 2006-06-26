@@ -99,35 +99,35 @@ static void test_range_filter(tst_case *tc, void *data)
     Filter *rf = rfilt_new(num, "2", "6", true, true);
     check_filtered_hits(tc, searcher, q, rf, "2,3,4,5,6", -1);
     TEST_TO_S("RangeFilter< num:[2 6] >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, "2", "6", true, false);
     check_filtered_hits(tc, searcher, q, rf, "2,3,4,5", -1);
     TEST_TO_S("RangeFilter< num:[2 6} >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, "2", "6", false, true);
     check_filtered_hits(tc, searcher, q, rf, "3,4,5,6", -1);
     TEST_TO_S("RangeFilter< num:{2 6] >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, "2", "6", false, false);
     check_filtered_hits(tc, searcher, q, rf, "3,4,5", -1);
     TEST_TO_S("RangeFilter< num:{2 6} >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, "6", NULL, true, false);
     check_filtered_hits(tc, searcher, q, rf, "6,7,8,9", -1);
     TEST_TO_S("RangeFilter< num:[6> >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, "6", NULL, false, false);
     check_filtered_hits(tc, searcher, q, rf, "7,8,9", -1);
     TEST_TO_S("RangeFilter< num:{6> >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, NULL, "2", false, true);
     check_filtered_hits(tc, searcher, q, rf, "0,1,2", -1);
     TEST_TO_S("RangeFilter< num:<2] >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     rf = rfilt_new(num, NULL, "2", false, false);
     check_filtered_hits(tc, searcher, q, rf, "0,1", -1);
     TEST_TO_S("RangeFilter< num:<2} >", rf);
-    rf->destroy(rf);
+    filt_deref(rf);
     q_deref(q);
 }
 
@@ -141,74 +141,71 @@ static void test_range_filter_hash(tst_case *tc, void *data)
     Assert(filt_eq(f1, f1), "Test same queries are equal");
     Aiequal(filt_hash(f1), filt_hash(f2));
     Assert(filt_eq(f1, f2), "Queries are equal");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, "20051006", "20051010", true, false);
     Assert(filt_hash(f1) != filt_hash(f2), "Upper bound include differs");
     Assert(!filt_eq(f1, f2), "Upper bound include differs");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, "20051006", "20051010", false, true);
     Assert(filt_hash(f1) != filt_hash(f2), "Lower bound include differs");
     Assert(!filt_eq(f1, f2), "Lower bound include differs");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, "20051006", "20051011", true, true);
     Assert(filt_hash(f1) != filt_hash(f2), "Upper bound differs");
     Assert(!filt_eq(f1, f2), "Upper bound differs");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, "20051005", "20051010", true, true);
     Assert(filt_hash(f1) != filt_hash(f2), "Lower bound differs");
     Assert(!filt_eq(f1, f2), "Lower bound differs");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, "20051006", NULL, true, false);
     Assert(filt_hash(f1) != filt_hash(f2), "Upper bound is NULL");
     Assert(!filt_eq(f1, f2), "Upper bound is NULL");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(date, NULL, "20051010", false, true);
     Assert(filt_hash(f1) != filt_hash(f2), "Lower bound is NULL");
     Assert(!filt_eq(f1, f2), "Lower bound is NULL");
-    f2->destroy(f2);
+    filt_deref(f2);
 
     f2 = rfilt_new(flipflop, "20051006", "20051010", true, true);
     Assert(filt_hash(f1) != filt_hash(f2), "Field differs");
     Assert(!filt_eq(f1, f2), "Field differs");
-    f2->destroy(f2);
-    f1->destroy(f1);
+    filt_deref(f2);
+    filt_deref(f1);
 
     f1 = rfilt_new(date, NULL, "20051010", false, true);
     f2 = rfilt_new(date, NULL, "20051010", false, true);
     Aiequal(filt_hash(f1), filt_hash(f2));
     Assert(filt_eq(f1, f2), "Queries are equal");
-    f2->destroy(f2);
-    f1->destroy(f1);
+    filt_deref(f2);
+    filt_deref(f1);
 }
 
 static void test_query_filter(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
-    Query *tq1, *tq2, *bq;
+    Query *bq;
     Filter *qf;
     Query *q = maq_new();
 
-    tq1 = tq_new(flipflop, "on");
-    qf = qfilt_new(tq1);
+    qf = qfilt_new_nr(tq_new(flipflop, "on"));
     TEST_TO_S("QueryFilter< flipflop:on >", qf);
     check_filtered_hits(tc, searcher, q, qf, "0,2,4,6,8", -1);
-    qf->destroy(qf);
+    filt_deref(qf);
 
-    tq1 = tq_new(date, "20051101");
-    tq2 = tq_new(date, "20041201");
     bq = bq_new(false);
-    bq_add_query(bq, tq1, BC_SHOULD);
-    bq_add_query(bq, tq2, BC_SHOULD);
-    qf = qfilt_new(bq);
+    bq_add_query_nr(bq, tq_new(date, "20051101"), BC_SHOULD);
+    bq_add_query_nr(bq, tq_new(date, "20041201"), BC_SHOULD);
+    qf = qfilt_new_nr(bq);
     check_filtered_hits(tc, searcher, q, qf, "2,3,4,5", -1);
     TEST_TO_S("QueryFilter< date:20051101 date:20041201 >", qf);
-    qf->destroy(qf);
+    filt_deref(qf);
 
     q_deref(q);
 }
@@ -217,25 +214,25 @@ static void test_query_filter_hash(tst_case *tc, void *data)
 {
     Filter *f1, *f2;
     (void)data;
-    f1 = qfilt_new(tq_new("A", "a"));
-    f2 = qfilt_new(tq_new("A", "a"));
+    f1 = qfilt_new_nr(tq_new("A", "a"));
+    f2 = qfilt_new_nr(tq_new("A", "a"));
 
     Aiequal(filt_hash(f1), filt_hash(f2));
     Assert(filt_eq(f1, f2), "Queries are equal");
     Assert(filt_eq(f1, f1), "Queries are equal");
-    f2->destroy(f2);
+    filt_deref(f2);
 
-    f2 = qfilt_new(tq_new("A", "b"));
+    f2 = qfilt_new_nr(tq_new("A", "b"));
     Assert(filt_hash(f1) != filt_hash(f2), "texts differ");
     Assert(!filt_eq(f1, f2), "texts differ");
-    f2->destroy(f2);
+    filt_deref(f2);
 
-    f2 = qfilt_new(tq_new("B", "a"));
+    f2 = qfilt_new_nr(tq_new("B", "a"));
     Assert(filt_hash(f1) != filt_hash(f2), "fields differ");
     Assert(!filt_eq(f1, f2), "fields differ");
-    f2->destroy(f2);
+    filt_deref(f2);
 
-    f1->destroy(f1);
+    filt_deref(f1);
 }
 
 tst_suite *ts_filter(tst_suite *suite)

@@ -1513,11 +1513,8 @@ Query *bq_new(bool coord_disabled)
     return self;
 }
 
-BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
+BooleanClause *bq_add_clause_nr(Query *self, BooleanClause *bc)
 {
-    if (!self->destroy_all) {
-        REF(bc);
-    }
     if (BQ(self)->clause_cnt >= BQ(self)->clause_capa) {
         BQ(self)->clause_capa *= 2;
         REALLOC_N(BQ(self)->clauses, BooleanClause *, BQ(self)->clause_capa);
@@ -1533,14 +1530,22 @@ BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
     return bc;
 }
 
-BooleanClause *bq_add_query(Query *self, Query *sub_query, unsigned int occur)
+BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
+{
+    REF(bc);
+    return bq_add_clause_nr(self, bc);
+}
+
+BooleanClause *bq_add_query_nr(Query *self, Query *sub_query, unsigned int occur)
 {
     BooleanClause *bc = bc_new(sub_query, occur);
     bq_add_clause(self, bc);
-    if (!self->destroy_all) {
-        REF(sub_query);
-        bc_deref(bc); /* bc would have been referenced unnecessarily */
-    }
+    bc_deref(bc); /* bc would have been referenced unnecessarily */
     return bc;
 }
 
+BooleanClause *bq_add_query(Query *self, Query *sub_query, unsigned int occur)
+{
+    REF(sub_query);
+    return bq_add_query_nr(self, sub_query, occur);
+}

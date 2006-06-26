@@ -125,10 +125,7 @@ static char *csq_to_s(Query *self, const char *field)
 
 static void csq_destroy(Query *self)
 {
-    if (self->destroy_all) {
-        Filter *filter = CScQ(self)->filter;
-        filter->destroy(filter);
-    }
+    filt_deref(CScQ(self)->filter);
     q_destroy_i(self);
 }
 
@@ -142,7 +139,7 @@ static int csq_eq(Query *self, Query *o)
     return filt_eq(CScQ(self)->filter, CScQ(o)->filter);
 }
 
-Query *csq_new(Filter *filter)
+Query *csq_new_nr(Filter *filter)
 {
     Query *self = q_new(ConstantScoreQuery);
     CScQ(self)->filter = filter;
@@ -157,3 +154,8 @@ Query *csq_new(Filter *filter)
     return self;
 }
 
+Query *csq_new(Filter *filter)
+{
+    REF(filter);
+    return csq_new_nr(filter);
+}

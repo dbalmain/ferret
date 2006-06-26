@@ -7,11 +7,17 @@
  *
  ***************************************************************************/
 
-void filt_destroy(Filter *filt)
+void filt_destroy_i(Filter *filt)
 {
     h_destroy(filt->cache);
     free(filt->name);
     free(filt);
+}
+void filt_deref(Filter *filt)
+{
+    if (--(filt->ref_cnt) == 0) {
+        filt->destroy_i(filt);
+    }
 }
 
 BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
@@ -55,7 +61,8 @@ Filter *filt_create(size_t size, const char *name)
     filt->to_s      = &filt_to_s_i;
     filt->hash      = &filt_hash_default;
     filt->eq        = &filt_eq_default;
-    filt->destroy   = &filt_destroy;
+    filt->destroy_i = &filt_destroy_i;
+    filt->ref_cnt   = 1;
     return filt;
 }
 
@@ -121,14 +128,14 @@ static int qfilt_eq(Filter *filt, Filter *o)
     return q_eq(QF(filt)->query, QF(o)->query);
 }
 
-static void qfilt_destroy(Filter *filt)
+static void qfilt_destroy_i(Filter *filt)
 {
     Query *query = QF(filt)->query;
     q_deref(query);
-    filt_destroy(filt);
+    filt_destroy_i(filt);
 }
 
-Filter *qfilt_new(Query *query)
+Filter *qfilt_new_nr(Query *query)
 {
     Filter *filt = filt_new(QueryFilter);
 
@@ -138,6 +145,12 @@ Filter *qfilt_new(Query *query)
     filt->hash      = &qfilt_hash;
     filt->eq        = &qfilt_eq;
     filt->to_s      = &qfilt_to_s;
-    filt->destroy   = &qfilt_destroy;
+    filt->destroy_i = &qfilt_destroy_i;
     return filt;
+}
+
+Filter *qfilt_new(Query *query)
+{
+    REF(query);
+    return qfilt_new_nr(query);
 }

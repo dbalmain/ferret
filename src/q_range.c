@@ -145,10 +145,10 @@ typedef struct RangeFilter
 
 #define RF(filt) ((RangeFilter *)(filt))
 
-static void rfilt_destroy(Filter *filt)
+static void rfilt_destroy_i(Filter *filt)
 {
     range_destroy(RF(filt)->range);
-    filt_destroy(filt);
+    filt_destroy_i(filt);
 }
 
 static char *rfilt_to_s(Filter *filt)
@@ -240,7 +240,7 @@ Filter *rfilt_new(const char *field,
     filt->hash      = &rfilt_hash;
     filt->eq        = &rfilt_eq;
     filt->to_s      = &rfilt_to_s;
-    filt->destroy   = &rfilt_destroy;
+    filt->destroy_i = &rfilt_destroy_i;
     return filt;
 }
 
@@ -274,7 +274,7 @@ static Query *rq_rewrite(Query *self, IndexReader *ir)
     Filter *filter = rfilt_new(r->field, r->lower_term, r->upper_term,
                                r->include_lower, r->include_upper);
     (void)ir;
-    return csq_new(filter);
+    return csq_new_nr(filter);
 }
 
 static f_u32 rq_hash(Query *self)
