@@ -7,7 +7,7 @@ include lib/libstemmer_c/mkinc.mak
 
 STEMMER_OBJS = $(patsubst %.c,src/libstemmer_c/%.o, $(snowball_sources))
 
-TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_ram_store.o test_store.o test_term_vectors.o test_fs_store.o test_except.o test_document.o test_fields.o test_segments.o test_analysis.o test_term.o test_array.o test_similarity.o test_mem_pool.o testhelper.o test_index.o test_search.o test_compound_io.o test_q_filtered.o test_q_fuzzy.o test_filter.o test_q_span.o
+TEST_OBJS = test_priorityqueue.o test_hashset.o test_helper.o test_test.o test.o test_global.o test_bitvector.o test_hash.o test_ram_store.o test_store.o test_term_vectors.o test_fs_store.o test_except.o test_document.o test_fields.o test_segments.o test_analysis.o test_term.o test_array.o test_similarity.o test_mem_pool.o testhelper.o test_index.o test_search.o test_compound_io.o test_q_filtered.o test_q_fuzzy.o test_filter.o test_q_span.o test_q_const_score.o
 
 OBJS = priorityqueue.o hashset.o helper.o global.o bitvector.o hash.o fs_store.o posh.o except.o ram_store.o store.o analysis.o document.o search.o similarity.o stopwords.o array.o index.o mem_pool.o compound_io.o q_prefix.o q_range.o q_phrase.o q_term.o sort.o q_boolean.o filter.o q_const_score.o q_match_all.o q_wildcard.o q_fuzzy.o q_multi_term.o q_filtered_query.o q_span.o libstemmer.o
 
@@ -54,6 +54,8 @@ test_term_vectors.o: priorityqueue.h mem_pool.h analysis.h defines.h threading.h
 test_similarity.o: defines.h except.h posh.h test.h global.h similarity.h
 
 bitvector.o: defines.h except.h posh.h global.h bitvector.h
+
+test_q_const_score.o: threading.h analysis.h mem_pool.h priorityqueue.h defines.h index.h hash.h except.h posh.h test.h search.h similarity.h hashset.h global.h store.h bitvector.h document.h
 
 test_q_filtered.o: threading.h analysis.h mem_pool.h priorityqueue.h defines.h index.h hash.h except.h posh.h test.h search.h similarity.h hashset.h global.h store.h bitvector.h document.h
 
@@ -154,5 +156,4 @@ test_array.o: defines.h except.h posh.h test.h global.h array.h
 hashset.o: defines.h hash.h except.h posh.h global.h hashset.h
 
 q_wildcard.o: threading.h defines.h analysis.h mem_pool.h priorityqueue.h index.h except.h hash.h posh.h search.h similarity.h global.h hashset.h store.h bitvector.h document.h
-
 
