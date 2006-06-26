@@ -247,6 +247,17 @@ FieldInfo *fis_get_field(FieldInfos *fis, const char *name)
     return h_get(fis->field_dict, name);
 }
 
+int fis_get_field_num(FieldInfos *fis, const char *name)
+{
+    FieldInfo *fi = h_get(fis->field_dict, name);
+    if (fi) {
+        return fi->number;
+    }
+    else {
+        return -1;
+    }
+}
+
 FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name)
 {
     FieldInfo *fi = h_get(fis->field_dict, name);
@@ -1024,7 +1035,7 @@ static TermEnum *ste_set_field(TermEnum *te, int field_num)
 {
     SegmentTermIndex *sti = h_get_int(STE(te)->sfi->field_dict, field_num);
     ste_reset(te);
-    STE(te)->field_num = field_num;
+    te->field_num = field_num;
     if (sti) {
         STE(te)->size = sti->size;
         is_seek(STE(te)->is, sti->ptr);
@@ -1050,7 +1061,7 @@ static void ste_index_seek(TermEnum *te, SegmentTermIndex *sti, int idx_offset)
 static char *ste_scan_to(TermEnum *te, const char *term)
 {
     SegmentFieldIndex *sfi = STE(te)->sfi;
-    SegmentTermIndex *sti = h_get_int(sfi->field_dict, STE(te)->field_num);
+    SegmentTermIndex *sti = h_get_int(sfi->field_dict, te->field_num);
     if (sti && sti->size > 0) {
         SFI_ENSURE_INDEX_IS_READ(sfi, sti);
         /* if current term is less than seek term */
@@ -1121,7 +1132,7 @@ static char *ste_get_term(TermEnum *te, int pos)
         int idx_int = ste->sfi->index_interval;
         if ((pos < ste->pos) || pos > (1 + ste->pos / idx_int) * idx_int) {
             SegmentTermIndex *sti = h_get_int(ste->sfi->field_dict,
-                                              ste->field_num);
+                                              te->field_num);
             SFI_ENSURE_INDEX_IS_READ(ste->sfi, sti);
             ste_index_seek(te, sti, pos / idx_int);
         }
@@ -1139,10 +1150,10 @@ TermEnum *ste_new(InStream *is, SegmentFieldIndex *sfi)
 {
     SegmentTermEnum *ste = ste_allocate();
 
+    TE(ste)->field_num = -1;
     ste->is = is;
     ste->size = 0;
     ste->pos = -1;
-    ste->field_num = -1;
     ste->sfi = sfi;
     ste->skip_interval = sfi ? sfi->skip_interval : INT_MAX;
 
@@ -1173,7 +1184,7 @@ typedef struct MultiTermEnum
     int size;
 } MultiTermEnum;
 
-static bool tew_lt(TermEnumWrapper *tew1, TermEnumWrapper *tew2)
+static bool tew_lt(const TermEnumWrapper *tew1, const TermEnumWrapper *tew2)
 {
     int cmpres = strcmp(tew1->term, tew2->term);
     if (cmpres == 0) {
@@ -1263,6 +1274,7 @@ static TermEnum *mte_set_field(TermEnum *te, int field_num)
     MultiTermEnum *mte = MTE(te);
     int i;
     const int size = mte->size;
+    te->field_num = field_num;
     mte->tew_queue->size = 0;
     for (i = 0; i < size; i++) {
         TermEnumWrapper *tew = &(mte->tews[i]);
@@ -1306,41 +1318,42 @@ static void mte_close(TermEnum *te)
 }
 
 TermEnum *mte_new(IndexReader **readers, int *starts, int r_cnt,
-                  int field_num, char *t)
+                  int field_num, const char *term)
 {
     int i;
     IndexReader *reader;
-    MultiTermEnum *mte = ALLOC_AND_ZERO(MultiTermEnum);
+    MultiTermEnum *mte  = ALLOC_AND_ZERO(MultiTermEnum);
 
-    TE(mte)->next = &mte_next;
-    TE(mte)->set_field = &mte_set_field;
-    TE(mte)->skip_to = &mte_skip_to;
-    TE(mte)->close = &mte_close;
+    TE(mte)->field_num  = -1;
+    TE(mte)->next       = &mte_next;
+    TE(mte)->set_field  = &mte_set_field;
+    TE(mte)->skip_to    = &mte_skip_to;
+    TE(mte)->close      = &mte_close;
 
-    mte->size = r_cnt;
-    mte->tews = ALLOC_AND_ZERO_N(TermEnumWrapper, r_cnt);
-    mte->tew_queue = pq_new(r_cnt, (lt_ft)&tew_lt, (free_ft)NULL);
+    mte->size           = r_cnt;
+    mte->tews           = ALLOC_AND_ZERO_N(TermEnumWrapper, r_cnt);
+    mte->tew_queue      = pq_new(r_cnt, (lt_ft)&tew_lt, (free_ft)NULL);
 
     for (i = 0; i < r_cnt; i++) {
         TermEnumWrapper *tew;
         TermEnum *sub_te;
         reader = readers[i];
 
-        if (t != NULL) {
-            sub_te = reader->terms_from(reader, field_num, t);
+        if (term != NULL) {
+            sub_te = reader->terms_from(reader, field_num, term);
         }
         else {
             sub_te = reader->terms(reader, field_num);
         }
 
         tew = tew_setup(&(mte->tews[i]), starts[i], sub_te, reader);
-        if (((t == NULL) && tew_next(tew))
+        if (((term == NULL) && tew_next(tew))
             || (tew->term[0] != '\0')) {
             pq_push(mte->tew_queue, tew);          /* initialize queue */
         }
     }
 
-    if ((t != NULL) && (mte->tew_queue->size > 0)) {
+    if ((term != NULL) && (mte->tew_queue->size > 0)) {
         mte_next(TE(mte));
     }
 
@@ -1752,6 +1765,16 @@ static void stde_seek(TermDocEnum *tde, int field_num, const char *term)
     stde_seek_ti(STDE(tde), ti);
 }
 
+static void stde_seek_te(TermDocEnum *tde, TermEnum *te)
+{
+#ifdef DEBUG
+    if (te->set_field != &ste_set_field) {
+        RAISE(ARG_ERROR, "Passed an incorrect TermEnum type");
+    }
+#endif
+    stde_seek_ti(STDE(tde), &(te->curr_ti));
+}
+
 static int stde_doc_num(TermDocEnum *tde)
 {
     CHECK_STATE("doc_num");
@@ -1921,6 +1944,7 @@ TermDocEnum *stde_new(TermInfosReader *tir,
 
     /* TermDocEnum methods */
     tde->seek                = &stde_seek;
+    tde->seek_te             = &stde_seek_te;
     tde->doc_num             = &stde_doc_num;
     tde->freq                = &stde_freq;
     tde->next                = &stde_next;
@@ -2102,6 +2126,19 @@ static void mtde_seek(TermDocEnum *tde, int field_num, const char *term)
     mtde->curr_tde = NULL;
 }
 
+static void mtde_seek_te(TermDocEnum *tde, TermEnum *te)
+{
+    MultiTermDocEnum *mtde = MTDE(tde);
+    if (mtde->term != NULL) {
+        free(mtde->term);
+    }
+    mtde->term = estrdup(te->curr_term);
+    mtde->field_num = te->field_num;
+    mtde->base = 0;
+    mtde->ptr = 0;
+    mtde->curr_tde = NULL;
+}
+
 static int mtde_doc_num(TermDocEnum *tde)
 {
     CHECK_CURR_TDE("doc_num");
@@ -2209,6 +2246,7 @@ TermDocEnum *mtde_new(IndexReader **irs, int *starts, int ir_cnt)
     MultiTermDocEnum *mtde  = ALLOC_AND_ZERO(MultiTermDocEnum);
     TermDocEnum *tde        = TDE(mtde);
     tde->seek               = &mtde_seek;
+    tde->seek_te            = &mtde_seek_te;
     tde->doc_num            = &mtde_doc_num;
     tde->freq               = &mtde_freq;
     tde->next               = &mtde_next;
@@ -2338,22 +2376,23 @@ static bool mtdpe_next(TermDocEnum *tde)
     return true;
 }
 
-bool tdpe_less_than(void *p1, void *p2)
+bool tdpe_less_than(TermDocEnum *p1, TermDocEnum *p2)
 {
-    return ((TermDocEnum *)p1)->doc_num((TermDocEnum *)p1) <
-        ((TermDocEnum *)p2)->doc_num((TermDocEnum *)p2);
+    return p1->doc_num(p1) < p2->doc_num(p2);
 }
 
 bool mtdpe_skip_to(TermDocEnum *tde, int target_doc_num)
 {
     TermDocEnum *sub_tde;
-    while ((sub_tde = (TermDocEnum *)pq_top(MTDPE(tde)->pq)) != NULL &&
-           (target_doc_num > sub_tde->doc_num(sub_tde))) {
+    PriorityQueue *mtdpe_pq = MTDPE(tde)->pq;
+
+    while ((sub_tde = (TermDocEnum *)pq_top(mtdpe_pq)) != NULL
+           && (target_doc_num > sub_tde->doc_num(sub_tde))) {
         if (sub_tde->skip_to(sub_tde, target_doc_num)) {
-            pq_down(MTDPE(tde)->pq);
+            pq_down(mtdpe_pq);
         }
         else {
-            sub_tde = pq_pop(MTDPE(tde)->pq);
+            sub_tde = pq_pop(mtdpe_pq);
             sub_tde->close(sub_tde);
         }
     }
@@ -2390,7 +2429,7 @@ TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms, int t_cnt)
     TermDocEnum *tde = TDE(mtdpe);
     PriorityQueue *pq;
 
-    pq = mtdpe->pq = pq_new(t_cnt, &tdpe_less_than, (free_ft)&tde_destroy);
+    pq = mtdpe->pq = pq_new(t_cnt, (lt_ft)&tdpe_less_than, (free_ft)&tde_destroy);
     mtdpe->pos_queue_capa = MTDPE_POS_QUEUE_INIT_CAPA;
     mtdpe->pos_queue = ALLOC_N(int, MTDPE_POS_QUEUE_INIT_CAPA);
     mtdpe->field_num = field_num;
@@ -2492,6 +2531,26 @@ bool ir_index_exists(Store *store)
     return store->exists(store, "segments");
 }
 
+int ir_get_field_num(IndexReader *ir, const char *field)
+{
+    int field_num = fis_get_field_num(ir->fis, field);
+    if (field_num < 0) {
+        RAISE(ARG_ERROR, "Field :%s does not exist in this index", field);
+    }
+    return field_num;
+}
+
+int ir_doc_freq(IndexReader *ir, const char *field, const char *term)
+{
+    int field_num = fis_get_field_num(ir->fis, field);
+    if (field_num >= 0) {
+        return ir->doc_freq(ir, field_num, term);
+    }
+    else {
+        return 0;
+    }
+}
+
 static void ir_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar val)
 {
     mutex_lock(&ir->mutex);
@@ -2501,23 +2560,40 @@ static void ir_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar val
     mutex_unlock(&ir->mutex);
 }
 
-void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val)
+void ir_set_norm(IndexReader *ir, int doc_num, const char *field, uchar val)
 {
-    ir_set_norm_i(ir, doc_num, fis_get_field(ir->fis, field)->number, val);
+    int field_num = fis_get_field_num(ir->fis, field);
+    if (field_num >= 0) {
+        ir_set_norm_i(ir, doc_num, field_num, val);
+    }
 }
 
-uchar *ir_get_norms(IndexReader *ir, char *field)
+uchar *ir_get_norms(IndexReader *ir, const char *field)
 {
-    uchar *norms = ir->get_norms(ir, fis_get_field(ir->fis, field)->number);
+    uchar *norms = NULL;
+    int field_num = fis_get_field_num(ir->fis, field);
+    if (field_num >= 0) {
+        norms = ir->get_norms(ir, field_num);
+    }
     if (!norms) {
-        norms = (uchar *)ecalloc(ir->max_doc(ir));
+        if (ir->fake_norms == NULL) {
+            ir->fake_norms = (uchar *)ecalloc(ir->max_doc(ir));
+        }
+        norms = ir->fake_norms;
     }
     return norms;
 }
 
-uchar *ir_get_norms_into(IndexReader *ir, char *field, uchar *buf)
+uchar *ir_get_norms_into(IndexReader *ir, const char *field, uchar *buf)
 {
-    return ir->get_norms_into(ir, fis_get_field(ir->fis, field)->number, buf);
+    int field_num = fis_get_field_num(ir->fis, field);
+    if (field_num >= 0) {
+        ir->get_norms_into(ir, field_num, buf);
+    }
+    else {
+        memset(buf, 0, ir->max_doc(ir));
+    }
+    return buf;
 }
 
 void ir_undelete_all(IndexReader *ir)
@@ -2538,7 +2614,8 @@ void ir_delete_doc(IndexReader *ir, int doc_num)
     mutex_unlock(&ir->mutex);
 }
 
-Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term)
+Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
+                               const char *term)
 {
     TermDocEnum *tde = ir_term_docs_for(ir, field, term);
     Document *doc = NULL;
@@ -2552,17 +2629,25 @@ Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term)
     return doc;
 }
 
-TermDocEnum *ir_term_docs_for(IndexReader *ir, char *field, char *term)
+TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
+                              const char *term)
 {
+    int field_num = fis_get_field_num(ir->fis, field);
     TermDocEnum *tde = ir->term_docs(ir);
-    tde->seek(tde, fis_get_field(ir->fis, field)->number, term);
+    if (field_num >= 0) {
+        tde->seek(tde, field_num, term);
+    }
     return tde;
 }
 
-TermDocEnum *ir_term_positions_for(IndexReader *ir, char *field, char *term)
+TermDocEnum *ir_term_positions_for(IndexReader *ir, const char *field,
+                                   const char *term)
 {
+    int field_num = fis_get_field_num(ir->fis, field);
     TermDocEnum *tde = ir->term_positions(ir);
-    tde->seek(tde, fis_get_field(ir->fis, field)->number, term);
+    if (field_num >= 0) {
+        tde->seek(tde, field_num, term);
+    }
     return tde;
 }
 
@@ -2623,6 +2708,7 @@ void ir_close(IndexReader *ir)
     if (ir->sort_cache) {
         h_destroy(ir->sort_cache);
     }
+    free(ir->fake_norms);
 
     mutex_destroy(&ir->mutex);
     free(ir);
@@ -2968,7 +3054,7 @@ static TermEnum *sr_terms(IndexReader *ir, int field_num)
     return ste_set_field(te, field_num);
 }
 
-static TermEnum *sr_terms_from(IndexReader *ir, int field_num, char *term)
+static TermEnum *sr_terms_from(IndexReader *ir, int field_num, const char *term)
 {
     TermEnum *te = SR(ir)->tir->orig_te;
     te = ste_clone(te);
@@ -2977,7 +3063,7 @@ static TermEnum *sr_terms_from(IndexReader *ir, int field_num, char *term)
     return te;
 }
 
-static int sr_doc_freq(IndexReader *ir, int field_num, char *term)
+static int sr_doc_freq(IndexReader *ir, int field_num, const char *term)
 {
     TermInfo *ti = tir_get_ti(tir_set_field(SR(ir)->tir, field_num), term);
     return ti ? ti->doc_freq : 0;
@@ -2996,7 +3082,8 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
                     STE(sr->tir->orig_te)->skip_interval);
 }
 
-static TermVector *sr_term_vector(IndexReader *ir, int doc_num, char *field)
+static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
+                                  const char *field)
 {
     FieldInfo *fi = h_get(ir->fis->field_dict, field);
     TermVectorsReader *tvr;
@@ -3255,19 +3342,19 @@ static uchar *mr_get_norms_into(IndexReader *ir, int field_num, uchar *buf)
     return buf;
 }
 
-TermEnum *mr_terms(IndexReader *ir, int field_num)
+static TermEnum *mr_terms(IndexReader *ir, int field_num)
 {
     return mte_new(MR(ir)->sub_readers, MR(ir)->starts, MR(ir)->r_cnt,
                    field_num, NULL);
 }
 
-TermEnum *mr_terms_from(IndexReader *ir, int field_num, char *term)
+static TermEnum *mr_terms_from(IndexReader *ir, int field_num, const char *term)
 {
     return mte_new(MR(ir)->sub_readers, MR(ir)->starts, MR(ir)->r_cnt,
                    field_num, term);
 }
 
-int mr_doc_freq(IndexReader *ir, int field_num, char *t)
+static int mr_doc_freq(IndexReader *ir, int field_num, const char *t)
 {
     int total = 0;          /* sum freqs in segments */
     int i = MR(ir)->r_cnt;
@@ -3278,17 +3365,18 @@ int mr_doc_freq(IndexReader *ir, int field_num, char *t)
     return total;
 }
 
-TermDocEnum *mr_term_docs(IndexReader *ir)
+static TermDocEnum *mr_term_docs(IndexReader *ir)
 {
     return mtde_new(MR(ir)->sub_readers, MR(ir)->starts, MR(ir)->r_cnt);
 }
 
-TermDocEnum *mr_term_positions(IndexReader *ir)
+static TermDocEnum *mr_term_positions(IndexReader *ir)
 {
     return mtpe_new(MR(ir)->sub_readers, MR(ir)->starts, MR(ir)->r_cnt);
 }
 
-static TermVector *mr_term_vector(IndexReader *ir, int doc_num, char *field)
+static TermVector *mr_term_vector(IndexReader *ir, int doc_num,
+                                  const char *field)
 {
     GET_READER();
     return reader->term_vector(reader, doc_num - MR(ir)->starts[i], field);
@@ -3318,7 +3406,7 @@ static void mr_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar val
     ir_set_norm_i(reader, doc_num - MR(ir)->starts[i], field_num, val);
 }
 
-void mr_delete_doc_i(IndexReader *ir, int doc_num)
+static void mr_delete_doc_i(IndexReader *ir, int doc_num)
 {
     GET_READER();
     MR(ir)->num_docs_cache = -1; /* invalidate cache */
@@ -3328,7 +3416,7 @@ void mr_delete_doc_i(IndexReader *ir, int doc_num)
     MR(ir)->has_deletions = true;
 }
 
-void mr_undelete_all_i(IndexReader *ir)
+static void mr_undelete_all_i(IndexReader *ir)
 {
     int i;
     const int mr_reader_cnt = MR(ir)->r_cnt;
@@ -3341,7 +3429,7 @@ void mr_undelete_all_i(IndexReader *ir)
     MR(ir)->has_deletions = false;
 }
 
-void mr_commit_i(IndexReader *ir)
+static void mr_commit_i(IndexReader *ir)
 {
     int i;
     const int mr_reader_cnt = MR(ir)->r_cnt;
@@ -3351,7 +3439,7 @@ void mr_commit_i(IndexReader *ir)
     }
 }
 
-void mr_close_i(IndexReader *ir)
+static void mr_close_i(IndexReader *ir)
 {
     int i;
     const int mr_reader_cnt = MR(ir)->r_cnt;
@@ -3620,10 +3708,10 @@ TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
         int store_positions = fi_store_positions(fi);
         int store_offsets = fi_store_offsets(fi);
         uchar buffer[MAX_WORD_SIZE];
-        Term *term;
+        TVTerm *term;
 
         tv->size = num_terms;
-        tv->terms = ALLOC_AND_ZERO_N(Term, num_terms);
+        tv->terms = ALLOC_AND_ZERO_N(TVTerm, num_terms);
 
         for (i = 0; i < num_terms; i++) {
             term = &(tv->terms[i]);
@@ -4116,6 +4204,7 @@ void dw_add_doc(DocWriter *dw, Document *doc)
     HashTable *postings;
     FieldInfo *fi;
 
+    /* fw_add_doc will add new fields as necessary */
     fw_add_doc(dw->fw, doc);
 
     tvw_open_doc(dw->tvw);
@@ -4136,7 +4225,7 @@ void dw_add_doc(DocWriter *dw, Document *doc)
 
         if (fld_inv->has_norms) {
             boost = fld_inv->fi->boost * doc->boost * df->boost *
-              sim_length_norm(dw->similarity, fi->number, fld_inv->length);
+              sim_length_norm(dw->similarity, fi->name, fld_inv->length);
             fld_inv->norms[dw->doc_num] = sim_encode_norm(dw->similarity,boost);
         }
         dw_reset_postings(postings);
@@ -4171,7 +4260,7 @@ typedef struct SegmentMergeInfo {
     InStream *prx_in;
 } SegmentMergeInfo;
 
-static bool smi_lt(SegmentMergeInfo *smi1, SegmentMergeInfo *smi2)
+static bool smi_lt(const SegmentMergeInfo *smi1, const SegmentMergeInfo *smi2)
 {
     int cmpres = strcmp(smi1->term, smi2->term);
     if (cmpres == 0) {

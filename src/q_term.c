@@ -2,7 +2,7 @@
 #include "search.h"
 
 #define TQ(query) ((TermQuery *)(query))
-#define TSC(scorer) ((TermScorer *)(scorer))
+#define TSc(scorer) ((TermScorer *)(scorer))
 
 /***************************************************************************
  *
@@ -29,7 +29,7 @@ typedef struct TermScorer
 
 static float tsc_score(Scorer *self)
 {
-    TermScorer *ts = TSC(self);
+    TermScorer *ts = TSc(self);
     int freq = ts->freqs[ts->pointer];
     float score;
     /* compute tf(f)*weight */
@@ -47,18 +47,17 @@ static float tsc_score(Scorer *self)
 
 static bool tsc_next(Scorer *self)
 {
-    TermScorer *ts = (TermScorer *)self->data;
+    TermScorer *ts = TSc(self);
 
     ts->pointer++;
     if (ts->pointer >= ts->pointer_max) {
         /* refill buffer */
-        ts->pointer_max = ts->tde->read(ts->tde, ts->docs, ts->freqs, TDE_READ_SIZE);
+        ts->pointer_max = ts->tde->read(ts->tde, ts->docs, ts->freqs,
+                                        TDE_READ_SIZE);
         if (ts->pointer_max != 0) {
             ts->pointer = 0;
         }
         else {
-            ts->tde->close(ts->tde); /* close stream */
-            ts->tde = NULL;
             return false;
         }
     }
@@ -68,7 +67,7 @@ static bool tsc_next(Scorer *self)
 
 static bool tsc_skip_to(Scorer *self, int doc_num)
 {
-    TermScorer *ts = TSC(self);
+    TermScorer *ts = TSc(self);
     TermDocEnum *tde = ts->tde;
 
     /* first scan in cache */
@@ -94,55 +93,37 @@ static bool tsc_skip_to(Scorer *self, int doc_num)
 
 static Explanation *tsc_explain(Scorer *self, int doc_num)
 {
-    Explanation *tf_explanation;
-    TermScorer *ts = TSC(self);
+    TermScorer *ts = TSc(self);
     Query *query = ts->weight->get_query(ts->weight);
-    Term *term = ((TermQuery *)query->data)->term;
     int tf = 0;
-    TermDocEnum *tde = ts->tde;
-    while (ts->pointer < ts->pointer_max) {
-        if (ts->docs[ts->pointer] == doc_num) {
-            tf = ts->freqs[ts->pointer];
-        }
-        ts->pointer++;
-    }
-    if (tf == 0) {
-        while (tde->next(tde)) {
-            if (tde->doc_num(tde) == doc_num) {
-                tf = tde->freq(tde);
-            }
-        }
-    }
-    tde->close(tde);
-    ts->tde = NULL;
-    tf_explanation = expl_create(sim_tf(self->similarity, (float)tf),
-                                 strfmt("tf(term_freq(%s:%s)=%d)",
-                                        query->field, query->term, tf));
 
-    return tf_explanation;
+    tsc_skip_to(self, doc_num);
+    if (self->doc == doc_num) {
+        tf = ts->freqs[ts->pointer];
+    }
+    return expl_new(sim_tf(self->similarity, (float)tf),
+                    "tf(term_freq(%s:%s)=%d)",
+                    TQ(query)->field, TQ(query)->term, tf);
 }
 
 static void tsc_destroy(Scorer *self)
 {
-    TermScorer *ts = (TermScorer *)self->data;
-    if (ts->tde) {
-        ts->tde->close(ts->tde);
-    }
+    TSc(self)->tde->close(TSc(self)->tde);
     scorer_destroy_i(self);
 }
 
-static Scorer *tsc_create(Weight *weight, TermDocEnum *tde, uchar *norms)
+static Scorer *tsc_new(Weight *weight, TermDocEnum *tde, uchar *norms)
 {
     int i;
     Scorer *self            = scorer_new(TermScorer, weight->similarity);
-    TSC(ts)->weight         = weight;
-    TSC(ts)->tde            = tde;
-    TSC(ts)->norms          = norms;
-    TSC(ts)->weight_value   = weight->value;
+    TSc(self)->weight       = weight;
+    TSc(self)->tde          = tde;
+    TSc(self)->norms        = norms;
+    TSc(self)->weight_value = weight->value;
 
     for (i = 0; i < SCORE_CACHE_SIZE; i++) {
-        ts->score_cache[i]  = sim_tf(self->similarity, (float)i)
-            * ts->weight_value;
+        TSc(self)->score_cache[i]
+            = sim_tf(self->similarity, (float)i) * TSc(self)->weight_value;
     }
 
     self->score             = &tsc_score;
@@ -161,13 +142,13 @@ static Scorer *tsc_create(Weight *weight, TermDocEnum *tde, uchar *norms)
 
 static Scorer *tw_scorer(Weight *self, IndexReader *ir)
 {
-    TermQuery *tq = TQ(sef->query);
+    TermQuery *tq = TQ(self->query);
     TermDocEnum *tde = ir_term_docs_for(ir, tq->field, tq->term);
     if (!tde) {
         return NULL;
     }
 
-    return tsc_create(self, tde, ir_get_norms(ir, tq->field));
+    return tsc_new(self, tde, ir_get_norms(ir, tq->field));
 }
 
 static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
@@ -182,32 +163,31 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
 
     char *query_str = self->query->to_s(self->query, "");
     TermQuery *tq = TQ(self->query);
-    Term *term = tq->term;
-    char *field_name = term->field;
+    char *term = tq->term;
+    char *field = tq->field;
 
-    Explanation *expl = expl_create(0.0,
-        strfmt("weight(%s in %d), product of:", query_str, doc_num));
+    Explanation *expl = expl_new(0.0, "weight(%s in %d), product of:",
+                                 query_str, doc_num);
 
     /* We need two of these as it's included in both the query explanation
      * and the field explanation */
-    Explanation *idf_expl1 = expl_create(self->idf,
-        strfmt("idf(doc_freq=%d)", ir->doc_freq(ir, tq->term)));
-    Explanation *idf_expl2 = expl_create(self->idf,
-        strfmt("idf(doc_freq=%d)", ir->doc_freq(ir, tq->term)));
+    Explanation *idf_expl1 = expl_new(self->idf, "idf(doc_freq=%d)",
+                                      ir_doc_freq(ir, field, term));
+    Explanation *idf_expl2 = expl_new(self->idf, "idf(doc_freq=%d)",
+                                      ir_doc_freq(ir, field, term));
 
     /* explain query weight */
-    Explanation *query_expl = expl_create(0.0,
-        strfmt("query_weight(%s), product of:", query_str));
+    Explanation *query_expl = expl_new(0.0, "query_weight(%s), product of:",
+                                       query_str);
     free(query_str);
 
     if (self->query->boost != 1.0) {
-        expl_add_detail(query_expl,
-                        expl_create(self->query->boost, estrdup("boost")));
+        expl_add_detail(query_expl, expl_new(self->query->boost, "boost"));
     }
 
     expl_add_detail(query_expl, idf_expl1);
 
-    qnorm_expl = expl_create(self->qnorm, estrdup("query_norm"));
+    qnorm_expl = expl_new(self->qnorm, "query_norm");
     expl_add_detail(query_expl, qnorm_expl);
 
     query_expl->value = self->query->boost
@@ -216,9 +196,8 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     expl_add_detail(expl, query_expl);
 
     /* explain field weight */
-    field_expl = expl_create(0.0,
-                             strfmt("field_weight(%s:%s in %d), product of:",
-                                    field_name, term->text, doc_num));
+    field_expl = expl_new(0.0, "field_weight(%s:%s in %d), product of:",
+                          field, term, doc_num);
 
     scorer = self->scorer(self, ir);
     tf_expl = scorer->explain(scorer, doc_num);
@@ -226,13 +205,12 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     expl_add_detail(field_expl, tf_expl);
     expl_add_detail(field_expl, idf_expl2);
 
-    field_norms = ir->get_norms(ir, field_name);
+    field_norms = ir_get_norms(ir, field);
     field_norm = (field_norms 
                   ? sim_decode_norm(self->similarity, field_norms[doc_num]) 
                   : (float)0.0);
-    field_norm_expl = expl_create(field_norm,
-                                  strfmt("field_norm(field=%s, doc=%d)",
-                                         field_name, doc_num));
+    field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
+                               field, doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -241,7 +219,7 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
 
     /* combine them */
     if (query_expl->value == 1.0) {
-        expl_destoy(expl);
+        expl_destroy(expl);
         return field_expl;
     } else {
         expl->value = (query_expl->value * field_expl->value);
@@ -255,20 +233,19 @@ static char *tw_to_s(Weight *self)
     return strfmt("TermWeight(%f)", self->value);
 }
 
-static Weight *tw_create(Query *query, Searcher *searcher)
+static Weight *tw_new(Query *query, Searcher *searcher)
 {
-    Weight *self                    = w_new(Weight, query);
-    self->scorer                    = &tw_scorer;
-    self->explain                   = &tw_explain;
-    self->to_s                      = &tw_to_s;
-    self->sum_of_squared_weights    = &w_sum_of_squared_weights;
+    Weight *self    = w_new(Weight, query);
+    self->scorer    = &tw_scorer;
+    self->explain   = &tw_explain;
+    self->to_s      = &tw_to_s;
 
     self->similarity = query->get_similarity(query, searcher);
     self->idf = sim_idf(self->similarity,
                         searcher->doc_freq(searcher,
                                            TQ(query)->field,
                                            TQ(query)->term),
-                        searcher->max_doc(searcher)); // compute idf
+                        searcher->max_doc(searcher)); /* compute idf */
 
     return self;
 }
@@ -286,10 +263,10 @@ static void tq_destroy(Query *self)
     q_destroy_i(self);
 }
 
-static char *tq_to_s(Query *self, char *field)
+static char *tq_to_s(Query *self, const char *field)
 {
     size_t flen = strlen(TQ(self)->field);
-    size_t tlen = strlen(TQ(self)->text);
+    size_t tlen = strlen(TQ(self)->term);
     char *buffer = ALLOC_N(char, 34 + flen + tlen);
     char *b = buffer;
     if (strcmp(field, TQ(self)->field) != 0) {
@@ -297,7 +274,7 @@ static char *tq_to_s(Query *self, char *field)
         b[flen] = ':';
         b += flen + 1;
     }
-    memcpy(b, TQ(self)->text, tlen);
+    memcpy(b, TQ(self)->term, tlen);
     b += tlen;
     *b = 0;
     if (self->boost != 1.0) {
@@ -309,7 +286,7 @@ static char *tq_to_s(Query *self, char *field)
 
 static void tq_extract_terms(Query *self, HashSet *terms)
 {
-    hs_add(terms, estrdup(TQ(self)->term));
+    hs_add(terms, term_new(TQ(self)->field, TQ(self)->term));
 }
 
 static f_u32 tq_hash(Query *self)
@@ -323,23 +300,21 @@ static int tq_eq(Query *self, Query *o)
         && (strcmp(TQ(self)->field, TQ(o)->field) == 0);
 }
 
-Query *tq_new(char *field, char *term)
+Query *tq_new(const char *field, const char *term)
 {
-    Query *self = q_new(TermQuery);
+    Query *self             = q_new(TermQuery);
 
-    TQ(self)->field = field;
-    TQ(self)->term = term;
+    TQ(self)->field         = estrdup(field);
+    TQ(self)->term          = estrdup(term);
 
     self->type              = TERM_QUERY;
-    self->data              = tq;
     self->extract_terms     = &tq_extract_terms;
     self->to_s              = &tq_to_s;
     self->hash              = &tq_hash;
     self->eq                = &tq_eq;
 
     self->destroy_i         = &tq_destroy;
-    self->create_weight_i   = &tw_create;
+    self->create_weight_i   = &tw_new;
 
     return self;
 }
-

@@ -18,7 +18,7 @@ objs = Dir["src/*.c"].map {|full_path| File.basename(full_path).gsub(/c$/, "o")}
 test_objs = Dir["test/*.c"].map {|full_path| File.basename(full_path).gsub(/c$/, "o")}
 
 print """
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -O2 -g -DDEBUG #-D_FILE_OFFSET_BITS=64
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -fno-common -g -DDEBUG #-D_FILE_OFFSET_BITS=64
 
 LFLAGS = -lm -lpthread
 

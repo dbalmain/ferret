@@ -141,6 +141,7 @@ typedef struct FieldInfos
 extern FieldInfos *fis_new(int store, int index, int term_vector);
 extern FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi);
 extern FieldInfo *fis_get_field(FieldInfos *fis, const char *name);
+extern int fis_get_field_num(FieldInfos *fis, const char *name);
 extern FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name);
 extern void fis_write(FieldInfos *fis, Store *store);
 extern FieldInfos *fis_read(Store *store);
@@ -266,6 +267,7 @@ struct TermEnum
     char        prev_term[MAX_WORD_SIZE];
     TermInfo    curr_ti;
     int         curr_term_len;
+    int         field_num;
     TermEnum *(*set_field)(TermEnum *te, int field_num);
     char     *(*next)(TermEnum *te);
     char     *(*skip_to)(TermEnum *te, const char *term);
@@ -322,7 +324,6 @@ struct SegmentTermEnum
     int         size;
     int         pos;
     int         skip_interval;
-    int         field_num;
     SegmentFieldIndex *sfi;
 };
 
@@ -332,7 +333,7 @@ extern TermEnum *ste_new(InStream *is, SegmentFieldIndex *sfi);
 
 /* * MultiTermEnum * */
 extern TermEnum *mte_new(IndexReader **readers, int *starts, int r_cnt,
-                         int field_num, char *t);
+                         int field_num, const char *term);
 
 /****************************************************************************
  *
@@ -407,6 +408,7 @@ typedef struct TermDocEnum TermDocEnum;
 struct TermDocEnum
 {
     void (*seek)(TermDocEnum *tde, int field_num, const char *term);
+    void (*seek_te)(TermDocEnum *tde, TermEnum *te);
     int  (*doc_num)(TermDocEnum *tde);
     int  (*freq)(TermDocEnum *tde);
     bool (*next)(TermDocEnum *tde);
@@ -550,17 +552,17 @@ typedef struct TVField
 
 /****************************************************************************
  *
- * Term
+ * TVTerm
  *
  ****************************************************************************/
 
-typedef struct Term
+typedef struct TVTerm
 {
-    char *text;
-    int freq;
-    int *positions;
+    char   *text;
+    int     freq;
+    int    *positions;
     Offset *offsets;
-} Term;
+} TVTerm;
 
 /****************************************************************************
  *
@@ -570,10 +572,10 @@ typedef struct Term
 
 typedef struct TermVector
 {
-    int field_num;
-    char *field;
-    int size;
-    Term *terms;
+    int     field_num;
+    char   *field;
+    int     size;
+    TVTerm *terms;
 } TermVector;
 
 extern void tv_destroy(TermVector *tv);
@@ -645,13 +647,17 @@ struct IndexReader
     int           (*max_doc)(IndexReader *ir);
     Document     *(*get_doc)(IndexReader *ir, int doc_num);
     uchar        *(*get_norms)(IndexReader *ir, int field_num);
-    uchar        *(*get_norms_into)(IndexReader *ir, int field_num, uchar *buf);
+    uchar        *(*get_norms_into)(IndexReader *ir, int field_num,
+                                    uchar *buf);
     TermEnum     *(*terms)(IndexReader *ir, int field_num);
-    TermEnum     *(*terms_from)(IndexReader *ir, int field_num, char *term);
-    int           (*doc_freq)(IndexReader *ir, int field_num, char *term);
+    TermEnum     *(*terms_from)(IndexReader *ir, int field_num,
+                                const char *term);
+    int           (*doc_freq)(IndexReader *ir, int field_num,
+                              const char *term);
     TermDocEnum  *(*term_docs)(IndexReader *ir);
     TermDocEnum  *(*term_positions)(IndexReader *ir);
-    TermVector   *(*term_vector)(IndexReader *ir, int doc_num, char *field);
+    TermVector   *(*term_vector)(IndexReader *ir, int doc_num,
+                                 const char *field);
     HashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
     bool          (*is_deleted)(IndexReader *ir, int doc_num);
     bool          (*has_deletions)(IndexReader *ir);
@@ -668,6 +674,7 @@ struct IndexReader
     FieldInfos *fis;
     HashTable *cache;
     HashTable *sort_cache;
+    uchar *fake_norms;
     mutex_t mutex;
     bool has_changes : 1;
     bool is_stale    : 1;
@@ -676,18 +683,24 @@ struct IndexReader
 
 extern IndexReader *ir_create(Store *store, SegmentInfos *sis, int is_owner);
 extern IndexReader *ir_open(Store *store);
+extern int ir_get_field_num(IndexReader *ir, const char *field);
 extern bool ir_index_exists(Store *store);
 extern void ir_close(IndexReader *ir);
 extern void ir_commit(IndexReader *ir);
 extern void ir_delete_doc(IndexReader *ir, int doc_num);
 extern void ir_undelete_all(IndexReader *ir);
-extern void ir_set_norm(IndexReader *ir, int doc_num, char *field, uchar val);
-extern uchar *ir_get_norms(IndexReader *ir, char *field);
-extern uchar *ir_get_norms_into(IndexReader *ir, char *field, uchar *buf);
+extern int ir_doc_freq(IndexReader *ir, const char *field, const char *term);
+extern void ir_set_norm(IndexReader *ir, int doc_num, const char *field,
+                        uchar val);
+extern uchar *ir_get_norms(IndexReader *ir, const char *field);
+extern uchar *ir_get_norms_into(IndexReader *ir, const char *field, uchar *buf);
 extern void ir_destroy(IndexReader *self);
-extern Document *ir_get_doc_with_term(IndexReader *ir, char *field, char *term);
-extern TermDocEnum *ir_term_docs_for(IndexReader *ir, char *field, char *term);
-extern TermDocEnum *ir_term_positions_for(IndexReader *ir, char *fld, char *t);
+extern Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
+                                      const char *term);
+extern TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
+                                     const char *term);
+extern TermDocEnum *ir_term_positions_for(IndexReader *ir, const char *fld,
+                                          const char *t);
 extern void ir_add_cache(IndexReader *ir);
 extern bool ir_is_latest(IndexReader *ir);
 

@@ -32,6 +32,9 @@ typedef void (*free_ft)(void *key);
 #define REF(a) (a)->ref_cnt++
 #define DEREF(a) (a)->ref_cnt--
 
+#define NEXT_NUM(index, size) (((index) + 1) % (size))
+#define PREV_NUM(index, size) (((index) + (size) - 1) % (size))
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -104,6 +107,7 @@ extern int max3(int a, int b, int c);
 
 extern char *dbl_to_s(char *buf, double num);
 extern char *strfmt(const char *fmt, ...);
+extern char *vstrfmt(const char *fmt, va_list args);
 
 /**
  * A dummy function which can be passed to functions which expect a free

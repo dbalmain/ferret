@@ -8,19 +8,24 @@
  *
  ***************************************************************************/
 
-Explanation *expl_new(float value, char *description)
+Explanation *expl_new(float value, const char *description, ...)
 {
     Explanation *expl = ALLOC(Explanation);
+
+    va_list args;
+    va_start(args, description);
+    expl->description = vstrfmt(description, args);
+    va_end(args);
+
     expl->value = value;
-    expl->description = description;
     expl->details = ary_new_type_capa(Explanation *,
                                       EXPLANATION_DETAILS_START_SIZE);
     return expl;
 }
 
-void expl_destoy(Explanation *expl)
+void expl_destroy(Explanation *expl)
 {
-    ary_destroy((void **)expl, (free_ft)expl_destoy);
+    ary_destroy((void **)expl->details, (free_ft)expl_destroy);
     free(expl->description);
     free(expl);
 }
@@ -64,19 +69,54 @@ char *expl_to_html(Explanation *expl)
     return strcat(buffer, "</ul>\n");
 }
 
+/****************************************************************************
+ *
+ * Term
+ *
+ ****************************************************************************/
+
+#define term_set_new() \
+    hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy)
+
+Term *term_new(const char *field, const char *text)
+{
+    Term *t = ALLOC(Term);
+    t->field = estrdup(field);
+    t->text = estrdup(text);
+    return t;
+}
+
+void term_destroy(Term *self)
+{
+    free(self->text);
+    free(self->field);
+    free(self);
+}
+
+int term_eq(const void *t1, const void *t2)
+{
+    return (strcmp(((Term *)t1)->text, ((Term *)t2)->text)) == 0 &&
+        (strcmp(((Term *)t1)->field, ((Term *)t2)->field) == 0);
+}
+
+f_u32 term_hash(const void *t)
+{
+    return str_hash(((Term *)t)->text) * str_hash(((Term *)t)->field);
+}
+
 /***************************************************************************
  *
  * Hit
  *
  ***************************************************************************/
 
-static bool hit_less_than(void *hit1, void *hit2)
+static bool hit_less_than(const Hit *hit1, const Hit *hit2)
 {
-    if (((Hit *)hit1)->score == ((Hit *)hit2)->score) {
-        return ((Hit *)hit1)->doc > ((Hit *)hit2)->doc;
+    if (hit1->score == hit2->score) {
+        return hit1->doc > hit2->doc;
     }
     else {
-        return ((Hit *)hit1)->score < ((Hit *)hit2)->score;
+        return hit1->score < hit1->score;
     }
 }
 
@@ -147,7 +187,7 @@ static void hit_pq_up(PriorityQueue *pq)
 
 static void hit_pq_insert(PriorityQueue *pq, Hit *hit) 
 {
-    if (pq->size < pq->size) {
+    if (pq->size < pq->capa) {
         Hit *new_hit = ALLOC(Hit);
         memcpy(new_hit, hit, sizeof(Hit));
         pq->size++;
@@ -166,7 +206,7 @@ static void hit_pq_insert(PriorityQueue *pq, Hit *hit)
  *
  ***************************************************************************/
 
-TopDocs *td_create(int total_hits, int size, Hit **hits)
+TopDocs *td_new(int total_hits, int size, Hit **hits)
 {
     TopDocs *td = ALLOC(TopDocs);
     td->total_hits = total_hits;
@@ -241,8 +281,8 @@ Weight *w_create(size_t size, Query *query)
         RAISE(ERROR, "size of weight <%d> should be at least <%d>",
               size, sizeof(Weight));
     }
-#ifdef
-    ref(query);
+#endif
+    REF(query);
     self->query                     = query;
     self->get_query                 = &w_get_query;
     self->get_value                 = &w_get_value;
@@ -260,6 +300,7 @@ Weight *w_create(size_t size, Query *query)
 
 static Query *q_rewrite(Query *self, IndexReader *ir)
 {
+    (void)ir;
     self->ref_cnt++;
     return self;
 }
@@ -273,6 +314,7 @@ static void q_extract_terms(Query *self, HashSet *terms)
 
 Similarity *q_get_similarity_i(Query *self, Searcher *searcher)
 {
+    (void)self;
     return searcher->get_similarity(searcher);
 }
 
@@ -290,6 +332,8 @@ void q_deref(Query *self)
 
 Weight *q_create_weight_unsup(Query *self, Searcher *searcher)
 {
+    (void)self;
+    (void)searcher;
     RAISE(UNSUPPORTED_ERROR,
           "Create weight is unsupported for this type of query");
     return NULL;
@@ -308,11 +352,12 @@ Weight *q_weight(Query *self, Searcher *searcher)
     return self->weight = weight;
 }
 
+#define BQ(query) ((BooleanQuery *)(query))
 Query *q_combine(Query **queries, int q_cnt)
 {
     int i;
     Query *q, *ret_q;
-    HashSet *uniques = hs_create((hash_ft)&q_hash, (eq_ft)&q_eq, NULL);
+    HashSet *uniques = hs_new((hash_ft)&q_hash, (eq_ft)&q_eq, NULL);
 
     for (i = 0; i < q_cnt; i++) {
         q = queries[i];
@@ -346,13 +391,13 @@ Query *q_combine(Query **queries, int q_cnt)
     }
     if (uniques->size == 1) {
         ret_q = (Query *)uniques->elems[0]; 
-        ref(ret_q);
+        REF(ret_q);
     }
     else {
-        ret_q = bq_create(true);
+        ret_q = bq_new(true);
         for (i = 0; i < uniques->size; i++) {
             q = (Query *)uniques->elems[i];
-            ref(q);
+            REF(q);
             bq_add_query(ret_q, q, BC_SHOULD);
         }
     }
@@ -399,7 +444,7 @@ Query *q_create(size_t size)
  *
  ***************************************************************************/
 
-void *scorer_destroy_i(Scorer *scorer)
+void scorer_destroy_i(Scorer *scorer)
 {
     free(scorer);
 }
@@ -412,7 +457,7 @@ Scorer *scorer_create(size_t size, Similarity *similarity)
         RAISE(ERROR, "size of scorer <%d> should be at least <%d>",
               size, sizeof(Scorer));
     }
-#ifdef
+#endif
     self->destroy       = &scorer_destroy_i;
     self->similarity    = similarity;
     return self;
@@ -425,9 +470,9 @@ bool scorer_less_than(void *p1, void *p2)
     return s1->score(s1) < s2->score(s2);
 }
 
-bool scorer_doc_less_than(void *p1, void *p2)
+bool scorer_doc_less_than(const Scorer *s1, const Scorer *s2)
 {
-    return ((Scorer *)p1)->doc < ((Scorer *)p2)->doc;
+    return s1->doc < s2->doc;
 }
 
 int scorer_doc_cmp(const void *p1, const void *p2)
@@ -437,49 +482,673 @@ int scorer_doc_cmp(const void *p1, const void *p2)
 
 /***************************************************************************
  *
- * Searcher
+ * StdSearcher
  *
  ***************************************************************************/
 
-struct Searcher {
-    IndexReader *ir;
-    Similarity  *similarity;
-    int          (*doc_freq)(Searcher *self, Term *term);
-    int         *(*doc_freqs)(Searcher *self, Term **terms, int tcnt);
-    Document    *(*get_doc)(Searcher *self, int doc_num);
-    int          (*max_doc)(Searcher *self);
-    Weight      *(*create_weight)(Searcher *self, Query *query);
-    TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
-                           int num_docs, Filter *filter, Sort *sort);
-    void         (*search_each)(Searcher *self, Query *query, Filter *filter,
-                                void (*fn)(Searcher *, int, float, void *), void *arg);
-    void         (*search_each_w)(Searcher *self, Weight *weight,
-                                  Filter *filter,
-                                  void (*fn)(Searcher *, int, float, void *),
-                                  void *arg);
-    Query       *(*rewrite)(Searcher *self, Query *original);
-    Explanation *(*explain)(Searcher *self, Query *query, int doc_num);
-    Explanation *(*explain_w)(Searcher *self, Weight *weight, int doc_num);
-    Similarity  *(*get_similarity)(Searcher *self);
-    void         (*close)(Searcher *self);
-    bool         close_ir : 1;
+#define STDSEA(searcher) ((StdSearcher *)(searcher))
+
+typedef struct StdSearcher {
+    Searcher        super;
+    IndexReader    *ir;
+    bool            close_ir : 1;
+} StdSearcher;
+
+static int stdsea_doc_freq(Searcher *self, const char *field, const char *term)
+{
+    return ir_doc_freq(STDSEA(self)->ir, field, term);
+}
+
+static Document *stdsea_get_doc(Searcher *self, int doc_num)
+{
+    IndexReader *ir = STDSEA(self)->ir;
+    return ir->get_doc(ir, doc_num);
+}
+
+static int stdsea_max_doc(Searcher *self)
+{
+    IndexReader *ir = STDSEA(self)->ir;
+    return ir->max_doc(ir);
+}
+
+static Weight *sea_create_weight(Searcher *self, Query *query)
+{
+    return q_weight(query, self);
+}
+
+static void sea_check_args(int num_docs, int first_doc)
+{
+    if (num_docs <= 0) {
+        RAISE(ARG_ERROR, ":num_docs was set to %d but should be greater "
+              "than 0 : %d <= 0", num_docs, num_docs);
+    }
+
+    if (first_doc < 0) {
+        RAISE(ARG_ERROR, ":first_doc was set to %d but should be greater "
+              "than or equal to 0 : %d < 0", first_doc, first_doc);
+    }
+}
+
+static TopDocs *stdsea_search(Searcher *self, Query *query, int first_doc,
+                             int num_docs, Filter *filter, Sort *sort)
+{
+    int max_size = first_doc + num_docs;
+    int i;
+    Weight *weight;
+    Scorer *scorer;
+    Hit **score_docs = NULL;
+    Hit hit;
+    int total_hits = 0;
+    float score;
+    BitVector *bits = (filter
+                       ? filter->get_bv(filter, STDSEA(self)->ir)
+                       : NULL);
+    Hit *(*hq_pop)(PriorityQueue *pq);
+    void (*hq_insert)(PriorityQueue *pq, Hit *hit);
+    void (*hq_destroy)(PriorityQueue *self);
+    PriorityQueue *hq;
+
+    sea_check_args(num_docs, first_doc);
+
+    weight = q_weight(query, self);
+    scorer = weight->scorer(weight, STDSEA(self)->ir);
+    if (!scorer) {
+        if (bits) {
+            bv_destroy(bits);
+        }
+        weight->destroy(weight);
+        return td_new(0, 0, NULL);
+    }
+
+    if (sort) {
+        hq = fshq_pq_new(max_size, sort, STDSEA(self)->ir);
+        hq_pop = &fshq_pq_pop;
+        hq_insert = &fshq_pq_insert;
+        hq_destroy = &fshq_pq_destroy;
+    } else {
+        hq = pq_new(max_size, (lt_ft)&hit_less_than, &free);
+        hq_pop = &hit_pq_pop;
+        hq_insert = &hit_pq_insert;
+        hq_destroy = &pq_destroy;
+    }
+
+    while (scorer->next(scorer)) {
+        if (bits && !bv_get(bits, scorer->doc)) {
+            /* document has been filtered out */
+            continue;
+        }
+        total_hits++;
+        score = scorer->score(scorer);
+        hit.doc = scorer->doc; hit.score = score;
+        hq_insert(hq, &hit);
+    }
+    scorer->destroy(scorer);
+    weight->destroy(weight);
+
+    if (hq->size > first_doc) {
+        if ((hq->size - first_doc) < num_docs) {
+            num_docs = hq->size - first_doc;
+        }
+        score_docs = ALLOC_N(Hit *, num_docs);
+        for (i = num_docs - 1; i >= 0; i--) {
+            score_docs[i] = hq_pop(hq);
+            /*
+            hit = score_docs[i] = pq_pop(hq);
+            printf("hit = %d-->%f\n", hit->doc, hit->score);
+            */
+        }
+    }
+    else {
+        num_docs = 0;
+    }
+    pq_clear(hq);
+    hq_destroy(hq);
+
+    if (bits) {
+        bv_destroy(bits);
+    }
+    return td_new(total_hits, num_docs, score_docs);
+}
+
+static void stdsea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
+                                 void (*fn)(Searcher *, int, float, void *),
+                                 void *arg)
+{
+    Scorer *scorer;
+    BitVector *bits = (filter
+                       ? filter->get_bv(filter, STDSEA(self)->ir)
+                       : NULL);
+
+    scorer = weight->scorer(weight, STDSEA(self)->ir);
+    if (!scorer) {
+        if (bits) {
+            bv_destroy(bits);
+        }
+        return;
+    }
+
+    while (scorer->next(scorer)) {
+        if (bits && !bv_get(bits, scorer->doc)) {
+            /* doc has been filtered */
+            continue;
+        }
+        fn(self, scorer->doc, scorer->score(scorer), arg);
+    }
+    scorer->destroy(scorer);
+}
+
+static void stdsea_search_each(Searcher *self, Query *query, Filter *filter,
+                               void (*fn)(Searcher *, int, float, void *),
+                               void *arg)
+{
+    Weight *weight = q_weight(query, self);
+    stdsea_search_each_w(self, weight, filter, fn, arg);
+    weight->destroy(weight);
+}
+
+static Query *stdsea_rewrite(Searcher *self, Query *original)
+{
+    int q_is_destroyed = false;
+    Query *query = original;
+    Query *rewritten_query = query->rewrite(query, STDSEA(self)->ir);
+    while (q_is_destroyed || (query != rewritten_query)) {
+        query = rewritten_query;
+        rewritten_query = query->rewrite(query, STDSEA(self)->ir);
+        q_is_destroyed = (query->ref_cnt <= 1);
+        q_deref(query); /* destroy intermediate queries */
+    }
+    return query;
+}
+
+static Explanation *stdsea_explain(Searcher *self, Query *query, int doc_num)
+{
+    Weight *weight = q_weight(query, self);
+    Explanation *e =  weight->explain(weight, STDSEA(self)->ir, doc_num);
+    weight->destroy(weight);
+    return e;
+}
+
+static Explanation *stdsea_explain_w(Searcher *self, Weight *w, int doc_num)
+{
+    return w->explain(w, STDSEA(self)->ir, doc_num);
+}
+
+static Similarity *sea_get_similarity(Searcher *self)
+{
+    return self->similarity;
+}
+
+static void stdsea_close(Searcher *self)
+{
+    if (STDSEA(self)->ir && STDSEA(self)->close_ir) {
+        ir_close(STDSEA(self)->ir);
+    }
+    free(self);
+}
+
+Searcher *stdsea_new(IndexReader *ir)
+{
+    Searcher *self          = (Searcher *)ecalloc(sizeof(StdSearcher));
+
+    STDSEA(self)->ir        = ir;
+    STDSEA(self)->close_ir  = true;
+
+    self->similarity        = sim_create_default();
+    self->doc_freq          = &stdsea_doc_freq;
+    self->get_doc           = &stdsea_get_doc;
+    self->max_doc           = &stdsea_max_doc;
+    self->create_weight     = &sea_create_weight;
+    self->search            = &stdsea_search;
+    self->search_each       = &stdsea_search_each;
+    self->search_each_w     = &stdsea_search_each_w;
+    self->rewrite           = &stdsea_rewrite;
+    self->explain           = &stdsea_explain;
+    self->explain_w         = &stdsea_explain_w;
+    self->get_similarity    = &sea_get_similarity;
+    self->close             = &stdsea_close;
+
+    return self;
+}
+
+/***************************************************************************
+ *
+ * CachedDFSearcher
+ *
+ ***************************************************************************/
+
+#define CDFSEA(searcher) ((CachedDFSearcher *)(searcher))
+typedef struct CachedDFSearcher
+{
+    Searcher    super;
+    HashTable  *df_map;
+    int         max_doc;
+} CachedDFSearcher;
+
+static int cdfsea_doc_freq(Searcher *self, const char *field, const char *text)
+{
+    Term term;
+    int *df;
+    term.field = (char *)field;
+    term.text = (char *)text;
+    df = (int *)h_get(CDFSEA(self)->df_map, &term);
+    return df ? *df : 0;
+}
+
+static Document *cdfsea_get_doc(Searcher *self, int doc_num)
+{
+    (void)self; (void)doc_num;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static int cdfsea_max_doc(Searcher *self)
+{
+    (void)self;
+    return CDFSEA(self)->max_doc;
+}
+
+static Weight *cdfsea_create_weight(Searcher *self, Query *query)
+{
+    (void)self; (void)query;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static TopDocs *cdfsea_search(Searcher *self, Query *query, int first_doc,
+                              int num_docs, Filter *filter, Sort *sort)
+{
+    (void)self; (void)query; (void)first_doc; (void)num_docs;
+    (void)filter; (void)sort;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static void cdfsea_search_each(Searcher *self, Query *query, Filter *filter,
+                               void (*fn)(Searcher *, int, float, void *),
+                               void *arg)
+{
+    (void)self; (void)query; (void)filter; (void)fn; (void)arg;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+}
+
+static void cdfsea_search_each_w(Searcher *self, Weight *w, Filter *filter,
+                                 void (*fn)(Searcher *, int, float, void *),
+                                 void *arg)
+{
+    (void)self; (void)w; (void)filter; (void)fn; (void)arg;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+}
+
+static Query *cdfsea_rewrite(Searcher *self, Query *original)
+{
+    (void)self;
+    original->ref_cnt++;
+    return original;
+}
+
+static Explanation *cdfsea_explain(Searcher *self, Query *query, int doc_num)
+{
+    (void)self; (void)query; (void)doc_num;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static Explanation *cdfsea_explain_w(Searcher *self, Weight *w, int doc_num)
+{
+    (void)self; (void)w; (void)doc_num;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static Similarity *cdfsea_get_similarity(Searcher *self)
+{
+    (void)self;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static void cdfsea_close(Searcher *self)
+{
+    h_destroy(CDFSEA(self)->df_map);
+    free(self);
+}
+
+static Searcher *cdfsea_new(HashTable *df_map, int max_doc)
+{
+    Searcher *self          = (Searcher *)ecalloc(sizeof(CachedDFSearcher));
+
+    CDFSEA(self)->df_map    = df_map;
+    CDFSEA(self)->max_doc   = max_doc;
+
+    self->doc_freq          = &cdfsea_doc_freq;
+    self->get_doc           = &cdfsea_get_doc;
+    self->max_doc           = &cdfsea_max_doc;
+    self->create_weight     = &cdfsea_create_weight;
+    self->search            = &cdfsea_search;
+    self->search_each       = &cdfsea_search_each;
+    self->search_each_w     = &cdfsea_search_each_w;
+    self->rewrite           = &cdfsea_rewrite;
+    self->explain           = &cdfsea_explain;
+    self->explain_w         = &cdfsea_explain_w;
+    self->get_similarity    = &cdfsea_get_similarity;
+    self->close             = &cdfsea_close;
+    return self;
+}
+
+/***************************************************************************
+ *
+ * MultiSearcher
+ *
+ ***************************************************************************/
+
+#define MSEA(searcher) ((MultiSearcher *)(searcher))
+typedef struct MultiSearcher
+{
+    Searcher    super;
+    int         s_cnt;
+    Searcher  **searchers;
+    int        *starts;
+    int         max_doc;
+    bool        close_subs : 1;
+} MultiSearcher;
+
+static inline int msea_get_searcher_index(Searcher *self, int n)
+{
+    MultiSearcher *msea = MSEA(self);
+    int lo = 0;                 /* search starts array */
+    int hi = msea->s_cnt - 1;   /* for 1st element < n, return its index */
+    int mid, mid_val;
+
+    while (hi >= lo) {
+        mid = (lo + hi) >> 1;
+        mid_val = msea->starts[mid];
+        if (n < mid_val) {
+            hi = mid - 1;
+        }
+        else if (n > mid_val) {
+            lo = mid + 1;
+        }
+        else {                  /* found a match */
+            while (((mid+1) < msea->s_cnt)
+                   && (msea->starts[mid+1] == mid_val)) {
+                mid++;          /* scan to last match */
+            }
+            return mid;
+        }
+    }
+    return hi;
+}
+
+static int msea_doc_freq(Searcher *self, const char *field, const char *term)
+{
+    int i;
+    int doc_freq = 0;
+    MultiSearcher *msea = MSEA(self);
+    for (i = 0; i < msea->s_cnt; i++) {
+        Searcher *s = msea->searchers[i];
+        doc_freq += s->doc_freq(s, field, term);
+    }
+
+    return doc_freq;
+}
+
+static Document *msea_get_doc(Searcher *self, int doc_num)
+{
+    MultiSearcher *msea = MSEA(self);
+    int i = msea_get_searcher_index(self, doc_num);
+    Searcher *s = msea->searchers[i];
+    return s->get_doc(s, doc_num - msea->starts[i]);
+}
+
+static int msea_max_doc(Searcher *self)
+{
+    return MSEA(self)->max_doc;
+}
+
+static int *msea_get_doc_freqs(Searcher *self, HashSet *terms)
+{
+    int i;
+    const int num_terms = terms->size;
+    int *doc_freqs = ALLOC_N(int, num_terms);
+    for (i = 0; i < num_terms; i++) {
+        Term *t = (Term *)terms->elems[i];
+        doc_freqs[i] = msea_doc_freq(self, t->field, t->text);
+    }
+    return doc_freqs;
+}
+
+static Weight *msea_create_weight(Searcher *self, Query *query)
+{
+    int i, *doc_freqs;
+    Searcher *cdfsea;
+    Weight *w;
+    HashTable *df_map = h_new((hash_ft)&term_hash, (eq_ft)&term_eq,
+                             (free_ft)NULL, (free_ft)NULL);
+    Query *rewritten_query = self->rewrite(self, query);
+    HashSet *terms = term_set_new();
+
+    rewritten_query->extract_terms(rewritten_query, terms);
+    doc_freqs = msea_get_doc_freqs(self, terms);
+
+    for (i = 0; i < terms->size; i++) {
+        h_set(df_map, terms->elems[i], (void *)doc_freqs[i]); 
+    }
+    hs_destroy(terms);
+    free(doc_freqs);
+
+    cdfsea = cdfsea_new(df_map, MSEA(self)->max_doc);
+
+    w = q_weight(rewritten_query, cdfsea);
+    q_deref(rewritten_query);
+    cdfsea->close(cdfsea);
+
+    return w;
+}
+
+struct MultiSearchEachArg {
+    int start;
+    void *arg;
+    void (*fn)(Searcher *, int, float, void *);
 };
 
-#define sea_doc_freq(s, t)  s->doc_freq(s, t)
-#define sea_doc_freqs(s, t, c)  s->doc_freqs(s, t, c)
-#define sea_get_doc(s, dn)  s->get_doc(s, dn)
-#define sea_max_doc(s)  s->max_doc(s)
-#define sea_search(s, q, fd, nd, filt, sort)\
-    s->search(s, q, fd, nd, filt, sort)
-#define sea_search_each(s, q, filt, fn, arg)\
-    s->search_each(s, q, filt, fn, arg)
-#define sea_search_each_w(s, q, filt, fn, arg)\
-    s->search_each_w(s, q, filt, fn, arg)
-#define sea_rewrite(s, q)  s->rewrite(s, q)
-#define sea_explain(s, q, dn)  s->explain(s, q, dn)
-#define sea_explain_w(s, q, dn)  s->explain_w(s, q, dn)
-#define sea_get_similarity(s)  s->get_similarity(s)
-#define sea_close(s)  s->close(s)
+void msea_search_each_i(Searcher *self, int doc_num, float score, void *arg)
+{
+    struct MultiSearchEachArg *mse_arg = (struct MultiSearchEachArg *)arg;
 
-extern Searcher *sea_create(IndexReader *ir);
+    mse_arg->fn(self, doc_num + mse_arg->start, score, mse_arg->arg);
+}
 
+static void msea_search_each_w(Searcher *self, Weight *w, Filter *filter,
+                               void (*fn)(Searcher *, int, float, void *),
+                               void *arg)
+{
+    int i;
+    struct MultiSearchEachArg mse_arg;
+    MultiSearcher *msea = MSEA(self);
+    Searcher *s;
+
+    mse_arg.fn = fn;
+    mse_arg.arg = arg;
+    for (i = 0; i < msea->s_cnt; i++) {
+        s = msea->searchers[i];
+        mse_arg.start = msea->starts[i];
+        s->search_each_w(s, w, filter, &msea_search_each_i, &mse_arg);
+    }
+}
+
+static void msea_search_each(Searcher *self, Query *query, Filter *filter,
+                             void (*fn)(Searcher *, int, float, void *), void *arg)
+{
+    Weight *w = q_weight(query, self);
+    msea_search_each_w(self, w, filter, fn, arg);
+    w->destroy(w);
+}
+
+struct MultiSearchArg {
+    int total_hits, max_size;
+    float min_score;
+    PriorityQueue *hq;
+    void (*hq_insert)(PriorityQueue *pq, Hit *hit);
+};
+
+void msea_search_i(Searcher *self, int doc_num, float score, void *arg)
+{
+    struct MultiSearchArg *ms_arg = (struct MultiSearchArg *)arg;
+    Hit hit;
+    (void)self;
+
+    ms_arg->total_hits++;
+    hit.doc = doc_num;
+    hit.score = score;
+    ms_arg->hq_insert(ms_arg->hq, &hit);
+}
+
+static TopDocs *msea_search(Searcher *self, Query *query, int first_doc,
+                            int num_docs, Filter *filter, Sort *sort)
+{
+    int max_size = first_doc + num_docs;
+    int i;
+    Weight *weight;
+    Hit **score_docs = NULL;
+    Hit *(*hq_pop)(PriorityQueue *pq);
+    void (*hq_insert)(PriorityQueue *pq, Hit *hit);
+    void (*hq_destroy)(PriorityQueue *self);
+    PriorityQueue *hq;
+    struct MultiSearchArg ms_arg;
+    //FIXME
+    (void)sort;
+
+    sea_check_args(num_docs, first_doc);
+
+    weight = q_weight(query, self);
+    hq = pq_new(max_size, (lt_ft)&hit_less_than, NULL);
+    hq_pop = &hit_pq_pop;
+    hq_insert = &hit_pq_insert;
+    hq_destroy = &pq_destroy;
+
+
+    ms_arg.hq = hq;
+    ms_arg.total_hits = 0;
+    ms_arg.max_size = max_size;
+    ms_arg.min_score = 0.0;
+    ms_arg.hq_insert = hq_insert;
+
+    msea_search_each_w(self, weight, filter, &msea_search_i, &ms_arg);
+
+    weight->destroy(weight);
+
+    if (hq->size > first_doc) {
+        if ((hq->size - first_doc) < num_docs) {
+            num_docs = hq->size - first_doc;
+        }
+        score_docs = ALLOC_N(Hit *, num_docs);
+        for (i = num_docs - 1; i >= 0; i--) {
+            score_docs[i] = hq_pop(hq);
+            /*
+            hit = score_docs[i] = pq_pop(hq);
+            printf("hit = %d-->%f\n", hit->doc, hit->score);
+            */
+        }
+    } else {
+        num_docs = 0;
+    }
+    pq_clear(hq);
+    hq_destroy(hq);
+
+    return td_new(ms_arg.total_hits, num_docs, score_docs);
+}
+
+static Query *msea_rewrite(Searcher *self, Query *original)
+{
+    int i;
+    Searcher *s;
+    MultiSearcher *msea = MSEA(self);
+    Query **queries = ALLOC_N(Query *, msea->s_cnt), *rewritten;
+
+    for (i = 0; i < msea->s_cnt; i++) {
+        s = msea->searchers[i];
+        queries[i] = s->rewrite(s, original);
+    }
+    rewritten = q_combine(queries, msea->s_cnt);
+
+    for (i = 0; i < msea->s_cnt; i++) {
+        q_deref(queries[i]);
+    }
+    free(queries);
+    return rewritten;
+}
+
+static Explanation *msea_explain(Searcher *self, Query *query, int doc_num)
+{
+    MultiSearcher *msea = MSEA(self);
+    int i = msea_get_searcher_index(self, doc_num);
+    Weight *w = q_weight(query, self);
+    Searcher *s = msea->searchers[i];
+    Explanation *e = s->explain_w(s, w, doc_num - msea->starts[i]);
+    w->destroy(w);
+    return e;
+}
+
+static Explanation *msea_explain_w(Searcher *self, Weight *w, int doc_num)
+{
+    MultiSearcher *msea = MSEA(self);
+    int i = msea_get_searcher_index(self, doc_num);
+    Searcher *s = msea->searchers[i];
+    Explanation *e = s->explain_w(s, w, doc_num - msea->starts[i]);
+    return e;
+}
+
+static Similarity *msea_get_similarity(Searcher *self)
+{
+    return self->similarity;
+}
+
+static void msea_close(Searcher *self)
+{
+    int i;
+    Searcher *s;
+    MultiSearcher *msea = MSEA(self);
+    if (msea->close_subs) {
+        for (i = 0; i < msea->s_cnt; i++) {
+            s = msea->searchers[i];
+            s->close(s);
+        }
+        free(msea->searchers);
+    }
+    free(msea->starts);
+    free(msea);
+    free(self);
+}
+
+Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs)
+{
+    int i, max_doc = 0;
+    Searcher *self = (Searcher *)ecalloc(sizeof(MultiSearcher));
+    int *starts = ALLOC_N(int, s_cnt + 1);
+    for (i = 0; i < s_cnt; i++) {
+        starts[i] = max_doc;
+        max_doc += searchers[i]->max_doc(searchers[i]);
+    }
+    starts[i] = max_doc;
+
+    MSEA(self)->s_cnt           = s_cnt;
+    MSEA(self)->searchers       = searchers;
+    MSEA(self)->starts          = starts;
+    MSEA(self)->max_doc         = max_doc;
+    MSEA(self)->close_subs      = close_subs;
+
+    self->similarity            = sim_create_default();
+    self->doc_freq              = &msea_doc_freq;
+    self->get_doc               = &msea_get_doc;
+    self->max_doc               = &msea_max_doc;
+    self->create_weight         = &msea_create_weight;
+    self->search                = &msea_search;
+    self->search_each           = &msea_search_each;
+    self->search_each_w         = &msea_search_each_w;
+    self->rewrite               = &msea_rewrite;
+    self->explain               = &msea_explain;
+    self->explain_w             = &msea_explain_w;
+    self->get_similarity        = &msea_get_similarity;
+    self->close                 = &msea_close;
+    return self;
+}

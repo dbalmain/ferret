@@ -9,22 +9,22 @@
 
 const char *EMPTY_STRING = "";
 
-int min3(int a, int b, int c)
+inline int min3(int a, int b, int c)
 {
     return MIN3(a, b, c);
 }
 
-int min2(int a, int b)
+inline int min2(int a, int b)
 {
     return MIN(a, b);
 }
 
-int max3(int a, int b, int c)
+inline int max3(int a, int b, int c)
 {
     return MAX3(a, b, c);
 }
 
-int max2(int a, int b)
+inline int max2(int a, int b)
 {
     return MAX(a, b);
 }
@@ -247,11 +247,10 @@ char *dbl_to_s(char *buf, double num)
 }
 
 /* strfmt: like sprintf except that it allocates memory for the string */
-char *strfmt(const char *fmt, ...)
+char *vstrfmt(const char *fmt, va_list args)
 {
     char *string;
     char *p = (char *) fmt, *q;
-    va_list args;
     int len = (int) strlen(fmt) + 1;
     int slen;
     char *s;
@@ -260,7 +259,6 @@ char *strfmt(const char *fmt, ...)
 
     q = string = ALLOC_N(char, len);
 
-    va_start(args, fmt);
     while (*p) {
         if (*p == '%') {
             p++;
@@ -306,10 +304,19 @@ char *strfmt(const char *fmt, ...)
         p++;
         q++;
     }
-    va_end(args);
     *q = 0;
 
     return string;
+}
+
+char *strfmt(const char *fmt, ...)
+{
+    va_list args;
+    char *str;
+    va_start(args, fmt);
+    str = vstrfmt(fmt, args);
+    va_end(args);
+    return str;
 }
 
 void dummy_free(void *p)

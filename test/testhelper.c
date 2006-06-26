@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 const char *test_word_list[] = {
     "desirous", "hollowness's", "camp's", "Senegal", "broadcaster's",
@@ -415,3 +416,142 @@ int nth_word_eql(char *words, char *word, int n)
         return 0;
     }
 }
+
+int s2l(char *str, int *arr)
+{
+    int i = 0;
+    int num = 0;
+    char *p = str;
+    bool in_number = false;
+    do {
+        if (isdigit(*p)) {
+            in_number = true;
+            num = num * 10 + *p - '0';
+        } else {
+            if (in_number) {
+                arr[i++] = num;
+                num = 0;
+            }
+            in_number = false;
+        }
+    } while (*(p++));
+    return i;
+}
+
+bool ary_includes(int *array, int size, int val)
+{
+    bool found = false;
+    int i;
+    for (i = 0; i < size; i++) {
+        if (array[i] == val) found = true;
+    }
+    return found;
+}
+
+static const char *DIGITS[] = {
+    "zero ",
+    "one ",
+    "two ",
+    "three ",
+    "four ",
+    "five ",
+    "six ",
+    "seven ",
+    "eight ",
+    "nine "
+};
+
+static const char *TEENS[] = {
+    "ten ",
+    "eleven ",
+    "twelve ",
+    "thirteen ",
+    "fourteen ",
+    "fifteen ",
+    "sixteen ",
+    "seventeen ",
+    "eighteen ",
+    "nineteen "
+};
+
+static const char *TENS[] = {
+    "hello ",
+    "world ",
+    "twenty ",
+    "thirty ",
+    "forty ",
+    "fifty ",
+    "sixty ",
+    "seventy ",
+    "eighty ",
+    "ninety "
+};
+
+static const char *GROUPS[] = {
+    "thousand ",
+    "million ",
+    "billion ",
+    "trillion ",
+    "quadrillion ",
+    "quintillion ",
+    "sextillion ",
+    "septillion ",
+    "octillion ",
+    "nonillion ",
+    "decillion "
+};
+
+static const int K = 1000;
+
+static char *under_1000(int val)
+{
+    const char *hundreds = (val >= 100) ? DIGITS[val/100] : "";
+    const char *and = "";
+    const char *tens = "";
+    const char *digits = "";
+    int mod100 = val%100;
+    if (val >= 100) and = ((val%100) > 0) ? "hundred and " : "hundred ";
+    if (mod100 > 0 && mod100 < 10) {
+        tens = DIGITS[mod100];
+    } else if (mod100 >= 10 && mod100 < 20) {
+        tens = TEENS[mod100 - 10];
+    } else if (mod100 >= 20) {
+        tens = TENS[mod100/10];
+        if (mod100%10) digits = DIGITS[mod100%10];
+    }
+    return strfmt("%s%s%s%s", hundreds, and, tens, digits);
+}
+
+static char *group(int val, int level)
+{
+    char *res;
+    if (val >= K) {
+        char *above = group(val/K, level+1);
+        const char *groups = ((val%1000000)/1000) ? GROUPS[level] : "";
+        char *below = under_1000(val%K);
+        res = strfmt("%s%s%s", above, groups, below);
+        free(above);
+        free(below);
+    } else {
+        res = under_1000(val);
+    }
+    return res;
+}
+
+char *num_to_str(int num)
+{
+    char *res;
+    if (num < 0) {
+        char *neg;
+        neg = num_to_str(-num);
+        res = strfmt("negative %s ", neg);
+        free(neg);
+    } else if (num == 0) {
+        res = estrdup("zero ");
+    } else {
+        res = group(num, 0);
+    }
+    res[strlen(res)-1] = '\0';
+    return res;
+}
+

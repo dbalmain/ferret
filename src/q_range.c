@@ -1,12 +1,6 @@
 #include <string.h>
 #include "search.h"
 
-//TODO
-static char * const NIL_BOUNDS_ERROR_MSG = "At least one value must be non-nil";
-static char * const LOWER_BOUND_ERROR_MSG = "The lower bound must be non-nil to be inclusive";
-static char * const UPPER_BOUND_ERROR_MSG = "The upper bound must be non-nil to be inclusive";
-static char * const BOUND_ORDER_ERROR_MSG = "The lower bound must less than the upper bound";
-
 /*****************************************************************************
  *
  * Range
@@ -22,7 +16,7 @@ typedef struct Range
     bool include_upper : 1;
 } Range;
 
-static char *range_to_s(Range *range, char *field, float boost)
+static char *range_to_s(Range *range, const char *field, float boost)
 {
     char *buffer, *b;
     size_t flen, llen, ulen;
@@ -80,7 +74,7 @@ static void range_destroy(Range *range)
     free(range);
 }
 
-static u32 range_hash(Range *filt)
+static f_u32 range_hash(Range *filt)
 {
     return filt->include_lower | (filt->include_upper << 1)
         | ((str_hash(filt->field)
@@ -102,8 +96,9 @@ static int range_eq(Range *filt, Range *o)
             && (filt->include_upper == o->include_upper));
 }
 
-Range *range_new(const char *field, char *lower_term, char *upper_term,
-                 bool include_lower, bool include_upper)
+Range *range_new(const char *field, const char *lower_term,
+                 const char *upper_term, bool include_lower,
+                 bool include_upper)
 {
     Range *range; 
 
@@ -115,11 +110,11 @@ Range *range_new(const char *field, char *lower_term, char *upper_term,
         RAISE(ARG_ERROR, "Lower bound must be non-nil to be inclusive. That "
               "is, if you specify :include_lower => true when you create a "
               "range you must include a :lower_term");
+    }
     if (include_upper && !upper_term) {
         RAISE(ARG_ERROR, "Upper bound must be non-nil to be inclusive. That "
               "is, if you specify :include_upper => true when you create a "
               "range you must include a :upper_term");
-        RAISE(ARG_ERROR, UPPER_BOUND_ERROR_MSG);
     }
     if (upper_term && lower_term && (strcmp(upper_term, lower_term) < 0)) {
         RAISE(ARG_ERROR, "Upper bound must be greater than lower bound. "
@@ -149,16 +144,17 @@ typedef struct RangeFilter
 } RangeFilter;
 
 #define RF(filt) ((RangeFilter *)(filt))
+
 static void rfilt_destroy(Filter *filt)
 {
-    range_destroy(filt->data);
+    range_destroy(RF(filt)->range);
     filt_destroy(filt);
 }
 
 static char *rfilt_to_s(Filter *filt)
 {
     char *rstr = range_to_s(RF(filt)->range, "", 1.0);
-    char *rfstr = epstrdup("RangeFilter< %s >", strlen(rstr), rstr);
+    char *rfstr = strfmt("RangeFilter< %s >", rstr);
     free(rstr);
     return rfstr;
 }
@@ -181,19 +177,18 @@ static BitVector *rfilt_get_bv(Filter *filt, IndexReader *ir)
         TermDocEnum *tde;
         bool check_lower;
 
-        te = ir->terms_from(ir, field_num, term_from);
+        te = ir->terms_from(ir, field_num, lower_term);
         if (te->curr_term == NULL) {
             return bv;
         }
 
-        check_lower = !range->include_lower;
+        check_lower = !(range->include_lower || (lower_term == EMPTY_STRING));
 
         tde = ir->term_docs(ir);
         term = te->curr_term;
         do {
             if (!check_lower
-                || (lower_term == EMPTY_STRING)
-                || (strcmp(tb->text, lower_term) > 0)) {
+                || (strcmp(term, lower_term) > 0)) {
                 check_lower = false;
                 if (upper_term) {
                     int compare = strcmp(upper_term, term);
@@ -208,7 +203,7 @@ static BitVector *rfilt_get_bv(Filter *filt, IndexReader *ir)
                 }
                 /* we have a good term, find the docs */
                 /* text is already pointing to term buffer text */
-                tde->seek(tde, field_num, term);
+                tde->seek_te(tde, te);
                 while (tde->next(tde)) {
                     bv_set(bv, tde->doc_num(tde));
                     /* printf("Setting %d\n", tde->doc_num(tde)); */
@@ -233,8 +228,9 @@ static int rfilt_eq(Filter *filt, Filter *o)
     return range_eq(RF(filt)->range, RF(o)->range);
 }
 
-static Filter *rfilt_new(const char *field, char *lower_term, char *upper_term,
-                         bool include_lower, bool include_upper)
+Filter *rfilt_new(const char *field,
+                  const char *lower_term, const char *upper_term,
+                  bool include_lower, bool include_upper)
 {
     Filter *filt = filt_new(RangeFilter);
     RF(filt)->range =  range_new(field, lower_term, upper_term,
@@ -261,7 +257,7 @@ typedef struct RangeQuery
     Range *range;
 } RangeQuery;
 
-static char *rq_to_s(Query *self, char *field)
+static char *rq_to_s(Query *self, const char *field)
 {
     return range_to_s(RQ(self)->range, field, self->boost);
 }
@@ -277,10 +273,11 @@ static Query *rq_rewrite(Query *self, IndexReader *ir)
     Range *r = RQ(self)->range;
     Filter *filter = rfilt_new(r->field, r->lower_term, r->upper_term,
                                r->include_lower, r->include_upper);
+    (void)ir;
     return csq_new(filter);
 }
 
-static uint rq_hash(Query *self)
+static f_u32 rq_hash(Query *self)
 {
     return range_hash(RQ(self)->range);
 }
@@ -290,18 +287,20 @@ static int rq_eq(Query *self, Query *o)
     return range_eq(RQ(self)->range, RQ(o)->range);
 }
 
-Query *rq_new_less(const char *field, char *upper_term, bool include_upper)
+Query *rq_new_less(const char *field, const char *upper_term,
+                   bool include_upper)
 {
     return rq_new(field, NULL, upper_term, false, include_upper);
 }
 
-Query *rq_new_more(const char *field, char *lower_term, bool include_lower)
+Query *rq_new_more(const char *field, const char *lower_term,
+                   bool include_lower)
 {
     return rq_new(field, lower_term, NULL, include_lower, false);
 }
 
-Query *rq_new(const char *field, char *lower_term, char *upper_term,
-              bool include_lower, bool include_upper)
+Query *rq_new(const char *field, const char *lower_term,
+              const char *upper_term, bool include_lower, bool include_upper)
 {
     Query *self     = q_new(RangeQuery);
 

@@ -18,7 +18,7 @@ static bool str_lt(void *p1, void *p2)
 static void test_pq(tst_case * tc, void *data)
 {
     char *tmp;
-    PriorityQueue *pq = pq_new(4, &str_lt, &free);
+    PriorityQueue *pq = pq_new(4, (lt_ft)&str_lt, &free);
     (void)data; /* suppress unused argument warning */
 
     Aiequal(0, pq->size);
@@ -68,7 +68,7 @@ static void test_pq_clear(tst_case * tc, void *data)
     char word1[10] = "word1";
     char word2[10] = "word2";
     char word3[10] = "word3";
-    PriorityQueue *pq = pq_new(3, &str_lt, &pq_free_mock);
+    PriorityQueue *pq = pq_new(3, (lt_ft)&str_lt, &pq_free_mock);
     (void)data; /* suppress unused argument warning */
 
     pq_push(pq, word1);
@@ -96,7 +96,7 @@ static void test_pq_insert_overflow(tst_case * tc, void *data)
     char word4[10] = "word4";
     char word5[10] = "word5";
     char word6[10] = "word6";
-    PriorityQueue *pq = pq_new(3, &str_lt, &pq_free_mock);
+    PriorityQueue *pq = pq_new(3, (lt_ft)&str_lt, &pq_free_mock);
     (void)data; /* suppress unused argument warning */
 
     Aiequal(PQ_ADDED, pq_insert(pq, word2));
@@ -129,7 +129,7 @@ static void stress_pq(tst_case * tc, void *data)
 {
     int i;
     char buf[100], *prev, *curr;
-    PriorityQueue *pq = pq_new(PQ_STRESS_SIZE, &str_lt, &free);
+    PriorityQueue *pq = pq_new(PQ_STRESS_SIZE, (lt_ft)&str_lt, &free);
     (void)data; /* suppress unused argument warning */
 
     for (i = 0; i < PQ_STRESS_SIZE; i++) {

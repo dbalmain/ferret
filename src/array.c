@@ -50,7 +50,7 @@ void ary_set_i(void ***ary, int index, void *value)
     (*ary)[index] = value;
 }
 
-void *ary_get(void **ary, int index)
+void *ary_get_i(void **ary, int index)
 {
     if (index < 0) {
         index += ary_sz(ary);
@@ -70,7 +70,7 @@ void ary_push_i(void ***ary, void *value)
     (*ary)[size] = value;
 }
 
-void *ary_pop(void **ary)
+void *ary_pop_i(void **ary)
 {
     void *val = ary[--ary_sz(ary)];
     ary[ary_sz(ary)] = NULL;
@@ -85,7 +85,7 @@ void ary_unshift_i(void ***ary, void *value)
     (*ary)[0] = value;
 }
 
-void *ary_shift(void **ary)
+void *ary_shift_i(void **ary)
 {
     void *val = ary[0];
     int size = --ary_sz(ary);
@@ -94,7 +94,7 @@ void *ary_shift(void **ary)
     return val;
 }
 
-void *ary_remove(void **ary, int index)
+void *ary_remove_i(void **ary, int index)
 {
     if (index >= 0 && index < ary_sz(ary)) {
         void *val = ary[index];
@@ -108,12 +108,12 @@ void *ary_remove(void **ary, int index)
     }
 }
 
-void ary_delete(void **ary, int index, void (*free_elem)(void *p))
+void ary_delete_i(void **ary, int index, void (*free_elem)(void *p))
 {
     free_elem(ary_remove(ary, index));
 }
 
-void ary_destroy(void **ary, void (*free_elem)(void *p))
+void ary_destroy_i(void **ary, void (*free_elem)(void *p))
 {
     int i;
     for (i = ary_sz(ary) - 1; i >= 0; i--) {

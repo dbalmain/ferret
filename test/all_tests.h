@@ -25,6 +25,7 @@ extern tst_suite *ts_term_vectors(tst_suite *suite);
 extern tst_suite *ts_similarity(tst_suite *suite);
 extern tst_suite *ts_index(tst_suite *suite);
 extern tst_suite *ts_search(tst_suite *suite);
+extern tst_suite *ts_q_fuzzy(tst_suite *suite);
 
 const struct test_list
 {
@@ -51,7 +52,8 @@ const struct test_list
     {ts_term_vectors},
     {ts_similarity},
     {ts_index},
-    {ts_search}
+    {ts_search},
+    {ts_q_fuzzy}
 };
 
 #endif

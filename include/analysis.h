@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "hash.h"
+#include <wchar.h>
 
 /****************************************************************************
  *
@@ -19,12 +20,14 @@ typedef struct Token
     int pos_inc;
 } Token;
 
-Token *tk_new();
-void tk_destroy(void *p);
-Token *tk_set(Token *tk, char *text, int tlen, int start, int end, int pos_inc);
-Token *tk_set_no_len(Token *tk, char *text, int start, int end, int pos_inc);
-int tk_eq(Token *tk1, Token *tk2);
-int tk_cmp(Token *tk1, Token *tk2);
+extern Token *tk_new();
+extern void tk_destroy(void *p);
+extern Token *tk_set(Token *tk, char *text, int tlen, int start, int end,
+                     int pos_inc);
+extern Token *tk_set_no_len(Token *tk, char *text, int start, int end,
+                            int pos_inc);
+extern int tk_eq(Token *tk1, Token *tk2);
+extern int tk_cmp(Token *tk1, Token *tk2);
 
 /****************************************************************************
  *
@@ -36,33 +39,76 @@ int tk_cmp(Token *tk1, Token *tk2);
 typedef struct TokenStream TokenStream;
 struct TokenStream
 {
-    void *data;
-    char *text;
-    char *t;                    /* ptr used to scan text */
-    Token *token;
-    Token *(*next)(TokenStream *ts);
+    char        *text;
+    char        *t;             /* ptr used to scan text */
+    Token       *(*next)(TokenStream *ts);
     TokenStream *(*reset)(TokenStream *ts, char *text);
-    void (*clone_i)(TokenStream *orig_ts, TokenStream *new_ts);
-    void (*destroy_i)(TokenStream *ts);
-    TokenStream *sub_ts;        /* used by filters */
-    int ref_cnt;
+    TokenStream *(*clone_i)(TokenStream *ts);
+    void         (*destroy_i)(TokenStream *ts);
+    int          ref_cnt;
 };
 
+typedef struct CachedTokenStream
+{
+    TokenStream super;
+    Token       token;
+} CachedTokenStream;
+
+typedef struct MultiByteTokenStream
+{
+    CachedTokenStream super;
+    mbstate_t         state;
+} MultiByteTokenStream;
+
+typedef struct StandardTokenizer
+{
+    CachedTokenStream super;
+    bool        (*advance_to_start)(TokenStream *ts);
+    bool        (*is_tok_char)(char *c);
+    int         (*get_alpha)(TokenStream *ts, char *token);
+    int         (*get_apostrophe)(char *input);
+} StandardTokenizer;
+
+typedef struct TokenFilter
+{
+    TokenStream super;
+    TokenStream *sub_ts;
+} TokenFilter;
+
+extern TokenStream *filter_clone_size(TokenStream *ts, size_t size);
+#define tf_new(type, sub) tf_new_i(sizeof(type), sub)
+extern TokenStream *tf_new_i(size_t size, TokenStream *sub_ts);
+
+typedef struct StopFilter 
+{
+    TokenFilter super;
+    HashTable  *words;
+} StopFilter;
+
+typedef struct StemFilter
+{
+    TokenFilter        super;
+    struct sb_stemmer  *stemmer;
+    char               *algorithm;
+    char               *charenc;
+} StemFilter;
+
 #define ts_next(mts) mts->next(mts)
+#define ts_clone(mts) mts->clone_i(mts)
 
-void ts_deref(void *p);
+extern void ts_deref(TokenStream *ts);
 
-TokenStream *whitespace_tokenizer_new();
-TokenStream *mb_whitespace_tokenizer_new(bool lowercase);
+extern TokenStream *whitespace_tokenizer_new();
+extern TokenStream *mb_whitespace_tokenizer_new(bool lowercase);
 
-TokenStream *letter_tokenizer_new();
-TokenStream *mb_letter_tokenizer_new(bool lowercase);
+extern TokenStream *letter_tokenizer_new();
+extern TokenStream *mb_letter_tokenizer_new(bool lowercase);
 
-TokenStream *standard_tokenizer_new();
-TokenStream *mb_standard_tokenizer_new();
+extern TokenStream *standard_tokenizer_new();
+extern TokenStream *mb_standard_tokenizer_new();
 
-TokenStream *lowercase_filter_new(TokenStream *ts);
-TokenStream *mb_lowercase_filter_new(TokenStream *ts);
+extern TokenStream *lowercase_filter_new(TokenStream *ts);
+extern TokenStream *mb_lowercase_filter_new(TokenStream *ts);
 
 extern const char *ENGLISH_STOP_WORDS[];
 extern const char *FULL_ENGLISH_STOP_WORDS[];
@@ -79,14 +125,13 @@ extern const char *FULL_DANISH_STOP_WORDS[];
 extern const char *FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FULL_FINNISH_STOP_WORDS[];
 
-TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
-                                            const char **words, int len);
-TokenStream *stop_filter_new_with_words(TokenStream *ts,
-                                        const char **words);
-TokenStream *stop_filter_new(TokenStream *ts);
-TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
-                             const char *charenc);
-TokenStream *ts_clone(TokenStream *orig_ts);
+extern TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
+                                                   const char **words, int len);
+extern TokenStream *stop_filter_new_with_words(TokenStream *ts,
+                                               const char **words);
+extern TokenStream *stop_filter_new(TokenStream *ts);
+extern TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
+                                    const char *charenc);
 
 /****************************************************************************
  *
@@ -96,48 +141,48 @@ TokenStream *ts_clone(TokenStream *orig_ts);
 
 typedef struct Analyzer
 {
-    void *data;
     TokenStream *current_ts;
     TokenStream *(*get_ts)(struct Analyzer *a, char *field, char *text);
     void (*destroy_i)(struct Analyzer *a);
     int ref_cnt;
 } Analyzer;
 
-void a_deref(void *p);
+extern void a_deref(Analyzer *a);
 
 #define a_get_ts(ma, field, text) ma->get_ts(ma, field, text)
 
-Analyzer *analyzer_new(void *data, TokenStream *ts,
-                       void (*destroy)(Analyzer *a),
-                       TokenStream *(*get_ts)(Analyzer *a,
-                                              char *field,
-                                              char *text));
-void a_standard_destroy(Analyzer *a);
-Analyzer *whitespace_analyzer_new(bool lowercase);
-Analyzer *mb_whitespace_analyzer_new(bool lowercase);
+extern Analyzer *analyzer_new(TokenStream *ts,
+                              void (*destroy)(Analyzer *a),
+                              TokenStream *(*get_ts)(Analyzer *a,
+                                                     char *field,
+                                                     char *text));
+extern void a_standard_destroy(Analyzer *a);
+extern Analyzer *whitespace_analyzer_new(bool lowercase);
+extern Analyzer *mb_whitespace_analyzer_new(bool lowercase);
 
-Analyzer *letter_analyzer_new(bool lowercase);
-Analyzer *mb_letter_analyzer_new(bool lowercase);
+extern Analyzer *letter_analyzer_new(bool lowercase);
+extern Analyzer *mb_letter_analyzer_new(bool lowercase);
 
-Analyzer *standard_analyzer_new(bool lowercase);
-Analyzer *mb_standard_analyzer_new(bool lowercase);
+extern Analyzer *standard_analyzer_new(bool lowercase);
+extern Analyzer *mb_standard_analyzer_new(bool lowercase);
 
-Analyzer *standard_analyzer_new_with_words(const char **words,
-                                           bool lowercase);
-Analyzer *standard_analyzer_new_with_words_len(const char **words, int len,
-                                               bool lowercase);
-Analyzer *mb_standard_analyzer_new_with_words(const char **words,
-                                              bool lowercase);
-Analyzer *mb_standard_analyzer_new_with_words_len(const char **words,
+extern Analyzer *standard_analyzer_new_with_words(const char **words,
+                                                  bool lowercase);
+extern Analyzer *standard_analyzer_new_with_words_len(const char **words, int len,
+                                                      bool lowercase);
+extern Analyzer *mb_standard_analyzer_new_with_words(const char **words,
+                                                     bool lowercase);
+extern Analyzer *mb_standard_analyzer_new_with_words_len(const char **words,
                                                   int len, bool lowercase);
 
 typedef struct PerFieldAnalyzer
 {
-    HashTable *dict;
-    Analyzer *def;
+    Analyzer    super;
+    HashTable  *dict;
+    Analyzer   *default_a;
 } PerFieldAnalyzer;
 
-Analyzer *per_field_analyzer_new(Analyzer *a);
-void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer);
+extern Analyzer *per_field_analyzer_new(Analyzer *a);
+extern void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer);
 
 #endif

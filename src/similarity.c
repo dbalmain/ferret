@@ -1,13 +1,14 @@
 #include "similarity.h"
+#include "search.h"
+#include "array.h"
 #include "helper.h"
 #include <math.h>
 #include <stdlib.h>
 
-
-float simdef_length_norm(Similarity *s, int field_num, int num_terms)
+float simdef_length_norm(Similarity *s, const char *field, int num_terms)
 {
     (void)s;
-    (void)field_num;
+    (void)field;
     return (float)(1.0 / sqrt(num_terms));
 }
 
@@ -29,20 +30,24 @@ float simdef_sloppy_freq(struct Similarity *s, int distance)
     return (float)(1.0 / (double)(distance + 1));
 }
 
-float simdef_idf_term(struct Similarity *s, int field_num, char *term,
+float simdef_idf_term(struct Similarity *s, const char *field, char *term,
                       Searcher *searcher)
 {
-    return s->idf(s, searcher->doc_freq(searcher, field_num, term),
+    return s->idf(s, searcher->doc_freq(searcher, field, term),
                   searcher->max_doc(searcher));
 }
 
-float simdef_idf_phrase(struct Similarity *s, int field_num, char **terms,
-                        int tcnt, Searcher *searcher)
+float simdef_idf_phrase(struct Similarity *s, const char *field,
+                        PhrasePosition *positions,
+                        int pp_cnt, Searcher *searcher)
 {
     float idf = 0.0;
-    int i;
-    for (i = 0; i < tcnt; i++) {
-        idf += s->idf_term(s, field_num, terms[i], searcher);
+    int i, j;
+    for (i = 0; i < pp_cnt; i++) {
+        char **terms = positions[i].terms;
+        for (j = ary_size(terms) - 1; j >= 0; j--) {
+            idf += sim_idf_term(s, field, terms[j], searcher);
+        }
     }
     return idf;
 }
@@ -83,6 +88,8 @@ static Similarity default_similarity = {
     &simdef_query_norm,
     &simdef_tf,
     &simdef_sloppy_freq,
+    &simdef_idf_term,
+    &simdef_idf_phrase,
     &simdef_idf,
     &simdef_coord,
     &simdef_decode_norm,

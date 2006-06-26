@@ -23,13 +23,29 @@ typedef struct Explanation
     struct Explanation **details;
 } Explanation;
  
-extern Explanation *expl_new(float value, char *description);
-extern void expl_destoy(Explanation *expl);
+extern Explanation *expl_new(float value, const char *description, ...);
+extern void expl_destroy(Explanation *expl);
 extern Explanation *expl_add_detail(Explanation *expl, Explanation *detail);
 extern char *expl_to_s_depth(Explanation *expl, int depth);
 extern char *expl_to_html(Explanation *expl);
 
 #define expl_to_s(expl) expl_to_s_depth(expl, 0)
+
+/****************************************************************************
+ *
+ * Term
+ *
+ ****************************************************************************/
+
+typedef struct Term {
+    char *field;
+    char *text;
+} Term;
+
+extern Term *term_new(const char *field, const char *text);
+extern void term_destroy(Term *self);
+extern int term_eq(const void *t1, const void *t2);
+extern f_u32 term_hash(const void *t);
 
 /***************************************************************************
  *
@@ -56,7 +72,7 @@ typedef struct TopDocs
     Hit **hits;
 } TopDocs;
 
-extern TopDocs *td_create(int total_hits, int size, Hit **hits);
+extern TopDocs *td_new(int total_hits, int size, Hit **hits);
 extern void td_destroy(TopDocs *td);
 extern char *td_to_s(TopDocs *td);
 
@@ -72,16 +88,16 @@ typedef struct Filter
     HashTable *cache;
     BitVector *(*get_bv)(struct Filter *self, IndexReader *ir);
     char      *(*to_s)(struct Filter *self);
-    uint       (*hash)(struct Filter *self);
+    f_u32      (*hash)(struct Filter *self);
     int        (*eq)(struct Filter *self, struct Filter *o);
     void       (*destroy)(struct Filter *self);
 } Filter;
 
 #define filt_new(type) filt_create(sizeof(type), #type)
-extern Filter *filt_create(size_t size, char *name);
+extern Filter *filt_create(size_t size, const char *name);
 extern BitVector *filt_get_bv(Filter *filt, IndexReader *ir);
 extern void filt_destroy(Filter *filt);
-extern uint filt_hash(Filter *filt);
+extern f_u32 filt_hash(Filter *filt);
 extern int filt_eq(Filter *filt, Filter *o);
 
 /***************************************************************************
@@ -90,9 +106,9 @@ extern int filt_eq(Filter *filt, Filter *o);
  *
  ***************************************************************************/
 
-extern Filter *rfilt_create(const char *field,
-                            char *lower_term,   char *upper_term,
-                            bool include_lower, bool include_upper);
+extern Filter *rfilt_new(const char *field,
+                         const char *lower_term, const char *upper_term,
+                         bool include_lower, bool include_upper);
 
 /***************************************************************************
  *
@@ -100,7 +116,7 @@ extern Filter *rfilt_create(const char *field,
  *
  ***************************************************************************/
 
-extern Filter *qfilt_create(Query *query);
+extern Filter *qfilt_new(Query *query);
 
 /***************************************************************************
  *
@@ -142,6 +158,7 @@ extern void w_normalize(Weight *self, float normalization_factor);
 
 enum QUERY_TYPE {
     TERM_QUERY,
+    MULTI_TERM_QUERY,
     BOOLEAN_QUERY,
     PHRASE_QUERY,
     MULTI_PHRASE_QUERY,
@@ -167,8 +184,8 @@ struct Query
     Query      *(*rewrite)(Query *self, IndexReader *ir);
     void        (*extract_terms)(Query *self, HashSet *terms);
     Similarity *(*get_similarity)(Query *self, Searcher *searcher);
-    char       *(*to_s)(Query *self, char *field);
-    uint        (*hash)(Query *self);
+    char       *(*to_s)(Query *self, const char *field);
+    f_u32       (*hash)(Query *self);
     int         (*eq)(Query *self, Query *o);
     void        (*destroy_i)(Query *self);
     Weight     *(*create_weight_i)(Query *self, Searcher *searcher);
@@ -184,7 +201,7 @@ extern Weight *q_create_weight_unsup(Query *self, Searcher *searcher);
 extern void q_deref(Query *self);
 extern Weight *q_weight(Query *self, Searcher *searcher);
 extern Query *q_combine(Query **queries, int q_cnt);
-extern uint q_hash(Query *self);
+extern f_u32 q_hash(Query *self);
 extern int q_eq(Query *self, Query *o);
 extern Query *q_create(size_t size);
 #define q_new(type) q_create(sizeof(type))
@@ -200,7 +217,7 @@ typedef struct TermQuery
     char *term;
 } TermQuery;
 
-Query *tq_new(char *field, char *term);
+Query *tq_new(const char *field, const char *term);
 
 /***************************************************************************
  * BooleanQuery
@@ -224,7 +241,7 @@ typedef struct BooleanClause {
     bool is_required : 1;
 } BooleanClause;
 
-extern BooleanClause *bc_create(Query *query, unsigned int occur);
+extern BooleanClause *bc_new(Query *query, unsigned int occur);
 extern void bc_deref(BooleanClause *self);
 extern void bc_set_occur(BooleanClause *self, unsigned int occur);
 
@@ -236,17 +253,17 @@ extern void bc_set_occur(BooleanClause *self, unsigned int occur);
 
 typedef struct BooleanQuery
 {
-    Query super;
-    bool coord_disabled;
-    int max_clause_cnt;
-    int clause_cnt;
-    int clause_capa;
-    float original_boost;
+    Query           super;
+    bool            coord_disabled;
+    int             max_clause_cnt;
+    int             clause_cnt;
+    int             clause_capa;
+    float           original_boost;
     BooleanClause **clauses;
-    Similarity *similarity;
+    Similarity     *similarity;
 } BooleanQuery;
 
-extern Query *bq_create(bool coord_disabled);
+extern Query *bq_new(bool coord_disabled);
 extern BooleanClause *bq_add_query(Query *self, Query *sub_query,
                                    unsigned int occur);
 extern BooleanClause *bq_add_clause(Query *self, BooleanClause *bc);
@@ -258,38 +275,128 @@ extern BooleanClause *bq_add_clause(Query *self, BooleanClause *bc);
 #define PHQ_INIT_CAPA 4
 typedef struct PhraseQuery
 {
-    Query   super;
-    int     slop;
-    char   *field
-    char  **terms;
-    int     t_cnt;
-    int     t_capa;
-    int    *positions;
-    char   *field;
+    Query           super;
+    int             slop;
+    char           *field;
+    PhrasePosition *positions;
+    int             pos_cnt;
+    int             pos_capa;
 } PhraseQuery;
 
-extern Query *phq_create(char *field);
-extern void phq_add_term(Query *self, char *term, int pos_inc);
+extern Query *phq_new(const char *field);
+extern void phq_add_term(Query *self, const char *term, int pos_inc);
+extern void phq_append_multi_term(Query *self, const char *term);
 
 /***************************************************************************
- * MultiPhraseQuery
+ * MultiTermQuery
  ***************************************************************************/
 
-typedef struct MultiPhraseQuery
+#define MULTI_TERM_QUERY_MAX_TERMS 1024
+typedef struct MultiTermQuery
+{
+    Query           super;
+    char           *field;
+    PriorityQueue  *boosted_terms;
+} MultiTermQuery;
+
+extern Query *multi_tq_new_capa(const char *field, int max_terms);
+extern Query *multi_tq_new(const char *field);
+extern void multi_tq_add_term(Query *self, const char *term);
+extern void multi_tq_add_term_boost(Query *self, const char *term, float boost);
+
+/***************************************************************************
+ * PrefixQuery
+ ***************************************************************************/
+
+typedef struct PrefixQuery
+{
+    Query super;
+    char *field;
+    char *prefix;
+} PrefixQuery;
+
+extern Query *prefixq_new(const char *field, const char *prefix);
+
+/***************************************************************************
+ * WildCardQuery
+ ***************************************************************************/
+
+#define WILD_CHAR '?'
+#define WILD_STRING '*'
+
+typedef struct WildCardQuery
+{
+    Query super;
+    char *field;
+    char *pattern;
+} WildCardQuery;
+
+
+extern Query *wcq_new(const char *field, const char *pattern);
+extern bool wc_match(const char *pattern, const char *text);
+
+/***************************************************************************
+ * FuzzyQuery
+ ***************************************************************************/
+
+#define DEF_MIN_SIM 0.5
+#define DEF_PRE_LEN 0
+#define TYPICAL_LONGEST_WORD 20
+
+typedef struct FuzzyQuery
+{
+    Query       super;
+    char       *field;
+    char       *term;
+    const char *text; /* term text after prefix */
+    int         text_len;
+    int         pre_len;
+    float       min_sim;
+    float       scale_factor;
+    int         max_distances[TYPICAL_LONGEST_WORD];
+    int        *da;
+} FuzzyQuery;
+
+extern Query *fuzq_new(const char *term, const char *field);
+extern Query *fuzq_new_mp(const char *term, const char *field,
+                          float min_sim, int pre_len);
+
+/***************************************************************************
+ * ConstantScoreQuery
+ ***************************************************************************/
+
+typedef struct ConstantScoreQuery
 {
     Query   super;
-    int     slop;
-    char   *field
-    char ***terms;
-    int    *positions;
-    int    *pt_cnt;
-    int     t_cnt;
-    int     t_capa;
-    char   *field;
-} MultiPhraseQuery;
+    Filter *filter;
+} ConstantScoreQuery;
 
-extern Query *mphq_create(char *field);
-extern void mphq_add_terms(Query *self, char **ts, int t_cnt, int pos_inc);
+extern Query *csq_new(Filter *filter);
+
+/***************************************************************************
+ * FilteredQueryQuery
+ ***************************************************************************/
+
+extern Query *fq_new(Query *query, Filter *filter);
+
+/***************************************************************************
+ * MatchAllQuery
+ ***************************************************************************/
+
+extern Query *maq_new();
+
+/***************************************************************************
+ * RangeQuery
+ ***************************************************************************/
+
+extern Query *rq_new(const char *field, const char *lower_term,
+                     const char *upper_term, bool include_lower,
+                     bool include_upper);
+extern Query *rq_new_less(const char *field, const char *upper_term,
+                          bool include_upper);
+extern Query *rq_new_more(const char *field, const char *lower_term,
+                          bool include_lower);
+
 
 /***************************************************************************
  *
@@ -318,7 +425,142 @@ struct Scorer
 extern void scorer_destroy_i(Scorer *self);
 extern Scorer *scorer_create(size_t size, Similarity *similarity);
 extern bool scorer_less_than(void *p1, void *p2);
-extern bool scorer_doc_less_than(void *p1, void *p2);
+extern bool scorer_doc_less_than(const Scorer *s1, const Scorer *s2);
 extern int scorer_doc_cmp(const void *p1, const void *p2);
+
+/***************************************************************************
+ *
+ * Sort
+ *
+ ***************************************************************************/
+
+enum SORT_TYPE {
+    SORT_TYPE_SCORE,
+    SORT_TYPE_DOC,
+    SORT_TYPE_INTEGER,
+    SORT_TYPE_FLOAT,
+    SORT_TYPE_STRING,
+    SORT_TYPE_AUTO
+};
+
+/***************************************************************************
+ * SortField
+ ***************************************************************************/
+
+typedef struct SortField
+{
+    mutex_t mutex;
+    char *field;
+    int   type;
+    bool  reverse : 1;
+    void *index;
+    int   (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
+    void *(*create_index)(int size);
+    void  (*destroy_index)(void *p);
+    void  (*handle_term)(void *index, TermDocEnum *tde, char *text);
+} SortField;
+
+extern SortField *sort_field_new(char *field, int type, bool reverse);
+extern SortField *sort_field_score_new(bool reverse);
+extern SortField *sort_field_doc_new(bool reverse);
+extern SortField *sort_field_int_new(char *field, bool reverse);
+extern SortField *sort_field_float_new(char *field, bool reverse);
+extern SortField *sort_field_string_new(char *field, bool reverse);
+extern SortField *sort_field_auto_new(char *field, bool reverse);
+extern void sort_field_destroy(void *p);
+extern char *sort_field_to_s(SortField *self);
+
+extern const SortField SORT_FIELD_SCORE; 
+extern const SortField SORT_FIELD_SCORE_REV; 
+extern const SortField SORT_FIELD_DOC; 
+extern const SortField SORT_FIELD_DOC_REV; 
+
+/***************************************************************************
+ * Sort
+ ***************************************************************************/
+
+typedef struct Sort
+{
+    SortField **sort_fields;
+    int sf_cnt;
+    int sf_capa;
+    bool destroy_all : 1;
+} Sort;
+
+extern Sort *sort_new();
+extern void sort_destroy(void *p);
+extern void sort_add_sort_field(Sort *self, SortField *sf);
+extern void sort_clear(Sort *self);
+extern char *sort_to_s(Sort *self);
+
+/***************************************************************************
+ * FieldSortedHitQueue
+ ***************************************************************************/
+
+extern Hit *fshq_pq_pop(PriorityQueue *pq);
+extern void fshq_pq_down(PriorityQueue *pq);
+extern void fshq_pq_insert(PriorityQueue *pq, Hit *hit);
+extern void fshq_pq_destroy(PriorityQueue *pq);
+extern PriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
+
+/***************************************************************************
+ *
+ * Searcher
+ *
+ ***************************************************************************/
+
+struct Searcher {
+    Similarity     *similarity;
+    int          (*doc_freq)(Searcher *self, const char *field,
+                             const char *term);
+    Document    *(*get_doc)(Searcher *self, int doc_num);
+    int          (*max_doc)(Searcher *self);
+    Weight      *(*create_weight)(Searcher *self, Query *query);
+    TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
+                           int num_docs, Filter *filter, Sort *sort);
+    void         (*search_each)(Searcher *self, Query *query, Filter *filter,
+                                void (*fn)(Searcher *, int, float, void *),
+                                void *arg);
+    void         (*search_each_w)(Searcher *self, Weight *weight,
+                                  Filter *filter,
+                                  void (*fn)(Searcher *, int, float, void *),
+                                  void *arg);
+    Query       *(*rewrite)(Searcher *self, Query *original);
+    Explanation *(*explain)(Searcher *self, Query *query, int doc_num);
+    Explanation *(*explain_w)(Searcher *self, Weight *weight, int doc_num);
+    Similarity  *(*get_similarity)(Searcher *self);
+    void         (*close)(Searcher *self);
+};
+
+#define searcher_doc_freq(s, t)  s->doc_freq(s, t)
+#define searcher_get_doc(s, dn)  s->get_doc(s, dn)
+#define searcher_max_doc(s)  s->max_doc(s)
+#define searcher_search(s, q, fd, nd, filt, sort)\
+    s->search(s, q, fd, nd, filt, sort)
+#define searcher_search_each(s, q, filt, fn, arg)\
+    s->search_each(s, q, filt, fn, arg)
+#define searcher_search_each_w(s, q, filt, fn, arg)\
+    s->search_each_w(s, q, filt, fn, arg)
+#define searcher_rewrite(s, q)  s->rewrite(s, q)
+#define searcher_explain(s, q, dn)  s->explain(s, q, dn)
+#define searcher_explain_w(s, q, dn)  s->explain_w(s, q, dn)
+#define searcher_get_similarity(s)  s->get_similarity(s)
+#define searcher_close(s)  s->close(s)
+
+/***************************************************************************
+ *
+ * StdSearcher
+ *
+ ***************************************************************************/
+
+extern Searcher *stdsea_new(IndexReader *ir);
+
+/***************************************************************************
+ *
+ * MultiSearcher
+ *
+ ***************************************************************************/
+
+extern Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs);
 
 #endif

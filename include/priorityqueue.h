@@ -3,7 +3,7 @@
 
 #include "global.h"
 
-typedef bool(*lt_ft) (void *p1, void *p2);
+typedef bool(*lt_ft) (const void *p1, const void *p2);
 
 /**
  * A PriorityQueue has a fixed size and contains a less_than function and a
@@ -31,8 +31,8 @@ typedef struct PriorityQueue
  * @return a newly allocated PriorityQueue
  */
 extern PriorityQueue *pq_new(int capa,
-                                bool (*less_than)(void *p1, void *p2),
-                                void (*free_elem)(void *elem));
+                             bool (*less_than)(const void *p1, const void *p2),
+                             void (*free_elem)(void *elem));
 
 /**
  * Clear all elements from the PriorityQueue and reset the size to 0. When

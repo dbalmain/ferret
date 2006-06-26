@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "array.h"
 
 #define BQ(query) ((BooleanQuery *)(query))
 #define BW(weight) ((BooleanWeight *)(weight))
@@ -22,7 +23,7 @@ typedef struct Coordinator
     int num_matches;
 } Coordinator;
 
-Coordinator *coord_create(Similarity *similarity)
+Coordinator *coord_new(Similarity *similarity)
 {
     Coordinator *self = ALLOC_AND_ZERO(Coordinator);
     self->similarity = similarity;
@@ -46,7 +47,7 @@ Coordinator *coord_init(Coordinator *self)
  * DisjunctionSumScorer
  ***************************************************************************/
 
-#define DSSC(scorer) ((DisjunctionSumScorer *)(scorer))
+#define DSSc(scorer) ((DisjunctionSumScorer *)(scorer))
 
 typedef struct DisjunctionSumScorer
 {
@@ -62,7 +63,7 @@ typedef struct DisjunctionSumScorer
 
 static float dssc_score(Scorer *self)
 {
-    return DSSC(self)->cum_score;
+    return DSSc(self)->cum_score;
 }
 
 static void dssc_init_scorer_queue(DisjunctionSumScorer *dssc)
@@ -70,7 +71,7 @@ static void dssc_init_scorer_queue(DisjunctionSumScorer *dssc)
     int i;
     Scorer *sub_scorer;
     PriorityQueue *pq = dssc->scorer_queue
-        = pq_new(dssc->ss_cnt, &scorer_doc_less_than, NULL);
+        = pq_new(dssc->ss_cnt, (lt_ft)&scorer_doc_less_than, NULL);
 
     for (i = 0; i < dssc->ss_cnt; i++) {
         sub_scorer = dssc->sub_scorers[i];
@@ -82,12 +83,12 @@ static void dssc_init_scorer_queue(DisjunctionSumScorer *dssc)
 
 static bool dssc_advance_after_current(Scorer *self)
 {
-    DisjunctionSumScorer *dssc = DSSC(self);
+    DisjunctionSumScorer *dssc = DSSc(self);
     PriorityQueue *scorer_queue = dssc->scorer_queue;
 
     /* repeat until minimum number of matches is found */
     while (true) {
-        Score *top = (Scorer *)pq_top(scorer_queue);
+        Scorer *top = (Scorer *)pq_top(scorer_queue);
         self->doc = top->doc;
         dssc->cum_score = top->score(top);
         dssc->num_matches = 1;
@@ -131,11 +132,11 @@ static bool dssc_advance_after_current(Scorer *self)
 
 static bool dssc_next(Scorer *self)
 {
-    if (DSSC(self)->scorer_queue == NULL) {
-        dssc_init_scorer_queue(DSSC(self));
+    if (DSSc(self)->scorer_queue == NULL) {
+        dssc_init_scorer_queue(DSSc(self));
     }
 
-    if (DSSC(self)->scorer_queue->size < DSSC(self)->min_num_matches) {
+    if (DSSc(self)->scorer_queue->size < DSSc(self)->min_num_matches) {
         return false;
     }
     else {
@@ -145,7 +146,7 @@ static bool dssc_next(Scorer *self)
 
 static bool dssc_skip_to(Scorer *self, int doc_num)
 {
-    DisjunctionSumScorer *dssc = DSSC(self);
+    DisjunctionSumScorer *dssc = DSSc(self);
     PriorityQueue *scorer_queue = dssc->scorer_queue;
 
     if (scorer_queue == NULL) {
@@ -179,10 +180,10 @@ static bool dssc_skip_to(Scorer *self, int doc_num)
 static Explanation *dssc_explain(Scorer *self, int doc_num)
 {
     int i;
-    DisjunctionSumScorer *dssc = DSSC(self);
+    DisjunctionSumScorer *dssc = DSSc(self);
     Scorer *sub_scorer;
     Explanation *e
-        = expl_create(0.0, strfmt("At least %d of:", dssc->min_num_matches));
+        = expl_new(0.0, "At least %d of:", dssc->min_num_matches);
     for (i = 0; i < dssc->ss_cnt; i++) {
         sub_scorer = dssc->sub_scorers[i];
         expl_add_detail(e, sub_scorer->explain(sub_scorer, doc_num));
@@ -192,7 +193,7 @@ static Explanation *dssc_explain(Scorer *self, int doc_num)
 
 static void dssc_destroy(Scorer *self)
 {
-    DisjunctionSumScorer *dssc = DSSC(self);
+    DisjunctionSumScorer *dssc = DSSc(self);
     int i;
     for (i = 0; i < dssc->ss_cnt; i++) {
         dssc->sub_scorers[i]->destroy(dssc->sub_scorers[i]);
@@ -203,19 +204,19 @@ static void dssc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-static Scorer *disjunction_sum_scorer_create(Scorer **sub_scorers, int ss_cnt,
-                                             int min_num_matches) 
+static Scorer *disjunction_sum_scorer_new(Scorer **sub_scorers, int ss_cnt,
+                                          int min_num_matches) 
 {
     Scorer *self = scorer_new(DisjunctionSumScorer, NULL);
-    DSSC(self)->ss_cnt = ss_cnt;
+    DSSc(self)->ss_cnt = ss_cnt;
 
     /* The document number of the current match */
     self->doc = -1;
-    DSSC(self)->cum_score = -1.0;
+    DSSc(self)->cum_score = -1.0;
 
     /* The number of subscorers that provide the current match. */
-    DSSC(self)->num_matches = -1;
-    DSSC(self)->coordinator = NULL;
+    DSSc(self)->num_matches = -1;
+    DSSc(self)->coordinator = NULL;
 
 #ifdef DEBUG
     if (min_num_matches <= 0) {
@@ -228,9 +229,9 @@ static Scorer *disjunction_sum_scorer_create(Scorer **sub_scorers, int ss_cnt,
     }
 #endif
 
-    DSSC(self)->min_num_matches = min_num_matches;
-    DSSC(self)->sub_scorers     = sub_scorers;
-    DSSC(self)->scorer_queue    = NULL;
+    DSSc(self)->min_num_matches = min_num_matches;
+    DSSc(self)->sub_scorers     = sub_scorers;
+    DSSc(self)->scorer_queue    = NULL;
 
     self->score   = &dssc_score;
     self->next    = &dssc_next;
@@ -243,18 +244,17 @@ static Scorer *disjunction_sum_scorer_create(Scorer **sub_scorers, int ss_cnt,
 
 static float cdssc_score(Scorer *self)
 {
-    DisjunctionSumScorer *dssc = (DisjunctionSumScorer *)self->data;
-    dssc->coordinator->num_matches += dssc->num_matches;
-    return dssc->cum_score;
+    DSSc(self)->coordinator->num_matches += DSSc(self)->num_matches;
+    return DSSc(self)->cum_score;
 }
 
-static Scorer *counting_disjunction_sum_scorer_create(
+static Scorer *counting_disjunction_sum_scorer_new(
     Coordinator *coordinator, Scorer **sub_scorers, int ss_cnt,
     int min_num_matches)
 {
-    Scorer *self = disjunction_sum_scorer_create(sub_scorers, ss_cnt,
-                                                 min_num_matches);
-    DSSC(self)->coordinator = coordinator;
+    Scorer *self = disjunction_sum_scorer_new(sub_scorers, ss_cnt,
+                                              min_num_matches);
+    DSSc(self)->coordinator = coordinator;
     self->score = &cdssc_score;
     return self;
 }
@@ -263,7 +263,7 @@ static Scorer *counting_disjunction_sum_scorer_create(
  * ConjunctionScorer
  ***************************************************************************/
 
-#define CSC(scorer) ((ConjunctionScorer *)(scorer))
+#define CSc(scorer) ((ConjunctionScorer *)(scorer))
 
 typedef struct ConjunctionScorer
 {
@@ -282,12 +282,11 @@ static void csc_sort_scorers(ConjunctionScorer *csc)
 {
     qsort(csc->sub_scorers, csc->ss_cnt, sizeof(Scorer *), &scorer_doc_cmp);
     csc->first_idx = 0;
-    csc->last = csc->ss_cnt - 1;
 }
 
 static void csc_init(Scorer *self, bool init_scorers)
 {
-    ConjunctionScorer *csc = CSC(self);
+    ConjunctionScorer *csc = CSc(self);
     const int sub_sc_cnt = csc->ss_cnt;
 
     /* compute coord factor */
@@ -315,7 +314,7 @@ static void csc_init(Scorer *self, bool init_scorers)
 
 static float csc_score(Scorer *self)
 {
-    ConjunctionScorer *csc = CSC(self);
+    ConjunctionScorer *csc = CSc(self);
     const int sub_sc_cnt = csc->ss_cnt;
     float score = 0.0; /* sum scores */
     int i;
@@ -329,11 +328,11 @@ static float csc_score(Scorer *self)
 
 static bool csc_do_next(Scorer *self)
 {
-    ConjunctionScorer *csc = (ConjunctionScorer *)self->data;
+    ConjunctionScorer *csc = CSc(self);
     const int sub_sc_cnt = csc->ss_cnt;
     int first_idx = csc->first_idx;
     Scorer *first_sc = csc->sub_scorers[first_idx];
-    Scorer *last_sc = csc->sub_scorers[(first_idx - 1) % sub_sc_cnt];
+    Scorer *last_sc = csc->sub_scorers[PREV_NUM(first_idx, sub_sc_cnt)];
 
     /* skip to doc with all clauses */
     while (csc->more && (first_sc->doc < last_sc->doc)) {
@@ -341,7 +340,7 @@ static bool csc_do_next(Scorer *self)
         csc->more = first_sc->skip_to(first_sc, last_sc->doc);
         /* move first to last */
         last_sc = first_sc;
-        first_idx = (first_idx + 1) % sub_sc_cnt;
+        first_idx = NEXT_NUM(first_idx, sub_sc_cnt);
         first_sc = csc->sub_scorers[first_idx];
     }
     self->doc = first_sc->doc;
@@ -351,13 +350,13 @@ static bool csc_do_next(Scorer *self)
 
 static bool csc_next(Scorer *self)
 {
-    ConjunctionScorer *csc = CSC(self);
+    ConjunctionScorer *csc = CSc(self);
     if (csc->first_time) {
         csc_init(self, true);
     }
     else if (csc->more) {
         /* trigger further scanning */
-        const int last_idx = (csc->first_idx - 1) % csc->ss_cnt;
+        const int last_idx = PREV_NUM(csc->first_idx, csc->ss_cnt);
         Scorer *sub_scorer = csc->sub_scorers[last_idx];
         csc->more = sub_scorer->next(sub_scorer);
     }
@@ -366,7 +365,7 @@ static bool csc_next(Scorer *self)
 
 static bool csc_skip_to(Scorer *self, int doc_num)
 {
-    ConjunctionScorer *csc = CSC(self);
+    ConjunctionScorer *csc = CSc(self);
     const int sub_sc_cnt = csc->ss_cnt;
     int i;
     bool more = csc->more;
@@ -395,7 +394,7 @@ static bool csc_skip_to(Scorer *self, int doc_num)
 
 static void csc_destroy(Scorer *self)
 {
-    ConjunctionScorer *csc = CSC(self);
+    ConjunctionScorer *csc = CSc(self);
     const int sub_sc_cnt = csc->ss_cnt;
     int i;
     for (i = 0; i < sub_sc_cnt; i++) {
@@ -405,13 +404,13 @@ static void csc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-static Scorer *conjunction_scorer_create(Similarity *similarity) 
+static Scorer *conjunction_scorer_new(Similarity *similarity) 
 {
     Scorer *self = scorer_new(ConjunctionScorer, similarity);
 
-    CSC(self)->first_time   = true;
-    CSC(self)->more         = true;
-    CSC(self)->coordinator  = NULL;
+    CSc(self)->first_time   = true;
+    CSc(self)->more         = true;
+    CSc(self)->coordinator  = NULL;
 
     self->score             = &csc_score;
     self->next              = &csc_next;
@@ -423,7 +422,7 @@ static Scorer *conjunction_scorer_create(Similarity *similarity)
 
 static float ccsc_score(Scorer *self)
 {
-    ConjunctionScorer *csc = (ConjunctionScorer *)self->data;
+    ConjunctionScorer *csc = CSc(self);
 
     int doc;
     if ((doc = self->doc) > csc->last_scored_doc) {
@@ -434,16 +433,16 @@ static float ccsc_score(Scorer *self)
     return csc_score(self);
 }
 
-static Scorer *counting_conjunction_sum_scorer_create(
+static Scorer *counting_conjunction_sum_scorer_new(
     Coordinator *coordinator, Scorer **sub_scorers, int ss_cnt)
 {
-    Scorer *self = conjunction_scorer_create(sim_create_default());
-    ConjunctionScorer *csc = (ConjunctionScorer *)self->data;
+    Scorer *self = conjunction_scorer_new(sim_create_default());
+    ConjunctionScorer *csc = CSc(self);
     csc->coordinator = coordinator;
     csc->last_scored_doc = -1;
     csc->sub_scorers = ALLOC_N(Scorer *, ss_cnt);
     memcpy(csc->sub_scorers, sub_scorers, sizeof(Scorer *) * ss_cnt);
-    csc->ss_capa = csc->ss_cnt = ss_cnt;
+    csc->ss_cnt = ss_cnt;
 
     self->score = &ccsc_score;
 
@@ -454,25 +453,25 @@ static Scorer *counting_conjunction_sum_scorer_create(
  * SingleMatchScorer
  ***************************************************************************/
 
-#define SMSC(scorer) ((SingleMatchScorer *)(scorer))
+#define SMSc(scorer) ((SingleMatchScorer *)(scorer))
 
 typedef struct SingleMatchScorer
 {
-    Scorer super;
-    Coordinator *coordinator;
-    Scorer *scorer;
+    Scorer          super;
+    Coordinator    *coordinator;
+    Scorer         *scorer;
 } SingleMatchScorer;
 
 
 static float smsc_score(Scorer *self)
 {
-    SMSC(self)->coordinator->num_matches++;
-    return smsc->scorer->score(SMSC(self)->scorer);
+    SMSc(self)->coordinator->num_matches++;
+    return SMSc(self)->scorer->score(SMSc(self)->scorer);
 }
 
 static bool smsc_next(Scorer *self)
 {
-    Scorer *scorer = SMSC(self)->scorer;
+    Scorer *scorer = SMSc(self)->scorer;
     if (scorer->next(scorer)) {
         self->doc = scorer->doc;
         return true;
@@ -482,7 +481,7 @@ static bool smsc_next(Scorer *self)
 
 static bool smsc_skip_to(Scorer *self, int doc_num)
 {
-    Scorer *scorer = SMSC(self)->scorer;
+    Scorer *scorer = SMSc(self)->scorer;
     if (scorer->skip_to(scorer, doc_num)) {
         self->doc = scorer->doc;
         return true;
@@ -492,23 +491,23 @@ static bool smsc_skip_to(Scorer *self, int doc_num)
 
 static Explanation *smsc_explain(Scorer *self, int doc_num)
 {
-    Scorer *scorer = SMSC(self)->scorer;
+    Scorer *scorer = SMSc(self)->scorer;
     return scorer->explain(scorer, doc_num);
 }
 
 static void smsc_destroy(Scorer *self)
 {
-    Scorer *scorer = SMSC(self)->scorer;
+    Scorer *scorer = SMSc(self)->scorer;
     scorer->destroy(scorer);
     scorer_destroy_i(self);
 }
 
-static Scorer *single_match_scorer_create(Coordinator *coordinator,
-                                          Scorer *scorer)
+static Scorer *single_match_scorer_new(Coordinator *coordinator,
+                                       Scorer *scorer)
 {
     Scorer *self = scorer_new(SingleMatchScorer, scorer->similarity);
-    SMSC(self)->coordinator = coordinator;
-    SMSC(self)->scorer      = scorer;
+    SMSc(self)->coordinator = coordinator;
+    SMSc(self)->scorer      = scorer;
 
     self->score             = &smsc_score;
     self->next              = &smsc_next;
@@ -522,18 +521,19 @@ static Scorer *single_match_scorer_create(Coordinator *coordinator,
  * ReqOptSumScorer
  ***************************************************************************/
 
-#define ROSSC(scorer) ((ReqOptSumScorer *)(scorer))
+#define ROSSc(scorer) ((ReqOptSumScorer *)(scorer))
 
 typedef struct ReqOptSumScorer
 {
+    Scorer  super;
     Scorer *req_scorer;
     Scorer *opt_scorer;
-    bool first_time_opt;
+    bool    first_time_opt;
 } ReqOptSumScorer;
 
 static float rossc_score(Scorer *self)
 {
-    ReqOptSumScorer *rossc = ROSSC(self);
+    ReqOptSumScorer *rossc = ROSSc(self);
     Scorer *req_scorer = rossc->req_scorer;
     Scorer *opt_scorer = rossc->opt_scorer;
     int cur_doc = req_scorer->doc;
@@ -562,7 +562,7 @@ static float rossc_score(Scorer *self)
 
 static bool rossc_next(Scorer *self)
 {
-    Scorer *req_scorer = ROSSC(self)->req_scorer;
+    Scorer *req_scorer = ROSSc(self)->req_scorer;
     if (req_scorer->next(req_scorer)) {
         self->doc = req_scorer->doc;
         return true;
@@ -572,7 +572,7 @@ static bool rossc_next(Scorer *self)
 
 static bool rossc_skip_to(Scorer *self, int doc_num)
 {
-    Scorer *req_scorer = ROSSC(self)->req_scorer;
+    Scorer *req_scorer = ROSSc(self)->req_scorer;
     if (req_scorer->skip_to(req_scorer, doc_num)) {
         self->doc = req_scorer->doc;
         return true;
@@ -582,10 +582,10 @@ static bool rossc_skip_to(Scorer *self, int doc_num)
 
 Explanation *rossc_explain(Scorer *self, int doc_num)
 {
-    Scorer *req_scorer = ROSSC(self)->req_scorer;
-    Scorer *opt_scorer = ROSSC(self)->opt_scorer;
+    Scorer *req_scorer = ROSSc(self)->req_scorer;
+    Scorer *opt_scorer = ROSSc(self)->opt_scorer;
 
-    Explanation *e = expl_create(self->score(self), estrdup("required, optional:"));
+    Explanation *e = expl_new(self->score(self),"required, optional:");
     expl_add_detail(e, req_scorer->explain(req_scorer, doc_num));
     expl_add_detail(e, opt_scorer->explain(opt_scorer, doc_num));
     return e;
@@ -593,7 +593,7 @@ Explanation *rossc_explain(Scorer *self, int doc_num)
 
 void rossc_destroy(Scorer *self)
 {
-    ReqOptSumScorer *rossc = ROSSC(self);
+    ReqOptSumScorer *rossc = ROSSc(self);
     if (rossc->req_scorer) {
         rossc->req_scorer->destroy(rossc->req_scorer);
     }
@@ -604,13 +604,13 @@ void rossc_destroy(Scorer *self)
 }
 
 
-Scorer *req_opt_sum_scorer_create(Scorer *req_scorer, Scorer *opt_scorer)
+Scorer *req_opt_sum_scorer_new(Scorer *req_scorer, Scorer *opt_scorer)
 {
     Scorer *self = scorer_new(ReqOptSumScorer, NULL);
 
-    ROSSC(self)->req_scorer     = req_scorer;
-    ROSSC(self)->opt_scorer     = opt_scorer;
-    ROSSC(self)->first_time_opt = true;
+    ROSSc(self)->req_scorer     = req_scorer;
+    ROSSc(self)->opt_scorer     = opt_scorer;
+    ROSSc(self)->first_time_opt = true;
 
     self->score   = &rossc_score;
     self->next    = &rossc_next;
@@ -625,7 +625,7 @@ Scorer *req_opt_sum_scorer_create(Scorer *req_scorer, Scorer *opt_scorer)
  * ReqExclScorer
  ***************************************************************************/
 
-#define RXSC(scorer) ((ReqExclScorer *)(scorer))
+#define RXSc(scorer) ((ReqExclScorer *)(scorer))
 typedef struct ReqExclScorer
 {
     Scorer  super;
@@ -636,9 +636,8 @@ typedef struct ReqExclScorer
 
 static bool rxsc_to_non_excluded(Scorer *self)
 {
-    ReqExclScorer *rxsc = RXSC(self);
-    Scorer *req_scorer = RXSC(self)->req_scorer;
-    Scorer *excl_scorer = RXSC(self)->excl_scorer;
+    Scorer *req_scorer = RXSc(self)->req_scorer;
+    Scorer *excl_scorer = RXSc(self)->excl_scorer;
     int excl_doc = excl_scorer->doc, req_doc;
 
     do { 
@@ -652,7 +651,7 @@ static bool rxsc_to_non_excluded(Scorer *self)
         else if (req_doc > excl_doc) {
             if (! excl_scorer->skip_to(excl_scorer, req_doc)) {
                 /* emptied, no more exclusions */
-                SCORER_NULLIFY(RXSC(self)->excl_scorer);
+                SCORER_NULLIFY(RXSc(self)->excl_scorer);
                 self->doc = req_doc;
                 return true;
             }
@@ -664,13 +663,13 @@ static bool rxsc_to_non_excluded(Scorer *self)
         }
     } while (req_scorer->next(req_scorer));
     /* emptied, nothing left */
-    SCORER_NULLIFY(RXSC(self)->req_scorer);
+    SCORER_NULLIFY(RXSc(self)->req_scorer);
     return false;
 }
 
 static bool rxsc_next(Scorer *self)
 {
-    ReqExclScorer *rxsc = RXSC(self);
+    ReqExclScorer *rxsc = RXSc(self);
     Scorer *req_scorer = rxsc->req_scorer;
     Scorer *excl_scorer = rxsc->excl_scorer;
 
@@ -700,7 +699,7 @@ static bool rxsc_next(Scorer *self)
 
 static bool rxsc_skip_to(Scorer *self, int doc_num)
 {
-    ReqExclScorer *rxsc = (ReqExclScorer *)self->data;
+    ReqExclScorer *rxsc = RXSc(self);
     Scorer *req_scorer = rxsc->req_scorer;
     Scorer *excl_scorer = rxsc->excl_scorer;
 
@@ -731,22 +730,23 @@ static bool rxsc_skip_to(Scorer *self, int doc_num)
 
 static float rxsc_score(Scorer *self)
 {
-    Scorer *req_scorer = RXSC(self)->req_scorer;
+    Scorer *req_scorer = RXSc(self)->req_scorer;
     return req_scorer->score(req_scorer);
 }
 
 static Explanation *rxsc_explain(Scorer *self, int doc_num)
 {
-    ReqExclScorer *rxsc = RXSC(self);
+    ReqExclScorer *rxsc = RXSc(self);
     Scorer *req_scorer = rxsc->req_scorer;
     Scorer *excl_scorer = rxsc->excl_scorer;
     Explanation *e;
 
-    if (excl_scorer->skip_to(excl_scorer, doc_num) && excl_scorer->doc == doc_num) {
-        e = expl_create(0.0, estrdup("excluded:"));
+    if (excl_scorer->skip_to(excl_scorer, doc_num)
+        && excl_scorer->doc == doc_num) {
+        e = expl_new(0.0, "excluded:");
     }
     else {
-        e = expl_create(0.0, estrdup("not excluded:"));
+        e = expl_new(0.0, "not excluded:");
         expl_add_detail(e, req_scorer->explain(req_scorer, doc_num));
     }
     return e;
@@ -754,7 +754,7 @@ static Explanation *rxsc_explain(Scorer *self, int doc_num)
 
 static void rxsc_destroy(Scorer *self)
 {
-    ReqExclScorer *rxsc = RXSC(self);
+    ReqExclScorer *rxsc = RXSc(self);
     if (rxsc->req_scorer) {
         rxsc->req_scorer->destroy(rxsc->req_scorer);
     }
@@ -764,12 +764,12 @@ static void rxsc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-Scorer *req_excl_scorer_create(Scorer *req_scorer, Scorer *excl_scorer)
+Scorer *req_excl_scorer_new(Scorer *req_scorer, Scorer *excl_scorer)
 {
-    Scorer *self            = scorer_create(ReqExclScorer, NULL);
-    RXSC(self)->req_scorer  = req_scorer;
-    RXSC(self)->excl_scorer = excl_scorer;
-    RXSC(self)->first_time  = true;
+    Scorer *self            = scorer_new(ReqExclScorer, NULL);
+    RXSc(self)->req_scorer  = req_scorer;
+    RXSc(self)->excl_scorer = excl_scorer;
+    RXSc(self)->first_time  = true;
 
     self->score             = &rxsc_score;
     self->next              = &rxsc_next;
@@ -786,27 +786,31 @@ Scorer *req_excl_scorer_create(Scorer *req_scorer, Scorer *excl_scorer)
 
 float nmsc_score(Scorer *self)
 {
+    (void)self;
     return 0.0;
 }
 
 bool nmsc_next(Scorer *self)
 {
+    (void)self;
     return false;
 }
 
 bool nmsc_skip_to(Scorer *self, int doc_num)
 {
+    (void)self; (void)doc_num;
     return false;
 }
 
 Explanation *nmsc_explain(Scorer *self, int doc_num)
 {
-    return expl_create(0.0, estrdup("No documents matched"));
+    (void)self; (void)doc_num;
+    return expl_new(0.0, "No documents matched");
 }
 
-Scorer *non_matching_scorer_create()
+Scorer *non_matching_scorer_new()
 {
-    Scorer *self    = scorer_create(Scorer, NULL);
+    Scorer *self    = scorer_new(Scorer, NULL);
     self->score     = &nmsc_score;
     self->next      = &nmsc_next;
     self->skip_to   = &nmsc_skip_to;
@@ -819,7 +823,7 @@ Scorer *non_matching_scorer_create()
  * BooleanScorer
  ***************************************************************************/
 
-#define BSC(scorer) ((BooleanScorer *)(scorer))
+#define BSc(scorer) ((BooleanScorer *)(scorer))
 typedef struct BooleanScorer
 {
     Scorer          super;
@@ -842,20 +846,20 @@ static Scorer *counting_sum_scorer_create3(BooleanScorer *bsc,
 {
     if (bsc->ps_cnt == 0) {
         /* no prohibited */
-        return req_opt_sum_scorer_create(req_scorer, opt_scorer);
+        return req_opt_sum_scorer_new(req_scorer, opt_scorer);
     }
     else if (bsc->ps_cnt == 1) {
         /* 1 prohibited */
-        return req_opt_sum_scorer_create(
-            req_excl_scorer_create(req_scorer, bsc->prohibited_scorers[0]),
+        return req_opt_sum_scorer_new(
+            req_excl_scorer_new(req_scorer, bsc->prohibited_scorers[0]),
             opt_scorer);
     }
     else {
         /* more prohibited */
-        return req_opt_sum_scorer_create(
-            req_excl_scorer_create(
+        return req_opt_sum_scorer_new(
+            req_excl_scorer_new(
                 req_scorer,
-                disjunction_sum_scorer_create(bsc->prohibited_scorers,
+                disjunction_sum_scorer_new(bsc->prohibited_scorers,
                                               bsc->ps_cnt, 1)),
             opt_scorer);
     }
@@ -871,30 +875,30 @@ static Scorer *counting_sum_scorer_create2(BooleanScorer *bsc,
             return req_scorer;
         }
         else if (bsc->ps_cnt == 1) {
-            return req_excl_scorer_create(req_scorer,
-                                          bsc->prohibited_scorers[0]);
+            return req_excl_scorer_new(req_scorer,
+                                       bsc->prohibited_scorers[0]);
         }
         else {
             /* no optional, more than 1 prohibited */
-            return req_excl_scorer_create(
+            return req_excl_scorer_new(
                 req_scorer,
-                disjunction_sum_scorer_create(bsc->prohibited_scorers,
-                                              bsc->ps_cnt, 1));
+                disjunction_sum_scorer_new(bsc->prohibited_scorers,
+                                           bsc->ps_cnt, 1));
         }
     }
     else if (os_cnt == 1) {
         return counting_sum_scorer_create3(
             bsc,
             req_scorer,
-            single_match_scorer_create(bsc->coordinator, optional_scorers[0]));
+            single_match_scorer_new(bsc->coordinator, optional_scorers[0]));
     }
     else {
         /* more optional */
         return counting_sum_scorer_create3(
             bsc,
             req_scorer,
-            counting_disjunction_sum_scorer_create(bsc->coordinator,
-                                                   optional_scorers, os_cnt, 1));
+            counting_disjunction_sum_scorer_new(bsc->coordinator,
+                                                optional_scorers, os_cnt, 1));
     }
 }
 
@@ -908,13 +912,13 @@ static Scorer *counting_sum_scorer_create(BooleanScorer *bsc)
                 bsc->prohibited_scorers[i]->destroy(
                     bsc->prohibited_scorers[i]);
             }
-            return non_matching_scorer_create();
+            return non_matching_scorer_new();
         }
         else if (bsc->os_cnt == 1) {
             /* the only optional scorer is required */
             return counting_sum_scorer_create2(
                 bsc,
-                single_match_scorer_create(bsc->coordinator,
+                single_match_scorer_new(bsc->coordinator,
                                            bsc->optional_scorers[0]),
                 NULL, 0); /* no optional scorers left */
         }
@@ -922,7 +926,7 @@ static Scorer *counting_sum_scorer_create(BooleanScorer *bsc)
             /* more than 1 optional_scorers, no required scorers */
             return counting_sum_scorer_create2(
                 bsc,
-                counting_disjunction_sum_scorer_create(bsc->coordinator,
+                counting_disjunction_sum_scorer_new(bsc->coordinator,
                                                        bsc->optional_scorers,
                                                        bsc->os_cnt, 1), 
                 NULL, 0); /* no optional scorers left */
@@ -932,15 +936,16 @@ static Scorer *counting_sum_scorer_create(BooleanScorer *bsc)
         /* 1 required */
         return counting_sum_scorer_create2(
             bsc,
-            single_match_scorer_create(bsc->coordinator, bsc->required_scorers[0]),
+            single_match_scorer_new(bsc->coordinator, bsc->required_scorers[0]),
             bsc->optional_scorers, bsc->os_cnt);
     }
     else {
         /* more required scorers */
         return counting_sum_scorer_create2(
             bsc,
-            counting_conjunction_sum_scorer_create(bsc->coordinator,
-                                                   bsc->required_scorers, bsc->rs_cnt),
+            counting_conjunction_sum_scorer_new(bsc->coordinator,
+                                                bsc->required_scorers,
+                                                bsc->rs_cnt),
             bsc->optional_scorers, bsc->os_cnt);
     }
 }
@@ -953,7 +958,7 @@ static Scorer *bsc_init_counting_sum_scorer(BooleanScorer *bsc)
 
 static void bsc_add_scorer(Scorer *self, Scorer *scorer, unsigned int occur) 
 {
-    BooleanScorer *bsc = (BooleanScorer *)self->data;
+    BooleanScorer *bsc = BSc(self);
     if (occur != BC_MUST_NOT) {
         bsc->coordinator->max_coord++;
     }
@@ -979,7 +984,7 @@ static void bsc_add_scorer(Scorer *self, Scorer *scorer, unsigned int occur)
 
 static float bsc_score(Scorer *self)
 {
-    BooleanScorer *bsc = (BooleanScorer *)self->data;
+    BooleanScorer *bsc = BSc(self);
     Coordinator *coord = bsc->coordinator;
     float sum;
     coord->num_matches = 0;
@@ -989,10 +994,10 @@ static float bsc_score(Scorer *self)
 
 static bool bsc_next(Scorer *self)
 {
-    Scorer *cnt_sum_sc = BSC(self)->counting_sum_scorer;
+    Scorer *cnt_sum_sc = BSc(self)->counting_sum_scorer;
 
     if (!cnt_sum_sc) {
-        cnt_sum_sc = bsc_init_counting_sum_scorer(BSC(self));
+        cnt_sum_sc = bsc_init_counting_sum_scorer(BSc(self));
     }
     if (cnt_sum_sc->next(cnt_sum_sc)) {
         self->doc = cnt_sum_sc->doc;
@@ -1005,10 +1010,10 @@ static bool bsc_next(Scorer *self)
 
 static bool bsc_skip_to(Scorer *self, int doc_num)
 {
-    Scorer *cnt_sum_sc = BSC(self)->counting_sum_scorer;
+    Scorer *cnt_sum_sc = BSc(self)->counting_sum_scorer;
 
-    if (!bsc->counting_sum_scorer) {
-        cnt_sum_sc = bsc_init_counting_sum_scorer(BSC(self));
+    if (!BSc(self)->counting_sum_scorer) {
+        cnt_sum_sc = bsc_init_counting_sum_scorer(BSc(self));
     }
     if (cnt_sum_sc->skip_to(cnt_sum_sc, doc_num)) {
         self->doc = cnt_sum_sc->doc;
@@ -1021,7 +1026,7 @@ static bool bsc_skip_to(Scorer *self, int doc_num)
 
 static void bsc_destroy(Scorer *self)
 {
-    BooleanScorer *bsc = BSC(self);
+    BooleanScorer *bsc = BSc(self);
     Coordinator *coord = bsc->coordinator;
 
     free(coord->coord_factors);
@@ -1052,14 +1057,15 @@ static void bsc_destroy(Scorer *self)
 
 static Explanation *bsc_explain(Scorer *self, int doc_num)
 {
-    return expl_create(0.0, estrdup("This explanation is not supported"));
+    (void)self; (void)doc_num;
+    return expl_new(0.0, "This explanation is not supported");
 }
 
-static Scorer *bsc_create(Similarity *similarity)
+static Scorer *bsc_new(Similarity *similarity)
 {
     Scorer *self = scorer_new(BooleanScorer, similarity);
-    BSC(self)->coordinator          = coord_create(similarity);
-    BSC(self)->counting_sum_scorer  = NULL;
+    BSc(self)->coordinator          = coord_new(similarity);
+    BSc(self)->counting_sum_scorer  = NULL;
 
     self->score     = &bsc_score;
     self->next      = &bsc_next;
@@ -1120,7 +1126,7 @@ static void bw_normalize(Weight *self, float normalization_factor)
 
 static Scorer *bw_scorer(Weight *self, IndexReader *ir)
 {
-    Scorer bsc = bsc_new(self->similarity);
+    Scorer *bsc = bsc_new(self->similarity);
     BooleanQuery *bq = BQ(self->query);
     int i;
 
@@ -1160,7 +1166,7 @@ void bw_destroy(Weight *self)
 Explanation *bw_explain(Weight *self, IndexReader *ir, int doc_num)
 {
     BooleanQuery *bq = BQ(self->query);
-    Explanation *sum_expl = expl_create(0.0, estrdup("sum of:"));
+    Explanation *sum_expl = expl_new(0.0, "sum of:");
     Explanation *explanation;
     int coord = 0;
     int max_coord = 0;
@@ -1182,45 +1188,44 @@ Explanation *bw_explain(Weight *self, IndexReader *ir, int doc_num)
                 coord++;
             }
             else {
-                expl_destoy(explanation);
-                expl_destoy(sum_expl);
-                return expl_create(0.0, estrdup("match prohibited"));
+                expl_destroy(explanation);
+                expl_destroy(sum_expl);
+                return expl_new(0.0, "match prohibited");
             }
         }
         else if (clause->is_required) {
-            expl_destoy(explanation);
-            expl_destoy(sum_expl);
-            return expl_create(0.0, estrdup("match required"));
+            expl_destroy(explanation);
+            expl_destroy(sum_expl);
+            return expl_new(0.0, "match required");
         }
         else {
-            expl_destoy(explanation);
+            expl_destroy(explanation);
         }
     }
     sum_expl->value = sum;
 
     if (coord == 1) {                /* only one clause matched */
-        explanation = sum_expl;        /* eliminate wrapper */
-        sum_expl->dcnt = 0;
+        explanation = sum_expl;      /* eliminate wrapper */
+        ary_size(sum_expl->details) = 0;
         sum_expl = sum_expl->details[0];
-        expl_destoy(explanation);
+        expl_destroy(explanation);
     }
 
     coord_factor = sim_coord(self->similarity, coord, max_coord);
 
     if (coord_factor == 1.0) {       /* coord is no-op */
-        return sum_expl;               /* eliminate wrapper */
+        return sum_expl;             /* eliminate wrapper */
     }
     else {
-        explanation = expl_create(sum * coord_factor, estrdup("product of:"));
+        explanation = expl_new(sum * coord_factor, "product of:");
         expl_add_detail(explanation, sum_expl);
-        expl_add_detail(explanation, expl_create(coord_factor, 
-                                                 strfmt("coord(%d/%d)",
-                                                        coord, max_coord)));
+        expl_add_detail(explanation, expl_new(coord_factor, "coord(%d/%d)",
+                                              coord, max_coord));
         return explanation;
     }
 }
 
-Weight *bw_create(Query *query, Searcher *searcher)
+Weight *bw_new(Query *query, Searcher *searcher)
 {
     int i;
     Weight *self = w_new(BooleanWeight, query);
@@ -1290,7 +1295,7 @@ int  bc_eq(BooleanClause *self, BooleanClause *o)
     return ((self->occur == o->occur) && q_eq(self->query, o->query)); 
 }
 
-BooleanClause *bc_create(Query *query, unsigned int occur)
+BooleanClause *bc_new(Query *query, unsigned int occur)
 {
     BooleanClause *self = ALLOC(BooleanClause);
     self->ref_cnt = 1;
@@ -1338,7 +1343,7 @@ Query *bq_rewrite(Query *self, IndexReader *ir)
     /* replace each clause's query with its rewritten query */
     for (i = 0; i < BQ(self)->clause_cnt; i++) {
         BooleanClause *clause = BQ(self)->clauses[i];
-        rq = clause->query->rewrite(clause->query, ir);
+        Query *rq = clause->query->rewrite(clause->query, ir);
         q_deref(clause->query);
         clause->query = rq;
     }
@@ -1356,7 +1361,7 @@ void bq_extract_terms(Query *self, HashSet *terms)
     }
 }
 
-char *bq_to_s(Query *self, char *field)
+char *bq_to_s(Query *self, const char *field)
 {
     int i;
     BooleanClause *clause;
@@ -1431,12 +1436,12 @@ static void bq_destroy(Query *self)
     if (BQ(self)->similarity) {
         BQ(self)->similarity->destroy(BQ(self)->similarity);
     }
-    free(BQ(self));
     q_destroy_i(self);
 }
 
 float bq_coord_disabled(Similarity *sim, int overlap, int max_overlap)
 {
+    (void)sim; (void)overlap; (void)max_overlap;
     return 1.0;
 }
 
@@ -1466,11 +1471,11 @@ static f_u32 bq_hash(Query *self)
 static int  bq_eq(Query *self, Query *o)
 {
     int i;
-    BooleanQuery *bq1 = (BooleanQuery *)self->data;
-    BooleanQuery *bq2 = (BooleanQuery *)o->data;
-    if ((bq1->coord_disabled != bq2->coord_disabled) ||
-        (bq1->max_clause_cnt != bq1->max_clause_cnt) ||
-        (bq1->clause_cnt != bq2->clause_cnt)) {
+    BooleanQuery *bq1 = BQ(self);
+    BooleanQuery *bq2 = BQ(o);
+    if ((bq1->coord_disabled != bq2->coord_disabled)
+        || (bq1->max_clause_cnt != bq1->max_clause_cnt)
+        || (bq1->clause_cnt != bq2->clause_cnt)) {
         return false;
     }
 
@@ -1482,7 +1487,7 @@ static int  bq_eq(Query *self, Query *o)
     return true;
 }
 
-Query *bq_create(bool coord_disabled)
+Query *bq_new(bool coord_disabled)
 {
     Query *self = q_new(BooleanQuery);
     BQ(self)->coord_disabled = coord_disabled;
@@ -1503,7 +1508,8 @@ Query *bq_create(bool coord_disabled)
     self->hash = &bq_hash;
     self->eq = &bq_eq;
     self->destroy_i = &bq_destroy;
-    self->create_weight_i = &bw_create;
+    self->create_weight_i = &bw_new;
+
     return self;
 }
 
@@ -1529,10 +1535,10 @@ BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
 
 BooleanClause *bq_add_query(Query *self, Query *sub_query, unsigned int occur)
 {
-    BooleanClause *bc = bc_create(sub_query, occur);
+    BooleanClause *bc = bc_new(sub_query, occur);
     bq_add_clause(self, bc);
     if (!self->destroy_all) {
-        ref(sub_query);
+        REF(sub_query);
         bc_deref(bc); /* bc would have been referenced unnecessarily */
     }
     return bc;

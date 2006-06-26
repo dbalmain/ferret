@@ -7,14 +7,14 @@
  *
  ***************************************************************************/
 
-static voi$ filt_destroy(Filter *filt)
+void filt_destroy(Filter *filt)
 {
     h_destroy(filt->cache);
     free(filt->name);
     free(filt);
 }
 
-static BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
+BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
 {
     CacheObject *co = h_get(filt->cache, ir);
 
@@ -35,17 +35,19 @@ static char *filt_to_s_i(Filter *filt)
     return estrdup(filt->name);
 }
 
-static f_u32 filt_hash_default(Filter *filt)
+f_u32 filt_hash_default(Filter *filt)
 {
+    (void)filt;
     return 0;
 }
 
-static int filt_eq_default(Filter *filt, Filter *o)
+int filt_eq_default(Filter *filt, Filter *o)
 {
+    (void)filt; (void)o;
     return false;
 }
 
-Filter *filt_create(size_t size, char *name)
+Filter *filt_create(size_t size, const char *name)
 {
     Filter *filt    = (Filter *)emalloc(size);
     filt->cache     = co_hash_create();
@@ -94,8 +96,8 @@ static char *qfilt_to_s(Filter *filt)
 
 static BitVector *qfilt_get_bv(Filter *filt, IndexReader *ir)
 {
-    BitVector *bv = bv_create_size(ir->max_doc(ir));
-    Searcher *sea = sea_create(ir);
+    BitVector *bv = bv_new_capa(ir->max_doc(ir));
+    Searcher *sea = stdsea_new(ir);
     Weight *weight = q_weight(QF(filt)->query, sea);
     Scorer *scorer = weight->scorer(weight, ir);
     if (scorer) {
@@ -121,7 +123,7 @@ static int qfilt_eq(Filter *filt, Filter *o)
 
 static void qfilt_destroy(Filter *filt)
 {
-    Query *query = (Query *)((QueryFilter *)filt->data)->query;
+    Query *query = QF(filt)->query;
     q_deref(query);
     filt_destroy(filt);
 }
