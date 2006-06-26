@@ -152,36 +152,6 @@ static char *fuzq_to_s(Query *self, const char *curr_field)
     return buffer;
 }
 
-typedef struct ScoredTerm {
-    char *term;
-    float score;
-} ScoredTerm;
-
-static bool scored_term_less_than(const ScoredTerm *st1,
-                                  const ScoredTerm *st2)
-{
-    if (st1->score == st2->score) {
-        return (strcmp(st1->term, st2->term) < 0);
-    }
-
-    return (st1->score < st2->score);
-}
-
-static void scored_term_destroy(ScoredTerm *self)
-{
-    free(FzQ(self)->term);
-    free(FzQ(self)->field);
-    free(self);
-}
-
-static ScoredTerm *scored_term_new(const char *term, float score)
-{
-    ScoredTerm *self = ALLOC(ScoredTerm);
-    self->term = estrdup(term);
-    self->score = score;
-    return self;
-}
-
 static Query *fuzq_rewrite(Query *self, IndexReader *ir)
 {
     Query *q;
@@ -198,17 +168,11 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
         q = tq_new(field, term);
     }
     else {
-        PriorityQueue *term_pq;
         TermEnum *te;
         char *prefix = NULL;
         int pre_len = fuzq->pre_len;
-        ScoredTerm *scored_term;
 
-        q = bq_new(true);
-
-        term_pq = pq_new(((BooleanQuery *)q)->max_clause_cnt,
-                         (lt_ft)&scored_term_less_than,
-                         (free_ft)&scored_term_destroy);
+        q = multi_tq_new_conf(fuzq->field, fuzq->max_terms, fuzq->min_sim);
 
         if (pre_len > 0) {
             prefix = ALLOC_N(char, pre_len + 1);
@@ -220,8 +184,6 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
             te = ir->terms(ir, field_num);
         }
 
-
-
         fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
         fuzq->text = term + pre_len;
         fuzq->text_len = (int)strlen(fuzq->text);
@@ -231,7 +193,8 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
         if (te) {
             const char *curr_term = te->curr_term;
             const char *curr_suffix = curr_term + pre_len;
-            float score = 0.0, min_score = fuzq->min_sim;
+            float score = 0.0;
+
 
             do { 
                 if ((prefix && strncmp(curr_term, prefix, pre_len) != 0)) {
@@ -242,27 +205,13 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
                 /*
                  printf("%s:%s:%f < %f\n", curr_term, term, score, min_score);
                  */
+                multi_tq_add_term_boost(q, curr_term, score);
 
-                if (score > min_score) {
-                    pq_insert(term_pq, scored_term_new(curr_term, score));
-                    if (pq_full(term_pq)) {
-                        min_score = ((ScoredTerm *)pq_top(term_pq))->score;
-                    }
-                }
             } while (te->next(te) != NULL);
 
             te->close(te);
         }
         free(prefix);
-
-        while ((scored_term = pq_pop(term_pq)) != NULL) {
-            Query *tq = tq_new(field, scored_term->term);   /* found match */
-            tq->boost = self->boost;                        /* set boost */
-            bq_add_query(q, tq, BC_SHOULD);                 /* add query */
-            free(scored_term->term);
-            free(scored_term);
-        }
-        pq_destroy(term_pq);
     }
 
     return q;
@@ -293,8 +242,8 @@ static int fuzq_eq(Query *self, Query *o)
         && (fq1->min_sim == fq2->min_sim);
 }
 
-Query *fuzq_new_mp(const char *field, const char *term,
-                   float min_sim, int pre_len)
+Query *fuzq_new_conf(const char *field, const char *term,
+                     float min_sim, int pre_len, int max_terms)
 {
     Query *self = q_new(FuzzyQuery);
 
@@ -302,6 +251,7 @@ Query *fuzq_new_mp(const char *field, const char *term,
     FzQ(self)->term       = estrdup(term);
     FzQ(self)->pre_len    = pre_len ? pre_len : DEF_PRE_LEN;
     FzQ(self)->min_sim    = min_sim ? min_sim : DEF_MIN_SIM;
+    FzQ(self)->max_terms  = max_terms ? max_terms : DEF_MAX_TERMS;
 
     self->type            = FUZZY_QUERY;
     self->to_s            = &fuzq_to_s;
@@ -316,5 +266,5 @@ Query *fuzq_new_mp(const char *field, const char *term,
 
 Query *fuzq_new(const char *field, const char *term)
 {
-    return fuzq_new_mp(term, field, 0.0f, 0);
+    return fuzq_new_conf(term, field, 0.0f, 0, 0);
 }

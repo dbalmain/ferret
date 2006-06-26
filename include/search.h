@@ -37,6 +37,9 @@ extern char *expl_to_html(Explanation *expl);
  *
  ****************************************************************************/
 
+#define term_set_new() \
+    hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy)
+
 typedef struct Term {
     char *field;
     char *text;
@@ -199,6 +202,7 @@ extern void q_destroy_i(Query *self);
 extern Weight *q_create_weight_unsup(Query *self, Searcher *searcher);
 
 extern void q_deref(Query *self);
+extern const char *q_get_query_name(int type);
 extern Weight *q_weight(Query *self, Searcher *searcher);
 extern Query *q_combine(Query **queries, int q_cnt);
 extern f_u32 q_hash(Query *self);
@@ -291,28 +295,33 @@ extern void phq_append_multi_term(Query *self, const char *term);
  * MultiTermQuery
  ***************************************************************************/
 
-#define MULTI_TERM_QUERY_MAX_TERMS 1024
+#define MULTI_TERM_QUERY_MAX_TERMS 256
 typedef struct MultiTermQuery
 {
     Query           super;
     char           *field;
     PriorityQueue  *boosted_terms;
+    float           min_boost;
 } MultiTermQuery;
 
-extern Query *multi_tq_new_capa(const char *field, int max_terms);
-extern Query *multi_tq_new(const char *field);
 extern void multi_tq_add_term(Query *self, const char *term);
 extern void multi_tq_add_term_boost(Query *self, const char *term, float boost);
+extern Query *multi_tq_new(const char *field);
+extern Query *multi_tq_new_conf(const char *field, int max_terms,
+                                          float min_boost);
 
 /***************************************************************************
  * PrefixQuery
  ***************************************************************************/
+
+#define PREFIX_QUERY_MAX_TERMS 256
 
 typedef struct PrefixQuery
 {
     Query super;
     char *field;
     char *prefix;
+    int   max_terms;
 } PrefixQuery;
 
 extern Query *prefixq_new(const char *field, const char *prefix);
@@ -323,12 +332,14 @@ extern Query *prefixq_new(const char *field, const char *prefix);
 
 #define WILD_CHAR '?'
 #define WILD_STRING '*'
+#define WILD_CARD_QUERY_MAX_TERMS 256
 
 typedef struct WildCardQuery
 {
     Query super;
     char *field;
     char *pattern;
+    int   max_terms;
 } WildCardQuery;
 
 
@@ -341,6 +352,7 @@ extern bool wc_match(const char *pattern, const char *text);
 
 #define DEF_MIN_SIM 0.5
 #define DEF_PRE_LEN 0
+#define DEF_MAX_TERMS 256
 #define TYPICAL_LONGEST_WORD 20
 
 typedef struct FuzzyQuery
@@ -355,11 +367,12 @@ typedef struct FuzzyQuery
     float       scale_factor;
     int         max_distances[TYPICAL_LONGEST_WORD];
     int        *da;
+    int         max_terms;
 } FuzzyQuery;
 
 extern Query *fuzq_new(const char *term, const char *field);
-extern Query *fuzq_new_mp(const char *term, const char *field,
-                          float min_sim, int pre_len);
+extern Query *fuzq_new_conf(const char *field, const char *term,
+                            float min_sim, int pre_len, int max_terms);
 
 /***************************************************************************
  * ConstantScoreQuery
@@ -374,8 +387,15 @@ typedef struct ConstantScoreQuery
 extern Query *csq_new(Filter *filter);
 
 /***************************************************************************
- * FilteredQueryQuery
+ * FilteredQuery
  ***************************************************************************/
+
+typedef struct FilteredQuery
+{
+    Query   super;
+    Query  *query;
+    Filter *filter;
+} FilteredQuery;
 
 extern Query *fq_new(Query *query, Filter *filter);
 
@@ -396,6 +416,108 @@ extern Query *rq_new_less(const char *field, const char *upper_term,
                           bool include_upper);
 extern Query *rq_new_more(const char *field, const char *lower_term,
                           bool include_lower);
+
+/***************************************************************************
+ * SpanQuery
+ ***************************************************************************/
+
+/* ** SpanEnum ** */
+typedef struct SpanEnum SpanEnum;
+struct SpanEnum
+{
+    Query *query;
+    bool (*next)(SpanEnum *self);
+    bool (*skip_to)(SpanEnum *self, int target_doc);
+    int  (*doc)(SpanEnum *self);
+    int  (*start)(SpanEnum *self);
+    int  (*end)(SpanEnum *self);
+    char *(*to_s)(SpanEnum *self);
+    void (*destroy)(SpanEnum *self);
+};
+
+/* ** SpanQuery ** */
+typedef struct SpanQuery
+{
+    Query     super;
+    char     *field;
+    SpanEnum *(*get_spans)(Query *self, IndexReader *ir);
+    HashSet  *(*get_terms)(Query *self);
+} SpanQuery;
+
+/***************************************************************************
+ * SpanTermQuery
+ ***************************************************************************/
+
+typedef struct SpanTermQuery
+{
+    SpanQuery super;
+    char     *term;
+} SpanTermQuery;
+extern Query *spantq_new(const char *field, const char *term);
+
+
+/***************************************************************************
+ * SpanFirstQuery
+ ***************************************************************************/
+
+typedef struct SpanFirstQuery
+{
+    SpanQuery   super;
+    int         end;
+    Query      *match;
+} SpanFirstQuery;
+
+extern Query *spanfq_new(Query *match, int end);
+extern Query *spanfq_new_nr(Query *match, int end);
+
+/***************************************************************************
+ * SpanOrQuery
+ ***************************************************************************/
+
+typedef struct SpanOrQuery
+{
+    SpanQuery   super;
+    Query     **clauses;
+    int         c_cnt;
+    int         c_capa;
+} SpanOrQuery;
+
+extern Query *spanoq_new();
+extern Query *spanoq_add_clause(Query *self, Query *clause);
+extern Query *spanoq_add_clause_nr(Query *self, Query *clause);
+
+/***************************************************************************
+ * SpanNearQuery
+ ***************************************************************************/
+
+typedef struct SpanNearQuery
+{
+    SpanQuery   super;
+    Query     **clauses;
+    int         c_cnt;
+    int         c_capa;
+    int         slop;
+    bool        in_order : 1;
+} SpanNearQuery;
+
+extern Query *spannq_new(int slop, bool in_order);
+extern Query *spannq_add_clause(Query *self, Query *clause);
+extern Query *spannq_add_clause_nr(Query *self, Query *clause);
+
+/***************************************************************************
+ * SpanNotQuery
+ ***************************************************************************/
+
+typedef struct SpanNotQuery
+{
+    SpanQuery   super;
+    Query      *inc;
+    Query      *exc;
+} SpanNotQuery;
+
+extern Query *spanxq_new(Query *inc, Query *exc);
+extern Query *spanxq_new_nr(Query *inc, Query *exc);
+
 
 
 /***************************************************************************

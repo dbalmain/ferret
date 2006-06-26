@@ -1,5 +1,5 @@
 #include "test.h"
-#include <search.h>
+#include "search.h"
 
 #define ARRAY_SIZE 20
 
@@ -19,7 +19,7 @@ extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
 static void do_prefix_test(tst_case *tc, Searcher *searcher, char *qstr,
                     char *expected_hits, int pre_len, float min_sim)
 {
-    Query *fq = fuzq_new_mp(field, qstr, min_sim, pre_len);
+    Query *fq = fuzq_new_conf(field, qstr, min_sim, pre_len, 10);
     check_hits(tc, searcher, fq, expected_hits, -1);
     q_deref(fq);
 }
@@ -53,7 +53,7 @@ static void test_fuzziness(tst_case *tc, void *data)
     ir = ir_open(store);
     sea = stdsea_new(ir);
 
-    q = fuzq_new_mp(field, "aaaaa", 0.0, 5);
+    q = fuzq_new_conf(field, "aaaaa", 0.0, 5, 10);
     q_deref(q);
 
     do_prefix_test(tc, sea, "aaaaaaaaaaaaaaaaaaaaaa", "8", 1, 0.0);
@@ -83,7 +83,7 @@ static void test_fuzziness(tst_case *tc, void *data)
     do_prefix_test(tc, sea, "ddddX", "6", 4, 0.0);
     do_prefix_test(tc, sea, "ddddX", "", 5, 0.0);
 
-    q = fuzq_new_mp("anotherfield", "ddddX", 0.0, 0);
+    q = fuzq_new_conf("anotherfield", "ddddX", 0.0, 10, 100);
     top_docs = searcher_search(sea, q, 0, 1, NULL, NULL);
     q_deref(q);
     Aiequal(0, top_docs->total_hits);
@@ -138,7 +138,7 @@ static void test_fuzziness_long(tst_case *tc, void *data)
     do_prefix_test(tc, sea, "stellent", "", 2, 0.0);
 
     /* "student" doesn't match anymore thanks to increased min-similarity: */
-    q = fuzq_new_mp(field, "student", (float)0.6, 0);
+    q = fuzq_new_conf(field, "student", (float)0.6, 0, 100);
     top_docs = searcher_search(sea, q, 0, 1, NULL, NULL);
     q_deref(q);
     Aiequal(0, top_docs->total_hits);
@@ -152,30 +152,30 @@ static void test_fuzzy_query_hash(tst_case *tc, void *data)
     Query *q1, *q2;
     (void)data;
 
-    q1 = fuzq_new_mp("A", "a", (float)0.4, 2);
-    q2 = fuzq_new_mp("A", "a", (float)0.4, 2);
+    q1 = fuzq_new_conf("A", "a", (float)0.4, 2, 100);
+    q2 = fuzq_new_conf("A", "a", (float)0.4, 2, 100);
 
     Assert(q_eq(q1, q1), "Test same queries are equal");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     q_deref(q2);
 
-    q2 = fuzq_new_mp("A", "a", (float)0.4, 0);
+    q2 = fuzq_new_conf("A", "a", (float)0.4, 0, 100);
     Assert(q_hash(q1) != q_hash(q2), "prelen differs");
     Assert(!q_eq(q1, q2), "prelen differs");
     q_deref(q2);
 
-    q2 = fuzq_new_mp("A", "a", (float)0.5, 2);
+    q2 = fuzq_new_conf("A", "a", (float)0.5, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "similarity differs");
     Assert(!q_eq(q1, q2), "similarity differs");
     q_deref(q2);
 
-    q2 = fuzq_new_mp("A", "b", (float)0.4, 2);
+    q2 = fuzq_new_conf("A", "b", (float)0.4, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "term differs");
     Assert(!q_eq(q1, q2), "term differs");
     q_deref(q2);
 
-    q2 = fuzq_new_mp("B", "a", (float)0.4, 2);
+    q2 = fuzq_new_conf("B", "a", (float)0.4, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "field differs");
     Assert(!q_eq(q1, q2), "field differs");
     q_deref(q2);

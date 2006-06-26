@@ -1,3 +1,4 @@
+#include <string.h>
 #include "priorityqueue.h"
 
 PriorityQueue *pq_new(int capa,
@@ -13,6 +14,16 @@ PriorityQueue *pq_new(int capa,
     /* need to set this yourself if you want to change it */
     pq->free_elem_i = free_elem ? free_elem : &dummy_free;
     return pq;
+}
+
+PriorityQueue *pq_clone(PriorityQueue *pq)
+{
+    PriorityQueue *new_pq = ALLOC(PriorityQueue);
+    memcpy(new_pq, pq, sizeof(PriorityQueue));
+    new_pq->heap = ALLOC_N(void *, (new_pq->capa + 1));
+    memcpy(new_pq->heap, pq->heap, sizeof(void *) * (new_pq->capa + 1));
+
+    return new_pq;
 }
 
 void pq_clear(PriorityQueue *pq)

@@ -81,7 +81,7 @@ int filt_eq(Filter *filt, Filter *o)
 #define QF(filt) ((QueryFilter *)(filt))
 typedef struct QueryFilter
 {
-    Filter f;
+    Filter super;
     Query *query;
 } QueryFilter;
 
@@ -128,9 +128,10 @@ static void qfilt_destroy(Filter *filt)
     filt_destroy(filt);
 }
 
-Filter *qfilt_create(Query *query)
+Filter *qfilt_new(Query *query)
 {
     Filter *filt = filt_new(QueryFilter);
+
     QF(filt)->query = query;
 
     filt->get_bv    = &qfilt_get_bv;

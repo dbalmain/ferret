@@ -139,7 +139,7 @@ Range *range_new(const char *field, const char *lower_term,
 
 typedef struct RangeFilter
 {
-    Filter f;
+    Filter super;
     Range *range;
 } RangeFilter;
 

@@ -94,7 +94,7 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
     }
     else {
         const int field_num = fis_get_field_num(ir->fis, field);
-        q = bq_new(true);
+        q = multi_tq_new_conf(field, WCQ(self)->max_terms, 0.0);
 
         if (field_num >= 0) {
             TermEnum *te;
@@ -122,9 +122,7 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
                     }
 
                     if (wc_match(pattern, pat_term)) {
-                        Query *tq = tq_new(field, term);/* found match */
-                        tq->boost = self->boost;        /* set boost */
-                        bq_add_query(q, tq, BC_SHOULD); /* add query */
+                        multi_tq_add_term(q, term);
                     }
                 } while (te->next(te) != NULL);
                 te->close(te);
@@ -159,6 +157,7 @@ Query *wcq_new(const char *field, const char *pattern)
 
     WCQ(self)->field        = estrdup(field);
     WCQ(self)->pattern      = estrdup(pattern);
+    WCQ(self)->max_terms    = WILD_CARD_QUERY_MAX_TERMS;
 
     self->type              = WILD_CARD_QUERY;
     self->rewrite           = &wcq_rewrite;

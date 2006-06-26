@@ -249,6 +249,9 @@ void check_to_s(tst_case *tc, Query *query, const char *field, char *q_str)
 {
     char *q_res = query->to_s(query, field);
     Asequal(q_str, q_res);
+    /*
+    printf("%s\n", q_res);
+    */
     free(q_res);
 }
 
@@ -728,7 +731,7 @@ static void test_multi_phrase_query_hash(tst_case *tc, void *data)
 static void test_multi_term_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
-    Query *mtq = multi_tq_new_capa(field, 100);
+    Query *mtq = multi_tq_new_conf(field, 4, 0.5);
     check_hits(tc, searcher, mtq, "", -1);
     check_to_s(tc, mtq, field, "<>");
     check_to_s(tc, mtq, "", "field:<>");
@@ -739,23 +742,30 @@ static void test_multi_term_query(tst_case *tc, void *data)
     check_to_s(tc, mtq, "", "field:<brown>");
 
     multi_tq_add_term_boost(mtq, "fox", 0.1);
+    check_hits(tc, searcher, mtq, "1, 8, 16, 17", -1);
+    check_to_s(tc, mtq, field, "<brown>");
+    check_to_s(tc, mtq, "", "field:<brown>");
+
+    multi_tq_add_term_boost(mtq, "fox", 0.6);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", -1);
-    check_to_s(tc, mtq, field, "<brown|fox^0.1>");
-    check_to_s(tc, mtq, "", "field:<brown|fox^0.1>");
+    check_to_s(tc, mtq, field, "<fox^0.6|brown>");
+    check_to_s(tc, mtq, "", "field:<fox^0.6|brown>");
 
     multi_tq_add_term_boost(mtq, "fast", 50.0);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", 8);
-    check_to_s(tc, mtq, field, "<fast^50.0|brown|fox^0.1>");
-    check_to_s(tc, mtq, "", "field:<fast^50.0|brown|fox^0.1>");
+    check_to_s(tc, mtq, field, "<fox^0.6|brown|fast^50.0>");
+    check_to_s(tc, mtq, "", "field:<fox^0.6|brown|fast^50.0>");
 
   
     mtq->boost = 80.1;
-    check_to_s(tc, mtq, "", "field:<fast^50.0|brown|fox^0.1>^80.1");
-
-/*
+    check_to_s(tc, mtq, "", "field:<fox^0.6|brown|fast^50.0>^80.1");
     multi_tq_add_term(mtq, "word1");
+    check_to_s(tc, mtq, "", "field:<fox^0.6|brown|word1|fast^50.0>^80.1");
     multi_tq_add_term(mtq, "word2");
+    check_to_s(tc, mtq, "", "field:<brown|word1|word2|fast^50.0>^80.1");
     multi_tq_add_term(mtq, "word3");
+    check_to_s(tc, mtq, "", "field:<brown|word1|word2|fast^50.0>^80.1");
+/*
 char *t;
 Explanation *e = searcher_explain(searcher, mtq, 8);
 printf("\n\"\"\"\n%s\n\"\"\"\n", t = expl_to_s(e));
@@ -766,7 +776,7 @@ free(t);
 
 static void test_multi_term_query_hash(tst_case *tc, void *data)
 {
-    Query *q1 = multi_tq_new_capa(field, 100);
+    Query *q1 = multi_tq_new_conf(field, 100, 0.0);
     Query *q2 = multi_tq_new(field);
     (void)data;
 
@@ -797,22 +807,27 @@ static void test_prefix_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *prq = prefixq_new(cat, "cat1");
+    check_to_s(tc, prq, cat, "cat1*");
     check_hits(tc, searcher, prq, "0, 1, 2, 3, 4, 13, 14, 15, 16, 17", -1);
     q_deref(prq);
 
     prq = prefixq_new(cat, "cat1/sub2");
+    check_to_s(tc, prq, cat, "cat1/sub2*");
     check_hits(tc, searcher, prq, "3, 4, 13, 15", -1);
     q_deref(prq);
 
     prq = prefixq_new(cat, "cat1/sub");
+    check_to_s(tc, prq, cat, "cat1/sub*");
     check_hits(tc, searcher, prq, "1, 2, 3, 4, 13, 14, 15, 16", -1);
     q_deref(prq);
 
     prq = prefixq_new("unknown field", "cat1/sub");
+    check_to_s(tc, prq, cat, "unknown field:cat1/sub*");
     check_hits(tc, searcher, prq, "", -1);
     q_deref(prq);
 
     prq = prefixq_new(cat, "unknown_term");
+    check_to_s(tc, prq, cat, "unknown_term*");
     check_hits(tc, searcher, prq, "", -1);
     q_deref(prq);
 }

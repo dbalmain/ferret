@@ -75,9 +75,6 @@ char *expl_to_html(Explanation *expl)
  *
  ****************************************************************************/
 
-#define term_set_new() \
-    hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy)
-
 Term *term_new(const char *field, const char *text)
 {
     Term *t = ALLOC(Term);
@@ -298,6 +295,37 @@ Weight *w_create(size_t size, Query *query)
  *
  ***************************************************************************/
 
+static const char *QUERY_NAMES[] = {
+    "TermQuery",
+    "MultiTermQuery",
+    "BooleanQuery",
+    "PhraseQuery",
+    "MultiPhraseQuery",
+    "ConstantScoreQuery",
+    "FilteredQuery",
+    "MatchAllQuery",
+    "RangeQuery",
+    "WildCardQuery",
+    "FuzzyQuery",
+    "PrefixQuery",
+    "SpanTermQuery",
+    "SpanFirstQuery",
+    "SpanOrQuery",
+    "SpanNotQuery",
+    "SpanNearQuery"
+};
+
+static const char *UNKNOWN_QUERY_NAME = "UnkownQuery";
+    
+const char *q_get_query_name(int type) {
+    if (type < 0 || type >= NELEMS(QUERY_NAMES)) {
+        return UNKNOWN_QUERY_NAME;
+    }
+    else {
+        return QUERY_NAMES[type];
+    }
+}
+
 static Query *q_rewrite(Query *self, IndexReader *ir)
 {
     (void)ir;
@@ -408,7 +436,7 @@ Query *q_combine(Query **queries, int q_cnt)
 
 f_u32 q_hash(Query *self)
 {
-    return (self->hash(self) << 4) | self->type;
+    return (self->hash(self) << 5) | self->type;
 }
 
 int q_eq(Query *self, Query *o)

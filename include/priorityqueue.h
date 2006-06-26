@@ -35,6 +35,16 @@ extern PriorityQueue *pq_new(int capa,
                              void (*free_elem)(void *elem));
 
 /**
+ * Allocate a clone of the PriorityQueue. This can be used if you want to scan
+ * through all elements of the PriorityQueue but you don't want to have to
+ * remove the all and add them all again.
+ *
+ * @param pq the priority queue to clone
+ * @return a clone of the original priority queue
+ */
+extern PriorityQueue *pq_clone(PriorityQueue *pq);
+
+/**
  * Clear all elements from the PriorityQueue and reset the size to 0. When
  * the elements are removed from the PriorityQueue, free_elem is used to free
  * them, unless it was set to NULL in which case nothing will happen to them.

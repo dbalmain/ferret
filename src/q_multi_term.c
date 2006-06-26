@@ -333,7 +333,8 @@ static Scorer *multi_tw_scorer(Weight *self, IndexReader *ir)
     Scorer *multi_tsc = NULL;
     PriorityQueue *boosted_terms = MTQ(self->query)->boosted_terms;
     const int field_num = fis_get_field_num(ir->fis, MTQ(self->query)->field);
-    if (boosted_terms->size > 0 || field_num < 0) {
+
+    if (boosted_terms->size > 0 && field_num >= 0) {
         int i;
         TermDocEnum *tde;
         TermEnum *te = ir->terms(ir, field_num);
@@ -355,6 +356,7 @@ static Scorer *multi_tw_scorer(Weight *self, IndexReader *ir)
         multi_tsc = multi_tsc_new(self, MTQ(self->query)->field, tdew_a,
                                   tdew_cnt, ir->get_norms(ir, field_num));
     }
+
     return multi_tsc;
 }
 
@@ -490,7 +492,8 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
 static char *multi_tq_to_s(Query *self, const char *curr_field) 
 {
     int i;
-    PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
+    PriorityQueue *boosted_terms = MTQ(self)->boosted_terms, *bt_pq_clone;
+    BoostedTerm *bt;
     char *buffer, *bptr;
     char *field = MTQ(self)->field;
     int flen = (int)strlen(field);
@@ -509,8 +512,8 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
     }
 
     *(bptr++) = '<';
-    for (i = boosted_terms->size; i > 0; i--) {
-        BoostedTerm *bt = (BoostedTerm *)boosted_terms->heap[i];
+    bt_pq_clone = pq_clone(boosted_terms);
+    while ((bt = (BoostedTerm *)pq_pop(bt_pq_clone)) != NULL) {
         sprintf(bptr, "%s", bt->term);
         bptr += (int)strlen(bptr);
 
@@ -522,6 +525,8 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
 
         *(bptr++) = '|';
     }
+    pq_destroy(bt_pq_clone);
+
     if (bptr[-1] == '<') {
         bptr++; /* handle zero term case */
     }
@@ -575,14 +580,23 @@ static int multi_tq_eq(Query *self, Query *o)
     return true;
 }
 
-Query *multi_tq_new_capa(const char *field, int max_terms)
+Query *multi_tq_new_conf(const char *field, int max_terms,
+                                   float min_boost)
 {
-    Query *self = q_new(MultiTermQuery);
+    Query *self;
+
+    if (max_terms <= 0) {
+        RAISE(ARG_ERROR, ":max_terms must be greater than or equal to zero. "
+              "%d < 0. ", max_terms);
+    }
+
+    self                     = q_new(MultiTermQuery);
 
     MTQ(self)->field         = estrdup(field);
     MTQ(self)->boosted_terms = pq_new(max_terms,
                                       (lt_ft)&boosted_term_less_than,
                                       (free_ft)&boosted_term_destroy);
+    MTQ(self)->min_boost     = min_boost;
 
     self->type               = MULTI_TERM_QUERY;
     self->to_s               = &multi_tq_to_s;
@@ -596,13 +610,19 @@ Query *multi_tq_new_capa(const char *field, int max_terms)
 
 Query *multi_tq_new(const char *field)
 {
-    return multi_tq_new_capa(field, MULTI_TERM_QUERY_MAX_TERMS);
+    return multi_tq_new_conf(field, MULTI_TERM_QUERY_MAX_TERMS, 0.0);
 }
 
 void multi_tq_add_term_boost(Query *self, const char *term, float boost)
 {
-    BoostedTerm *bt = boosted_term_new(term, boost);
-    pq_insert(MTQ(self)->boosted_terms, bt);
+    if (boost > MTQ(self)->min_boost) {
+        BoostedTerm *bt = boosted_term_new(term, boost);
+        PriorityQueue *bt_pq = MTQ(self)->boosted_terms;
+        pq_insert(bt_pq, bt);
+        if (pq_full(bt_pq)) {
+            MTQ(self)->min_boost = ((BoostedTerm *)pq_top(bt_pq))->boost;
+        }
+    }
 }
 
 void multi_tq_add_term(Query *self, const char *term)

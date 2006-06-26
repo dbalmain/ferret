@@ -48,7 +48,7 @@ static Explanation *masc_explain(Scorer *self, int doc_num)
 
 static Scorer *masc_new(Weight *weight, IndexReader *ir)
 {
-    Scorer *self        = scorer_new(Scorer, weight->similarity);
+    Scorer *self        = scorer_new(MatchAllScorer, weight->similarity);
 
     MASc(self)->ir      = ir;
     MASc(self)->max_doc = ir->max_doc(ir);
