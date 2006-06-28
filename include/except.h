@@ -72,12 +72,12 @@
 #define IO_ERROR 3
 #define ARG_ERROR 4
 #define EOF_ERROR 5
-#define UNSUPPORTED_ERROR 5
-#define STATE_ERROR 6
-#define PARSE_ERROR 7
-#define MEM_ERROR 8
-#define INDEX_ERROR 9
-#define LOCK_ERROR 10
+#define UNSUPPORTED_ERROR 6
+#define STATE_ERROR 7
+#define PARSE_ERROR 8
+#define MEM_ERROR 9
+#define INDEX_ERROR 10
+#define LOCK_ERROR 11
 
 extern char *const UNSUPPORTED_ERROR_MSG;
 extern char *const EOF_ERROR_MSG;

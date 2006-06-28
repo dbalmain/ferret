@@ -89,7 +89,7 @@ typedef struct Filter
 {
     char       *name;
     HashTable  *cache;
-    BitVector  *(*get_bv)(struct Filter *self, IndexReader *ir);
+    BitVector  *(*get_bv_i)(struct Filter *self, IndexReader *ir);
     char       *(*to_s)(struct Filter *self);
     f_u32       (*hash)(struct Filter *self);
     int         (*eq)(struct Filter *self, struct Filter *o);
@@ -294,6 +294,7 @@ typedef struct PhraseQuery
 
 extern Query *phq_new(const char *field);
 extern void phq_add_term(Query *self, const char *term, int pos_inc);
+extern void phq_add_term_abs(Query *self, const char *term, int position);
 extern void phq_append_multi_term(Query *self, const char *term);
 
 /***************************************************************************
@@ -355,7 +356,7 @@ extern bool wc_match(const char *pattern, const char *text);
  * FuzzyQuery
  ***************************************************************************/
 
-#define DEF_MIN_SIM 0.5
+#define DEF_MIN_SIM 0.5f
 #define DEF_PRE_LEN 0
 #define DEF_MAX_TERMS 256
 #define TYPICAL_LONGEST_WORD 20
@@ -572,6 +573,21 @@ enum SORT_TYPE {
 };
 
 /***************************************************************************
+ * Comparable
+ ***************************************************************************/
+
+typedef struct Comparable {
+    int type;
+    union {
+        int i;
+        float f;
+        char *s;
+        void *p;
+    } val;
+    bool reverse : 1;
+} Comparable;
+
+/***************************************************************************
  * SortField
  ***************************************************************************/
 
@@ -583,6 +599,7 @@ typedef struct SortField
     bool  reverse : 1;
     void *index;
     int   (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
+    void  (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable);
     void *(*create_index)(int size);
     void  (*destroy_index)(void *p);
     void  (*handle_term)(void *index, TermDocEnum *tde, char *text);
@@ -610,8 +627,9 @@ extern const SortField SORT_FIELD_DOC_REV;
 typedef struct Sort
 {
     SortField **sort_fields;
-    int sf_cnt;
-    int sf_capa;
+    int size;
+    int capa;
+    int start;
     bool destroy_all : 1;
 } Sort;
 
@@ -630,6 +648,26 @@ extern void fshq_pq_down(PriorityQueue *pq);
 extern void fshq_pq_insert(PriorityQueue *pq, Hit *hit);
 extern void fshq_pq_destroy(PriorityQueue *pq);
 extern PriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
+extern Hit *fshq_pq_pop_fd(PriorityQueue *pq);
+
+/***************************************************************************
+ * FieldDoc
+ ***************************************************************************/
+
+typedef struct FieldDoc
+{
+    Hit hit;
+    int size;
+    Comparable comparables[];
+} FieldDoc;
+
+extern void fd_destroy(FieldDoc *fd);
+
+/***************************************************************************
+ * FieldDocSortedHitQueue
+ ***************************************************************************/
+
+extern bool fdshq_lt(FieldDoc *fd1, FieldDoc *fd2);
 
 /***************************************************************************
  *
@@ -638,14 +676,18 @@ extern PriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
  ***************************************************************************/
 
 struct Searcher {
-    Similarity     *similarity;
+    Similarity  *similarity;
     int          (*doc_freq)(Searcher *self, const char *field,
                              const char *term);
     Document    *(*get_doc)(Searcher *self, int doc_num);
     int          (*max_doc)(Searcher *self);
     Weight      *(*create_weight)(Searcher *self, Query *query);
     TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
-                           int num_docs, Filter *filter, Sort *sort);
+                           int num_docs, Filter *filter, Sort *sort,
+                           bool load_fields);
+    TopDocs     *(*search_w)(Searcher *self, Weight *weight, int first_doc,
+                             int num_docs, Filter *filter, Sort *sort,
+                             bool load_fields);
     void         (*search_each)(Searcher *self, Query *query, Filter *filter,
                                 void (*fn)(Searcher *, int, float, void *),
                                 void *arg);
@@ -664,7 +706,9 @@ struct Searcher {
 #define searcher_get_doc(s, dn)  s->get_doc(s, dn)
 #define searcher_max_doc(s)  s->max_doc(s)
 #define searcher_search(s, q, fd, nd, filt, sort)\
-    s->search(s, q, fd, nd, filt, sort)
+    s->search(s, q, fd, nd, filt, sort, false)
+#define searcher_search_fd(s, q, fd, nd, filt, sort)\
+    s->search(s, q, fd, nd, filt, sort, true)
 #define searcher_search_each(s, q, filt, fn, arg)\
     s->search_each(s, q, filt, fn, arg)
 #define searcher_search_each_w(s, q, filt, fn, arg)\
@@ -682,6 +726,7 @@ struct Searcher {
  ***************************************************************************/
 
 extern Searcher *stdsea_new(IndexReader *ir);
+extern int stdsea_doc_freq(Searcher *self, const char *field, const char *term);
 
 /***************************************************************************
  *
@@ -690,5 +735,46 @@ extern Searcher *stdsea_new(IndexReader *ir);
  ***************************************************************************/
 
 extern Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs);
+
+/***************************************************************************
+ *
+ * QParser
+ *
+ ***************************************************************************/
+
+#define QP_CONC_WORDS 2
+#define QP_MAX_CLAUSES 2
+
+typedef struct QParser
+{
+    mutex_t mutex;
+    int def_slop;
+    int max_clauses;
+    int phq_pos_inc;
+    char *qstr;
+    char *qstrp;
+    char buf[QP_CONC_WORDS][MAX_WORD_SIZE];
+    int  buf_index;
+    HashTable *field_cache;
+    HashSet *fields;
+    HashSet *fields_buf;
+    HashSet *def_fields;
+    HashSet *all_fields;
+    Analyzer *analyzer;
+    HashTable *ts_cache;
+    Query *result;
+    bool or_default : 1;
+    bool wild_lower : 1;
+    bool clean_str : 1;
+    bool handle_parse_errors : 1;
+    bool allow_any_fields : 1;
+    bool close_def_fields : 1;
+} QParser;
+
+extern QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
+                       Analyzer *analyzer);
+extern void qp_destroy(QParser *self);
+extern Query *qp_parse(QParser *self, char *qstr);
+extern char *qp_clean_str(char *str);
 
 #endif

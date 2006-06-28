@@ -764,13 +764,13 @@ static Query *phq_rewrite(Query *self, IndexReader *ir)
             return tq;
         }
         else {
-            Query *bq = bq_new(true);
+            Query *q = multi_tq_new(phq->field);
             int i;
             for (i = 0; i < t_cnt; i++) {
-                bq_add_query_nr(bq, tq_new(phq->field, terms[i]), BC_SHOULD);
+                multi_tq_add_term(q, terms[i]);
             }
-            bq->boost = self->boost;
-            return bq;
+            q->boost = self->boost;
+            return q;
         }
     } else {
         self->ref_cnt++;
@@ -840,27 +840,33 @@ Query *phq_new(const char *field)
     return self;
 }
 
-void phq_add_term(Query *self, const char *term, int pos_inc)
+void phq_add_term_abs(Query *self, const char *term, int position)
 {
     PhraseQuery *phq = PhQ(self);
-    int position;
     int index = phq->pos_cnt;
     PhrasePosition *pp;
     if (index >= phq->pos_capa) {
         phq->pos_capa <<= 1;
         REALLOC_N(phq->positions, PhrasePosition, phq->pos_capa);
     }
-    if (index == 0) {
-        position = 0;
-    } 
-    else {
-        position = phq->positions[index - 1].pos + pos_inc;
-    }
     pp = &(phq->positions[index]);
     pp->terms = ary_new_type_capa(char *, 2);
     ary_push(pp->terms, estrdup(term));
     pp->pos = position;
     phq->pos_cnt++;
+}
+
+void phq_add_term(Query *self, const char *term, int pos_inc)
+{
+    PhraseQuery *phq = PhQ(self);
+    int position;
+    if (phq->pos_cnt == 0) {
+        position = 0;
+    } 
+    else {
+        position = phq->positions[phq->pos_cnt - 1].pos + pos_inc;
+    }
+    phq_add_term_abs(self, term, position);
 }
 
 void phq_append_multi_term(Query *self, const char *term)

@@ -56,7 +56,7 @@ static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
     static int num_array[ARRAY_SIZE];
     int i;
     int total_hits = s2l(expected_hits, num_array);
-    TopDocs *top_docs = searcher->search(searcher, query, 0, total_hits+1, f, NULL);
+    TopDocs *top_docs = searcher_search(searcher, query, 0, total_hits+1, f, NULL);
     Aiequal(total_hits, top_docs->total_hits);
     Aiequal(total_hits, top_docs->size);
 

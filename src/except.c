@@ -19,7 +19,9 @@ const char *const FRT_ERROR_TYPES[] = {
   "Unsupported Function Error",
   "State Error",
   "Parse Error",
-  "Memory Error"
+  "Memory Error",
+  "Index Error",
+  "Lock Error"
 };
 
 char *const UNSUPPORTED_ERROR_MSG = "Unsupported operation";

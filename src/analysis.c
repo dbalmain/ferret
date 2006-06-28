@@ -153,7 +153,7 @@ static TokenStream *cts_new()
 
 #define MBTS(token_stream) ((MultiByteTokenStream *)(token_stream))
 
-static inline int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
+inline int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
     if ((num_bytes = (int)mbrtowc(wchr, s, MB_CUR_MAX, state)) < 0) {\

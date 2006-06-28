@@ -30,10 +30,40 @@ static void add_sort_test_data(SortTestData *std, IndexWriter *iw)
     doc_destroy(doc);
 }
 
+static SortTestData data[] = {            /* len mod */
+    {"findall","a","6","0.01"},    /*  4   0  */
+    {"findall","c","5","0.1"},     /*  3   3  */
+    {"findall","e","2","0.001"},   /*  5   1  */
+    {"findall","g","1","1.0"},     /*  3   3  */
+    {"findall","i","3","0.0001"},  /*  6   2  */
+    {"findall","j","4","10.0"},    /*  4   0  */
+    {"findall","h","5","0.00001"}, /*  7   3  */
+    {"findall","f","2","100.0"},   /*  5   1  */
+    {"findall","d","3","1000.0"},  /*  6   2  */
+    {"findall","b","4","0.000001"} /*  8   0  */
+};
+
 static void sort_test_setup(Store *store)
 {
     int i;
+    IndexWriter *iw;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    index_create(store, fis);
+    fis_destroy(fis);
+
+    iw = iw_open(store, whitespace_analyzer_new(false), NULL);
+
+    for (i = 0; i < NELEMS(data); i++) {
+        add_sort_test_data(&data[i], iw);
+    }
+    iw_close(iw);
+}
+
+static void sort_multi_test_setup(Store *store1, Store *store2)
+{
+    int i;
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    IndexWriter *iw;
     SortTestData data[] = {            /* len mod */
         {"findall","a","6","0.01"},    /*  4   0  */
         {"findall","c","5","0.1"},     /*  3   3  */
@@ -47,12 +77,20 @@ static void sort_test_setup(Store *store)
         {"findall","b","4","0.000001"} /*  8   0  */
     };
 
-    index_create(store, fis);
+    index_create(store1, fis);
+    index_create(store2, fis);
     fis_destroy(fis);
 
-    IndexWriter *iw = iw_open(store, whitespace_analyzer_new(false), NULL);
+    iw = iw_open(store1, whitespace_analyzer_new(false), NULL);
 
-    for (i = 0; i < NELEMS(data); i++) {
+    for (i = 0; i < NELEMS(data)/2; i++) {
+        add_sort_test_data(&data[i], iw);
+    }
+    iw_close(iw);
+
+    iw = iw_open(store2, whitespace_analyzer_new(false), NULL);
+
+    for (i = NELEMS(data)/2; i < NELEMS(data); i++) {
         add_sort_test_data(&data[i], iw);
     }
     iw_close(iw);
@@ -66,21 +104,47 @@ static void do_test_top_docs(tst_case *tc, Searcher *searcher, Query *query,
     static int num_array[ARRAY_SIZE];
     int i;
     int total_hits = s2l(expected_hits, num_array);
-    TopDocs *top_docs = searcher->search(searcher, query, 0, total_hits, NULL, sort);
+    TopDocs *top_docs = searcher_search(searcher, query, 0, total_hits, NULL, sort);
     Aiequal(total_hits, top_docs->total_hits);
     Aiequal(total_hits, top_docs->size);
 
     for (i = 0; i < top_docs->size; i++) {
         Hit *hit = top_docs->hits[i];
+        if (false && sort && searcher->doc_freq != stdsea_doc_freq) {
+            FieldDoc *fd = (FieldDoc *)hit;
+            int j;
+            printf("%d == %d:%f ", num_array[i], hit->doc, hit->score);
+            for (j = 0; j < fd->size; j++) {
+                switch (fd->comparables[j].type) {
+                    case SORT_TYPE_SCORE:
+                        printf("sc:%f ", fd->comparables[j].val.f); break;
+                    case SORT_TYPE_FLOAT:
+                        printf("f:%f ", fd->comparables[j].val.f); break;
+                    case SORT_TYPE_DOC:
+                        printf("d:%d ", fd->comparables[j].val.i); break;
+                    case SORT_TYPE_INTEGER:
+                        printf("i:%d ", fd->comparables[j].val.i); break;
+                    case SORT_TYPE_STRING:
+                        printf("s:%s ", fd->comparables[j].val.s); break;
+                    default:
+                        printf("NA "); break;
+                }
+            }
+            printf("\n");
+        }
         Aiequal(num_array[i], hit->doc);
     }
     td_destroy(top_docs);
 
     if (total_hits >= R_END) {
-        top_docs = searcher->search(searcher, query, 3, 3, NULL, sort);
+        top_docs = searcher_search(searcher, query, R_START, R_END - R_START,
+                                   NULL, sort);
         for (i = R_START; i < R_END; i++) {
             Hit *hit = top_docs->hits[i - R_START];
             Aiequal(num_array[i], hit->doc);
+            /*
+            printf("%d == %d\n", num_array[i], hit->doc);
+            */
         }
         td_destroy(top_docs);
     }
@@ -148,14 +212,9 @@ static void test_sort_to_s(tst_case *tc, void *data)
 
 static void test_sorts(tst_case *tc, void *data)
 {
-    Store *store = (Store *)data;
-    IndexReader *ir;
-    Searcher *sea;
+    Searcher *sea = (Searcher *)data;
     Query *q;
     Sort *sort = NULL;
-
-    ir = ir_open(store);
-    sea = stdsea_new(ir);
 
     q = tq_new(search, "findall");
     do_test_top_docs(tc, sea, q, "8,7,5,3,1,0,2,4,6,9", NULL);
@@ -178,10 +237,10 @@ static void test_sorts(tst_case *tc, void *data)
     do_test_top_docs(tc, sea, q, "0,1,6,5,9,4,8,2,7,3", sort);
     sort_add_sort_field(sort, sort_field_score_new(false));
     do_test_top_docs(tc, sea, q, "0,1,6,5,9,8,4,7,2,3", sort);
-    sort->sf_cnt = 1; /* remove score sort_field */
+    sort->size = 1; /* remove score sort_field */
     sort->sort_fields[0]->reverse = false;
     do_test_top_docs(tc, sea, q, "3,2,7,4,8,5,9,1,6,0", sort);
-    sort->sf_cnt = 2; /* re-add score sort_field */
+    sort->size = 2; /* re-add score sort_field */
     do_test_top_docs(tc, sea, q, "3,7,2,8,4,5,9,1,6,0", sort);
     sort_clear(sort);
 
@@ -219,20 +278,43 @@ static void test_sorts(tst_case *tc, void *data)
     sort_destroy(sort);
     q_deref(q);
 
-    searcher_close(sea);
 }
 
 tst_suite *ts_sort(tst_suite *suite)
 {
-    Store *store = open_ram_store();
+    Searcher *sea, **searchers;
+    Store *store = open_ram_store(), *fs_store;
     sort_test_setup(store);
 
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_sort_field_to_s, NULL);
     tst_run_test(suite, test_sort_to_s, NULL);
-    tst_run_test(suite, test_sorts, (void *)store);
+
+    sea = stdsea_new(ir_open(store));
+
+    tst_run_test(suite, test_sorts, (void *)sea);
+
+    searcher_close(sea);
+
+#ifdef POSH_OS_WIN32
+    fs_store = open_fs_store(".\\test\\testdir\\store");
+#else
+    fs_store = open_fs_store("./test/testdir/store");
+#endif
+    sort_multi_test_setup(store, fs_store);
+
+    searchers = ALLOC_N(Searcher *, 2);
+
+    searchers[0] = stdsea_new(ir_open(store));
+    searchers[1] = stdsea_new(ir_open(fs_store));
+
+    sea = msea_new(searchers, 2, true);
+    tst_run_test(suite, test_sorts, (void *)sea);
+    searcher_close(sea);
 
     store_deref(store);
+    store_deref(fs_store);
+
     return suite;
 }

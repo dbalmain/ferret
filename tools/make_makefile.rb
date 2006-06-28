@@ -28,7 +28,7 @@ STEMMER_OBJS = $(patsubst %.c,src/libstemmer_c/%.o, $(snowball_sources))
 
 TEST_OBJS = #{test_objs.join(" ")}
 
-OBJS = #{objs.join(" ")} libstemmer.o
+OBJS = #{objs.join(" ")} libstemmer.o q_parser.o
 
 vpath %.c test src
 
@@ -45,6 +45,11 @@ valgrind: testall
 
 libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
 	$(AR) -cru $@ $^
+
+q_parser.o: src/q_parser.c
+	$(CC) $(CFLAGS) src/q_parser.c -c
+
+src/q_parser.c: src/q_parser.y
 
 .PHONY: clean
 clean:

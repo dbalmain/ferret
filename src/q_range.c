@@ -159,7 +159,7 @@ static char *rfilt_to_s(Filter *filt)
     return rfstr;
 }
 
-static BitVector *rfilt_get_bv(Filter *filt, IndexReader *ir)
+static BitVector *rfilt_get_bv_i(Filter *filt, IndexReader *ir)
 {
     BitVector *bv = bv_new_capa(ir->max_doc(ir));
     Range *range = RF(filt)->range;
@@ -177,8 +177,9 @@ static BitVector *rfilt_get_bv(Filter *filt, IndexReader *ir)
         TermDocEnum *tde;
         bool check_lower;
 
-        te = ir->terms_from(ir, field_num, lower_term);
-        if (te->curr_term == NULL) {
+        te = ir->terms(ir, field_num);
+        if (te->skip_to(te, lower_term) == NULL) {
+            te->close(te);
             return bv;
         }
 
@@ -236,7 +237,7 @@ Filter *rfilt_new(const char *field,
     RF(filt)->range =  range_new(field, lower_term, upper_term,
                                  include_lower, include_upper); 
 
-    filt->get_bv    = &rfilt_get_bv;
+    filt->get_bv_i  = &rfilt_get_bv_i;
     filt->hash      = &rfilt_hash;
     filt->eq        = &rfilt_eq;
     filt->to_s      = &rfilt_to_s;

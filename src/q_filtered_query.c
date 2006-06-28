@@ -56,7 +56,6 @@ Explanation *fqsc_explain(Scorer *self, int doc_num)
 void fqsc_destroy(Scorer *self)
 {
     FilteredQueryScorer *fqsc = FQSc(self);
-    bv_destroy(fqsc->bv);
     fqsc->sub_scorer->destroy(fqsc->sub_scorer);
     scorer_destroy_i(self);
 }
@@ -125,7 +124,7 @@ static Scorer *fqw_scorer(Weight *self, IndexReader *ir)
     Scorer *scorer = sub_weight->scorer(sub_weight, ir);
     Filter *filter = FQQ(self->query)->filter;
 
-    return fqsc_new(scorer, filter->get_bv(filter, ir), self->similarity);
+    return fqsc_new(scorer, filt_get_bv(filter, ir), self->similarity);
 }
 
 static void fqw_destroy(Weight *self)

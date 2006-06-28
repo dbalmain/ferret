@@ -25,12 +25,14 @@ extern tst_suite *ts_term_vectors(tst_suite *suite);
 extern tst_suite *ts_similarity(tst_suite *suite);
 extern tst_suite *ts_index(tst_suite *suite);
 extern tst_suite *ts_search(tst_suite *suite);
+extern tst_suite *ts_multi_search(tst_suite *suite);
 extern tst_suite *ts_q_fuzzy(tst_suite *suite);
 extern tst_suite *ts_q_filtered(tst_suite *suite);
 extern tst_suite *ts_q_span(tst_suite *suite);
 extern tst_suite *ts_q_const_score(tst_suite *suite);
 extern tst_suite *ts_filter(tst_suite *suite);
 extern tst_suite *ts_sort(tst_suite *suite);
+extern tst_suite *ts_q_parser(tst_suite *suite);
 
 const struct test_list
 {
@@ -58,12 +60,14 @@ const struct test_list
     {ts_similarity},
     {ts_index},
     {ts_search},
+    {ts_multi_search},
     {ts_q_fuzzy},
     {ts_q_filtered},
     {ts_q_span},
     {ts_q_const_score},
     {ts_filter},
-    {ts_sort}
+    {ts_sort},
+    {ts_q_parser}
 };
 
 #endif

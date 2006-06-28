@@ -96,6 +96,7 @@ static bool tdew_skip_to(TermDocEnumWrapper *self, int doc_num)
     while (++(self->pointer) < self->pointer_max) {
         if (self->docs[self->pointer] >= doc_num) {
             self->doc = self->docs[self->pointer];
+            self->freq = self->freqs[self->pointer];
             return true;
         }
     }
@@ -231,7 +232,7 @@ static bool multi_tsc_advance_to(Scorer *self, int target_doc_num)
             pq_pop(tdew_pq);
         }
     }
-    return true;
+    return (pq_top(tdew_pq) == NULL) ? false : true;
 }
 
 static inline bool multi_tsc_skip_to(Scorer *self, int target_doc_num)
@@ -244,9 +245,9 @@ static Explanation *multi_tsc_explain(Scorer *self, int doc_num)
     MultiTermScorer *mtsc = MTSc(self);
     TermDocEnumWrapper *tdew;
 
-    if (multi_tsc_advance_to(self, doc_num)
-        && (tdew = (TermDocEnumWrapper *)pq_top(MTSc(self)->tdew_pq))->doc
-        == doc_num) {
+    if (multi_tsc_advance_to(self, doc_num) &&
+        (tdew = (TermDocEnumWrapper *)pq_top(mtsc->tdew_pq))->doc == doc_num) {
+
         PriorityQueue *tdew_pq = MTSc(self)->tdew_pq;
         Explanation *expl = expl_new(0.0, "The sum of:");
         int curr_doc = self->doc = tdew->doc;
@@ -353,8 +354,13 @@ static Scorer *multi_tw_scorer(Weight *self, IndexReader *ir)
             }
         }
         te->close(te);
-        multi_tsc = multi_tsc_new(self, MTQ(self->query)->field, tdew_a,
-                                  tdew_cnt, ir->get_norms(ir, field_num));
+        if (tdew_cnt) {
+            multi_tsc = multi_tsc_new(self, MTQ(self->query)->field, tdew_a,
+                                      tdew_cnt, ir->get_norms(ir, field_num));
+        }
+        else {
+            free(tdew_a);
+        }
     }
 
     return multi_tsc;
@@ -431,9 +437,13 @@ Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
                           query_str, doc_num);
     free(query_str);
 
-    scorer = self->scorer(self, ir);
-    tf_expl = scorer->explain(scorer, doc_num);
-    scorer->destroy(scorer);
+    if ((scorer = self->scorer(self, ir)) != NULL) {
+        tf_expl = scorer->explain(scorer, doc_num);
+        scorer->destroy(scorer);
+    }
+    else {
+        tf_expl = expl_new(0.0, "no terms were found");
+    }
     expl_add_detail(field_expl, tf_expl);
     expl_add_detail(field_expl, idf_expl2);
 

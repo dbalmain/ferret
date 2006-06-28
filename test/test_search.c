@@ -159,7 +159,7 @@ static const char *field = "field";
 static const char *cat = "cat";
 
 #define SEARCH_DOCS_SIZE 18
-void prepare_search_index(Store *store)
+static void prepare_search_index(Store *store)
 {
     int i;
     IndexWriter *iw;
@@ -654,7 +654,7 @@ static void test_multi_phrase_query(tst_case *tc, void *data)
     phq_append_multi_term(phq, "word3");
     check_hits(tc, searcher, phq, "1, 2, 3, 4, 6, 8, 11, 14", -1);
     q = searcher_rewrite(searcher, phq);
-    Aiequal(q->type, BOOLEAN_QUERY);
+    Aiequal(q->type, MULTI_TERM_QUERY);
     q_deref(phq);
     q_deref(q);
 
@@ -798,6 +798,7 @@ static void test_multi_term_query_hash(tst_case *tc, void *data)
     q_deref(q1);
     q_deref(q2);
 }
+
 static void test_prefix_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
@@ -1131,3 +1132,210 @@ tst_suite *ts_search(tst_suite *suite)
     searcher_close(searcher);
     return suite;
 }
+
+
+
+static void prepare_multi_search_index(Store *store, struct Data data[],
+                                       int d_cnt, int w)
+{
+    int i;
+    IndexWriter *iw;
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    index_create(store, fis);
+    fis_destroy(fis);
+
+    iw = iw_open(store, dbl_analyzer_new(false), NULL);
+    for (i = 0; i < d_cnt; i++) {
+        Document *doc = doc_new();
+        doc->boost = (float)(i+w);
+        doc_add_field(doc, df_add_data(df_new(date), data[i].date));
+        doc_add_field(doc, df_add_data(df_new(field), data[i].field));
+        doc_add_field(doc, df_add_data(df_new(cat), data[i].cat));
+        iw_add_doc(iw, doc);
+        doc_destroy(doc);
+    }
+    iw_close(iw);
+}
+
+static void test_query_combine(tst_case *tc, void *data)
+{
+    Query *q, *cq, **queries;
+    BooleanQuery *bq;
+    (void)data;
+
+    queries = ALLOC_N(Query *, 3);
+    queries[0] = tq_new("A", "a");
+    queries[1] = tq_new("A", "a");
+    queries[2] = tq_new("A", "a");
+
+    cq = q_combine(queries, 3);
+    Assert(q_eq(cq, queries[1]), "One unique query submitted");
+    q_deref(cq);
+
+    Aiequal(1, queries[1]->ref_cnt);
+    q_deref(queries[1]);
+
+    q = bq_new(false);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+
+    queries[1] = q;
+
+    cq = q_combine(queries, 3);
+    bq = (BooleanQuery *)cq;
+    Aiequal(2, bq->clause_cnt);
+    Assert(q_eq(bq->clauses[0]->query, queries[0]), "Query should be equal");
+    Assert(q_eq(bq->clauses[1]->query, queries[1]), "Query should be equal");
+    q_deref(cq);
+    q_deref(queries[1]); /* queries[1] */
+
+    q = bq_new(true);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+
+    queries[1] = q;
+
+    cq = q_combine(queries, 3);
+    Assert(q_eq(cq, queries[0]), "Again only one unique query submitted");
+    q_deref(cq);
+    Aiequal(1, queries[0]->ref_cnt);
+
+    bq_add_query_nr(q, tq_new("B", "b"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("C", "c"), BC_SHOULD);
+
+    cq = q_combine(queries, 3);
+    Aiequal(BOOLEAN_QUERY, cq->type);
+
+    bq = (BooleanQuery *)cq;
+    Aiequal(3, bq->clause_cnt);
+    q = tq_new("A", "a");
+    Assert(q_eq(bq->clauses[0]->query, q), "Query should be equal");
+    q_deref(q);
+    q = tq_new("B", "b");
+    Assert(q_eq(bq->clauses[1]->query, q), "Query should be equal");
+    q_deref(q);
+    q = tq_new("C", "c");
+    Assert(q_eq(bq->clauses[2]->query, q), "Query should be equal");
+    q_deref(q);
+
+    q_deref(cq);
+    Aiequal(1, queries[0]->ref_cnt);
+
+    Aiequal(1, queries[2]->ref_cnt);
+    q_deref(queries[2]);
+
+    q = bq_new(true);
+    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("B", "b"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new("C", "c"), BC_MUST);
+    queries[2] = q;
+
+    cq = q_combine(queries, 3);
+    Aiequal(BOOLEAN_QUERY, cq->type);
+
+    bq = (BooleanQuery *)cq;
+    Aiequal(4, bq->clause_cnt);
+    q = tq_new("A", "a");
+    Assert(q_eq(bq->clauses[0]->query, q), "Query should be equal");
+    q_deref(q);
+    q = tq_new("B", "b");
+    Assert(q_eq(bq->clauses[1]->query, q), "Query should be equal");
+    q_deref(q);
+    q = tq_new("C", "c");
+    Assert(q_eq(bq->clauses[2]->query, q), "Query should be equal");
+    q_deref(q);
+    Assert(q_eq(bq->clauses[3]->query, queries[2]), "Query should be equal");
+
+    q_deref(cq);
+    Aiequal(1, queries[0]->ref_cnt);
+
+    q_deref(queries[0]);
+    q_deref(queries[1]);
+    q_deref(queries[2]);
+    free(queries);
+}
+
+tst_suite *ts_multi_search(tst_suite *suite)
+{
+    struct Data data0[] = {
+        {"20050930", "word1",
+            "cat1/"},
+        {"20051001", "word1 word2 the quick brown fox",
+            "cat1/sub1"},
+        {"20051002", "word1 word3",
+            "cat1/sub1/subsub1"},
+        {"20051003", "word1 word3",
+            "cat1/sub2"},
+        {"20051004", "word1 word2",
+            "cat1/sub2/subsub2"},
+        {"20051005", "word1",
+            "cat2/sub1"},
+        {"20051006", "word1 word3",
+            "cat2/sub1"},
+        {"20051007", "word1",
+            "cat2/sub1"},
+        {"20051008", "word1 word2 word3 the fast brown fox",
+            "cat2/sub1"}
+    };
+
+    struct Data data1[] = {
+        {"20051009", "word1",
+            "cat3/sub1"},
+        {"20051010", "word1",
+            "cat3/sub1"},
+        {"20051011", "word1 word3 the quick red fox",
+            "cat3/sub1"},
+        {"20051012", "word1",
+            "cat3/sub1"},
+        {"20051013", "word1",
+            "cat1/sub2"},
+        {"20051014", "word1 word3 the quick hairy fox",
+            "cat1/sub1"},
+        {"20051015", "word1",
+            "cat1/sub2/subsub1"},
+        {"20051016", "word1 the quick fox is brown and hairy and a little red",
+            "cat1/sub1/subsub2"},
+        {"20051017", "word1 the brown fox is quick and red",
+            "cat1/"}
+    };
+
+    Store *store0 = open_ram_store();
+    Store *store1 = open_ram_store();
+
+    IndexReader *ir0, *ir1;
+    Searcher **searchers;
+    Searcher *searcher;
+
+    suite = tst_add_suite(suite, "test_multi_search");
+
+    prepare_multi_search_index(store0, data0, NELEMS(data0), 1);
+    prepare_multi_search_index(store1, data1, NELEMS(data1), 1 + NELEMS(data0));
+
+    ir0 = ir_open(store0);
+    ir1 = ir_open(store1);
+    searchers = ALLOC_N(Searcher *, 2);
+    searchers[0] = stdsea_new(ir0);
+    searchers[1] = stdsea_new(ir1);
+    searcher = msea_new(searchers, 2, true);
+
+    tst_run_test(suite, test_get_doc, (void *)searcher);
+
+    tst_run_test(suite, test_term_query, (void *)searcher);
+    tst_run_test(suite, test_boolean_query, (void *)searcher);
+    tst_run_test(suite, test_multi_term_query, (void *)searcher);
+    tst_run_test(suite, test_phrase_query, (void *)searcher);
+    tst_run_test(suite, test_multi_phrase_query, (void *)searcher);
+    tst_run_test(suite, test_prefix_query, (void *)searcher);
+    tst_run_test(suite, test_range_query, (void *)searcher);
+    tst_run_test(suite, test_wildcard_query, (void *)searcher);
+
+    tst_run_test(suite, test_query_combine, NULL);
+
+    store_deref(store0);
+    store_deref(store1);
+    searcher_close(searcher);
+    return suite;
+}
+

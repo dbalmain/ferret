@@ -1527,7 +1527,7 @@ static void tw_add(TermWriter *tw,
 
 #ifdef DEBUG
     if (strcmp(tw->last_term, term) > 0) {
-        RAISE(STATE_ERROR, "\"%s\" > \"%s\"", tw->last_term, term);
+        RAISE(STATE_ERROR, "\"%s\" > \"%s\" %d > %d", tw->last_term, term, *tw->last_term, *term);
     }
     if (ti->frq_ptr < tw->last_term_info.frq_ptr) {
         RAISE(STATE_ERROR, "%"F_OFF_T_PFX"d > %"F_OFF_T_PFX"d", ti->frq_ptr,
@@ -4623,7 +4623,7 @@ static void sm_merge_terms(SegmentMerger *sm)
      * term put in the index with the next one. So the size of the buffer must
      * by index_interval + 2. */
     sm->term_buf_ptr = 0;
-    sm->term_buf_size = sm->config->index_interval + 1 * MAX_WORD_SIZE;
+    sm->term_buf_size = (sm->config->index_interval + 1) * MAX_WORD_SIZE;
     sm->term_buf = ALLOC_N(char, sm->term_buf_size + MAX_WORD_SIZE);
 
     sm->queue = pq_new(sm->seg_cnt, (lt_ft)&smi_lt, NULL);

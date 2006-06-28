@@ -197,6 +197,12 @@ static void hit_pq_insert(PriorityQueue *pq, Hit *hit)
     }
 }
 
+static void hit_pq_multi_insert(PriorityQueue *pq, Hit *hit) 
+{
+    hit_pq_insert(pq, hit);
+    free(hit);
+}
+
 /***************************************************************************
  *
  * TopDocs
@@ -215,6 +221,7 @@ TopDocs *td_new(int total_hits, int size, Hit **hits)
 void td_destroy(TopDocs *td)
 {
     int i;
+
     for (i = 0; i < td->size; i++) {
         free(td->hits[i]);
     }
@@ -405,8 +412,8 @@ Query *q_combine(Query **queries, int q_cnt)
             }
             if (splittable) {
                 for (j = 0; j < BQ(q)->clause_cnt; j++) {
-                    q = BQ(q)->clauses[j]->query;
-                    hs_add(uniques, q);
+                    Query *sub_q = BQ(q)->clauses[j]->query;
+                    hs_add(uniques, sub_q);
                 }
             }
             else {
@@ -520,7 +527,7 @@ typedef struct StdSearcher {
     bool            close_ir : 1;
 } StdSearcher;
 
-static int stdsea_doc_freq(Searcher *self, const char *field, const char *term)
+int stdsea_doc_freq(Searcher *self, const char *field, const char *term)
 {
     return ir_doc_freq(STDSEA(self)->ir, field, term);
 }
@@ -555,19 +562,23 @@ static void sea_check_args(int num_docs, int first_doc)
     }
 }
 
-static TopDocs *stdsea_search(Searcher *self, Query *query, int first_doc,
-                             int num_docs, Filter *filter, Sort *sort)
+static TopDocs *stdsea_search_w(Searcher *self,
+                                Weight *weight,
+                                int first_doc,
+                                int num_docs,
+                                Filter *filter,
+                                Sort *sort,
+                                bool load_fields)
 {
     int max_size = first_doc + num_docs;
     int i;
-    Weight *weight;
     Scorer *scorer;
     Hit **score_docs = NULL;
     Hit hit;
     int total_hits = 0;
     float score;
     BitVector *bits = (filter
-                       ? filter->get_bv(filter, STDSEA(self)->ir)
+                       ? filt_get_bv(filter, STDSEA(self)->ir)
                        : NULL);
     Hit *(*hq_pop)(PriorityQueue *pq);
     void (*hq_insert)(PriorityQueue *pq, Hit *hit);
@@ -576,22 +587,23 @@ static TopDocs *stdsea_search(Searcher *self, Query *query, int first_doc,
 
     sea_check_args(num_docs, first_doc);
 
-    weight = q_weight(query, self);
     scorer = weight->scorer(weight, STDSEA(self)->ir);
     if (!scorer) {
-        if (bits) {
-            bv_destroy(bits);
-        }
-        weight->destroy(weight);
         return td_new(0, 0, NULL);
     }
 
     if (sort) {
         hq = fshq_pq_new(max_size, sort, STDSEA(self)->ir);
-        hq_pop = &fshq_pq_pop;
         hq_insert = &fshq_pq_insert;
         hq_destroy = &fshq_pq_destroy;
-    } else {
+        if (load_fields) {
+            hq_pop = &fshq_pq_pop_fd;
+        }
+        else {
+            hq_pop = &fshq_pq_pop;
+        }
+    }
+    else {
         hq = pq_new(max_size, (lt_ft)&hit_less_than, &free);
         hq_pop = &hit_pq_pop;
         hq_insert = &hit_pq_insert;
@@ -609,7 +621,6 @@ static TopDocs *stdsea_search(Searcher *self, Query *query, int first_doc,
         hq_insert(hq, &hit);
     }
     scorer->destroy(scorer);
-    weight->destroy(weight);
 
     if (hq->size > first_doc) {
         if ((hq->size - first_doc) < num_docs) {
@@ -630,10 +641,23 @@ static TopDocs *stdsea_search(Searcher *self, Query *query, int first_doc,
     pq_clear(hq);
     hq_destroy(hq);
 
-    if (bits) {
-        bv_destroy(bits);
-    }
     return td_new(total_hits, num_docs, score_docs);
+}
+
+static TopDocs *stdsea_search(Searcher *self,
+                              Query *query,
+                              int first_doc,
+                              int num_docs,
+                              Filter *filter,
+                              Sort *sort,
+                              bool load_fields)
+{
+    TopDocs *td;
+    Weight *weight = q_weight(query, self);
+    td = stdsea_search_w(self, weight, first_doc, num_docs, filter,
+                         sort, load_fields);
+    weight->destroy(weight);
+    return td;
 }
 
 static void stdsea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
@@ -642,14 +666,11 @@ static void stdsea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
 {
     Scorer *scorer;
     BitVector *bits = (filter
-                       ? filter->get_bv(filter, STDSEA(self)->ir)
+                       ? filt_get_bv(filter, STDSEA(self)->ir)
                        : NULL);
 
     scorer = weight->scorer(weight, STDSEA(self)->ir);
     if (!scorer) {
-        if (bits) {
-            bv_destroy(bits);
-        }
         return;
     }
 
@@ -725,6 +746,7 @@ Searcher *stdsea_new(IndexReader *ir)
     self->max_doc           = &stdsea_max_doc;
     self->create_weight     = &sea_create_weight;
     self->search            = &stdsea_search;
+    self->search_w          = &stdsea_search_w;
     self->search_each       = &stdsea_search_each;
     self->search_each_w     = &stdsea_search_each_w;
     self->rewrite           = &stdsea_rewrite;
@@ -780,11 +802,20 @@ static Weight *cdfsea_create_weight(Searcher *self, Query *query)
     return NULL;
 }
 
-static TopDocs *cdfsea_search(Searcher *self, Query *query, int first_doc,
-                              int num_docs, Filter *filter, Sort *sort)
+static TopDocs *cdfsea_search_w(Searcher *self, Weight *w, int fd, int nd,
+                                Filter *f, Sort *s, bool load)
 {
-    (void)self; (void)query; (void)first_doc; (void)num_docs;
-    (void)filter; (void)sort;
+    (void)self; (void)w; (void)fd; (void)nd;
+    (void)f; (void)s; (void)load;
+    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    return NULL;
+}
+
+static TopDocs *cdfsea_search(Searcher *self, Query *q, int fd, int nd,
+                              Filter *f, Sort *s, bool load)
+{
+    (void)self; (void)q; (void)fd; (void)nd;
+    (void)f; (void)s; (void)load;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
     return NULL;
 }
@@ -851,6 +882,7 @@ static Searcher *cdfsea_new(HashTable *df_map, int max_doc)
     self->max_doc           = &cdfsea_max_doc;
     self->create_weight     = &cdfsea_create_weight;
     self->search            = &cdfsea_search;
+    self->search_w          = &cdfsea_search_w;
     self->search_each       = &cdfsea_search_each;
     self->search_each_w     = &cdfsea_search_each_w;
     self->rewrite           = &cdfsea_rewrite;
@@ -1012,7 +1044,6 @@ static void msea_search_each(Searcher *self, Query *query, Filter *filter,
 
 struct MultiSearchArg {
     int total_hits, max_size;
-    float min_score;
     PriorityQueue *hq;
     void (*hq_insert)(PriorityQueue *pq, Hit *hit);
 };
@@ -1029,39 +1060,59 @@ void msea_search_i(Searcher *self, int doc_num, float score, void *arg)
     ms_arg->hq_insert(ms_arg->hq, &hit);
 }
 
-static TopDocs *msea_search(Searcher *self, Query *query, int first_doc,
-                            int num_docs, Filter *filter, Sort *sort)
+static TopDocs *msea_search_w(Searcher *self,
+                              Weight *weight,
+                              int first_doc,
+                              int num_docs,
+                              Filter *filter,
+                              Sort *sort,
+                              bool load_fields)
 {
     int max_size = first_doc + num_docs;
     int i;
-    Weight *weight;
+    int total_hits = 0;
     Hit **score_docs = NULL;
     Hit *(*hq_pop)(PriorityQueue *pq);
     void (*hq_insert)(PriorityQueue *pq, Hit *hit);
-    void (*hq_destroy)(PriorityQueue *self);
     PriorityQueue *hq;
-    struct MultiSearchArg ms_arg;
-    //FIXME
-    (void)sort;
+    (void)load_fields; /* does it automatically */
 
     sea_check_args(num_docs, first_doc);
 
-    weight = q_weight(query, self);
-    hq = pq_new(max_size, (lt_ft)&hit_less_than, NULL);
-    hq_pop = &hit_pq_pop;
-    hq_insert = &hit_pq_insert;
-    hq_destroy = &pq_destroy;
+    if (sort) {
+        hq = pq_new(max_size, (lt_ft)fdshq_lt, &free);
+        hq_insert = (void (*)(PriorityQueue *pq, Hit *hit))&pq_insert;
+        hq_pop = (Hit *(*)(PriorityQueue *pq))&pq_pop;
+    }
+    else {
+        hq = pq_new(max_size, (lt_ft)&hit_less_than, &free);
+        hq_insert = &hit_pq_multi_insert;
+        hq_pop = &hit_pq_pop;
+    }
 
-
-    ms_arg.hq = hq;
-    ms_arg.total_hits = 0;
-    ms_arg.max_size = max_size;
-    ms_arg.min_score = 0.0;
-    ms_arg.hq_insert = hq_insert;
-
-    msea_search_each_w(self, weight, filter, &msea_search_i, &ms_arg);
-
-    weight->destroy(weight);
+    //if (sort) printf("sort = %s\n", sort_to_s(sort));
+    for (i = 0; i < MSEA(self)->s_cnt; i++) {
+        Searcher *s = MSEA(self)->searchers[i];
+        TopDocs *td = s->search_w(s, weight, 0, max_size,
+                                  filter, sort, true);
+        //if (sort) printf("sort = %s\n", sort_to_s(sort));
+        if (td->size > 0) {
+            //printf("td->size = %d %d\n", td->size, num_docs);
+            int j;
+            int start = MSEA(self)->starts[i];
+            for (j = 0; j < td->size; j++) {
+                Hit *hit = td->hits[j];
+                hit->doc += start;
+                /*
+                printf("adding hit = %d:%f\n", hit->doc, hit->score);
+                */
+                hq_insert(hq, hit);
+            }
+            td->size = 0;
+        }
+        total_hits += td->total_hits;
+        td_destroy(td);
+    }
 
     if (hq->size > first_doc) {
         if ((hq->size - first_doc) < num_docs) {
@@ -1071,17 +1122,34 @@ static TopDocs *msea_search(Searcher *self, Query *query, int first_doc,
         for (i = num_docs - 1; i >= 0; i--) {
             score_docs[i] = hq_pop(hq);
             /*
-            hit = score_docs[i] = pq_pop(hq);
-            printf("hit = %d-->%f\n", hit->doc, hit->score);
+            Hit *hit = score_docs[i] = hq_pop(hq);
+            printf("popped hit = %d-->%f\n", hit->doc, hit->score);
             */
         }
-    } else {
+    }
+    else {
         num_docs = 0;
     }
     pq_clear(hq);
-    hq_destroy(hq);
+    pq_destroy(hq);
 
-    return td_new(ms_arg.total_hits, num_docs, score_docs);
+    return td_new(total_hits, num_docs, score_docs);
+}
+
+static TopDocs *msea_search(Searcher *self,
+                            Query *query,
+                            int first_doc,
+                            int num_docs,
+                            Filter *filter,
+                            Sort *sort,
+                            bool load_fields)
+{
+    TopDocs *td;
+    Weight *weight = q_weight(query, self);
+    td = msea_search_w(self, weight, first_doc, num_docs, filter,
+                         sort, load_fields);
+    weight->destroy(weight);
+    return td;
 }
 
 static Query *msea_rewrite(Searcher *self, Query *original)
@@ -1142,7 +1210,6 @@ static void msea_close(Searcher *self)
         free(msea->searchers);
     }
     free(msea->starts);
-    free(msea);
     free(self);
 }
 
@@ -1169,6 +1236,7 @@ Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs)
     self->max_doc               = &msea_max_doc;
     self->create_weight         = &msea_create_weight;
     self->search                = &msea_search;
+    self->search_w              = &msea_search_w;
     self->search_each           = &msea_search_each;
     self->search_each_w         = &msea_search_each_w;
     self->rewrite               = &msea_rewrite;

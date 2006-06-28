@@ -29,7 +29,7 @@ BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
         if (!ir->cache) {
             ir_add_cache(ir);
         }
-        bv = filt->get_bv(filt, ir);
+        bv = filt->get_bv_i(filt, ir);
         co = co_create(filt->cache, ir->cache, filt, ir,
                        (free_ft)&bv_destroy, (void *)bv);
     }
@@ -101,7 +101,7 @@ static char *qfilt_to_s(Filter *filt)
     return filter_str;
 }
 
-static BitVector *qfilt_get_bv(Filter *filt, IndexReader *ir)
+static BitVector *qfilt_get_bv_i(Filter *filt, IndexReader *ir)
 {
     BitVector *bv = bv_new_capa(ir->max_doc(ir));
     Searcher *sea = stdsea_new(ir);
@@ -141,7 +141,7 @@ Filter *qfilt_new_nr(Query *query)
 
     QF(filt)->query = query;
 
-    filt->get_bv    = &qfilt_get_bv;
+    filt->get_bv_i  = &qfilt_get_bv_i;
     filt->hash      = &qfilt_hash;
     filt->eq        = &qfilt_eq;
     filt->to_s      = &qfilt_to_s;

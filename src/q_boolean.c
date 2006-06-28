@@ -1549,3 +1549,4 @@ BooleanClause *bq_add_query(Query *self, Query *sub_query, unsigned int occur)
     REF(sub_query);
     return bq_add_query_nr(self, sub_query, occur);
 }
+
