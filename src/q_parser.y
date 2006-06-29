@@ -585,8 +585,8 @@ static Query *get_phrase_query(QParser *qp, char *field,
         int i, j;
         q = phq_new(field);
         if (slop_str) {
-            float slop;
-            sscanf(slop_str,"%f",&slop);
+            int slop;
+            sscanf(slop_str,"%d",&slop);
             ((PhraseQuery *)q)->slop = slop;
         }
 
