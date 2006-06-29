@@ -32,16 +32,16 @@ static int my_max_doc(Searcher *searcher)
 
 static void test_explanation(tst_case *tc, void *data)
 {
-    Explanation *expl = expl_new(1.6, "short description");
+    Explanation *expl = expl_new(1.6f, "short description");
     char *str = expl_to_s(expl);
     (void)data;
     Asequal("1.6 = short description\n", str);
     free(str);
-    expl_add_detail(expl, expl_new(0.8, "half the score"));
-    expl_add_detail(expl, expl_new(2.0, "to make the difference"));
-    expl_add_detail(expl->details[1], expl_new(0.5, "sub-sub"));
-    expl_add_detail(expl->details[1], expl_new(4.0, "another sub-sub"));
-    expl_add_detail(expl->details[0], expl_new(0.8, "and sub-sub for 1st sub"));
+    expl_add_detail(expl, expl_new(0.8f, "half the score"));
+    expl_add_detail(expl, expl_new(2.0f, "to make the difference"));
+    expl_add_detail(expl->details[1], expl_new(0.5f, "sub-sub"));
+    expl_add_detail(expl->details[1], expl_new(4.0f, "another sub-sub"));
+    expl_add_detail(expl->details[0], expl_new(0.8f, "and sub-sub for 1st sub"));
 
     str = expl_to_s(expl);
     Asequal("1.6 = short description\n"
@@ -513,16 +513,16 @@ static void test_phrase_query(tst_case *tc, void *data)
     check_to_s(tc, phq, "", "field:\"quick red fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "RED", 0);
-    check_to_s(tc, phq, "", "field:\"quick red fox&RED\"~4");
+    check_to_s(tc, phq, "", "field:\"quick red RED&fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "QUICK", -1);
     phq_add_term(phq, "red", 0);
-    check_to_s(tc, phq, "", "field:\"quick red&QUICK&red fox&RED\"~4");
+    check_to_s(tc, phq, "", "field:\"quick QUICK&red&red RED&fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "green", 0);
     phq_add_term(phq, "yellow", 0);
     check_to_s(tc, phq, "",
-               "field:\"quick red&QUICK&red fox&RED&green&yellow\"~4");
+               "field:\"quick QUICK&red&red RED&fox&green&yellow\"~4");
     q_deref(phq);
 
     phq = phq_new(field);
@@ -533,7 +533,7 @@ static void test_phrase_query(tst_case *tc, void *data)
     phq_add_term(phq, "quick", 0);
     phq_add_term(phq, "QUICK", 1);
     check_hits(tc, searcher, phq, "11, 14", 14);
-    check_to_s(tc, phq, "", "field:\"the&WORD3 THE&quick QUICK\"");
+    check_to_s(tc, phq, "", "field:\"WORD3&the THE&quick QUICK\"");
     q_deref(phq);
 
     phq = phq_new("not a field");
@@ -633,13 +633,13 @@ static void test_multi_phrase_query(tst_case *tc, void *data)
     phq_append_multi_term(phq, "FAST");
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, phq, "",
-               "field:\"quick|fast brown|red|hairy&QUICK|FAST fox\"~4");
+               "field:\"quick|fast QUICK|FAST&brown|red|hairy fox\"~4");
 
     phq_add_term(phq, "WORD3", -3);
     phq_append_multi_term(phq, "WORD2");
     check_hits(tc, searcher, phq, "1, 8, 11, 14", -1);
     check_to_s(tc, phq, "", "field:\"WORD3|WORD2 quick|fast "
-               "brown|red|hairy&QUICK|FAST fox\"~4");
+               "QUICK|FAST&brown|red|hairy fox\"~4");
     q_deref(phq);
 
     phq = phq_new("not a field");
@@ -736,23 +736,23 @@ static void test_multi_term_query(tst_case *tc, void *data)
     check_to_s(tc, mtq, field, "<brown>");
     check_to_s(tc, mtq, "", "field:<brown>");
 
-    multi_tq_add_term_boost(mtq, "fox", 0.1);
+    multi_tq_add_term_boost(mtq, "fox", 0.1f);
     check_hits(tc, searcher, mtq, "1, 8, 16, 17", -1);
     check_to_s(tc, mtq, field, "<brown>");
     check_to_s(tc, mtq, "", "field:<brown>");
 
-    multi_tq_add_term_boost(mtq, "fox", 0.6);
+    multi_tq_add_term_boost(mtq, "fox", 0.6f);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, mtq, field, "<fox^0.6|brown>");
     check_to_s(tc, mtq, "", "field:<fox^0.6|brown>");
 
-    multi_tq_add_term_boost(mtq, "fast", 50.0);
+    multi_tq_add_term_boost(mtq, "fast", 50.0f);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", 8);
     check_to_s(tc, mtq, field, "<fox^0.6|brown|fast^50.0>");
     check_to_s(tc, mtq, "", "field:<fox^0.6|brown|fast^50.0>");
 
   
-    mtq->boost = 80.1;
+    mtq->boost = 80.1f;
     check_to_s(tc, mtq, "", "field:<fox^0.6|brown|fast^50.0>^80.1");
     multi_tq_add_term(mtq, "word1");
     check_to_s(tc, mtq, "", "field:<fox^0.6|brown|word1|fast^50.0>^80.1");
