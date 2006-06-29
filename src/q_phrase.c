@@ -15,7 +15,8 @@ static int phrase_pos_cmp(const void *p1, const void *p2)
     if (pos1 < pos2) {
         return -1;
     }
-    return 0;
+    return strcmp(((PhrasePosition *)p1)->terms[0], 
+                  ((PhrasePosition *)p2)->terms[0]);
 }
 
 
@@ -510,6 +511,7 @@ static Scorer *phw_scorer(Weight *self, IndexReader *ir)
 
 Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
 {
+    Explanation *expl;
     Explanation *idf_expl1;
     Explanation *idf_expl2;
     Explanation *query_expl;
@@ -535,8 +537,7 @@ Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     
     query_str = self->query->to_s(self->query, "");
 
-    Explanation *expl = expl_new(0.0, "weight(%s in %d), product of:",
-                                 query_str, doc_num);
+    expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
 
     /* ensure the phrase positions are in order for explanation */
     qsort(positions, pos_cnt, sizeof(PhrasePosition), &phrase_pos_cmp);
