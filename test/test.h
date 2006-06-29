@@ -118,7 +118,7 @@ extern void vTmsg(const char *fmt, va_list args);
  * @param args the args to pass to the function
  * @return true if the test passed
  */
-extern bool tst_raise(int line_num, tst_case *tc, int err_code,
+extern bool tst_raise(int line_num, tst_case *tc, const int err_code,
                       void (*func)(void *args), void *args);
 
 /**
