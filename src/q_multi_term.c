@@ -188,7 +188,7 @@ static bool multi_tsc_next(Scorer *self)
             total_score += mtsc->score_cache[freq] * tdew->boost;
         }
         else {
-            total_score += sim_tf(self->similarity, freq) * tdew->boost;
+            total_score += sim_tf(self->similarity, (float)freq) * tdew->boost;
         }
 
         if (tdew_next(tdew)) {
@@ -211,8 +211,8 @@ static bool multi_tsc_advance_to(Scorer *self, int target_doc_num)
     if (tdew_pq == NULL) {
         MultiTermScorer *mtsc = MTSc(self);
         TermDocEnumWrapper **tdew_a = mtsc->tdew_a;
-        tdew_pq = pq_new(mtsc->tdew_cnt, (lt_ft)tdew_less_than, (free_ft)NULL);
         int i;
+        tdew_pq = pq_new(mtsc->tdew_cnt, (lt_ft)tdew_less_than, (free_ft)NULL);
         for (i = mtsc->tdew_cnt - 1; i >= 0; i--) {
             tdew_skip_to(tdew_a[i], target_doc_num);
             pq_push(tdew_pq, tdew_a[i]);
