@@ -20,8 +20,6 @@ void prepare_filter_index(Store *store)
     int i;
     IndexWriter *iw;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
-    index_create(store, fis);
-    fis_destroy(fis);
 
     struct FilterData data[FILTER_DOCS_SIZE] = {
         {"0", "20040601", "on"},
@@ -35,6 +33,9 @@ void prepare_filter_index(Store *store)
         {"8", "20050301", "on"},
         {"9", "20050401", "off"}
     };
+
+    index_create(store, fis);
+    fis_destroy(fis);
 
     iw = iw_open(store, whitespace_analyzer_new(false), NULL);
     for (i = 0; i < FILTER_DOCS_SIZE; i++) {
