@@ -15,10 +15,10 @@
 #   define DIR_SEPARATOR "\\"
 # endif
 # ifndef S_IRUSR
-#   define S_IRUSR _S_IRUSR
+#   define S_IRUSR _S_IREAD
 # endif
 # ifndef S_IWUSR
-#   define S_IWUSR _S_IWUSR
+#   define S_IWUSR _S_IWRITE
 # endif
 #else
 # define DIR_SEPARATOR "/"
@@ -248,7 +248,7 @@ static OutStream *fs_new_output(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
     int fd = open(join_path(path, store->dir.path, filename),
-                  O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+                  O_WRONLY | O_CREAT | O_BINARY, S_IRUSR | S_IWUSR);
     OutStream *os;
     if (fd < 0) {
         RAISE(IO_ERROR, "couldn't create OutStream %s: <%s>",
@@ -325,7 +325,7 @@ static InStream *fs_open_input(Store *store, const char *filename)
 {
     InStream *is;
     char path[MAX_FILE_PATH];
-    int fd = open(join_path(path, store->dir.path, filename), O_RDONLY);
+    int fd = open(join_path(path, store->dir.path, filename), O_RDONLY | O_BINARY);
     if (fd < 0) {
         RAISE(IO_ERROR, "couldn't create InStream %s: <%s>",
               path, strerror(errno));
@@ -345,7 +345,7 @@ static int fs_lock_obtain(Lock *lock)
     int f;
     int trys = LOCK_OBTAIN_TIMEOUT;
     while (((f =
-             open(lock->name, O_CREAT | O_EXCL | O_WRONLY,
+             open(lock->name, O_CREAT | O_EXCL | O_RDWR,
                    S_IRUSR | S_IWUSR)) < 0) && (trys > 0)) {
         trys--;
         sleep(1);
@@ -361,7 +361,7 @@ static int fs_lock_obtain(Lock *lock)
 
 static int fs_lock_is_locked(Lock *lock)
 {
-    int f = open(lock->name, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR, S_IWUSR);
+    int f = open(lock->name, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
     if (f >= 0) {
         if (close(f) || remove(lock->name)) {
             RAISE(IO_ERROR, "couldn't close lock \"%s\": <%s>", lock->name,
