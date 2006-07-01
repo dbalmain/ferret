@@ -204,7 +204,7 @@ module IndexReaderCommon
   end
 
   def do_test_term_vectors()
-    tv = @ir.get_term_vector(3, "body")
+    tv = @ir.get_term_vector(3, :body)
 
     assert_equal("body", tv.field)
     assert_equal(["word1", "word2", "word3", "word4"], tv.terms)

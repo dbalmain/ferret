@@ -1152,6 +1152,7 @@ Init_analysis(void)
       frt_per_field_analyzer_add_field, 2);
   rb_define_method(cPerFieldAnalyzer, "[]=",
       frt_per_field_analyzer_add_field, 2);
+  rb_define_class_under(mAnalysis, "PerFieldAnalyzerWrapper", cPerFieldAnalyzer);
 
   /*** * * RegexAnalyzer * * ***/
   cRegExpAnalyzer =
