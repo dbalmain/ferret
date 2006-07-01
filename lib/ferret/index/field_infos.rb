@@ -97,7 +97,7 @@ module Ferret
       # Returns the number of the field that goes by the field name that is
       # passed. If there is no field of this name then -1 is returned
       def field_number(name)
-        fi = @fi_hash[name]
+        fi = @fi_hash[name.to_s]
         return fi ? fi.number : NOT_A_FIELD
       end
 
@@ -109,7 +109,7 @@ module Ferret
           end
           return @fi_array[index]
         else
-          return @fi_hash[index]
+          return @fi_hash[index.to_s]
         end
       end
 

@@ -341,6 +341,7 @@ module Ferret::Index
     # raises:: IOException if there is an error reading the term vector files
     def get_field_tv(doc_num, field)
       # Check if no term vectors are available for this segment at all
+      field = field.to_s
       field_number = @field_infos.field_number(field)
       result = nil
       if (@tvx != nil) 
