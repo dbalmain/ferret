@@ -25,7 +25,7 @@ extern void setprogname(const char *str);
 
 extern VALUE cQueryParseException;
 
-#define EXCEPTION_CODE rb_eException
+#define EXCEPTION_CODE rb_eStandardError
 //#define IO_ERROR rb_eIOError
 //#define ARG_ERROR rb_eArgError
 //#define EOF_ERROR rb_eEOFError
