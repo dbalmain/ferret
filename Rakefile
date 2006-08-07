@@ -211,6 +211,7 @@ else
     #### Load-time details: library and application (you will need one or both).
 
     s.require_path = 'lib'                         # Use these for libraries.
+    s.autorequire = 'ferret'
 
     #s.bindir = "bin"                               # Use these for applications.
     #s.executables = ["rake"]

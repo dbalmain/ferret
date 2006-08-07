@@ -146,7 +146,7 @@ class SearchAndSortTest < Test::Unit::TestCase
     do_test_top_docs(is, q, [8,7,5,3,1,0,2,4,6,9], Sort.new("float", true))
     do_test_top_docs(is, q, [0,6,1,5,9,4,8,7,2,3], Sort.new(["int", "string"], true))
     do_test_top_docs(is, q, [3,2,7,8,4,9,5,1,6,0], Sort.new(["int", "string"]))
-    do_test_top_docs(is, q, [3,2,7,8,4,9,5,1,6,0], ["int", "string"])
+    do_test_top_docs(is, q, [3,2,7,8,4,9,5,1,6,0], [:int, "string"])
   end
 
   #LENGTH = SortField::SortType.new("length", lambda{|str| str.length})

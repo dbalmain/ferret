@@ -4,7 +4,6 @@
 #include <ruby.h>
 #include "hash.h"
 
-#define ruby_xmalloc malloc
 #define FERRET_EXT
 
 #define MAX_ERROR_LEN 2048
