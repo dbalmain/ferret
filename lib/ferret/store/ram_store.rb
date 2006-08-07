@@ -7,12 +7,15 @@ module Ferret::Store
     def initialize(dir = nil, close_dir = false)
       super()
       @files = Hash.new
-      unless dir.nil?
+      if dir
+        buf = BUFFER.clone
         dir.each do |file|
           os = create_output(file)    # make a place on ram disk
           is = dir.open_input(file)   # read the current file
           len = is.length             # and copy the file to ram disk
-          buf = Array.new(len)
+          if len > buf.size
+            buf << " " * (len - buf.size)
+          end
           is.read_bytes(buf, 0, len)
           os.write_bytes(buf, len)
           is.close()

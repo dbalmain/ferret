@@ -532,7 +532,11 @@ class IndexReaderTest < Test::Unit::TestCase
   end
 
   def test_ir_multivalue_fields()
-    iw = IndexWriter.new(@dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
+    @fs_dpath = File.expand_path(File.join(File.dirname(__FILE__),
+                                           '../../temp/fsdir'))
+    @fs_dir = Ferret::Store::FSDirectory.new(@fs_dpath, true)
+
+    iw = IndexWriter.new(@fs_dir, :analyzer => WhiteSpaceAnalyzer.new(), :create => true)
     doc = Document.new()
     doc << Field.new("tag", "Ruby", Field::Store::YES, Field::Index::NO, Field::TermVector::NO)
     doc << Field.new("tag", "C", Field::Store::YES, Field::Index::UNTOKENIZED, Field::TermVector::NO)
@@ -555,6 +559,7 @@ class IndexReaderTest < Test::Unit::TestCase
     iw << doc
     iw.close()
 
+    @dir = Ferret::Store::RAMDirectory.new(@fs_dir, true)
     ir = IndexReader.open(@dir, false)
 
     doc = ir.get_document(0)
