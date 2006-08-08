@@ -26,7 +26,7 @@ Run the following;
   $ rake ext
   $ ruby setup.rb config
   $ ruby setup.rb setup
-  # ruby setup.rb install
+  # sudo ruby setup.rb install
   
 These simple steps install ferret in the default location of Ruby libraries.
 You can also install files into your favorite directory by supplying setup.rb
