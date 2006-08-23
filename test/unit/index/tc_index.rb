@@ -624,4 +624,30 @@ class IndexTest < Test::Unit::TestCase
     index.flush
     index.close
   end
+
+  def test_stopwords
+    i = Ferret::Index::Index.new(
+            :occur_default => Ferret::Search::BooleanClause::Occur::MUST,
+            :default_search_field => '*')
+    d = Ferret::Document::Document.new
+ 
+    # adding this additional field to the document leads to failure below
+    # comment out this statement and all tests pass:
+    d << Ferret::Document::Field.new('id', '1',
+                                     Ferret::Document::Field::Store::YES,
+                                     Ferret::Document::Field::Index::UNTOKENIZED)
+ 
+    d << Ferret::Document::Field.new('content', 'Move or shake',
+                                     Ferret::Document::Field::Store::NO,
+                                     Ferret::Document::Field::Index::TOKENIZED,
+                                     Ferret::Document::Field::TermVector::NO,
+                                     false, 1.0)
+    i << d
+    hits = i.search 'move nothere shake'
+    assert_equal 0, hits.size
+    hits = i.search 'move shake'
+    assert_equal 1, hits.size
+    hits = i.search 'move or shake'
+    assert_equal 1, hits.size # fails when id field is present
+  end
 end

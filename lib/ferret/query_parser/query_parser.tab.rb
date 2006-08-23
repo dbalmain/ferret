@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3fb', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id07e7308361', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -323,7 +323,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3f
   end
 
   def add_and_clause(clauses, clause)
-    clauses.compact!
+    (clauses||=[]).compact!
     if (clauses.length == 1)
       last_cl = clauses[0]
       last_cl.occur = BooleanClause::Occur::MUST if not last_cl.prohibited?
@@ -379,7 +379,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3f
         q = yield(field)
         bq << BooleanClause.new(q) if q
       end
-      return bq                
+      return (bq.clauses.size == 0) ? nil : bq
     end
   end
 
@@ -398,7 +398,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3f
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id155b60f3fb
+..end lib/ferret/query_parser/query_parser.y modeval..id07e7308361
 
 ##### racc 1.4.4 generates ###
 

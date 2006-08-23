@@ -434,7 +434,7 @@ end
   end
 
   def add_and_clause(clauses, clause)
-    clauses.compact!
+    (clauses||=[]).compact!
     if (clauses.length == 1)
       last_cl = clauses[0]
       last_cl.occur = BooleanClause::Occur::MUST if not last_cl.prohibited?
@@ -490,7 +490,7 @@ end
         q = yield(field)
         bq << BooleanClause.new(q) if q
       end
-      return bq                
+      return (bq.clauses.size == 0) ? nil : bq
     end
   end
 
