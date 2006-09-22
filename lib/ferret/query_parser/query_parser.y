@@ -440,7 +440,7 @@ end
       last_cl.occur = BooleanClause::Occur::MUST if not last_cl.prohibited?
     end
 
-    return if clause.nil? # incase a query got destroyed by the analyzer
+    return clauses if clause.nil? # incase a query got destroyed by the analyzer
 
     clause.occur = BooleanClause::Occur::MUST if not clause.prohibited?
     clauses << clause

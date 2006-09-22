@@ -11,7 +11,7 @@ module Ferret
 
   class QueryParser < Racc::Parser
 
-module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id07e7308361', 'lib/ferret/query_parser/query_parser.y', 126
+module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..idf0645d6518', 'lib/ferret/query_parser/query_parser.y', 126
   attr_accessor :default_field, :fields, :handle_parse_errors
 
   def initialize(default_field = "*", options = {})
@@ -329,7 +329,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id07e730836
       last_cl.occur = BooleanClause::Occur::MUST if not last_cl.prohibited?
     end
 
-    return if clause.nil? # incase a query got destroyed by the analyzer
+    return clauses if clause.nil? # incase a query got destroyed by the analyzer
 
     clause.occur = BooleanClause::Occur::MUST if not clause.prohibited?
     clauses << clause
@@ -398,7 +398,7 @@ module_eval <<'..end lib/ferret/query_parser/query_parser.y modeval..id07e730836
     return qp.parse(query)
   end
 
-..end lib/ferret/query_parser/query_parser.y modeval..id07e7308361
+..end lib/ferret/query_parser/query_parser.y modeval..idf0645d6518
 
 ##### racc 1.4.4 generates ###
 

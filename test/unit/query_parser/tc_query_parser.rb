@@ -179,4 +179,17 @@ class QueryParserTest < Test::Unit::TestCase
       assert_equal(expected, parser.parse(query_str).to_s("xxx"))
     end
   end
+
+  def test_qp_stopword_removal_with_default_occur_set_to_must() 
+ 	  parser = Ferret::QueryParser.new("xxx", :fields => ["xxx", "key"], 
+ 	                                          :occur_default => Ferret::Search::BooleanClause::Occur::MUST 
+ 	                                   ) 
+ 	  pairs = [ 
+ 	    ['touch of evil', '+touch +evil'], 
+ 	  ] 
+ 	     
+ 	  pairs.each do |query_str, expected| 
+ 	    assert_equal(expected, parser.parse(query_str).to_s("xxx")) 
+ 	  end 
+ 	end
 end
