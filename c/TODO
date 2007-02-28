@@ -1,0 +1,3 @@
+* fix boolean query. No more limit
+* add highlighting from external sources.
+* add stopAnalyzer to bindings

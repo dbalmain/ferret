@@ -1,114 +1,61 @@
-= Ferret
+Ferret
+=======
 
-Ferret is a Ruby port of the Java Lucene search engine.
-(http://jakarta.apache.org/lucene/) In the same way as Lucene, it is not a
-standalone application, but a library you can use to index documents and
-search for things in them later.
-
-== Requirements
-
-* Ruby 1.8
-* (C compiler to build the extension but not required to use Ferret)
-
-== Installation
-
-If you have gems installed you can simply do;
-
-  gem install ferret
-
-Otherwise, you will need Rake installed. De-compress the archive and enter its top directory.
-
-  tar zxpvf ferret-<version>.tar.gz
-  cd ferret-<version>
-
-Run the following;
-
-  $ rake ext
-  $ ruby setup.rb config
-  $ ruby setup.rb setup
-  # sudo ruby setup.rb install
-  
-These simple steps install ferret in the default location of Ruby libraries.
-You can also install files into your favorite directory by supplying setup.rb
-some options. Try;
-
- $ ruby setup.rb --help
+Ferret is an information retrieval library in the same vein as Apache Lucene[1].
+Originally it was a full port of Lucene but it now uses it's own file format
+and indexing algorithm although it is still very similar in many ways to
+Lucene. Everything you can do in Lucene you should be able to do in Ferret.
 
 
-== Usage
+For more information on Ferret, please visit the website:
 
-You can read the TUTORIAL which you'll find in the same directory as this
-README. You can also check the following modules for more specific
-documentation.
+    http://ferret.davebalmain.com/trac
 
-* Ferret::Analysis: for more information on how the data is processed when it
-  is tokenized. There are a number of things you can do with your data such as
-  adding stop lists or perhaps a porter stemmer. There are also a number of
-  analyzers already available and it is almost trivial to create a new one
-  with a simple regular expression.
+[1] (http://jakarta.apache.org/lucene/)
 
-* Ferret::Search: for more information on querying the index. There are a
-  number of already available queries and it's unlikely you'll need to create
-  your own. You may however want to take advantage of the sorting or filtering
-  abilities of Ferret to present your data the best way you see fit.
+Contents
+=========
 
-* Ferret::Document: to find out how to create documents. This part of Ferret
-  is relatively straightforward. The main thing that we haven't gone into here
-  is the use of term vectors. These allow you to store and retrieve the
-  positions and offsets of the data which can be very useful in document
-  comparison amoung other things.  == More information
+c/
+    Ferret is written in C for speed. The actual C code should be fairly easy
+    to use in an application or bindings to a language other than Ruby.
 
-* Ferret::QueryParser: if you want to find out more about what you can do with
-  Ferret's Query Parser, this is the place to look. The query parser is one
-  area that could use a bit of work so please send your suggestions.
+ruby/
+    This directory contains the Ruby bindings and tests. See ruby/README for
+    information on installing Ferret's Ruby bindings
 
-* Ferret::Index: for more advanced access to the index you'll probably want to
-  use the Ferret::Index::IndexWriter and Ferret::Index::IndexReader. This is
-  the place to look for more information on them.
+smoke_test.rb
+    If you would like to ensure that ferret keeps working on your system, add
+    this method to a cron daemon to run as often as you like. Every time I
+    check in a new version of Ferret, this script will pull down the changes
+    from the repository and run all of the unit tests (C and Ruby), notifying
+    me if anything is broken. The more people running this script the more
+    stable ruby will be.
 
-* Ferret::Store: This is the module used to access the actual index storage
-  and won't be of much interest to most people.
+Contributions
+=============
 
-=== Performance
+To contribute code, please contact Dave Balmain at dbalmain.gmail.com or submit
+a ticket to the Ferret website[2]. If you would like to contribute financially,
+please also visit the Ferret website:
 
-Currently Ferret is an order of magnitude slower than Java Lucene which can be
-quite a pain at times. I have written some basic C extensions which may or may
-not have installed when you installed Ferret. These double the speed but still
-leave it a lot slower than the Java version. I have, however, ported the
-indexing part of Java Lucene to C and it is an order of magnitude faster then
-the Java version. Once I'm pretty certain that the API of Ferret has settled
-and won't be changing much, I'll intergrate my C version. So expect to see
-Ferret running faster than Java Lucene some time in the future. If you'd like
-to try cferret and test my claims, let me know (if you haven't already found
-it in my subversion repository). It's not currently portable and will probably
-only run on linux.
+[2] http://ferret.davebalmain.com/trac.
 
-== Contact
+Authors
+========
 
-For bug reports and patches I have set up Trac here;
+[<b>David Balmain</b>] {dbalmain@gmail.com}
 
-  http://ferret.davebalmain.com/trac
+Acknowledgements
+=================
 
-Queries, discussion etc should be addressed to the forum or mailing lists hosted
-at;
+[The Apache Software Foundation (Doug Cutting and friends)] Original Apache
+Lucene. There have also been many other contributers to Ferret. I will start 
+to record them on the Ferret website.
 
-  http://rubyforge.org/projects/ferret/
-
-Alternatively you could create a new page for discussion on the wiki at my Trac
-page above. Or, if you're shy, please feel free to email me directly at dbalmain@gmail.com
-
-Of course, since Ferret is almost a straight port of Java Lucene,
-everything said about Lucene at http://jakarta.apache.org/lucene/ should
-be true about Ferret. Apart from the bits about it being in Java.
-
-== Authors
-
-[<b>David Balmain</b>] Port to Ruby
-
-[The Apache Software Foundation (Doug Cutting and friends)] Original Apache Lucene
-
-== License
+License
+========
 
 Ferret is available under an MIT-style license.
 
-:include: MIT-LICENSE
+See MIT-LICENSE

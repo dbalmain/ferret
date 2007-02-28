@@ -1,0 +1,110 @@
+Segments ->
+  UInt32 Format         # hard coded number depending in Ferret version
+  UInt32 Version        # incremented with every index change. Used to detect latest index
+  UInt32 NameCounter    # used to get the name of the next segment. Names are _<base 32 integer>
+  UInt32 SegCount       # number of segments
+  {
+    String SegName
+    UInt32 SegSize      # number of documents in this segment
+  } * SegCount
+
+Compound(.cfs) ->
+  VInt FileCount
+  {
+    UInt64 DataOffset 
+    String FileName 
+  } * FileCount
+  {
+    Chars FileData
+  } * FileCount
+
+Fields ->
+  Int StoreDefault
+  Int IndexDefault
+  Int TermVectorDefault
+  Int FeildCount
+  {
+    String FieldName 
+    Int    Boost          # CastAsInt
+    Byte   FieldBits
+    <
+      0x01 => store fields
+      0x02 => compress fields
+      0x04 => index fields
+      0x08 => tokenize fields
+      0x10 => omit norms
+      0x20 => store term vector
+      0x40 => store positions
+      0x80 => store offsets
+    > FieldBits
+  } * FieldCount
+
+FieldIndex(.fdx) -> 
+  {
+    UInt32 FieldValuesPosition
+    UInt32 FieldTermVectorsPosition
+  } * SegSize
+
+FieldData(.fdt) ->  
+  {
+    VInt FieldCount
+    {
+      VInt   FieldNum
+      VInt   FieldLen
+    } * FieldCount
+    {
+      Bytes FieldData
+    } * FieldCount
+    VInt TVCount
+    {
+      VInt   FieldNum
+      VInt   FieldLen
+    } * FieldCount
+    {
+      Bytes FieldData
+    } * FieldCount
+  } * SegSize
+
+TermInfoFile(.tis) ->
+  UInt32 IndexInterval
+  UInt32 SkipInterval
+  TermInfo {
+    VInt   PrefixLength
+    String Suffix
+    VInt   FieldNum
+    VInt   DocFreq
+    VLong  FreqDelta
+    VLong  ProxDelta
+    VLong  SkipDelta
+  } * TermCount
+
+TermInfoIndex(.tii) ->
+  UInt32 IndexInterval
+  UInt32 SkipInterval
+  {
+    TermInfo {
+      VInt   PrefixLength
+      String Suffix
+      VInt   FieldNum
+      VInt   DocFreq
+      VLong  FreqDelta
+      VLong  ProxDelta
+      VLong  SkipDelta
+    }
+    IndexDelta
+  } * IndexTermCount
+
+FreqFile(.frq) ->
+  {
+    TermFreqs {
+      TermFreq {
+        VInt DocDelta
+        VInt Freq?
+      }
+    } * DocFreq
+    SkipData {
+      VInt DocSkip
+      VInt FreqSkip
+      VInt ProxSkip
+    } * DocFreq/SkipInterval
+  } * TermCount

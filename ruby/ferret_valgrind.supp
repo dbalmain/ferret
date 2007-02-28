@@ -1,0 +1,478 @@
+{
+   Ruby::mark_locations_array
+   Memcheck:Cond
+   fun:mark_locations_array
+}
+{
+   Ruby::str_make_independent.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:str_make_independent
+}
+{
+   Ruby::gc_mark_children.st_lookup.value4
+   Memcheck:Value4
+   fun:st_lookup
+   fun:rb_mark_generic_ivar
+   fun:gc_mark_children
+}
+{
+   Ruby::env_aset.leak1
+   Memcheck:Leak
+   fun:realloc
+   fun:ruby_xrealloc
+   fun:ruby_setenv
+   fun:env_aset
+}
+{
+   Ruby::env_aset.leak2
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:ruby_strdup
+   fun:ruby_setenv
+   fun:env_aset
+}
+{
+   Ruby::str_new.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:str_new
+}
+{
+   Ruby::gc_mark_children.st_lookup.cond
+   Memcheck:Cond
+   fun:st_lookup
+   fun:rb_mark_generic_ivar
+   fun:gc_mark_children
+}
+{
+   Ruby::gc_mark.cond
+   Memcheck:Cond
+   fun:gc_mark
+}
+{
+   Ruby::gc_mark.value4
+   Memcheck:Value4
+   fun:gc_mark
+}
+{
+   Ruby::gc_mark.addr4
+   Memcheck:Addr4
+   fun:gc_mark
+}
+{
+   Ruby::gc_mark_children.addr1
+   Memcheck:Addr1
+   fun:gc_mark_children
+}
+{
+   Ruby::gc_mark_children.addr4
+   Memcheck:Addr4
+   fun:gc_mark_children
+}
+{
+   Ruby::gc_mark_children.cond
+   Memcheck:Cond
+   fun:gc_mark_children
+}
+{
+   Ruby::gc_mark_children.value4
+   Memcheck:Value4
+   fun:gc_mark_children
+}
+{
+   Ruby::scope_dup.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:scope_dup
+}
+{
+   Ruby::pthread.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:rwlock_have_already
+   fun:pthread_rwlock_rdlock
+}
+{
+   Ruby::str_format.leak
+   Memcheck:Leak
+   fun:realloc
+   fun:ruby_xrealloc
+   fun:rb_str_resize
+   fun:rb_f_sprintf
+   fun:rb_str_format
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+}
+{
+   Ruby::HashCreate.leak
+   Memcheck:Leak
+   fun:calloc
+   fun:st_init_table_with_size
+   fun:st_init_table
+   fun:st_init_numtable
+   fun:rb_ivar_set
+   fun:rb_eval
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_obj_call_init
+   fun:rb_class_new_instance
+   fun:call_cfunc
+   fun:rb_call0
+}
+{
+   Ruby::re_compile.leak2
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:ruby_re_compile_pattern
+}
+{
+   Ruby::rb_intern.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:st_add_direct
+   fun:rb_intern
+   fun:rb_str_intern
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_eval
+   fun:rb_yield_0
+   fun:rb_yield
+   fun:int_dotimes
+}
+{
+   Ruby::copy_node_scope.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:copy_node_scope
+   fun:rb_eval
+}
+{
+   Ruby::eval_str_append.leak
+   Memcheck:Leak
+   fun:realloc
+   fun:ruby_xrealloc
+   fun:rb_str_buf_append
+}
+{
+   Ruby::ary_new.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:ary_new
+}
+{
+   Ruby::ary_store.leak
+   Memcheck:Leak
+   fun:realloc
+   fun:ruby_xrealloc
+   fun:rb_ary_store
+}
+{
+   Ruby::h_new_str.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:h_new_str
+}
+{
+   Ruby::ary_new.leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:ary_new
+   fun:rb_ary_new
+}
+{
+   Ruby::hash_new.leak
+   Memcheck:Leak
+   fun:calloc
+   fun:st_init_table_with_size
+   fun:st_init_table
+}
+{
+   GLIBC.cond
+   Memcheck:Cond
+   obj:/lib/ld-2.3.6.so
+}
+{
+   GLIBC.value4
+   Memcheck:Value4
+   obj:/lib/ld-2.3.6.so
+}
+{
+   GLIBC.addr4
+   Memcheck:Addr4
+   obj:/lib/ld-2.3.6.so
+}
+{
+   thread_clone
+   Memcheck:Param
+   clone(child_tidptr)
+   fun:clone
+   fun:clone
+}
+{
+   GLIBC_2::dl_load
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+}
+{
+   Ruby::rb_load
+   Memcheck:Leak
+   fun:calloc
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_eval
+   fun:rb_load
+}
+{
+   Ruby::rb_f_require
+   Memcheck:Leak
+   fun:malloc
+   fun:add_to_global
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+}
+{
+   Ruby::add_heap
+   Memcheck:Leak
+   fun:malloc
+   fun:add_heap
+   fun:ruby_init
+   fun:main
+}
+{
+   Ruby::rb_require_safe
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+}
+{
+   PThread::rb_require_safe
+   Memcheck:Leak
+   fun:calloc
+   fun:pthread_setspecific
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_eval
+}
+{
+   Ruby::rb_f_require
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+}
+{
+   GLIBC_2::dl_open_worker
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+}
+{
+   Leak6
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+}
+{
+   Leak7
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:dl_open_worker
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   fun:dlopen_doit
+   obj:/lib/ld-2.3.6.so
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+}
+{
+   Leak8
+   Memcheck:Leak
+   fun:calloc
+   fun:rehash
+   fun:st_insert
+}
+{
+   Leak9
+   Memcheck:Leak
+   fun:malloc
+   fun:st_init_table_with_size
+   fun:st_init_strtable_with_size
+   fun:Init_sym
+   fun:rb_call_inits
+   fun:ruby_init
+   fun:main
+}
+{
+   Leak10
+   Memcheck:Leak
+   fun:realloc
+   fun:ruby_xrealloc
+   fun:rb_str_buf_cat
+   fun:rb_str_cat
+   fun:rb_str_cat2
+   fun:rb_set_class_path
+   fun:rb_define_class_under
+   fun:Init_Exception
+   fun:rb_call_inits
+   fun:ruby_init
+   fun:main
+}
+{
+   Leak11
+   Memcheck:Leak
+   fun:malloc
+   fun:st_add_direct
+   fun:rb_intern
+}
+{
+   Leak12
+   Memcheck:Leak
+   fun:malloc
+   fun:st_insert
+}
+{
+   Leak13
+   Memcheck:Leak
+   fun:calloc
+   fun:st_init_table_with_size
+   fun:st_init_table
+   fun:st_init_numtable
+   fun:Init_var_tables
+   fun:rb_call_inits
+   fun:ruby_init
+   fun:main
+}
+{
+   Leak14
+   Memcheck:Leak
+   fun:malloc
+   fun:ruby_xmalloc
+   fun:ruby_strdup
+   fun:rb_intern
+}
+{
+   Leak15
+   Memcheck:Leak
+   fun:calloc
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_load
+   fun:rb_require_safe
+}
+{
+   Leak16
+   Memcheck:Leak
+   fun:calloc
+   fun:pthread_setspecific
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.1
+   fun:dln_load
+   fun:rb_require_safe
+   fun:rb_f_require
+   fun:call_cfunc
+   fun:rb_call0
+   fun:rb_call
+   fun:rb_eval
+   fun:rb_load
+}
+
