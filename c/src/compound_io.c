@@ -216,11 +216,10 @@ Store *open_cmpd_store(Store *store, const char *name)
     char *fname;
     FileEntry *entry = NULL;
     Store *new_store = NULL;
-    CompoundStore *cmpd = NULL;
-    InStream *is = NULL;
+    CompoundStore *volatile cmpd = NULL;
+    InStream *volatile is = NULL;
 
     TRY
-        new_store = store_new();
         cmpd = ALLOC_AND_ZERO(CompoundStore);
 
         cmpd->store       = store;
@@ -245,7 +244,6 @@ Store *open_cmpd_store(Store *store, const char *name)
             h_set(cmpd->entries, fname, entry);
         }
     XCATCHALL
-        store_destroy(new_store);
         if (is) is_close(is);
         if (cmpd->entries) h_destroy(cmpd->entries);
         free(cmpd);
@@ -256,6 +254,7 @@ Store *open_cmpd_store(Store *store, const char *name)
         entry->length = is_length(is) - entry->offset;
     }
 
+    new_store               = store_new();
     new_store->dir.cmpd     = cmpd;
     new_store->touch        = &cmpd_touch;
     new_store->exists       = &cmpd_exists;

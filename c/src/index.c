@@ -6,6 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #define GET_LOCK(lock, name, store, err_msg) do {\
     lock = store->open_lock(store, name);\
@@ -850,15 +851,9 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                         is_close(gen_is);
                     XENDTRY
                     /* TODO:LOG "fallback check: " + gen0 + "; " + gen1 */
-                    if (gen0 == gen1) {
+                    if (gen0 == gen1 && gen0 > gen) {
                         /* The file is consistent. */
-                        if (gen0 > gen) {
-                            /* TODO:LOG "fallback to '" +
-                             * IndexFileNames.SEGMENTS_GEN + "' check: now
-                             * try generation " + gen0 + " > " + gen */
-                            gen = gen0;
-                        }
-                        goto method_two_loop_end;
+                        gen = gen0;
                     }
                     break;
                 }
@@ -866,7 +861,6 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                 micro_sleep(50000);
             }
         }
-method_two_loop_end:
 
         /* Method 3 (fallback if Methods 2 & 3 are not reliable): since both
          * directory cache and file contents cache seem to be stale, just
@@ -888,9 +882,11 @@ method_two_loop_end:
                 /* OK, we've tried the same segments_N file twice in a row, so
                  * this must be a real error.  We throw the original exception
                  * we got. */
-                RAISE(IO_ERROR, "Error reading the segment infos");
+                RAISE(IO_ERROR,
+                      "Error reading the segment infos. Store listing was\n");
             }
             else {
+                micro_sleep(50000);
                 retry = true;
             }
         }
@@ -905,8 +901,34 @@ method_two_loop_end:
             run(store, fsf);
             RETURN_EARLY();
             return;
-        case IO_ERROR: case FILE_NOT_FOUND_ERROR:
+        case IO_ERROR: case FILE_NOT_FOUND_ERROR: case EOF_ERROR:
             HANDLED();
+            /*
+            if (gen != sis_current_segment_generation(store)) {
+                fprintf(stderr, "%lld != %lld\n",
+                        gen, sis_current_segment_generation(store));
+                fprintf(stderr, "%s\n", xcontext.msg);
+            }
+            else {
+                char *sl = store_to_s(store);
+                bool done = false;
+                fprintf(stderr, "%s\n>>>\n%s", xcontext.msg, sl);
+                free(sl);
+                while (!done) {
+                    TRY
+                        sis_put(sis_read(store), stderr);
+                        done = true;
+                    XCATCHALL
+                        HANDLED();
+                    XENDTRY
+                }
+            }
+
+            char *sl = store_to_s(store);
+            fprintf(stderr, "%s\n>>>\n%s", xcontext.msg, sl);
+            free(sl);
+            */
+
             /* Save the original root cause: */
             /* TODO:LOG "primary Exception on '" + segmentFileName + "': " +
              * err + "'; will retry: retry=" + retry + "; gen = " + gen */
@@ -931,7 +953,7 @@ method_two_loop_end:
                         RETURN_EARLY();
                         RETURN_EARLY();
                         return;
-                    case IO_ERROR: case FILE_NOT_FOUND_ERROR:
+                    case IO_ERROR: case FILE_NOT_FOUND_ERROR: case EOF_ERROR:
                         HANDLED();
                         /* TODO:LOG "secondary Exception on '" +
                          * prev_seg_file_name + "': " + err2 + "'; will retry"*/
@@ -1022,9 +1044,10 @@ void sis_read_i(Store *store, FindSegmentsFile *fsf)
     int i;
     bool success = false;
     char seg_file_name[SEGMENT_NAME_MAX_LENGTH];
-    InStream *is = NULL;
-    SegmentInfos *sis = ALLOC_AND_ZERO(SegmentInfos);
+    InStream *volatile is = NULL;
+    SegmentInfos *volatile sis = ALLOC_AND_ZERO(SegmentInfos);
     segfn_for_generation(seg_file_name, fsf->generation);
+    fsf->p_return = NULL;
     TRY
         is = store->open_input(store, seg_file_name);
         sis->store = store;
@@ -3727,10 +3750,6 @@ void ir_commit_i(IndexReader *ir)
             char curr_seg_fn[MAX_FILE_PATH];
             mutex_lock(&ir->store->mutex);
 
-            /* Should not be necessary: no prior commit should have left
-             * pending files, so just defensive: */
-            if (ir->deleter) deleter_clear_pending_deletions(ir->deleter);
-
             sis_curr_seg_file_name(curr_seg_fn, ir->store);
             
             ir->commit_i(ir);
@@ -4696,8 +4715,8 @@ IndexReader *mr_open(IndexReader **sub_readers, const int r_cnt)
 static void ir_open_i(Store *store, FindSegmentsFile *fsf)
 {
     volatile bool success = false;
-    IndexReader *ir = NULL;
-    SegmentInfos *sis = NULL;
+    IndexReader *volatile ir = NULL;
+    SegmentInfos *volatile sis = NULL;
     TRY
     do {
         FieldInfos *fis;
@@ -5820,7 +5839,6 @@ static void iw_commit_compound_file(IndexWriter *iw, SegmentInfo *si)
     sprintf(cfs_name, "%s.cfs", si->name);
 
     iw_create_compound_file(iw->store, iw->fis, si, cfs_name, iw->deleter);
-    deleter_commit_pending_deletions(iw->deleter);
 }
 
 static void iw_merge_segments(IndexWriter *iw, const int min_seg,
@@ -5841,7 +5859,6 @@ static void iw_merge_segments(IndexWriter *iw, const int min_seg,
     for (i = min_seg; i < max_seg; i++) {
         si_delete_files(sis->segs[i], iw->fis, iw->deleter);
     }
-    deleter_commit_pending_deletions(iw->deleter);
 
     sis_del_from_to(sis, min_seg, max_seg);
 
@@ -5851,6 +5868,7 @@ static void iw_merge_segments(IndexWriter *iw, const int min_seg,
     }
 
     sis_write(sis, iw->store, iw->deleter);
+    deleter_commit_pending_deletions(iw->deleter);
 
     mutex_unlock(&iw->store->mutex);
 
@@ -5910,6 +5928,7 @@ static void iw_flush_ram_segment(IndexWriter *iw)
     }
     /* commit the segments file and the fields file */
     sis_write(iw->sis, iw->store, iw->deleter);
+    deleter_commit_pending_deletions(iw->deleter);
 
     mutex_unlock(&iw->store->mutex);
 
