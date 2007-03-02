@@ -65,7 +65,8 @@ void
 object_add2(void *key, VALUE obj, const char *file, int line)
 {
     if (h_get(object_map, key))
-        printf("failed adding %d. %s:%d\n", (int)key, file, line);
+        printf("failed adding %x to %d; already contains %x. %s:%d\n",
+               (int)obj, (int)key, (int)h_get(object_map, key), file, line);
     //printf("adding %d. now contains %d %s:%d\n", (int)key, ++hash_cnt, file, line);
     h_set(object_map, key, (void *)obj);
 }

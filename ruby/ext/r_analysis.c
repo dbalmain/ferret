@@ -40,6 +40,7 @@ static VALUE cTokenStream;
 static ID id_next;
 static ID id_reset;
 static ID id_clone;
+static ID id_text;
 
 /* Analyzer Methods */
 static ID id_token_stream;
@@ -450,7 +451,9 @@ frt_ts_set_text(VALUE self, VALUE rtext)
     Data_Get_Struct(self, TokenStream, ts);
     StringValue(rtext);
     ts->reset(ts, rs2s(rtext));
-    object_set(&ts->text, rtext);
+    
+    /* prevent garbage collection */
+    rb_ivar_set(self, id_text, rtext);
 
     return rtext;
 }
@@ -538,7 +541,10 @@ typedef struct CWrappedTokenStream {
 static void
 cwrts_destroy_i(TokenStream *ts)
 {
-    rb_hash_delete(object_space, ((long)ts)|1);
+    if (object_get(&ts->text) != Qnil) {
+        object_del(&ts->text);
+    }
+    rb_hash_delete(object_space, ((VALUE)ts)|1);
     /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
     free(ts);
 }
@@ -554,6 +560,7 @@ static TokenStream *
 cwrts_reset(TokenStream *ts, char *text)
 {
     ts->t = ts->text = text;
+    Xj
     rb_funcall(CWTS(ts)->rts, id_reset, 1, rb_str_new2(text));
     return ts;
 }
@@ -563,7 +570,7 @@ cwrts_clone_i(TokenStream *orig_ts)
 {
     TokenStream *new_ts = ts_clone_size(orig_ts, sizeof(CWrappedTokenStream));
     VALUE rts = CWTS(new_ts)->rts = rb_funcall(CWTS(orig_ts)->rts, id_clone, 0);
-    rb_hash_aset(object_space, ((long)new_ts)|1, rts);
+    rb_hash_aset(object_space, ((VALUE)new_ts)|1, rts);
     return new_ts;
 }
 
@@ -583,7 +590,7 @@ frt_get_cwrapped_rts(VALUE rts)
         ts->clone_i = &cwrts_clone_i;
         ts->destroy_i = &cwrts_destroy_i;
         /* prevent from being garbage collected */
-        rb_hash_aset(object_space, ((long)ts)|1, rts);
+        rb_hash_aset(object_space, ((VALUE)ts)|1, rts);
         ts->ref_cnt = 1;
     }
     return ts;
@@ -621,7 +628,10 @@ typedef struct RegExpTokenStream {
 static void
 rets_destroy_i(TokenStream *ts)
 {
-    rb_hash_delete(object_space, ((long)ts)|1);
+    if (object_get(&ts->text) != Qnil) {
+        object_del(&ts->text);
+    }
+    rb_hash_delete(object_space, ((VALUE)ts)|1);
     /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
     free(ts);
 }
@@ -658,7 +668,7 @@ frt_rets_set_text(VALUE self, VALUE rtext)
     TokenStream *ts;
     GET_TS(ts, self);
 
-    rb_hash_aset(object_space, ((long)ts)|1, rtext);
+    rb_hash_aset(object_space, ((VALUE)ts)|1, rtext);
     StringValue(rtext);
     RETS(ts)->rtext = rtext;
     RETS(ts)->curr_ind = 0;
@@ -730,7 +740,7 @@ rets_new(VALUE rtext, VALUE regex, VALUE proc)
 
     if (rtext != Qnil) {
         rtext = StringValue(rtext);
-        rb_hash_aset(object_space, ((long)ts)|1, rtext);
+        rb_hash_aset(object_space, ((VALUE)ts)|1, rtext);
     }
     ts->reset = &rets_reset;
     ts->next = &rets_next;
@@ -1121,7 +1131,7 @@ typedef struct CWrappedAnalyzer
 static void
 cwa_destroy_i(Analyzer *a)
 {
-    rb_hash_delete(object_space, ((long)a)|1);
+    rb_hash_delete(object_space, ((VALUE)a)|1);
     /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
     free(a);
 }
@@ -1149,7 +1159,7 @@ frt_get_cwrapped_analyzer(VALUE ranalyzer)
         a->ref_cnt   = 1;
         ((CWrappedAnalyzer *)a)->ranalyzer = ranalyzer;
         /* prevent from being garbage collected */
-        rb_hash_aset(object_space, ((long)a)|1, ranalyzer);
+        rb_hash_aset(object_space, ((VALUE)a)|1, ranalyzer);
     }
     return a;
 }
@@ -1509,11 +1519,11 @@ frt_re_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rtext)
     object_set(&ts->text, rtext);
     if (ts->next == &rets_next) {
         RETS(ts)->rtext = rtext;
-        rb_hash_aset(object_space, ((long)ts)|1, rtext);
+        rb_hash_aset(object_space, ((VALUE)ts)|1, rtext);
     }
     else {
         RETS(((TokenFilter*)ts)->sub_ts)->rtext = rtext;
-        rb_hash_aset(object_space, ((long)((TokenFilter*)ts)->sub_ts)|1, rtext);
+        rb_hash_aset(object_space, ((VALUE)((TokenFilter*)ts)->sub_ts)|1, rtext);
     }
     return get_rb_token_stream(ts);
 }
@@ -2363,6 +2373,7 @@ Init_Analysis(void)
     id_next = rb_intern("next");
     id_reset = rb_intern("text=");
     id_clone = rb_intern("clone");
+    id_text = rb_intern("@text");
 
     /* Analyzer Methods */
     id_token_stream = rb_intern("token_stream");
