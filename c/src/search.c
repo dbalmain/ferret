@@ -1040,7 +1040,7 @@ static TopDocs *isea_search_w(Searcher *self,
     sea_check_args(num_docs, first_doc);
 
     scorer = weight->scorer(weight, ISEA(self)->ir);
-    if (!scorer) {
+    if (!scorer || 0 == ISEA(self)->ir->num_docs(ISEA(self)->ir)) {
         return td_new(0, 0, NULL, 0.0);
     }
 
