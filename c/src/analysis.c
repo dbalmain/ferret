@@ -925,9 +925,6 @@ static Token *std_next(TokenStream *ts)
         }
         ts->t = t + len;
         token[len] = 0;
-        Token *k = tk_set(&(CTS(ts)->token), token, len, (int)(start - ts->text),
-               (int)(ts->t - ts->text), 1);
-        return k;
         return tk_set(&(CTS(ts)->token), token, len, (int)(start - ts->text),
                (int)(ts->t - ts->text), 1);
     }
