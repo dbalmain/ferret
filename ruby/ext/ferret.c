@@ -355,7 +355,7 @@ void Init_ferret_ext(void)
     cStateError =
         rb_define_class_under(mFerret, "StateError", rb_eStandardError);
     cFileNotFoundError =
-        rb_define_class_under(rb_cObject, "FileNotFoundError", rb_eIOError);
+        rb_define_class_under(mFerret, "FileNotFoundError", rb_eIOError);
 
     error_map = rb_hash_new();
     rb_hash_aset(error_map, rb_intern("Exception"),         rb_eStandardError);

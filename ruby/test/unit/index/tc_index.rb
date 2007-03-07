@@ -150,7 +150,7 @@ class IndexTest < Test::Unit::TestCase
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
 
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
-    assert_raise(FileNotFoundError) do
+    assert_raise(Ferret::FileNotFoundError) do
       Index.new(:path => fs_path,
                 :create_if_missing => false,
                 :default_field => :xxx)

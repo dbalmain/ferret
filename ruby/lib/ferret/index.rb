@@ -387,40 +387,52 @@ module Ferret::Index
       end
     end
 
-    # Retrieve the document referenced by the document number +id+, if id is
-    # an integer or the first document with term +id+ if +id+ is a term.
+    # Retrieves a document/documents from the index. The method for retrieval
+    # depends on the type of the argument passed.
     #
-    # id:: The number of the document to retrieve, or the term used as the :id
-    #      for the document we wish to retrieve
-    def doc(*args)
+    # If +arg+ is an Integer then return the document based on the internal
+    # document number.
+    #
+    # If +arg+ is a Range, then return the documents within the range based on
+    # internal document number.
+    #
+    # If +arg+ is a String then search for the first document with +arg+ in
+    # the +id+ field. The +id+ field is either :id or whatever you set
+    # :id_field parameter to when you create the Index object.
+    def doc(*arg)
       @dir.synchronize do
         ensure_reader_open()
-        id = args[0]
+        id = arg[0]
         if id.kind_of?(String) or id.kind_of?(Symbol)
           term_doc_enum = @reader.term_docs_for(@id_field, id.to_s)
           return term_doc_enum.next? ? @reader[term_doc_enum.doc] : nil
         end
-        return @reader[*args]
+        return @reader[*arg]
       end
     end
     alias :[] :doc
 
-    # Delete the document referenced by the document number +id+ if +id+ is an
-    # integer or all of the documents which have the term +id+ if +id+ is a
-    # term..
+    # Deletes a document/documents from the index. The method for determining
+    # the document to delete depends on the type of the argument passed.
     #
-    # id:: The number of the document to delete
-    def delete(id)
+    # If +arg+ is an Integer then delete the document based on the internal
+    # document number. Will raise an error if the document does not exist.
+    #
+    # If +arg+ is a String then search for the documents with +arg+ in the
+    # +id+ field. The +id+ field is either :id or whatever you set :id_field
+    # parameter to when you create the Index object. Will fail quietly if the
+    # no document exists.
+    def delete(arg)
       @dir.synchrolock do
         ensure_writer_open()
-        if id.is_a?(String) or id.is_a?(Symbol)
+        if arg.is_a?(String) or arg.is_a?(Symbol)
           ensure_writer_open()
-          @writer.delete(@id_field, id.to_s)
-        elsif id.is_a?(Integer)
+          @writer.delete(@id_field, arg.to_s)
+        elsif arg.is_a?(Integer)
           ensure_reader_open()
-          cnt = @reader.delete(id)
+          cnt = @reader.delete(arg)
         else
-          raise ArgumentError, "Cannot delete for id of type #{id.class}"
+          raise ArgumentError, "Cannot delete for arg of type #{arg.class}"
         end
         flush() if @auto_flush
       end
@@ -537,12 +549,15 @@ module Ferret::Index
     # index.
     def flush()
       @dir.synchronize do
-        @searcher.close if @searcher
-        @reader.close if @reader
-        @writer.close if @writer
-        @reader = nil
-        @writer = nil
-        @searcher = nil
+        if @reader
+          if @searcher
+            @searcher.close
+            @searcher = nil
+          end
+          @reader.commit
+        elsif @writer
+          @writer.commit
+        end
       end
     end
     alias :commit :flush
@@ -614,7 +629,7 @@ module Ferret::Index
     #             false.
     def persist(directory, create = true)
       synchronize do
-        flush()
+        close_all()
         old_dir = @dir
         if directory.is_a?(String)
           @dir = FSDirectory.new(directory, create)
@@ -736,6 +751,17 @@ module Ferret::Index
         query = do_process_query(query)
 
         return @searcher.search(query, options)
+      end
+
+      def close_all()
+        @dir.synchronize do
+          @searcher.close if @searcher
+          @reader.close if @reader
+          @writer.close if @writer
+          @reader = nil
+          @searcher = nil
+          @writer = nil
+        end
       end
   end
 end
