@@ -443,6 +443,30 @@ char *is_read_string(InStream *is)
     return str;
 }
 
+char *is_read_string_safe(InStream *is)
+{
+    register int length = (int) is_read_vint(is);
+    char *str = ALLOC_N(char, length + 1);
+    str[length] = '\0';
+
+    TRY
+        if (is->buf.pos > (is->buf.len - length)) {
+            register int i;
+            for (i = 0; i < length; i++) {
+                str[i] = is_read_byte(is);
+            }
+        }
+        else {                      /* unchecked optimization */
+            memcpy(str, is->buf.buf + is->buf.pos, length);
+            is->buf.pos += length;
+        }
+    XCATCHALL
+        free(str);
+    XENDTRY
+
+    return str;
+}
+
 void os_write_i32(OutStream *os, f_i32 num)
 {
     os_write_byte(os, (uchar)((num >> 24) & 0xFF));

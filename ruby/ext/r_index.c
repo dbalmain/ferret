@@ -198,6 +198,19 @@ frt_fi_init(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     fi.name -> symbol
+ *
+ *  Return the name of the field
+ */
+static VALUE
+frt_fi_name(VALUE self)
+{
+    FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
+    return ID2SYM(rb_intern(fi->name));
+}
+
+/*
+ *  call-seq:
  *     fi.stored? -> bool
  *
  *  Return true if the field is stored in the index.
@@ -2678,6 +2691,7 @@ Init_FieldInfo(void)
     rb_define_alloc_func(cFieldInfo, frt_data_alloc);
 
     rb_define_method(cFieldInfo, "initialize",  frt_fi_init, -1);
+    rb_define_method(cFieldInfo, "name",        frt_fi_name, 0);
     rb_define_method(cFieldInfo, "stored?",     frt_fi_is_stored, 0);
     rb_define_method(cFieldInfo, "compressed?", frt_fi_is_compressed, 0);
     rb_define_method(cFieldInfo, "indexed?",    frt_fi_is_indexed, 0);

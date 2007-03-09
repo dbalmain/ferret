@@ -393,25 +393,36 @@ FieldInfo *fis_by_number(FieldInfos *fis, int num)
 
 FieldInfos *fis_read(InStream *is)
 {
-    int store_val, index_val, term_vector_val;
-    int i;
-    union { f_u32 i; float f; } tmp;
-    FieldInfo *fi;
-    FieldInfos *fis;
+    FieldInfos *volatile fis;
+    TRY
+        do {
+            int store_val, index_val, term_vector_val;
+            int i;
+            union { f_u32 i; float f; } tmp;
+            FieldInfo *volatile fi;
 
-    store_val = is_read_vint(is);
-    index_val = is_read_vint(is);
-    term_vector_val = is_read_vint(is);
-    fis = fis_new(store_val, index_val, term_vector_val);
-    for (i = is_read_vint(is); i > 0; i--) {
-        fi = ALLOC(FieldInfo);
-        fi->name = is_read_string(is);
-        tmp.i = is_read_u32(is);
-        fi->boost = tmp.f;
-        fi->bits = is_read_vint(is);
-        fis_add_field(fis, fi);
-        fi->ref_cnt = 1;
-    }
+            store_val = is_read_vint(is);
+            index_val = is_read_vint(is);
+            term_vector_val = is_read_vint(is);
+            fis = fis_new(store_val, index_val, term_vector_val);
+            for (i = is_read_vint(is); i > 0; i--) {
+                fi = ALLOC_AND_ZERO(FieldInfo);
+                TRY
+                    fi->name = is_read_string_safe(is);
+                    tmp.i = is_read_u32(is);
+                    fi->boost = tmp.f;
+                    fi->bits = is_read_vint(is);
+                XCATCHALL
+                    free(fi->name);
+                    free(fi);
+                XENDTRY
+                fis_add_field(fis, fi);
+                fi->ref_cnt = 1;
+            }
+        } while (0);
+    XCATCHALL
+        fis_deref(fis);
+    XENDTRY
 
     return fis; 
 }
@@ -557,21 +568,26 @@ SegmentInfo *si_new(char *name, int doc_cnt, Store *store)
 
 SegmentInfo *si_read(Store *store, InStream *is)
 {
-    SegmentInfo *si = ALLOC_AND_ZERO(SegmentInfo);
-    si->store = store;
-    si->name = is_read_string(is);
-    si->doc_cnt = is_read_vint(is);
-    si->del_gen = is_read_vint(is);
-    si->norm_gens_size = is_read_vint(is);
-    si->ref_cnt = 1;
-    if (0 < si->norm_gens_size) {
-        int i;
-        si->norm_gens = ALLOC_N(int, si->norm_gens_size);
-        for (i = si->norm_gens_size - 1; i >= 0; i--) {
-            si->norm_gens[i] = is_read_vint(is);
+    SegmentInfo *volatile si = ALLOC_AND_ZERO(SegmentInfo);
+    TRY
+        si->store = store;
+        si->name = is_read_string_safe(is);
+        si->doc_cnt = is_read_vint(is);
+        si->del_gen = is_read_vint(is);
+        si->norm_gens_size = is_read_vint(is);
+        si->ref_cnt = 1;
+        if (0 < si->norm_gens_size) {
+            int i;
+            si->norm_gens = ALLOC_N(int, si->norm_gens_size);
+            for (i = si->norm_gens_size - 1; i >= 0; i--) {
+                si->norm_gens[i] = is_read_vint(is);
+            }
         }
-    }
-    si->use_compound_file = (bool)is_read_byte(is);
+        si->use_compound_file = (bool)is_read_byte(is);
+    XCATCHALL
+        free(si->name);
+        free(si);
+    XENDTRY
     return si;
 }
 
@@ -4008,17 +4024,23 @@ static void bv_write(BitVector *bv, Store *store, char *name)
 static BitVector *bv_read(Store *store, char *name)
 {
     int i;
-    BitVector *bv = ALLOC_AND_ZERO(BitVector);
-    InStream *is = store->open_input(store, name);
+    bool success = false;
+    InStream *volatile is = store->open_input(store, name);
+    BitVector *volatile bv = ALLOC_AND_ZERO(BitVector);
     bv->size = (int)is_read_vint(is);
     bv->capa = (bv->size >> 5) + 1;
     bv->bits = ALLOC_AND_ZERO_N(f_u32, bv->capa);
     bv->ref_cnt = 1;
-    for (i = (bv->size >> 5); i >= 0; i--) {
-        bv->bits[i] = is_read_u32(is);
-    }
-    is_close(is);
-    bv_recount(bv);
+    TRY
+        for (i = (bv->size >> 5); i >= 0; i--) {
+            bv->bits[i] = is_read_u32(is);
+        }
+        bv_recount(bv);
+        success = true;
+    XFINALLY
+        is_close(is);
+        if (!success && bv) bv_destroy(bv);
+    XENDTRY
     return bv;
 }
 
@@ -4297,6 +4319,7 @@ static IndexReader *sr_setup_i(SegmentReader *sr)
             sr->fr_bucket = ary_new();
         }
     XCATCHALL
+        ir->sis = NULL;
         ir_close(ir);
     XENDTRY
 
@@ -4306,10 +4329,9 @@ static IndexReader *sr_setup_i(SegmentReader *sr)
 static IndexReader *sr_open(SegmentInfos *sis, FieldInfos *fis, int si_num,
                             bool is_owner)
 {
-    IndexReader *ir;
     SegmentReader *sr = ALLOC_AND_ZERO(SegmentReader);
     sr->si = sis->segs[si_num];
-    ir = ir_setup(IR(sr), sr->si->store, sis, fis, is_owner);
+    ir_setup(IR(sr), sr->si->store, sis, fis, is_owner);
     return sr_setup_i(sr);
 }
 

@@ -401,13 +401,15 @@ module Ferret::Index
     # :id_field parameter to when you create the Index object.
     def doc(*arg)
       @dir.synchronize do
-        ensure_reader_open()
         id = arg[0]
         if id.kind_of?(String) or id.kind_of?(Symbol)
+          ensure_reader_open()
           term_doc_enum = @reader.term_docs_for(@id_field, id.to_s)
           return term_doc_enum.next? ? @reader[term_doc_enum.doc] : nil
+        else
+          ensure_reader_open(false)
+          return @reader[*arg]
         end
-        return @reader[*arg]
       end
     end
     alias :[] :doc
@@ -699,19 +701,22 @@ module Ferret::Index
       end
 
       # returns the new reader if one is opened
-      def ensure_reader_open()
+      def ensure_reader_open(get_latest = true)
         raise "tried to use a closed index" if not @open
         if @reader
-          latest = false
-          begin
-            latest = @reader.latest?
-          rescue Lock::LockError => le
-            sleep(@options[:lock_retry_time]) # sleep for 2 seconds and try again
-            latest = @reader.latest?
-          end
-          if not latest
-            @reader.close
-            return @reader = IndexReader.new(@dir)
+          if get_latest
+            latest = false
+            begin
+              latest = @reader.latest?
+            rescue Lock::LockError => le
+              sleep(@options[:lock_retry_time]) # sleep for 2 seconds and try again
+              latest = @reader.latest?
+            end
+            if not latest
+              @searcher.close if @searcher
+              @reader.close
+              return @reader = IndexReader.new(@dir)
+            end
           end
         else
           if @writer

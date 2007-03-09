@@ -706,6 +706,20 @@ extern __inline off_t is_read_voff_t(InStream *is);
 extern char *is_read_string(InStream *is);
 
 /**
+ * Read a string from the InStream. A string is an integer +length+ in vint
+ * format (see is_read_vint) followed by +length+ bytes. This is the format
+ * used by os_write_string. This method is similar to +is_read_string+ except
+ * that it will safely free all memory if there is an error reading the
+ * string.
+ *
+ * @param is the InStream to read from
+ * @return a null byte delimited string
+ * @raise IO_ERROR if there is a error reading from the file-system
+ * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ */
+extern char *is_read_string_safe(InStream *is);
+
+/**
  * Copy cnt bytes from Instream _is_ to OutStream _os_.
  *
  * @param is the InStream to read from
