@@ -105,9 +105,9 @@ div.nav {color:#007777;font-size:11px;}
 div.nav a, div.nav a:visited {
   background-color: white;
   color: #007777;
-  padding: 2px 3px;
+  padding: 2px 4px;
   border: 1px solid #bbd8ef;
-  margin-right: 3px;
+  margin-right: 1px;
   text-decoration: none;
   font-size: 11px;
 }

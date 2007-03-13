@@ -71,7 +71,7 @@ module Ferret::Browser
     # truncates the string at the first space after +len+ characters
     def truncate(str, len = 80)
       if str and str.length > len and (add = str[len..-1].index(' '))
-        str = str[0, len + add] + '&8230;'
+        str = str[0, len + add] + '&#8230;'
       end
       str
     end
@@ -145,7 +145,7 @@ module Ferret::Browser
         idx.times {|i| res << link.call(i)}
       else
         (0..2).each {|i| res << link.call(i)}
-        res << '&nbsp;&8230;&nbsp;'
+        res << '&nbsp;&#8230;&nbsp;'
         ((idx-4)...idx).each {|i| res << link.call(i)}
       end
       res << link.call(idx, 'Current Page')
@@ -153,7 +153,7 @@ module Ferret::Browser
         ((idx+1)...max).each {|i| res << link.call(i)}
       else
         ((idx+1)..(idx+4)).each {|i| res << link.call(i)}
-        res << '&nbsp;&8230;&nbsp;'
+        res << '&nbsp;&#8230;&nbsp;'
         ((max-3)...max).each {|i| res << link.call(i)}
       end
       if (idx < (max - 1))
