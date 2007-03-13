@@ -224,32 +224,7 @@ frt_td_to_s(int argc, VALUE *argv, VALUE self)
     return rstr;
 }
 
-/*
- * Json Exportation - Loading each LazyDoc and formatting them into json
- * This code is designed to get a VERY FAST json string, the goal was speed,
- * not sexyness.
- * Jeremie 'ahFeel' BORDIER
- * ahFeel@rift.Fr
- */
 __inline char *
-json_concat_string(char *s, char *field)
-{
-    *(s++) = '"';
-	while (*field) {
-		if (*field == '\"') {
-            *(s++) = '\'';
-            *(s++) = *(field++);
-            *(s++) = '\'';
-        }
-        else {
-            *(s++) = *(field++);
-        }
-    }
-    *(s++) = '"';
-    return s;
-}
-
-inline char *
 frt_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
 {
 	int i, j;
@@ -260,7 +235,7 @@ frt_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
 	for (i = 0; i < lzd->size; i++) {
 		f = lzd->fields[i];
         /* 3 times length of field to make space for quoted quotes ('"') and
-         * 4 x field length to make space for '"' around fields and ','
+         * 4 times field elements to make space for '"' around fields and ','
          * between fields. Add 100 for '[', ']' and good safety.
          */
         len += strlen(f->name) + f->len * 3 + 100 + 4 * f->size;

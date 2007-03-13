@@ -189,6 +189,31 @@ frt_field(VALUE rfield)
     return NULL;
 }
 
+/*
+ * Json Exportation - Loading each LazyDoc and formatting them into json
+ * This code is designed to get a VERY FAST json string, the goal was speed,
+ * not sexyness.
+ * Jeremie 'ahFeel' BORDIER
+ * ahFeel@rift.Fr
+ */
+__inline char *
+json_concat_string(char *s, char *field)
+{
+    *(s++) = '"';
+	while (*field) {
+		if (*field == '"') {
+            *(s++) = '\'';
+            *(s++) = *(field++);
+            *(s++) = '\'';
+        }
+        else {
+            *(s++) = *(field++);
+        }
+    }
+    *(s++) = '"';
+    return s;
+}
+
 static VALUE error_map;
 
 VALUE frt_get_error(const char *err_type)

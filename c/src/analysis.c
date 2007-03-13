@@ -161,8 +161,9 @@ __inline int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
             t++;
             ZEROSET(state, mbstate_t);
             num_bytes = (int)mbrtowc(wchr, t, MB_CUR_MAX, state);
-        } while ((num_bytes < 0) && (*wchr != 0) && (*t != 0));
+        } while ((num_bytes < 0) && (*t != 0));
         num_bytes = t - s;
+        if (*t == 0) *wchr = 0;
     }
     return num_bytes;
 }
@@ -1301,12 +1302,14 @@ Token *mb_lcf_next(TokenStream *ts)
 {
     wchar_t wbuf[MAX_WORD_SIZE + 1], *wchr;
     Token *tk = TkFilt(ts)->sub_ts->next(TkFilt(ts)->sub_ts);
+    int x;
+    wbuf[MAX_WORD_SIZE] = 0;
 
     if (tk == NULL) {
         return tk;
     }
 
-    if (mbstowcs(wbuf, tk->text, MAX_WORD_SIZE) <= 0) return tk;
+    if ((x=mbstowcs(wbuf, tk->text, MAX_WORD_SIZE)) <= 0) return tk;
     wchr = wbuf;
     while (*wchr != 0) {
         *wchr = towlower(*wchr);

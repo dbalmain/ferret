@@ -813,6 +813,86 @@ frt_te_set_field(VALUE self, VALUE rfield)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     term_enum.to_json() -> string
+ *
+ *  Returns a JSON representation of the term enum. You can speed this up by
+ *  having the method return arrays instead of objects, simply by passing an
+ *  argument to the to_json method. For example;
+ *
+ *    term_enum.to_json() #=> 
+ *    # [
+ *    #   {"term":"apple","frequency":12},
+ *    #   {"term":"banana","frequency":2},
+ *    #   {"term":"cantaloupe","frequency":12}
+ *    # ]
+ *
+ *    term_enum.to_json(:fast) #=> 
+ *    # [
+ *    #   ["apple",12],
+ *    #   ["banana",2],
+ *    #   ["cantaloupe",12]
+ *    # ]
+ */
+static VALUE
+frt_te_to_json(int argc, VALUE *argv, VALUE self)
+{
+    TermEnum *te = (TermEnum *)DATA_PTR(self);
+    VALUE rjson;
+    char *json, *jp;
+    char *term;
+    int capa = 65536;
+    jp = json = ALLOC_N(char, capa);
+    *(jp++) = '[';
+
+    if (argc > 0) {
+        while (NULL != (term = te->next(te))) {
+            /* enough room for for term after converting " to '"' and frequency
+             * plus some extra for good measure */
+            *(jp++) = '[';
+            if (te->curr_term_len * 3 + (jp - json) + 100 > capa) {
+                capa <<= 1;
+                REALLOC_N(json, char, capa);
+            }
+            jp = json_concat_string(jp, term);
+            *(jp++) = ',';
+            sprintf(jp, "%d", te->curr_ti.doc_freq);
+            jp += strlen(jp);
+            *(jp++) = ']';
+            *(jp++) = ',';
+        }
+    }
+    else {
+        while (NULL != (term = te->next(te))) {
+            /* enough room for for term after converting " to '"' and frequency
+             * plus some extra for good measure */
+            if (te->curr_term_len * 3 + (jp - json) + 100 > capa) {
+                capa <<= 1;
+                REALLOC_N(json, char, capa);
+            }
+            *(jp++) = '{';
+            memcpy(jp, "\"term\":", 7);
+            jp += 7;
+            jp = json_concat_string(jp, term);
+            *(jp++) = ',';
+            memcpy(jp, "\"frequency\":", 12);
+            jp += 12;
+            sprintf(jp, "%d", te->curr_ti.doc_freq);
+            jp += strlen(jp);
+            *(jp++) = '}';
+            *(jp++) = ',';
+        }
+    }
+    if (*(jp-1) == ',') jp--;
+    *(jp++) = ']';
+    *jp = '\0';
+
+    rjson = rb_str_new2(json);
+    free(json);
+    return rjson;
+}
+
 /****************************************************************************
  *
  * TermDocEnum Methods
@@ -971,6 +1051,89 @@ frt_tde_each(VALUE self)
 
     }
     return INT2FIX(doc_cnt);
+}
+
+/*
+ *  call-seq:
+ *     term_doc_enum.to_json() -> string
+ *
+ *  Returns a json representation of the term doc enum. It will also add the
+ *  term positions if they are available. You can speed this up by having the
+ *  method return arrays instead of objects, simply by passing an argument to
+ *  the to_json method. For example;
+ *
+ *    term_doc_enum.to_json() #=> 
+ *    # [
+ *    #   {"document":1,"frequency":12},
+ *    #   {"document":11,"frequency":1},
+ *    #   {"document":29,"frequency":120},
+ *    #   {"document":30,"frequency":3}
+ *    # ]
+ *
+ *    term_doc_enum.to_json(:fast) #=> 
+ *    # [
+ *    #   [1,12],
+ *    #   [11,1],
+ *    #   [29,120],
+ *    #   [30,3]
+ *    # ]
+ */
+static VALUE
+frt_tde_to_json(int argc, VALUE *argv, VALUE self)
+{
+    TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
+    VALUE rjson;
+    char *json, *jp;
+    int capa = 65536;
+    char *format;
+    char close = (argc > 0) ? ']' : '}';
+    bool do_positions = tde->next_position != NULL;
+    jp = json = ALLOC_N(char, capa);
+    *(jp++) = '[';
+
+    if (do_positions) {
+        if (argc == 0) {
+            format = "{\"document\":%d,\"frequency\":%d,\"positions\":[";
+        }
+        else {
+            format = "[%d,%d,[";
+        }
+    }
+    else {
+        if (argc == 0) {
+            format = "{\"document\":%d,\"frequency\":%d},";
+        }
+        else {
+            format = "[%d,%d],";
+        }
+    }
+    while (tde->next(tde)) {
+        /* 100 chars should be enough room for an extra entry */
+        if ((jp - json) + 100 + tde->freq(tde) * 20 > capa) {
+            capa <<= 1;
+            REALLOC_N(json, char, capa);
+        }
+        sprintf(jp, format, tde->doc_num(tde), tde->freq(tde));
+        jp += strlen(jp);
+        if (do_positions) {
+            int pos;
+            while (0 <= (pos = tde->next_position(tde))) {
+                sprintf(jp, "%d,", pos);
+                jp += strlen(jp);
+            }
+            if (*(jp - 1) == ',') jp--;
+            *(jp++) = ']';
+            *(jp++) = close;
+            *(jp++) = ',';
+        }
+    }
+    if (*(jp - 1) == ',') jp--;
+    *(jp++) = ']';
+    *jp = '\0';
+
+    rjson = rb_str_new2(json);
+    free(json);
+    return rjson;
 }
 
 /*
@@ -2807,6 +2970,7 @@ Init_TermEnum(void)
     rb_define_method(cTermEnum, "each",     frt_te_each, 0);
     rb_define_method(cTermEnum, "field=",   frt_te_set_field, 1);
     rb_define_method(cTermEnum, "set_field",frt_te_set_field, 1);
+    rb_define_method(cTermEnum, "to_json",  frt_te_to_json, -1);
 }
 
 /*
@@ -2858,6 +3022,7 @@ Init_TermDocEnum(void)
     rb_define_method(cTermDocEnum, "each",           frt_tde_each, 0);
     rb_define_method(cTermDocEnum, "each_position",  frt_tde_each_position, 0);
     rb_define_method(cTermDocEnum, "skip_to",        frt_tde_skip_to, 1);
+    rb_define_method(cTermDocEnum, "to_json",        frt_tde_to_json, -1);
 }
 
 /* rdochack

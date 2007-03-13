@@ -31,6 +31,11 @@ module IndexReaderCommon
   def do_test_term_enum()
     te = @ir.terms(:author)
 
+    assert_equal('[{"term":"Leo","frequency":1},{"term":"Tolstoy","frequency":1}]', te.to_json);
+    te.field = :author
+    assert_equal('[["Leo",1],["Tolstoy",1]]', te.to_json(:fast));
+    te.field = :author
+
     assert(te.next?)
     assert_equal("Leo", te.term)
     assert_equal(1, te.doc_freq)
@@ -99,6 +104,11 @@ module IndexReaderCommon
     end
     assert(! tde.next?)
 
+    tde = @ir.term_docs_for(:body, "Wally")
+    assert_equal('[{"document":0,"frequency":1},{"document":5,"frequency":1},{"document":18,"frequency":3},{"document":20,"frequency":6}]', tde.to_json)
+    tde = @ir.term_docs_for(:body, "Wally")
+    assert_equal('[[0,1],[5,1],[18,3],[20,6]]', tde.to_json(:fast))
+
     do_test_term_docpos_enum_skip_to(tde)
 
     # test term positions
@@ -123,6 +133,33 @@ module IndexReaderCommon
 
     assert_nil(tde.next_position())
     assert(! tde.next?)
+
+    tde = @ir.term_positions_for(:body, "read")
+    assert_equal('[' +
+       '{"document":1,"frequency":1,"positions":[3]},' +
+       '{"document":2,"frequency":2,"positions":[1,4]},' +
+       '{"document":6,"frequency":4,"positions":[3,4,5,6]},' +
+       '{"document":9,"frequency":3,"positions":[0,4,13]},' +
+       '{"document":10,"frequency":1,"positions":[1]},' +
+       '{"document":16,"frequency":2,"positions":[2,3]},' +
+       '{"document":17,"frequency":1,"positions":[2]},' +
+       '{"document":20,"frequency":1,"positions":[21]},' +
+       '{"document":21,"frequency":6,"positions":[3,4,5,8,9,10]}]',
+       tde.to_json())
+    tde = @ir.term_positions_for(:body, "read")
+    assert_equal('[' +
+       '[1,1,[3]],' +
+       '[2,2,[1,4]],' +
+       '[6,4,[3,4,5,6]],' +
+       '[9,3,[0,4,13]],' +
+       '[10,1,[1]],' +
+       '[16,2,[2,3]],' +
+       '[17,1,[2]],' +
+       '[20,1,[21]],' +
+       '[21,6,[3,4,5,8,9,10]]]',
+       tde.to_json(:fast))
+
+    tde = @ir.term_positions_for(:body, "read")
 
     do_test_term_docpos_enum_skip_to(tde)
   end
