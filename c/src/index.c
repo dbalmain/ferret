@@ -6,7 +6,6 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #define GET_LOCK(lock, name, store, err_msg) do {\
     lock = store->open_lock(store, name);\
@@ -117,10 +116,10 @@ char *fn_for_generation(char *buf, char *base, char *ext, f_i64 gen)
     }
 }
 
-char *segfn_for_generation(char *buf, int generation)
+char *segfn_for_generation(char *buf, f_u64 generation)
 {
     char b[SEGMENT_NAME_MAX_LENGTH];
-    char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, (f_u64)generation);
+    char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, generation);
     sprintf(buf, SEGMENTS_FILE_NAME"_%s", u);
     return buf;
 }

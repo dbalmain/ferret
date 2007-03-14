@@ -131,7 +131,7 @@ file "ext/#{EXT}" => ["ext/Makefile"] do
       puts
       puts "**********************************************************************"
       puts "You may need to call VCVARS32.BAT to set the environment variables."
-      puts '  c:\Program Files\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT'
+      puts '  "c:\Program Files\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT"'
       puts "**********************************************************************"
       puts
       raise e

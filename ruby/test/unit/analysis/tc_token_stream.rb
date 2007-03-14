@@ -109,7 +109,7 @@ class LetterTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('öîí', 80, 86), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class AsciiWhiteSpaceTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -186,7 +186,7 @@ class WhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('áägç®êëì¯úøã¬öîí', 55, 86), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class AsciiStandardTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -275,7 +275,7 @@ class StandardTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('www.davebalmain.com/trac-site', 25, 61), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class RegExpTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -428,7 +428,7 @@ END
     assert_equal(Token.new('szzzt', 256, 264), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class StopFilterTest < Test::Unit::TestCase
   include Ferret::Analysis

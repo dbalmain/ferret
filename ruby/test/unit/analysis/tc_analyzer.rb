@@ -38,7 +38,7 @@ class AnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new("ADDRESS", 39, 46), t.next())
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class AsciiLetterAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -131,7 +131,7 @@ class LetterAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new("öîí", 80, 86), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class AsciiWhiteSpaceAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -214,7 +214,7 @@ class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('áägç®êëì¯úøã¬öîí', 55, 86), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class AsciiStandardAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -350,7 +350,7 @@ class StandardAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('öîí', 142, 148), t2.next)
     assert(! t2.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
 
 class PerFieldAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
@@ -545,4 +545,4 @@ class CustomAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new("dêbater", 36, 44), t.next)
     assert(! t.next())
   end
-end if (/utf-8/i !~ Ferret.locale)
+end if (/utf-8/i =~ Ferret.locale)
