@@ -820,7 +820,9 @@ static VALUE
 frt_letter_tokenizer_init(int argc, VALUE *argv, VALUE self) 
 {
     TS_ARGS(false);
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     return get_wrapped_ts(self, rstr, mb_letter_tokenizer_new(lower));
 }
 
@@ -849,7 +851,9 @@ static VALUE
 frt_whitespace_tokenizer_init(int argc, VALUE *argv, VALUE self) 
 {
     TS_ARGS(false);
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     return get_wrapped_ts(self, rstr, mb_whitespace_tokenizer_new(lower));
 }
 
@@ -877,7 +881,9 @@ frt_a_standard_tokenizer_init(VALUE self, VALUE rstr)
 static VALUE
 frt_standard_tokenizer_init(VALUE self, VALUE rstr) 
 {
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     return get_wrapped_ts(self, rstr, mb_standard_tokenizer_new());
 }
 
@@ -917,7 +923,9 @@ static VALUE
 frt_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
 {
     TokenStream *ts = frt_get_cwrapped_rts(rsub_ts);
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     ts = mb_lowercase_filter_new(ts);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
@@ -1257,7 +1265,9 @@ frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(false);
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     a = mb_whitespace_analyzer_new(lower);
     Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
     object_add(a, self);
@@ -1300,7 +1310,9 @@ frt_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(true);
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     a = mb_letter_analyzer_new(lower);
     Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
     object_add(a, self);
@@ -1372,7 +1384,9 @@ frt_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
     bool lower;
     VALUE rlower, rstop_words;
     Analyzer *a;
+#ifndef POSH_OS_WIN32
     if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+#endif
     rb_scan_args(argc, argv, "02", &rstop_words, &rlower);
     lower = ((rlower == Qnil) ? true : RTEST(rlower));
     if (rstop_words != Qnil) {
