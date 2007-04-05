@@ -1607,7 +1607,7 @@ frt_spanmtq_init(VALUE self, VALUE rfield, VALUE rterms)
 
 /*
  *  call-seq:
- *     SpanPrefixQuery.new(field, prefix) -> query
+ *     SpanPrefixQuery.new(field, prefix, max_terms = 256) -> query
  *
  *  Create a new SpanPrefixQuery which matches all documents with the prefix
  *  +prefix+ in the field +field+.
