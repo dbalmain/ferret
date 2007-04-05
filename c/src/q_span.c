@@ -2340,7 +2340,7 @@ static Query *spanprq_rewrite(Query *self, IndexReader *ir)
 {
     const char *field = SpQ(self)->field;
     const int field_num = fis_get_field_num(ir->fis, field);
-    Query *volatile q = spanmtq_new_conf(field, SPAN_PREFIX_QUERY_MAX_TERMS);
+    Query *volatile q = spanmtq_new_conf(field, SpPfxQ(self)->max_terms);
     q->boost = self->boost;        /* set the boost */
 
     if (field_num >= 0) {
@@ -2388,6 +2388,7 @@ Query *spanprq_new(const char *field, const char *prefix)
 
     SpQ(self)->field        = estrdup(field);
     SpPfxQ(self)->prefix    = estrdup(prefix);
+    SpPfxQ(self)->max_terms = SPAN_PREFIX_QUERY_MAX_TERMS;
 
     self->type              = SPAN_PREFIX_QUERY;
     self->rewrite           = &spanprq_rewrite;

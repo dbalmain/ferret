@@ -571,6 +571,7 @@ typedef struct SpanPrefixQuery
 {
     SpanQuery   super;
     char       *prefix;
+    int         max_terms;
 } SpanPrefixQuery;
 
 extern Query *spanprq_new(const char *field, const char *prefix);

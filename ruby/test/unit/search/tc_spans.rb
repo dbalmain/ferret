@@ -68,7 +68,7 @@ class SpansBasicTest < Test::Unit::TestCase
   end
 
   def check_hits(query, expected, test_explain = false, top=nil)
-    top_docs = @searcher.search(query, {:limit => expected.length})
+    top_docs = @searcher.search(query, {:limit => expected.length + 1})
     assert_equal(expected.length, top_docs.hits.size)
     assert_equal(top, top_docs.hits[0].doc) if top
     assert_equal(expected.length, top_docs.total_hits)
@@ -169,5 +169,22 @@ class SpansBasicTest < Test::Unit::TestCase
     nearq2 = SpanNearQuery.new(:clauses => [tq2, tq3], :slop => 1)
     q = SpanOrQuery.new([nearq1, nearq2])
     check_hits(q, [0,3,4,5,6,8,9,10,11,14,16,30], false)
+  end
+
+  def test_span_prefix_query_max_terms
+    @dir = RAMDirectory.new
+    iw = IndexWriter.new(:dir => @dir,
+                         :analyzer => WhiteSpaceAnalyzer.new())
+    2000.times { |i| iw << {:field => "prefix#{i} term#{i}"} }
+    iw.close()
+    @searcher = Searcher.new(@dir)
+
+    pq = SpanPrefixQuery.new(:field, "prefix")
+    tq = SpanTermQuery.new(:field, "term1500")
+    q = SpanNearQuery.new(:clauses => [pq, tq], :in_order => true)
+    check_hits(q, [], false)
+    pq = SpanPrefixQuery.new(:field, "prefix", 2000)
+    q = SpanNearQuery.new(:clauses => [pq, tq], :in_order => true)
+    check_hits(q, [1500], false)
   end
 end
