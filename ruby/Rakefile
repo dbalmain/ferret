@@ -205,6 +205,9 @@ else
     s.extensions << "ext/extconf.rb"
     s.require_path = 'lib'
     s.autorequire = 'ferret'
+    s.bindir = 'bin'
+    s.executables = ['ferret-browser']
+    s.default_executable = 'ferret-browser'
 
     #### Author and project details.
     s.author = "David Balmain"

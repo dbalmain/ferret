@@ -404,6 +404,7 @@ static void test_qp_bad_queries(tst_case *tc, void *data)
     HashSet *def_fields = hs_new_str(NULL);
     QParser *parser;
     QPTestPair pairs[] = {
+        {"[, ]", ""},
         {"::*word", "word"},
         {"::))*&)(*^&*(", ""},
         {"::|)*&one)(*two(*&\"", "\"one two\"~1"}

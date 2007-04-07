@@ -1555,17 +1555,24 @@ Query *bq_new(bool coord_disabled)
     return self;
 }
 
+Query *bq_new_max(bool coord_disabled, int max)
+{
+    Query *q = bq_new(coord_disabled);
+    BQ(q)->max_clause_cnt = max;
+    return q;
+}
+
 BooleanClause *bq_add_clause_nr(Query *self, BooleanClause *bc)
 {
-    if (BQ(self)->clause_cnt >= BQ(self)->clause_capa) {
-        BQ(self)->clause_capa *= 2;
-        REALLOC_N(BQ(self)->clauses, BooleanClause *, BQ(self)->clause_capa);
-    }
-    if (BQ(self)->clause_cnt > BQ(self)->max_clause_cnt) {
+    if (BQ(self)->clause_cnt >= BQ(self)->max_clause_cnt) {
         RAISE(STATE_ERROR, "Two many clauses. The max clause limit is set to "
               "<%d> but your query has <%d> clauses. You can try increasing "
               ":max_clause_count for the BooleanQuery or using a different "
               "type of query.", BQ(self)->clause_cnt, BQ(self)->max_clause_cnt);
+    }
+    if (BQ(self)->clause_cnt >= BQ(self)->clause_capa) {
+        BQ(self)->clause_capa *= 2;
+        REALLOC_N(BQ(self)->clauses, BooleanClause *, BQ(self)->clause_capa);
     }
     BQ(self)->clauses[BQ(self)->clause_cnt] = bc;
     BQ(self)->clause_cnt++;
@@ -1580,9 +1587,16 @@ BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
 
 BooleanClause *bq_add_query_nr(Query *self, Query *sub_query, enum BC_TYPE occur)
 {
-    BooleanClause *bc = bc_new(sub_query, occur);
+    BooleanClause *bc;
+    if (BQ(self)->clause_cnt >= BQ(self)->max_clause_cnt) {
+        RAISE(STATE_ERROR, "Two many clauses. The max clause limit is set to "
+              "<%d> but your query has <%d> clauses. You can try increasing "
+              ":max_clause_count for the BooleanQuery or using a different "
+              "type of query.", BQ(self)->clause_cnt, BQ(self)->max_clause_cnt);
+    }
+    bc = bc_new(sub_query, occur);
     bq_add_clause(self, bc);
-    bc_deref(bc); /* bc would have been referenced unnecessarily */
+    bc_deref(bc); /* bc was referenced unnecessarily */
     return bc;
 }
 

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <wctype.h>
+#include "except.h"
 #include "search.h"
 #include "array.h"
 
@@ -42,6 +43,7 @@ static BCArray *first_cls(BooleanClause *boolean_clause);
 static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause);
 static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause);
 static BCArray *add_default_cls(QParser *qp, BCArray *bca, BooleanClause *clause);
+static void bca_destroy(BCArray *bca);
 
 static BooleanClause *get_bool_cls(Query *q, unsigned int occur);
 
@@ -57,31 +59,51 @@ static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop);
 static Phrase *ph_first_word(char *word);
 static Phrase *ph_add_word(Phrase *self, char *word);
 static Phrase *ph_add_multi_word(Phrase *self, char *word);
+static void ph_destroy(Phrase *self);
 
 static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
                       bool inc_lower, bool inc_upper);
 
 #define FLDS(q, func) do {\
-    char *field;\
-    if (qp->fields->size == 0) {\
-        q = NULL;\
-    } else if (qp->fields->size == 1) {\
-        field = (char *)qp->fields->elems[0];\
-        q = func;\
-    } else {\
-        int i;Query *sq;\
-        q = bq_new(false);\
-        for (i = 0; i < qp->fields->size; i++) {\
-            field = (char *)qp->fields->elems[i];\
-            sq = func;\
-            if (sq) bq_add_query_nr(q, sq, BC_SHOULD);\
-        }\
-        if (((BooleanQuery *)q)->clause_cnt == 0) {\
-            q_deref(q);\
+    TRY {\
+        char *field;\
+        if (qp->fields->size == 0) {\
             q = NULL;\
+        } else if (qp->fields->size == 1) {\
+            field = (char *)qp->fields->elems[0];\
+            q = func;\
+        } else {\
+            int i;Query *sq;\
+            q = bq_new_max(false, qp->max_clauses);\
+            for (i = 0; i < qp->fields->size; i++) {\
+                field = (char *)qp->fields->elems[i];\
+                sq = func;\
+                TRY\
+                  if (sq) bq_add_query_nr(q, sq, BC_SHOULD);\
+                XCATCHALL\
+                  if (sq) q_deref(sq);\
+                XENDTRY\
+            }\
+            if (((BooleanQuery *)q)->clause_cnt == 0) {\
+                q_deref(q);\
+                q = NULL;\
+            }\
         }\
-    }\
+    } XCATCHALL\
+        qp->destruct = true;\
+        HANDLED();\
+    XENDTRY\
+    if (qp->destruct && !qp->recovering && q) {q_deref(q); q = NULL;}\
 } while (0)
+
+#define Y if (qp->destruct) goto yyerrorlab;
+#define T TRY
+#define E\
+  XCATCHALL\
+    qp->destruct = true;\
+    HANDLED();\
+  XENDTRY\
+  if (qp->destruct) Y;
 %}
 %expect 1
 %pure-parser
@@ -98,35 +120,39 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
 %nonassoc REQ NOT
 %left ':'
 %nonassoc HIGH
+%destructor { if ($$ && qp->destruct) q_deref($$); } q bool_q boosted_q term_q wild_q field_q phrase_q range_q
+%destructor { if ($$ && qp->destruct) bc_deref($$); } bool_cls
+%destructor { if ($$ && qp->destruct) bca_destroy($$); } bool_clss
+%destructor { if ($$ && qp->destruct) ph_destroy($$); } ph_words
 %%
-bool_q    : /* Nothing */             { qp->result = $$ = NULL; }
-          | bool_clss                 { qp->result = $$ = get_bool_q($1); }
+bool_q    : /* Nothing */             {   qp->result = $$ = NULL; }
+          | bool_clss                 { T qp->result = $$ = get_bool_q($1); E }
           ;
-bool_clss : bool_cls                  { $$ = first_cls($1); }
-          | bool_clss AND bool_cls    { $$ = add_and_cls($1, $3); }
-          | bool_clss OR bool_cls     { $$ = add_or_cls($1, $3); }
-          | bool_clss bool_cls        { $$ = add_default_cls(qp, $1, $2); }
+bool_clss : bool_cls                  { T $$ = first_cls($1); E }
+          | bool_clss AND bool_cls    { T $$ = add_and_cls($1, $3); E }
+          | bool_clss OR bool_cls     { T $$ = add_or_cls($1, $3); E }
+          | bool_clss bool_cls        { T $$ = add_default_cls(qp, $1, $2); E }
           ;
-bool_cls  : REQ boosted_q             { $$ = get_bool_cls($2, BC_MUST); }
-          | NOT boosted_q             { $$ = get_bool_cls($2, BC_MUST_NOT); }
-          | boosted_q                 { $$ = get_bool_cls($1, BC_SHOULD); }
+bool_cls  : REQ boosted_q             { T $$ = get_bool_cls($2, BC_MUST); E }
+          | NOT boosted_q             { T $$ = get_bool_cls($2, BC_MUST_NOT); E }
+          | boosted_q                 { T $$ = get_bool_cls($1, BC_SHOULD); E }
           ;
 boosted_q : q
-          | q '^' QWRD                { if ($1) sscanf($3,"%f",&($1->boost)); $$=$1; }
+          | q '^' QWRD                { T if ($1) sscanf($3,"%f",&($1->boost));  $$=$1; E }
           ;
 q         : term_q
-          | '(' ')'                   { $$ = bq_new(true); }
-          | '(' bool_clss ')'         { $$ = get_bool_q($2); }
+          | '(' ')'                   { T $$ = bq_new_max(true, qp->max_clauses); E }
+          | '(' bool_clss ')'         { T $$ = get_bool_q($2); E }
           | field_q
           | phrase_q
           | range_q
           | wild_q
           ;
-term_q    : QWRD                      { FLDS($$, get_term_q(qp, field, $1)); }
-          | QWRD '~' QWRD %prec HIGH  { FLDS($$, get_fuzzy_q(qp, field, $1, $3)); }
-          | QWRD '~' %prec LOW        { FLDS($$, get_fuzzy_q(qp, field, $1, NULL)); }
+term_q    : QWRD                      { FLDS($$, get_term_q(qp, field, $1)); Y}
+          | QWRD '~' QWRD %prec HIGH  { FLDS($$, get_fuzzy_q(qp, field, $1, $3)); Y}
+          | QWRD '~' %prec LOW        { FLDS($$, get_fuzzy_q(qp, field, $1, NULL)); Y}
           ;
-wild_q    : WILD_STR                  { FLDS($$, get_wild_q(qp, field, $1)); }
+wild_q    : WILD_STR                  { FLDS($$, get_wild_q(qp, field, $1)); Y}
           ;
 field_q   : field ':' q { qp->fields = qp->def_fields; }
                                       { $$ = $3; }
@@ -139,7 +165,7 @@ field     : QWRD                      { $$ = first_field(qp, $1); }
 phrase_q  : '"' ph_words '"'          { $$ = get_phrase_q(qp, $2, NULL); }
           | '"' ph_words '"' '~' QWRD { $$ = get_phrase_q(qp, $2, $5); }
           | '"' '"'                   { $$ = NULL; }
-          | '"' '"' '~' QWRD          { $$ = NULL; }
+          | '"' '"' '~' QWRD          { $$ = NULL; (void)$4;}
           ;
 ph_words  : QWRD              { $$ = ph_first_word($1); }
           | '<' '>'           { $$ = ph_first_word(NULL); }
@@ -147,18 +173,18 @@ ph_words  : QWRD              { $$ = ph_first_word($1); }
           | ph_words '<' '>'  { $$ = ph_add_word($1, NULL); }
           | ph_words '|' QWRD { $$ = ph_add_multi_word($1, $3);  }
           ;
-range_q   : '[' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  true)); }
-          | '[' QWRD QWRD '}' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  false)); }
-          | '{' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  false, true)); }
-          | '{' QWRD QWRD '}' { FLDS($$, get_r_q(qp, field, $2,  $3,  false, false)); }
-          | '<' QWRD '}'      { FLDS($$, get_r_q(qp, field, NULL,$2,  false, false)); }
-          | '<' QWRD ']'      { FLDS($$, get_r_q(qp, field, NULL,$2,  false, true)); }
-          | '[' QWRD '>'      { FLDS($$, get_r_q(qp, field, $2,  NULL,true,  false)); }
-          | '{' QWRD '>'      { FLDS($$, get_r_q(qp, field, $2,  NULL,false, false)); }
-          | '<' QWRD          { FLDS($$, get_r_q(qp, field, NULL,$2,  false, false)); }
-          | '<' '=' QWRD      { FLDS($$, get_r_q(qp, field, NULL,$3,  false, true)); }
-          | '>' '='  QWRD     { FLDS($$, get_r_q(qp, field, $3,  NULL,true,  false)); }
-          | '>' QWRD          { FLDS($$, get_r_q(qp, field, $2,  NULL,false, false)); }
+range_q   : '[' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  true)); Y}
+          | '[' QWRD QWRD '}' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  false)); Y}
+          | '{' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  false, true)); Y}
+          | '{' QWRD QWRD '}' { FLDS($$, get_r_q(qp, field, $2,  $3,  false, false)); Y}
+          | '<' QWRD '}'      { FLDS($$, get_r_q(qp, field, NULL,$2,  false, false)); Y}
+          | '<' QWRD ']'      { FLDS($$, get_r_q(qp, field, NULL,$2,  false, true)); Y}
+          | '[' QWRD '>'      { FLDS($$, get_r_q(qp, field, $2,  NULL,true,  false)); Y}
+          | '{' QWRD '>'      { FLDS($$, get_r_q(qp, field, $2,  NULL,false, false)); Y}
+          | '<' QWRD          { FLDS($$, get_r_q(qp, field, NULL,$2,  false, false)); Y}
+          | '<' '=' QWRD      { FLDS($$, get_r_q(qp, field, NULL,$3,  false, true)); Y}
+          | '>' '='  QWRD     { FLDS($$, get_r_q(qp, field, $3,  NULL,true,  false)); Y}
+          | '>' QWRD          { FLDS($$, get_r_q(qp, field, $2,  NULL,false, false)); Y}
           ;
 %%
 
@@ -278,6 +304,7 @@ static int yylex(YYSTYPE *lvalp, QParser *qp)
 
 static int yyerror(QParser *qp, char const *msg)
 {
+    qp->destruct = true;
     if (!qp->handle_parse_errors) {
         char buf[1024];
         buf[1023] = '\0';
@@ -286,8 +313,9 @@ static int yyerror(QParser *qp, char const *msg)
             free(qp->qstr);
         }
         mutex_unlock(&qp->mutex);
-        RAISE(PARSE_ERROR, "couldn't parse query ``%s''. Error message "
-              " was %s", buf, (char *)msg);
+        snprintf(xmsg_buffer, XMSG_BUFFER_SIZE,
+                 "couldn't parse query ``%s''. Error message "
+                 " was %s", buf, (char *)msg);
     }
     return 0;
 }
@@ -414,6 +442,16 @@ static BCArray *add_default_cls(QParser *qp, BCArray *bca,
         add_and_cls(bca, clause);
     }
     return bca;
+}
+
+static void bca_destroy(BCArray *bca)
+{
+    int i;
+    for (i = 0; i < bca->size; i++) {
+        bc_deref(bca->clauses[i]);
+    }
+    free(bca->clauses);
+    free(bca);
 }
 
 static BooleanClause *get_bool_cls(Query *q, unsigned int occur)
@@ -639,7 +677,7 @@ static Query *get_phrase_query(QParser *qp, char *field,
         }
         else {
             int i;
-            q = bq_new(false);
+            q = bq_new_max(false, qp->max_clauses);
             for (i = 0; i < word_count; i++) {
                 bq_add_query_nr(q, get_term_q(qp, field, words[i]), BC_SHOULD);
             }
@@ -704,7 +742,7 @@ static Query *get_phrase_query(QParser *qp, char *field,
 
 static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
 {
-    Query *q;
+    Query *q = NULL;
     FLDS(q, get_phrase_query(qp, field, phrase, slop_str));
     ph_destroy(phrase);
     return q;
@@ -903,7 +941,8 @@ char *qp_clean_str(char *str)
 
 Query *qp_get_bad_query(QParser *qp, char *str)
 {
-    Query *q;
+    Query *volatile q = NULL;
+    qp->recovering = true;
     FLDS(q, get_term_q(qp, field, str));
     return q;
 }
@@ -912,6 +951,7 @@ Query *qp_parse(QParser *self, char *qstr)
 {
     Query *result = NULL;
     mutex_lock(&self->mutex);
+    self->recovering = self->destruct = false;
     if (self->clean_str) {
         self->qstrp = self->qstr = qp_clean_str(qstr);
     }
@@ -921,14 +961,13 @@ Query *qp_parse(QParser *self, char *qstr)
     self->fields = self->def_fields;
     self->result = NULL;
 
-    TRY
-      yyparse(self);
-      result = self->result;
-    XCATCHALL
-      if (self->handle_parse_errors) HANDLED();
-    XENDTRY
+    if (0 == yyparse(self)) result = self->result;
     if (!result && self->handle_parse_errors) {
+        self->destruct = false;
         result = qp_get_bad_query(self, self->qstr);
+    }
+    if (self->destruct && !self->handle_parse_errors) {
+        xraise(PARSE_ERROR, xmsg_buffer);
     }
     if (!result) {
         result = bq_new(false);

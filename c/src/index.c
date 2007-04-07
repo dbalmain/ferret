@@ -5208,10 +5208,10 @@ HashTable *dw_invert_field(DocWriter *dw,
     if (fld_inv->is_tokenized) {
         Token *tk;
         int pos = -1, num_terms = 0;
-        TokenStream *ts = a_get_ts(a, df->name, "");
 
         for (i = 0; i < df_size; i++) {
-            ts->reset(ts, df->data[i]);
+            TokenStream *ts = a_get_ts(a, df->name, df->data[i]);
+            /* ts->reset(ts, df->data[i]); no longer being called */
             if (store_offsets) {
                 while (NULL != (tk = ts->next(ts))) {
                     pos += tk->pos_inc;
@@ -5233,8 +5233,8 @@ HashTable *dw_invert_field(DocWriter *dw,
                     }
                 }
             }
+            ts_deref(ts);
         }
-        ts_deref(ts);
         fld_inv->length = num_terms;
     }
     else {

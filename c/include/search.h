@@ -285,6 +285,7 @@ typedef struct BooleanQuery
 } BooleanQuery;
 
 extern Query *bq_new(bool coord_disabled);
+extern Query *bq_new_max(bool coord_disabled, int max);
 extern BooleanClause *bq_add_query(Query *self, Query *sub_query,
                                    enum BC_TYPE occur);
 extern BooleanClause *bq_add_query_nr(Query *self, Query *sub_query,
@@ -869,6 +870,8 @@ typedef struct QParser
     bool handle_parse_errors : 1;
     bool allow_any_fields : 1;
     bool close_def_fields : 1;
+    bool destruct : 1;
+    bool recovering : 1;
 } QParser;
 
 extern QParser *qp_new(HashSet *all_fields, HashSet *def_fields,

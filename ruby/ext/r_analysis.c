@@ -560,7 +560,6 @@ static TokenStream *
 cwrts_reset(TokenStream *ts, char *text)
 {
     ts->t = ts->text = text;
-    Xj
     rb_funcall(CWTS(ts)->rts, id_reset, 1, rb_str_new2(text));
     return ts;
 }
