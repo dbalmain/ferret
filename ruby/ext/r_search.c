@@ -1617,10 +1617,11 @@ frt_spanprq_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE rfield, rprefix, rmax_terms;
     int max_terms = SPAN_PREFIX_QUERY_MAX_TERMS;
+    Query *q;
     if (rb_scan_args(argc, argv, "21", &rfield, &rprefix, &rmax_terms) == 3) {
         max_terms = FIX2INT(rmax_terms);
     }
-    Query *q = spanprq_new(frt_field(rfield), StringValuePtr(rprefix));
+    q = spanprq_new(frt_field(rfield), StringValuePtr(rprefix));
     ((SpanPrefixQuery *)q)->max_terms = max_terms;
     Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
     object_add(q, self);
