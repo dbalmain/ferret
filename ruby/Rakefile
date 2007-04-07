@@ -178,7 +178,6 @@ PKG_FILES = FileList[
   'lib/**/*.rhtml', 
   'lib/**/*.css', 
   'lib/**/*.js', 
-  'lib/**/*.ico', 
   'test/**/*.rb',
   'test/**/wordfile',
   'rake_utils/**/*.rb',
