@@ -323,7 +323,12 @@ module Ferret::Index
     #               should be sorted. A sort string is made up of field names
     #               which cannot contain spaces and the word "DESC" if you
     #               want the field reversed, all seperated by commas. For
-    #               example; "rating DESC, author, title"
+    #               example; "rating DESC, author, title". Note that Ferret
+    #               will try to determine a field's type by looking at the
+    #               first term in the index and seeing if it can be parsed as
+    #               an integer or a float. Keep this in mind as you may need
+    #               to specify a fields type to sort it correctly. For more
+    #               on this, see the documentation for SortField
     # filter::      a Filter object to filter the search results with
     # filter_proc:: a filter Proc is a Proc which takes the doc_id, the score
     #               and the Searcher object as its parameters and returns a
@@ -361,7 +366,12 @@ module Ferret::Index
     #               should be sorted. A sort string is made up of field names
     #               which cannot contain spaces and the word "DESC" if you
     #               want the field reversed, all seperated by commas. For
-    #               example; "rating DESC, author, title"
+    #               example; "rating DESC, author, title". Note that Ferret
+    #               will try to determine a field's type by looking at the
+    #               first term in the index and seeing if it can be parsed as
+    #               an integer or a float. Keep this in mind as you may need
+    #               to specify a fields type to sort it correctly. For more
+    #               on this, see the documentation for SortField
     # filter::      a Filter object to filter the search results with
     # filter_proc:: a filter Proc is a Proc which takes the doc_id, the score
     #               and the Searcher object as its parameters and returns a

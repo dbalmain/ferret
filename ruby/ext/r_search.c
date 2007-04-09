@@ -2556,7 +2556,12 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
  *                  should be sorted. A sort string is made up of field names
  *                  which cannot contain spaces and the word "DESC" if you
  *                  want the field reversed, all seperated by commas. For
- *                  example; "rating DESC, author, title"
+ *                  example; "rating DESC, author, title". Note that Ferret
+ *                  will try to determine a field's type by looking at the
+ *                  first term in the index and seeing if it can be parsed as
+ *                  an integer or a float. Keep this in mind as you may need
+ *                  to specify a fields type to sort it correctly. For more
+ *                  on this, see the documentation for SortField
  *  :filter::       a Filter object to filter the search results with
  *  :filter_proc::  a filter Proc is a Proc which takes the doc_id, the score
  *                  and the Searcher object as its parameters and returns a
@@ -2603,7 +2608,12 @@ frt_sea_search(int argc, VALUE *argv, VALUE self)
  *                  should be sorted. A sort string is made up of field names
  *                  which cannot contain spaces and the word "DESC" if you
  *                  want the field reversed, all seperated by commas. For
- *                  example; "rating DESC, author, title"
+ *                  example; "rating DESC, author, title". Note that Ferret
+ *                  will try to determine a field's type by looking at the
+ *                  first term in the index and seeing if it can be parsed as
+ *                  an integer or a float. Keep this in mind as you may need
+ *                  to specify a fields type to sort it correctly. For more
+ *                  on this, see the documentation for SortField
  *  :filter::       a Filter object to filter the search results with
  *  :filter_proc::  a filter Proc is a Proc which takes the doc_id, the score
  *                  and the Searcher object as its parameters and returns a
@@ -3839,16 +3849,23 @@ Init_Filter(void)
  *  The type of the SortField is set by passing it as a parameter to the
  *  constructor. The +:auto+ type specifies that the SortField should detect
  *  the sort type by looking at the data in the field. This is the default
- *  type. Care should be taken however when using the :auto sort-type since
- *  numbers will occur before other strings in the index so if you are sorting
- *  a field with both numbers and strings (like a title field which might have
- *  "24" and "Prison Break") then the sort_field will think it is sorting
- *  integers when it really should sort by string.
+ *  :type value although it is recommended that you explicitly specify the
+ *  fields type.
  *
  *  == Example
  *
  *    title_sf = SortField.new(:title, :type => :string)
  *    rating_sf = SortField.new(:rating, :type => float, :reverse => true)
+ *
+ *
+ *  Note 1: Care should be taken when using the :auto sort-type since numbers
+ *  will occur before other strings in the index so if you are sorting a field
+ *  with both numbers and strings (like a title field which might have "24"
+ *  and "Prison Break") then the sort_field will think it is sorting integers
+ *  when it really should be sorting strings.
+ *
+ *  Note 2: When sorting by integer, integers are only 4 bytes so anything
+ *  larger will cause strange sorting behaviour.
  */
 static void
 Init_SortField(void)
@@ -3923,6 +3940,9 @@ Init_SortField(void)
  *    sf_rating = SortField.new(:rating, :type => :float, :reverse => true)
  *    sf_title = SortField.new(:title, :type => :string)
  *    sort = Sort.new([sf_rating, sf_title])
+ *
+ *  Remember that the :type parameter for SortField is set to :auto be default
+ *  be I strongly recommend you specify a :type value.
  */
 static void
 Init_Sort(void)

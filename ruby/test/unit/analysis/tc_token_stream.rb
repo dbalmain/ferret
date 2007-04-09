@@ -508,6 +508,11 @@ module Ferret::Analysis
       return Token.new(normalize(term), term_start, term_end)
     end
 
+    def text=(text)
+      @ss = StringScanner.new(text)
+    end
+
+
     protected
       # returns the regular expression used to find the next token
       TOKEN_RE = /[[:alpha:]]+/
@@ -519,6 +524,23 @@ module Ferret::Analysis
       # token.  The default implementation does nothing.  Subclasses may
       # use this to, e.g., lowercase tokens.
       def normalize(str) return str end
+  end
+
+  class MyReverseTokenFilter < TokenStream
+    def initialize(token_stream)
+      @token_stream = token_stream
+    end
+
+    def text=(text)
+      @token_stream.text = text
+    end
+
+    def next()
+      if token = @token_stream.next
+        token.text = token.text.reverse
+      end
+      token
+    end
   end
 
   class MyCSVTokenizer < MyRegExpTokenizer
@@ -551,6 +573,24 @@ class CustomTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new("2nd field", 12, 21), t.next)
     assert_equal(Token.new("  p a d d e d  f i e l d  ", 22, 48), t.next)
     assert(! t.next())
+    t = MyReverseTokenFilter.new(
+          AsciiLowerCaseFilter.new(MyCSVTokenizer.new(input)))
+    assert_equal(Token.new("dleif tsrif", 0, 11), t.next)
+    assert_equal(Token.new("dleif dn2", 12, 21), t.next)
+    assert_equal(Token.new("  d l e i f  d e d d a p  ", 22, 48), t.next)
+    t.text = "one,TWO,three"
+    assert_equal(Token.new("eno", 0, 3), t.next)
+    assert_equal(Token.new("owt", 4, 7), t.next)
+    assert_equal(Token.new("eerht", 8, 13), t.next)
+    t = AsciiLowerCaseFilter.new(
+          MyReverseTokenFilter.new(MyCSVTokenizer.new(input)))
+    assert_equal(Token.new("dleif tsrif", 0, 11), t.next)
+    assert_equal(Token.new("dleif dn2", 12, 21), t.next)
+    assert_equal(Token.new("  d l e i f  d e d d a p  ", 22, 48), t.next)
+    t.text = "one,TWO,three"
+    assert_equal(Token.new("eno", 0, 3), t.next)
+    assert_equal(Token.new("owt", 4, 7), t.next)
+    assert_equal(Token.new("eerht", 8, 13), t.next)
   end
 end
 
