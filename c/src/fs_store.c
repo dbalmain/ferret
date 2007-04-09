@@ -51,7 +51,7 @@ static void fs_touch(Store *store, char *filename)
     int f;
     char path[MAX_FILE_PATH];
     join_path(path, store->dir.path, filename);
-    if ((f = creat(path, S_IRUSR | S_IWUSR)) == 0) {
+    if ((f = creat(path, store->file_mode)) == 0) {
         RAISE(IO_ERROR, "couldn't create file %s: <%s>", path,
               strerror(errno));
     }
@@ -257,7 +257,7 @@ static OutStream *fs_new_output(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
     int fd = open(join_path(path, store->dir.path, filename),
-                  O_WRONLY | O_CREAT | O_BINARY, S_IRUSR | S_IWUSR);
+                  O_WRONLY | O_CREAT | O_BINARY, store->file_mode);
     OutStream *os;
     if (fd < 0) {
         RAISE(IO_ERROR, "couldn't create OutStream %s: <%s>",
@@ -430,7 +430,18 @@ static void fs_close_i(Store *store)
 
 static Store *fs_store_new(const char *pathname)
 {
+    struct stat stt;
     Store *new_store = store_new();
+
+    new_store->file_mode = S_IRUSR | S_IWUSR;
+#ifndef POSH_OS_WIN32
+    if (!stat(new_store->dir.path, &stt) && stt.st_gid == getgid()) {
+        if (stt.st_mode & S_IWGRP) {
+            umask(S_IWOTH);
+        }
+        new_store->file_mode |= stt.st_mode & (S_IRGRP | S_IWGRP);
+    }
+#endif
 
     new_store->dir.path      = estrdup(pathname);
     new_store->touch         = &fs_touch;

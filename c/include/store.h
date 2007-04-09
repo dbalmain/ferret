@@ -176,6 +176,7 @@ struct Store
         CompoundStore *cmpd;    /* for compound_store only */
     } dir;
 
+    mode_t file_mode;
     HashSet *locks;
 
     /**
