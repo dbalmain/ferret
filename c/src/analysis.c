@@ -830,7 +830,7 @@ static bool mb_std_advance_to_start(TokenStream *ts)
 
     i = mb_next_char(&wchr, ts->t, &state);
 
-    while (wchr != 0 && !iswalpha(wchr) && !isdigit(*(ts->t))) {
+    while (wchr != 0 && !iswalnum(wchr)) {
         if (isnumpunc(*ts->t) && isdigit(ts->t[1])) break;
         ts->t += i;
         i = mb_next_char(&wchr, ts->t, &state);
