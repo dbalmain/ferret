@@ -6,11 +6,6 @@
 #include <wctype.h>
 #include <wchar.h>
 
-__inline bool is10(char c)
-{
-    return c >= '0' && c <= '9';
-}
-
 /****************************************************************************
  *
  * Token
@@ -710,10 +705,10 @@ static int std_get_number(char *input)
 
     while (last_seen_digit >= 0) {
         while ((input[i] != '\0') && isalnum(input[i])) {
-            if ((last_seen_digit < 2) && is10(input[i])) {
+            if ((last_seen_digit < 2) && isdigit(input[i])) {
                 last_seen_digit = 2;
             }
-            if ((seen_digit == false) && is10(input[i])) {
+            if ((seen_digit == false) && isdigit(input[i])) {
                 seen_digit = true;
             }
             i++;
@@ -818,7 +813,7 @@ static bool std_advance_to_start(TokenStream *ts)
 {
     char *t = ts->t;
     while (*t != '\0' && !isalnum(*t)) {
-        if (isnumpunc(*t) && is10(t[1])) break;
+        if (isnumpunc(*t) && isdigit(t[1])) break;
         t++;
     }
 
@@ -835,8 +830,8 @@ static bool mb_std_advance_to_start(TokenStream *ts)
 
     i = mb_next_char(&wchr, ts->t, &state);
 
-    while (wchr != 0 && !iswalpha(wchr) && !is10(*(ts->t))) {
-        if (isnumpunc(*ts->t) && is10(ts->t[1])) break;
+    while (wchr != 0 && !iswalpha(wchr) && !isdigit(*(ts->t))) {
+        if (isnumpunc(*ts->t) && isdigit(ts->t[1])) break;
         ts->t += i;
         i = mb_next_char(&wchr, ts->t, &state);
     }
@@ -900,7 +895,7 @@ static Token *std_next(TokenStream *ts)
         return tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
     }
 
-    if ((is10(*t) || isnumpunc(*t))       /* possibly a number */
+    if ((isdigit(*t) || isnumpunc(*t))       /* possibly a number */
         && (len = std_get_number(t) > 0)) {
         num_end = start + len;
         if (!std_tz->is_tok_char(num_end)) { /* won't find a longer token */
@@ -959,7 +954,10 @@ static Token *std_next(TokenStream *ts)
         t--;                /* strip trailing punctuation */
     }
 
-    if (num_end == NULL || t > num_end) {
+    if (t <= ts->t && (num_end == NULL || num_end <= ts->t)) {
+        fprintf(stderr, "Warning encoding error. Please check that you are using the correct locale for your input");
+        return NULL;
+    } else if (num_end == NULL || t > num_end) {
         ts->t = t;
 
         if (is_acronym) {   /* check it is one letter followed by one '.' */
