@@ -658,6 +658,19 @@ class IndexTest < Test::Unit::TestCase
     assert_raise(StandardError) {i.close} 
   end
 
+  def check_highlight(index, q, excerpt_length, num_excerpts, expected, field = :field)
+    highlights = index.highlight(q, 0,
+                                 :excerpt_length => excerpt_length,
+                                 :num_excerpts => num_excerpts,
+                                 :field => field)
+    assert_equal(expected, highlights)
+    highlights = index.highlight(q, 1,
+                                 :excerpt_length => excerpt_length,
+                                 :num_excerpts => num_excerpts,
+                                 :field => field)
+    assert_equal(expected, highlights)
+  end
+
   def test_highlighter()
     index = Ferret::I.new(:default_field => :field,
                           :default_input_field => :field,
@@ -665,109 +678,49 @@ class IndexTest < Test::Unit::TestCase
     [
       "the words we are searching for are one and two also " +
       "sometimes looking for them as a phrase like this; one " +
-      "two lets see how it goes"
+      "two lets see how it goes",
+      [
+        "the words we",
+        "are searching",
+        "for are one",
+        "and two also",
+        "sometimes looking",
+        "for them as a",
+        "phrase like this;",
+        "one two lets see",
+        "how it goes"
+      ]
     ].each {|doc| index << doc }
     
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 1)
-
-    assert_equal(1, highlights.size)
-    assert_equal("...are <b>one</b>...", highlights[0])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 2)
-    assert_equal(2, highlights.size)
-    assert_equal("...are <b>one</b>...", highlights[0])
-    assert_equal("...this; <b>one</b>...", highlights[1])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 3)
-    assert_equal(3, highlights.size)
-    assert_equal("the words...", highlights[0])
-    assert_equal("...are <b>one</b>...", highlights[1])
-    assert_equal("...this; <b>one</b>...", highlights[2])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 4)
-    assert_equal(3, highlights.size)
-    assert_equal("the words we are...", highlights[0])
-    assert_equal("...are <b>one</b>...", highlights[1])
-    assert_equal("...this; <b>one</b>...", highlights[2])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 5)
-    assert_equal(2, highlights.size)
-    assert_equal("the words we are searching for are <b>one</b>...", highlights[0])
-    assert_equal("...this; <b>one</b>...", highlights[1])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 20)
-    assert_equal(1, highlights.size)
-    assert_equal("the words we are searching for are <b>one</b> and two also " +
-            "sometimes looking for them as a phrase like this; <b>one</b> " +
-            "two lets see how it goes", highlights[0])
-
-    highlights = index.highlight("one", 0,
-                                 :excerpt_length => 1000,
-                                 :num_excerpts => 1)
-    assert_equal(1, highlights.size)
-    assert_equal("the words we are searching for are <b>one</b> and two also " +
-            "sometimes looking for them as a phrase like this; <b>one</b> " +
-            "two lets see how it goes", highlights[0])
-
-    highlights = index.highlight("(one two)", 0,
-                                 :excerpt_length => 15,
-                                 :num_excerpts => 2)
-    assert_equal(2, highlights.size)
-    assert_equal("...<b>one</b> and <b>two</b>...", highlights[0])
-    assert_equal("...this; <b>one</b> <b>two</b>...", highlights[1])
-
-    highlights = index.highlight('one two "one two"', 0,
-                                 :excerpt_length => 15,
-                                 :num_excerpts => 2)
-    assert_equal(2, highlights.size)
-    assert_equal("...<b>one</b> and <b>two</b>...", highlights[0])
-    assert_equal("...this; <b>one two</b>...", highlights[1])
-
-    highlights = index.highlight('"one two"', 0,
-                                 :excerpt_length => 15,
-                                 :num_excerpts => 1)
-    assert_equal(1, highlights.size)
-    # should have a higher priority since it the merger of three matches
-    assert_equal("...this; <b>one two</b>...", highlights[0])
-
-    highlights = index.highlight('"one two"', 0, :field => :not_a_field,
-                                 :excerpt_length => 15,
-                                 :num_excerpts => 1)
-    assert_nil(highlights)
-
-    highlights = index.highlight("wrong_field:one", 0, :field => :wrong_field,
-                                 :excerpt_length => 15,
-                                 :num_excerpts => 1)
-    assert_nil(highlights)
-
-    highlights = index.highlight('"the words" "for are one and two" ' +
-                                 'words one two', 0,
-                                 :excerpt_length => 10,
-                                 :num_excerpts => 1)
-    assert_equal(1, highlights.size)
-    assert_equal("<b>the words</b>...", highlights[0])
-
-    highlights = index.highlight('"the words" "for are one and two" ' +
-                                 'words one two', 0,
-                                 :excerpt_length => 20,
-                                 :num_excerpts => 2)
-    assert_equal(2, highlights.size)
-    assert_equal("<b>the words</b> we are...", highlights[0])
-    assert_equal("...<b>for are one and two</b>...", highlights[1])
-
-
+    check_highlight(index, "one", 10, 1, ["...are <b>one</b>..."])
+    check_highlight(index, "one", 10, 2,
+                    ["...are <b>one</b>...","...this; <b>one</b>..."])
+    check_highlight(index, "one", 10, 3,
+                    ["the words...","...are <b>one</b>...","...this; <b>one</b>..."])
+    check_highlight(index, "one", 10, 4,
+                    ["the words we are...","...are <b>one</b>...","...this; <b>one</b>..."])
+    check_highlight(index, "one", 10, 5,
+                    ["the words we are searching for are <b>one</b>...","...this; <b>one</b>..."])
+    check_highlight(index, "one", 10, 20,
+                    ["the words we are searching for are <b>one</b> and two also " +
+                     "sometimes looking for them as a phrase like this; <b>one</b> " +
+                     "two lets see how it goes"])
+    check_highlight(index, "one", 200, 1,
+                    ["the words we are searching for are <b>one</b> and two also " +
+                     "sometimes looking for them as a phrase like this; <b>one</b> " +
+                     "two lets see how it goes"])
+    check_highlight(index, "(one two)", 15, 2, 
+                    ["...<b>one</b> and <b>two</b>...","...this; <b>one</b> <b>two</b>..."])
+    check_highlight(index, 'one two "one two"', 15, 2, 
+                    ["...<b>one</b> and <b>two</b>...","...this; <b>one two</b>..."])
+    check_highlight(index, 'one two "one two"', 15, 1, 
+                    ["...this; <b>one two</b>..."])
+    check_highlight(index, '"one two"', 15, 1, nil, :not_a_field)
+    check_highlight(index, 'wrong_field:one', 15, 1, nil, :wrong_field)
+    check_highlight(index, '"the words" "for are one and two" words one two', 10, 1, 
+                    ["<b>the words</b>..."])
+    check_highlight(index, '"the words" "for are one and two" words one two', 20, 2, 
+                    ["<b>the words</b> we are...","...<b>for are one and two</b>..."])
     index.close
   end
 
