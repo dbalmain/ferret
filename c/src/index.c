@@ -5204,6 +5204,7 @@ HashTable *dw_invert_field(DocWriter *dw,
     int doc_num = dw->doc_num;
     int i;
     const int df_size = df->size;
+    int start_offset = 0;
 
     if (fld_inv->is_tokenized) {
         Token *tk;
@@ -5217,7 +5218,9 @@ HashTable *dw_invert_field(DocWriter *dw,
                     pos += tk->pos_inc;
                     dw_add_posting(mp, curr_plists, fld_plists, doc_num,
                                    tk->text, tk->len, pos);
-                    dw_add_offsets(dw, pos, tk->start, tk->end);
+                    dw_add_offsets(dw, pos,
+                                   start_offset + tk->start,
+                                   start_offset + tk->end);
                     if (num_terms++ >= dw->max_field_length) {
                         break;
                     }
@@ -5234,6 +5237,7 @@ HashTable *dw_invert_field(DocWriter *dw,
                 }
             }
             ts_deref(ts);
+            start_offset += df->lengths[i] + 1;
         }
         fld_inv->length = num_terms;
     }
@@ -5250,8 +5254,10 @@ HashTable *dw_invert_field(DocWriter *dw,
             dw_add_posting(mp, curr_plists, fld_plists, doc_num, data_ptr,
                            len, i);
             if (store_offsets) {
-                dw_add_offsets(dw, i, 0, df->lengths[i]);
+                dw_add_offsets(dw, i, start_offset,
+                               start_offset + df->lengths[i]);
             }
+            start_offset += df->lengths[i] + 1;
         }
         fld_inv->length = i;
     }
