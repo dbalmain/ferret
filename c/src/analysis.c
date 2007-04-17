@@ -954,7 +954,7 @@ static Token *std_next(TokenStream *ts)
         t--;                /* strip trailing punctuation */
     }
 
-    if (t <= ts->t || (num_end == NULL && num_end <= ts->t)) {
+    if (t <= ts->t || (num_end != NULL && num_end <= ts->t)) {
         fprintf(stderr, "Warning encoding error. Please check that you are using the correct locale for your input");
         return NULL;
     } else if (num_end == NULL || t > num_end) {
