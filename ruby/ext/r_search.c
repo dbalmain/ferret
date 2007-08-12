@@ -197,7 +197,7 @@ frt_td_to_s(int argc, VALUE *argv, VALUE self)
         field = frt_field(argv[0]);
     }
 
-    sprintf(s, "TopDocs: total_hits = %d, max_score = %f [\n",
+    sprintf(s, "TopDocs: total_hits = %ld, max_score = %f [\n",
             FIX2INT(rb_funcall(self, id_total_hits, 0)),
             NUM2DBL(rb_funcall(self, id_max_score, 0)));
     s += strlen(s);
@@ -582,7 +582,7 @@ static VALUE
 frt_tq_init(VALUE self, VALUE rfield, VALUE rterm)
 {
     char *field = frt_field(rfield);
-    char *term = StringValuePtr(rterm);
+    char *term = rs2s(rb_obj_as_string(rterm));
     Query *q = tq_new(field, term);
     Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
     object_add(q, self);

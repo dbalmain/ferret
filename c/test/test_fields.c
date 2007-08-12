@@ -252,7 +252,7 @@ static void test_fis_rw(tst_case *tc, void *data)
     str=fis_to_s(fis);
     Asequal("default:\n"
             "  store: :yes\n"
-            "  index: :yes_omit_norms\n"
+            "  index: :untokenized_omit_norms\n"
             "  term_vector: :with_positions_offsets\n"
             "fields:\n"
             "  FFFFFFFF:\n"
@@ -273,7 +273,7 @@ static void test_fis_rw(tst_case *tc, void *data)
             "  FFTTTTFT:\n"
             "    boost: 4.000000\n"
             "    store: :no\n"
-            "    index: :yes_omit_norms\n"
+            "    index: :omit_norms\n"
             "    term_vector: :with_offsets\n"
             "  FFTFTTTT:\n"
             "    boost: 5.000000\n"

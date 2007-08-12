@@ -466,7 +466,7 @@ static const char *index_str[] = {
     "",
     ":untokenized_omit_norms",
     "",
-    ":yes_omit_norms"
+    ":omit_norms"
 };
 
 static const char *fi_index_str(FieldInfo *fi)

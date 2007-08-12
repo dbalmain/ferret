@@ -79,7 +79,7 @@ static void test_match_vector(tst_case *tc, void *data)
 
 static void make_index(Store *store)
 {
-    FieldInfos *fis = fis_new(INDEX_YES, STORE_YES,
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     index_create(store, fis);
     fis_deref(fis);

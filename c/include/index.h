@@ -65,24 +65,24 @@ extern HashTable *co_hash_create();
 
 enum StoreValues
 {
-    STORE_NO = 0,    
-    STORE_YES = 1,    
+    STORE_NO = 0,
+    STORE_YES = 1,
     STORE_COMPRESS = 2
 };
 
 enum IndexValues
 {
-    INDEX_NO = 0,    
-    INDEX_YES = 1,    
-    INDEX_UNTOKENIZED = 3,
-    INDEX_YES_OMIT_NORMS = 5,
-    INDEX_UNTOKENIZED_OMIT_NORMS = 7
+    INDEX_NO = 0,
+    INDEX_UNTOKENIZED = 1,
+    INDEX_YES = 3,
+    INDEX_UNTOKENIZED_OMIT_NORMS = 5,
+    INDEX_YES_OMIT_NORMS = 7
 };
 
 enum TermVectorValues
 {
-    TERM_VECTOR_NO = 0,    
-    TERM_VECTOR_YES = 1,    
+    TERM_VECTOR_NO = 0,
+    TERM_VECTOR_YES = 1,
     TERM_VECTOR_WITH_POSITIONS = 3,
     TERM_VECTOR_WITH_OFFSETS = 5,
     TERM_VECTOR_WITH_POSITIONS_OFFSETS = 7
@@ -374,7 +374,7 @@ typedef struct TermInfosWriter
 
 extern TermInfosWriter *tiw_open(Store *store,
                                  const char *segment,
-                                 int index_interval, 
+                                 int index_interval,
                                  int skip_interval);
 extern void tiw_start_field(TermInfosWriter *tiw, int field_num);
 extern void tiw_add(TermInfosWriter *tiw,
@@ -706,7 +706,7 @@ extern void fw_write_tv_index(FieldsWriter *fw);
  * A utility class (used by both IndexReader and IndexWriter) to keep track of
  * files that need to be deleted because they are no longer referenced by the
  * index.
- * 
+ *
  ****************************************************************************/
 
 struct Deleter

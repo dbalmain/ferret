@@ -713,7 +713,7 @@ typedef struct FieldDoc
 {
     Hit hit;
     int size;
-    Comparable comparables[];
+    Comparable comparables[1];
 } FieldDoc;
 
 extern void fd_destroy(FieldDoc *fd);
