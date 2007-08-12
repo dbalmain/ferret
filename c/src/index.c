@@ -3838,7 +3838,7 @@ void ir_add_cache(IndexReader *ir)
 
 bool ir_is_latest(IndexReader *ir)
 {
-    return (sis_read_current_version(ir->store) == ir->sis->version);
+    return ir->is_latest_i(ir);
 }
 
 /****************************************************************************
@@ -4041,6 +4041,11 @@ static BitVector *bv_read(Store *store, char *name)
         if (!success && bv) bv_destroy(bv);
     XENDTRY
     return bv;
+}
+
+static bool sr_is_latest_i(IndexReader *ir)
+{
+    return (sis_read_current_version(ir->store) == ir->sis->version);
 }
 
 static void sr_commit_i(IndexReader *ir)
@@ -4283,6 +4288,7 @@ static IndexReader *sr_setup_i(SegmentReader *sr)
     ir->delete_doc_i        = &sr_delete_doc_i;
     ir->undelete_all_i      = &sr_undelete_all_i;
     ir->set_deleter_i       = &sr_set_deleter_i;
+    ir->is_latest_i         = &sr_is_latest_i;
     ir->commit_i            = &sr_commit_i;
     ir->close_i             = &sr_close_i;
 
@@ -4570,6 +4576,18 @@ static void mr_set_deleter_i(IndexReader *ir, Deleter *deleter)
     }
 }
 
+static bool mr_is_latest_i(IndexReader *ir)
+{
+    int i;
+    const int mr_reader_cnt = MR(ir)->r_cnt;
+    for (i = 0; i < mr_reader_cnt; i++) {
+        if (!ir_is_latest(MR(ir)->sub_readers[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void mr_commit_i(IndexReader *ir)
 {
     int i;
@@ -4639,6 +4657,7 @@ static IndexReader *mr_new(IndexReader **sub_readers, const int r_cnt)
     ir->delete_doc_i        = &mr_delete_doc_i;
     ir->undelete_all_i      = &mr_undelete_all_i;
     ir->set_deleter_i       = &mr_set_deleter_i;
+    ir->is_latest_i         = &mr_is_latest_i;
     ir->commit_i            = &mr_commit_i;
     ir->close_i             = &mr_close_i;
 

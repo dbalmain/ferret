@@ -378,6 +378,19 @@ module IndexReaderCommon
     ir2.close()
     ir3.close()
   end
+
+  def test_latest
+    assert(@ir.latest?)
+    ir2 = ir_new()
+    assert(ir2.latest?)
+
+    ir2.delete(0)
+    ir2.commit()
+    assert(ir2.latest?)
+    assert(!@ir.latest?)
+
+    ir2.close()
+  end
 end
 
 class MultiReaderTest < Test::Unit::TestCase

@@ -746,6 +746,7 @@ static void test_index_version(tst_case *tc, void *data)
     iw_close(iw);
     ir = ir_open(store);
     Atrue(version < sis_read_current_version(store));
+    Atrue(ir_is_latest(ir));
     ir_close(ir);
 }
 
@@ -767,6 +768,7 @@ static void test_index_undelete_all_after_close(tst_case *tc, void *data)
     ir_close(ir);
     ir = ir_open(store);
     Aiequal(2, ir->num_docs(ir)); /* nothing has really been deleted */
+    Atrue(ir_is_latest(ir));
     ir_close(ir);
 }
 
@@ -1455,6 +1457,7 @@ static void test_ir_basic_ops(tst_case *tc, void *data)
     Aiequal(IR_TEST_DOC_CNT, ir->max_doc(ir));
 
     Aiequal(4, ir->doc_freq(ir, fis_get_field(ir->fis, body)->number, "Wally"));
+    Atrue(ir_is_latest(ir));
 }
 
 static void test_ir_term_docpos_enum_skip_to(tst_case *tc,
@@ -2003,6 +2006,9 @@ static void test_ir_delete(tst_case *tc, void *data)
     Aiequal(false, ir->has_deletions(ir));
     Aiequal(IR_TEST_DOC_CNT - 6, ir->max_doc(ir));
     Aiequal(IR_TEST_DOC_CNT - 6, ir->num_docs(ir));
+
+    Atrue(ir_is_latest(ir));
+    Atrue(!ir_is_latest(ir2));
 
     ir_close(ir);
     ir_close(ir2);

@@ -760,6 +760,7 @@ struct IndexReader
     void          (*delete_doc_i)(IndexReader *ir, int doc_num);
     void          (*undelete_all_i)(IndexReader *ir);
     void          (*set_deleter_i)(IndexReader *ir, Deleter *dlr);
+    bool          (*is_latest_i)(IndexReader *ir);
     void          (*commit_i)(IndexReader *ir);
     void          (*close_i)(IndexReader *ir);
     int           ref_cnt;
