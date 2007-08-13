@@ -679,7 +679,7 @@ static Query *get_phrase_query(QParser *qp, char *field,
             int i;
             int term_cnt = 0;
             Token *token;
-            char *last_word;
+            char *last_word = NULL;
 
             for (i = 0; i < word_count; i++) {
                 token = ts_next(get_cached_ts(qp, field, words[i]));

@@ -1375,7 +1375,8 @@ LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
     lazy_doc = lazy_doc_new(stored_cnt, fdt_in);
 
     for (i = 0; i < stored_cnt; i++) {
-        int start = 0, end, data_cnt;
+        off_t start = 0, end;
+        int data_cnt;
         field_num = is_read_vint(fdt_in);
         fi = fr->fis->fields[field_num];
         data_cnt = is_read_vint(fdt_in);
@@ -1449,7 +1450,7 @@ TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
         if (store_offsets) {
             int num_positions = tv->offset_cnt = is_read_vint(fdt_in);
             Offset *offsets = tv->offsets = ALLOC_N(Offset, num_positions);
-            int offset = 0;
+            off_t offset = 0;
             for (i = 0; i < num_positions; i++) {
                 offsets[i].start = offset += is_read_vint(fdt_in);
                 offsets[i].end = offset += is_read_vint(fdt_in);
@@ -1683,8 +1684,8 @@ void fw_add_postings(FieldsWriter *fw,
         int last_end = 0;
         os_write_vint(fdt_out, offset_count);  /* write shared prefix length */
         for (i = 0; i < offset_count; i++) {
-            int start = offsets[i].start;
-            int end = offsets[i].end;
+            off_t start = offsets[i].start;
+            off_t end = offsets[i].end;
             os_write_vint(fdt_out, start - last_end);
             os_write_vint(fdt_out, end - start);
             last_end = end;
@@ -4818,7 +4819,7 @@ IndexReader *ir_open(Store *store)
  *
  ****************************************************************************/
 
-Offset *offset_new(int start, int end)
+Offset *offset_new(off_t start, off_t end)
 {
     Offset *offset = ALLOC(Offset);
     offset->start = start;
@@ -5223,7 +5224,7 @@ HashTable *dw_invert_field(DocWriter *dw,
     int doc_num = dw->doc_num;
     int i;
     const int df_size = df->size;
-    int start_offset = 0;
+    off_t start_offset = 0;
 
     if (fld_inv->is_tokenized) {
         Token *tk;

@@ -456,11 +456,11 @@ extern TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms,
 
 typedef struct Offset
 {
-    int start;
-    int end;
+    off_t start;
+    off_t end;
 } Offset;
 
-extern Offset *offset_new(int start, int end);
+extern Offset *offset_new(off_t start, off_t end);
 
 /****************************************************************************
  *
@@ -617,7 +617,7 @@ extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
 /* * * LazyDocField * * */
 typedef struct LazyDocFieldData
 {
-    int   start;
+    off_t start;
     int   length;
     char *text;
 } LazyDocFieldData;
