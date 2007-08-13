@@ -46,7 +46,7 @@ static void test_q_parser(tst_case *tc, void *data)
             "field:\"one <> <> <> three|four|five\""},
         {"field:\"on1|tw2 three|four|five six|seven\"",
             "field:\"on1|tw2 three|four|five six|seven\""},
-        {"field:\"testing|trucks\"", "field:testing field:trucks"},
+        {"field:\"testing|trucks\"", "field:\"testing|trucks\""},
         {"[aaa bbb]", "[aaa bbb]"},
         {"{aaa bbb]", "{aaa bbb]"},
         {"field:[aaa bbb}", "field:[aaa bbb}"},
@@ -122,8 +122,8 @@ static void test_q_parser(tst_case *tc, void *data)
         {"*:\"asdf <> xxx|yyy\"",
             "\"asdf <> xxx|yyy\" f1:\"asdf <> xxx|yyy\" f2:\"asdf <> xxx|yyy\" "
                 "field:\"asdf <> xxx|yyy\""},
-        {"f1|f2:\"asdf <> xxx|yyy\"",
-            "f1:\"asdf <> xxx|yyy\" f2:\"asdf <> xxx|yyy\""},
+        {"f1|f2:\"asdf <> do|yyy\"",
+            "f1:\"asdf <> do|yyy\" f2:\"asdf <> do|yyy\""},
 
         {"*:[bbb xxx]", "[bbb xxx] f1:[bbb xxx] f2:[bbb xxx] field:[bbb xxx]"},
         {"f1|f2:[bbb xxx]", "f1:[bbb xxx] f2:[bbb xxx]"},
@@ -224,7 +224,7 @@ static void test_q_parser_standard_analyzer(tst_case *tc, void *data)
             "field:\"one <> <> <> three|four|five\""},
         {"field:\"one|two three|four|five six|seven\"",
             "field:\"one|two three|four|five six|seven\""},
-        {"field:\"testing|trucks\"", "field:testing field:trucks"},
+        {"field:\"testing|trucks\"", "field:\"testing|trucks\""},
         {"[aaa bbb]", "[aaa bbb]"},
         {"{aaa bbb]", "{aaa bbb]"},
         {"field:[aaa bbb}", "field:[aaa bbb}"},
@@ -295,6 +295,9 @@ static void test_q_parser_standard_analyzer(tst_case *tc, void *data)
                 "field:\"asdf <> xxx|yyy\""},
         {"f1|f2:\"asdf <> xxx|yyy\"",
             "f1:\"asdf <> xxx|yyy\" f2:\"asdf <> xxx|yyy\""},
+        {"f1|f2:\"do|yyy\"", "f1:yyy f2:yyy"},
+        {"f1|f2:\"asdf <> do|yyy\"",
+            "f1:\"asdf <> yyy\" f2:\"asdf <> yyy\""},
 
         {"*:[bbb xxx]", "[bbb xxx] f1:[bbb xxx] f2:[bbb xxx] field:[bbb xxx]"},
         {"f1|f2:[bbb xxx]", "f1:[bbb xxx] f2:[bbb xxx]"},

@@ -661,7 +661,7 @@ Query *multi_tq_new(const char *field)
 
 void multi_tq_add_term_boost(Query *self, const char *term, float boost)
 {
-    if (boost > MTQ(self)->min_boost) {
+    if (boost > MTQ(self)->min_boost && term && term[0]) {
         BoostedTerm *bt = boosted_term_new(term, boost);
         PriorityQueue *bt_pq = MTQ(self)->boosted_terms;
         pq_insert(bt_pq, bt);

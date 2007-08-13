@@ -147,7 +147,7 @@ typedef union YYSTYPE
     Phrase *phrase;
     char *str;
 }
-/* Line 193 of yacc.c.  */
+/* Line 187 of yacc.c.  */
 #line 152 "y.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -2489,9 +2489,37 @@ static Query *get_phrase_query(QParser *qp, char *field,
         }
         else {
             int i;
-            q = bq_new_max(false, qp->max_clauses);
+            int term_cnt = 0;
+            Token *token;
+            char *last_word;
+
             for (i = 0; i < word_count; i++) {
-                bq_add_query_nr(q, get_term_q(qp, field, words[i]), BC_SHOULD);
+                token = ts_next(get_cached_ts(qp, field, words[i]));
+                free(words[i]);
+                if (token) {
+                    last_word = words[i] = estrdup(token->text);
+                    ++term_cnt;
+                }
+                else {
+                    words[i] = estrdup("");
+                }
+            }
+
+            switch (term_cnt) {
+                case 0:
+                    q = bq_new(false);
+                    break;
+                case 1:
+                    q = tq_new(field, last_word);
+                    break;
+                default:
+                    q = multi_tq_new_conf(field, term_cnt, 0.0);
+                    for (i = 0; i < word_count; i++) {
+                        if (words[i][0]) {
+                            multi_tq_add_term(q, words[i]);
+                        }
+                    }
+                    break;
             }
         }
     }

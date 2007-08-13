@@ -22,7 +22,7 @@ class QueryParserTest < Test::Unit::TestCase
       ['field:"one <> <> <> three <>"', 'field:"one <> <> <> three"'],
       ['field:"one <> 222 <> three|four|five <>"', 'field:"one <> 222 <> three|four|five"'],
       ['field:"on1|tw2 THREE|four|five six|seven"', 'field:"on1|tw2 THREE|four|five six|seven"'],
-      ['field:"testing|trucks"', 'field:testing field:trucks'],
+      ['field:"testing|trucks"', 'field:"testing|trucks"'],
       ['[aaa bbb]', '[aaa bbb]'],
       ['{aaa bbb]', '{aaa bbb]'],
       ['field:[aaa bbb}', 'field:[aaa bbb}'],
@@ -91,6 +91,8 @@ class QueryParserTest < Test::Unit::TestCase
 
       ['*:"asdf <> xxx|yyy"', '"asdf <> xxx|yyy" field:"asdf <> xxx|yyy" f1:"asdf <> xxx|yyy" f2:"asdf <> xxx|yyy"'],
       ['f1|f2:"asdf <> xxx|yyy"', 'f1:"asdf <> xxx|yyy" f2:"asdf <> xxx|yyy"'],
+      ['f1|f2:"asdf <> do|yyy"', 'f1:"asdf <> yyy" f2:"asdf <> yyy"'],
+      ['f1|f2:"do|cat"', 'f1:cat f2:cat'],
 
       ['*:[bbb xxx]', '[bbb xxx] field:[bbb xxx] f1:[bbb xxx] f2:[bbb xxx]'],
       ['f1|f2:[bbb xxx]', 'f1:[bbb xxx] f2:[bbb xxx]'],

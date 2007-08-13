@@ -435,7 +435,7 @@ static Store *fs_store_new(const char *pathname)
 
     new_store->file_mode = S_IRUSR | S_IWUSR;
 #ifndef POSH_OS_WIN32
-    if (!stat(new_store->dir.path, &stt) && stt.st_gid == getgid()) {
+    if (!stat(pathname, &stt) && stt.st_gid == getgid()) {
         if (stt.st_mode & S_IWGRP) {
             umask(S_IWOTH);
         }
