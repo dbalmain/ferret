@@ -493,8 +493,8 @@ Init_QueryParseException(void)
  *  === WildQuery
  * 
  *  A wild query is a query using the pattern matching characters * and ?. *
- *  matchs 0 or more characters while ? matchs a single character. This type
- *  of query can be really useful for matching heirarchical categories for
+ *  matches 0 or more characters while ? matches a single character. This type
+ *  of query can be really useful for matching hierarchical categories for
  *  example. Let's say we had this structure;
  * 
  *    /sport/skiing
@@ -514,7 +514,7 @@ Init_QueryParseException(void)
  *  the wild characters at the beginning of the query as it'll have to iterate
  *  through every term in that field. Having said that, some fields like the
  *  category field above will only have a small number of distinct fields so
- *  this could be ok.
+ *  this could be okay.
  * 
  *  === FuzzyQuery
  * 
@@ -531,7 +531,7 @@ Init_QueryParseException(void)
  *    'content:Ostralya~0.4'
  * 
  *  Note that this query can be quite expensive. If you'd like to use this
- *  query, you may want to set a mininum prefix length in the FuzzyQuery
+ *  query, you may want to set a minimum prefix length in the FuzzyQuery
  *  class. This can substantially reduce the number of terms that the query
  *  will iterate over.
  *  

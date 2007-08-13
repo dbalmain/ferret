@@ -179,7 +179,7 @@ frt_get_td(TopDocs *td, VALUE rsearcher)
  *  call-seq:
  *     top_doc.to_s(field = :id) -> string
  *
- *  Returns a string represention of the top_doc in readable format.
+ *  Returns a string representation of the top_doc in readable format.
  */
 static VALUE
 frt_td_to_s(int argc, VALUE *argv, VALUE self)
@@ -270,7 +270,7 @@ frt_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
  *  call-seq:
  *     top_doc.to_json() -> string
  *
- *  Returns a json represention of the top_doc.
+ *  Returns a json representation of the top_doc.
  */
 static VALUE
 frt_td_to_json(VALUE self)
@@ -318,7 +318,7 @@ frt_td_to_json(VALUE self)
  *  call-seq:
  *     explanation.to_s -> string
  *
- *  Returns a string represention of the explantion in readable format.
+ *  Returns a string representation of the explanation in readable format.
  */
 static VALUE
 frt_expl_to_s(VALUE self)
@@ -334,7 +334,7 @@ frt_expl_to_s(VALUE self)
  *  call-seq:
  *     explanation.to_html -> string
  *
- *  Returns an html represention of the explantion in readable format.
+ *  Returns an html representation of the explanation in readable format.
  */
 static VALUE
 frt_expl_to_html(VALUE self)
@@ -403,7 +403,7 @@ frt_q_to_s(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     query.boost
  *
- *  Returns the queries boost value. See the Query desription for more
+ *  Returns the queries boost value. See the Query description for more
  *  information on Query boosts.
  */
 static VALUE
@@ -417,7 +417,7 @@ frt_q_get_boost(VALUE self)
  *  call-seq:
  *     query.boost = boost -> boost
  *
- *  Set the boost for a query. See the Query desription for more information
+ *  Set the boost for a query. See the Query description for more information
  *  on Query boosts.
  */
 static VALUE
@@ -795,7 +795,7 @@ frt_bc_init(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     clause.query -> query
  *
- *  Returnt the query object wrapped by this BooleanClause.
+ *  Return the query object wrapped by this BooleanClause.
  */
 static VALUE
 frt_bc_get_query(VALUE self)
@@ -921,7 +921,7 @@ frt_bq_mark(void *p)
  *     BooleanQuery.new(coord_disable = false)
  *
  *  Create a new BooleanQuery. If you don't care about the scores of the
- *  sub-queries added the the query (as would be the case for many
+ *  sub-queries added to the query (as would be the case for many
  *  automatically generated queries) you can disable the coord_factor of the
  *  score. This will slightly improve performance for the query. Usually you
  *  should leave this parameter as is.
@@ -1309,7 +1309,7 @@ frt_wcq_init(int argc, VALUE *argv, VALUE self)
  *                    distance is measured. This parameter is used to improve
  *                    performance.  With a +:prefix_length+ of 0, all terms in
  *                    the index must be checked which can be quite a
- *                    performance hit.  By setting theprefix length to a
+ *                    performance hit.  By setting the prefix length to a
  *                    larger number you minimize the number of terms that need
  *                    to be checked.  Even 1 will cut down the work by a
  *                    factor of about 26 depending on your character set and
@@ -1501,7 +1501,7 @@ frt_maq_init(VALUE self)
  *     ConstantScoreQuery.new(filter) -> query
  *
  *  Create a ConstantScoreQuery which uses +filter+ to match documents giving
- *  each document a consant score.
+ *  each document a constant score.
  */
 static VALUE
 frt_csq_init(VALUE self, VALUE rfilter)
@@ -1688,7 +1688,7 @@ frt_spannq_mark(void *p)
  *  :slop::     Default: 0. Works exactly like a PhraseQuery slop. It is the
  *              amount of slop allowed in the match (the term edit distance
  *              allowed in the match).
- *  :in_order:: Defualt: false. Specifies whether or not the matches have to
+ *  :in_order:: Default: false. Specifies whether or not the matches have to
  *              occur in the order they were added to the query. When slop is
  *              set to 0, this parameter will make no difference.
  */
@@ -1862,7 +1862,7 @@ frt_f_free(void *p)
  *  call-seq:
  *     filter.to_s -> string
  *
- *  Return a human readable string represting the Filter object that the
+ *  Return a human readable string representing the Filter object that the
  *  method was called on.
  */
 static VALUE
@@ -2415,7 +2415,7 @@ frt_sea_doc(VALUE self, VALUE rdoc_id)
  *  call-seq:
  *     searcher.max_doc -> number
  *
- *  Returns 1 + the maximum document id in the index. It is the the
+ *  Returns 1 + the maximum document id in the index. It is the 
  *  document_id that will be used by the next document added to the index. If
  *  there are no deletions, this number also refers to the number of documents
  *  in the index.
@@ -2555,7 +2555,7 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
  *  :sort::         A Sort object or sort string describing how the field
  *                  should be sorted. A sort string is made up of field names
  *                  which cannot contain spaces and the word "DESC" if you
- *                  want the field reversed, all seperated by commas. For
+ *                  want the field reversed, all separated by commas. For
  *                  example; "rating DESC, author, title". Note that Ferret
  *                  will try to determine a field's type by looking at the
  *                  first term in the index and seeing if it can be parsed as
@@ -2607,7 +2607,7 @@ frt_sea_search(int argc, VALUE *argv, VALUE self)
  *  :sort::         A Sort object or sort string describing how the field
  *                  should be sorted. A sort string is made up of field names
  *                  which cannot contain spaces and the word "DESC" if you
- *                  want the field reversed, all seperated by commas. For
+ *                  want the field reversed, all separated by commas. For
  *                  example; "rating DESC, author, title". Note that Ferret
  *                  will try to determine a field's type by looking at the
  *                  first term in the index and seeing if it can be parsed as
@@ -2695,7 +2695,7 @@ frt_sea_explain(VALUE self, VALUE rquery, VALUE rdoc_id)
  *  :ellipsis::         Default: "...". This is the string that is appended at
  *                      the beginning and end of excerpts (unless the excerpt
  *                      hits the start or end of the field. You'll probably
- *                      want to change this so a Unicode elipsis character.
+ *                      want to change this so a Unicode ellipsis character.
  */
 static VALUE
 frt_sea_highlight(int argc, VALUE *argv, VALUE self)
@@ -2781,7 +2781,7 @@ frt_sea_mark(void *p)
  *     Searcher.new(obj) -> Searcher
  *
  *  Create a new Searcher object. +dir+ can either be a string path to an
- *  index directory on the file-sytem, an actual Ferret::Store::Directory
+ *  index directory on the file-system, an actual Ferret::Store::Directory
  *  object or a Ferret::Index::IndexReader. You should use the IndexReader for
  *  searching multiple indexes. Just open the IndexReader on multiple
  *  directories.
@@ -2908,7 +2908,7 @@ cTopDocs = rb_define_class_under(mSearch, "TopDocs", rb_cObject);
  *  document id of the document that matches along with the score for the
  *  match. The score is a positive Float value. The score contained in a hit
  *  is not normalized so it can be greater than 1.0. To normalize scores to
- *  the range 0.0..1.0 devide the scores by TopDocs#max_score.
+ *  the range 0.0..1.0 divide the scores by TopDocs#max_score.
  */
 static void
 Init_Hit(void)
@@ -3556,7 +3556,7 @@ Init_SpanPrefixQuery(void)
  *
  *  == Summary
  *
- *  A SpanFirstQuery resticts a query to search in the first +end+ bytes of a
+ *  A SpanFirstQuery restricts a query to search in the first +end+ bytes of a
  *  field. This is useful since often the most important information in a
  *  document is at the start of the document.
  *
@@ -3587,7 +3587,7 @@ Init_SpanFirstQuery(void)
  *
  *  A SpanNearQuery is like a combination between a PhraseQuery and a
  *  BooleanQuery. It matches sub-SpanQueries which are added as clauses but
- *  those clauses must occur within a +slop+ edit distance of eachother. You
+ *  those clauses must occur within a +slop+ edit distance of each other. You
  *  can also specify that clauses must occur +in_order+.
  *
  *  == Example
@@ -3811,7 +3811,7 @@ Init_QueryFilter(void)
  *  A Filter is used to filter query results. It is usually passed to one of
  *  Searcher's search methods however it can also be used inside a
  *  ConstantScoreQuery or a FilteredQuery. To implement your own Filter you
- *  must implement the methoed #get_bitvector(index_reader) which returns a
+ *  must implement the method #get_bitvector(index_reader) which returns a
  *  BitVector with set bits corresponding to documents that are allowed by
  *  this Filter.
  *

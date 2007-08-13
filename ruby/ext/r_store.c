@@ -213,7 +213,7 @@ frt_dir_touch(VALUE self, VALUE rfname)
  *  call-seq:
  *     dir.delete(file_name) -> nil
  *
- *  Remove file +file_name+ from the directory. Returns true if succussful. 
+ *  Remove file +file_name+ from the directory. Returns true if successful.
  */
 static VALUE
 frt_dir_delete(VALUE self, VALUE rfname)

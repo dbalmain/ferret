@@ -116,7 +116,7 @@ when printing to the console:
     puts highlights
   end
 
-And if you want to highlight a whole document, set :excert_length to :all:
+And if you want to highlight a whole document, set :excerpt_length to :all:
 
   puts index.highlight(query, doc_id,
                        :field => :content,
@@ -175,7 +175,7 @@ you change the data once it is in the index. But you can delete documents so
 the standard way to modify data is to delete it and re-add it again with the
 modifications made. It is important to note that when doing this the documents
 will get a new document number so you should be careful not to use a document
-number after the document has been deleted. Here is an examle of modifying a
+number after the document has been deleted. Here is an example of modifying a
 document;
 
   index << {:title => "Programing Rbuy", :content => "blah blah blah"}
@@ -185,7 +185,7 @@ document;
   doc = index[doc_id]
   index.delete(doc_id)
 
-  # modify doc. It is just a Hash afterall
+  # modify doc. It is just a Hash after all
   doc[:title] = "Programming Ruby"
 
   index << doc

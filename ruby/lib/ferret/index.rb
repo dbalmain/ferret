@@ -322,7 +322,7 @@ module Ferret::Index
     # sort::        A Sort object or sort string describing how the field
     #               should be sorted. A sort string is made up of field names
     #               which cannot contain spaces and the word "DESC" if you
-    #               want the field reversed, all seperated by commas. For
+    #               want the field reversed, all separated by commas. For
     #               example; "rating DESC, author, title". Note that Ferret
     #               will try to determine a field's type by looking at the
     #               first term in the index and seeing if it can be parsed as
@@ -365,7 +365,7 @@ module Ferret::Index
     # sort::        A Sort object or sort string describing how the field
     #               should be sorted. A sort string is made up of field names
     #               which cannot contain spaces and the word "DESC" if you
-    #               want the field reversed, all seperated by commas. For
+    #               want the field reversed, all separated by commas. For
     #               example; "rating DESC, author, title". Note that Ferret
     #               will try to determine a field's type by looking at the
     #               first term in the index and seeing if it can be parsed as
@@ -633,7 +633,7 @@ module Ferret::Index
     #
     # directory:: This can either be a Store::Directory object or a String
     #             representing the path to the directory where you would
-    #             like to store the the index.
+    #             like to store the index.
     #
     # create::    True if you'd like to create the directory if it doesn't
     #             exist or copy over an existing directory. False if you'd

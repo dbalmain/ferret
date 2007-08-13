@@ -274,7 +274,7 @@ frt_fi_is_tokenized(VALUE self)
  *  used to store the field boosts for an indexed field. If you do not boost
  *  any fields, and you can live without scoring based on field length then
  *  you can omit the norms file. This will give the index a slight performance
- *  boost and it will use less memory, escpecially for indexes which have a
+ *  boost and it will use less memory, especially for indexes which have a
  *  large number of documents.
  */
 static VALUE
@@ -623,7 +623,7 @@ frt_fis_create_index(VALUE self, VALUE rdir)
  *  call-seq:
  *     fis.fields -> symbol array
  *
- *  Return a list of the field names (as symbols) of all the fieldcs in the
+ *  Return a list of the field names (as symbols) of all the fields in the
  *  index.
  */
 static VALUE
@@ -1415,7 +1415,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
  *     iw.doc_count -> number
  *
  *  Returns the number of documents in the Index. Note that deletions won't be
- *  taken into account until the IndexWriter has been commited.
+ *  taken into account until the IndexWriter has been committed.
  */
 static VALUE
 frt_iw_get_doc_count(VALUE self)
@@ -1660,7 +1660,7 @@ frt_iw_get_analyzer(VALUE self)
  *
  *  Set the Analyzer for this IndexWriter. This is useful if you need to
  *  change the analyzer for a special document. It is risky though as the
- *  same anlyzer will be used for all documents during search.
+ *  same analyzer will be used for all documents during search.
  */
 static VALUE
 frt_iw_set_analyzer(VALUE self, VALUE ranalyzer)
@@ -2191,7 +2191,7 @@ frt_ir_init(VALUE self, VALUE rdir)
  *
  *  Expert: change the boost value for a +field+ in document at +doc_id+.
  *  +val+ should be an integer in the range 0..255 which corresponds to an
- *  encoced float value.
+ *  encoded float value.
  */
 static VALUE
 frt_ir_set_norm(VALUE self, VALUE rdoc_id, VALUE rfield, VALUE rval)
@@ -2267,7 +2267,7 @@ frt_ir_commit(VALUE self)
  *     index_reader.close -> index_reader
  *
  *  Close the IndexReader. This method also commits any deletions made by this
- *  IndexReader. Thise method will be called explicitly by the garbage
+ *  IndexReader. This method will be called explicitly by the garbage
  *  collector but you should call it explicitly to commit any changes as soon
  *  as possible and to close any locks held by the object to prevent locking
  *  errors.
@@ -2286,7 +2286,7 @@ frt_ir_close(VALUE self)
  *  call-seq:
  *     index_reader.has_deletions? -> bool
  *
- *  Return true if the index has any deletions, either uncommited by this
+ *  Return true if the index has any deletions, either uncommitted by this
  *  IndexReader or committed by any other IndexReader.
  */
 static VALUE
@@ -2329,7 +2329,7 @@ frt_ir_is_deleted(VALUE self, VALUE rdoc_id)
  *  call-seq:
  *     index_reader.max_doc -> number
  *
- *  Returns 1 + the maximum document id in the index. It is the the
+ *  Returns 1 + the maximum document id in the index. It is the
  *  document_id that will be used by the next document added to the index. If
  *  there are no deletions, this number also refers to the number of documents
  *  in the index.
@@ -2361,7 +2361,7 @@ frt_ir_num_docs(VALUE self)
  *     index_reader.undelete_all -> index_reader
  *
  *  Undelete all deleted documents in the index. This is kind of like a
- *  rollback feature. Not that once an index is commited or a merge happens
+ *  rollback feature. Not that once an index is committed or a merge happens
  *  during index, deletions will be committed and undelete_all will have no
  *  effect on these documents.
  */
@@ -2713,7 +2713,7 @@ frt_ir_version(VALUE self)
  *
  *  == Summary
  *
- *  The FieldInfo class is the field descripter for the index. It specifies
+ *  The FieldInfo class is the field descriptor for the index. It specifies
  *  whether a field is compressed or not or whether it should be indexed and
  *  tokenized. Every field has a name which must be a symbol. There are three
  *  properties that you can set, +:store+, +:index+ and +:term_vector+. You
@@ -2740,7 +2740,7 @@ frt_ir_version(VALUE self)
  *  be indexed to be store in the Ferret index. You may want to use the index
  *  as a simple database and store things like images or MP3s in the index. By
  *  default each field is indexed and tokenized (split into tokens) (+:yes+).
- *  If you don't want to index the field use +:no+. If you wan the field
+ *  If you don't want to index the field use +:no+. If you want the field
  *  indexed but not tokenized, use +:untokenized+. Do this for the fields you
  *  wish to sort by. There are two other values for +:index+; +:omit_norms+
  *  and +:untokenized_omit_norms+. These values correspond to +:yes+ and
@@ -2754,7 +2754,7 @@ frt_ir_version(VALUE self)
  *  or not you would like to store term-vectors. The available options are
  *  +:no+, +:yes+, +:with_positions+, +:with_offsets+ and
  *  +:with_positions_offsets+. Note that you need to store the positions to
- *  asscociate offsets with individual terms in the term_vector.
+ *  associate offsets with individual terms in the term_vector.
  *
  *  == Property Table
  *
@@ -2946,7 +2946,7 @@ Init_FieldInfos(void)
  *
  *    te = index_reader.terms(:content)
  *
- *    te.each {|term, doc_freq| puts "#{term} occured #{doc_freq} times" }
+ *    te.each {|term, doc_freq| puts "#{term} occurred #{doc_freq} times" }
  *
  *    # or you could do it like this;
  *    te = index_reader.terms(:content)
@@ -3093,7 +3093,7 @@ Init_TVTerm(void)
  *  highlight search matches in results. This is all done internally so you
  *  won't need to worry about the TermVector object. There are some other
  *  reasons you may want to use the TermVectors object however. For example,
- *  you may wish to see which terms are the most commonly occuring terms in a
+ *  you may wish to see which terms are the most commonly occurring terms in a
  *  document to implement a MoreLikeThis search.
  *
  *  == Example
@@ -3112,7 +3112,7 @@ Init_TVTerm(void)
  *  +positions+ and +offsets+ can be +nil+ depending on what you set the
  *  +:term_vector+ to when you set the FieldInfo object for the field. Note in
  *  particular that you need to store both positions and offsets if you want
- *  to asscociate offsets with particular terms.
+ *  to associate offsets with particular terms.
  */
 static void
 Init_TermVector(void)
@@ -3136,7 +3136,7 @@ Init_TermVector(void)
  *  == Summary
  *
  *  The IndexWriter is the class used to add documents to an index. You can
- *  also delete docuements from the index using this class. The indexing
+ *  also delete documents from the index using this class. The indexing
  *  process is highly customizable and the IndexWriter has the following
  *  parameters;
  *
@@ -3212,7 +3212,7 @@ Init_TermVector(void)
  *                        documents).
  *  max_field_length::    Default: 10000. The maximum number of terms added to
  *                        a single field.  This can be useful to protect the
- *                        indexer when indexing documents fromt the web for
+ *                        indexer when indexing documents from the web for
  *                        example. Usually the most important terms will occur
  *                        early on in a document so you can often safely
  *                        ignore the terms in a field after a certain number
@@ -3221,7 +3221,7 @@ Init_TermVector(void)
  *                        first 1000 terms in a field. On the other hand, if
  *                        you want to be more thorough and you are indexing
  *                        documents from your file-system you may set this
- *                        paramter to Ferret::FIX_INT_MAX.
+ *                        parameter to Ferret::FIX_INT_MAX.
  *  use_compound_file::   Default: true. Uses a compound file to store the
  *                        index. This prevents an error being raised for
  *                        having too many files open at the same time. The

@@ -192,7 +192,7 @@ frt_field(VALUE rfield)
 /*
  * Json Exportation - Loading each LazyDoc and formatting them into json
  * This code is designed to get a VERY FAST json string, the goal was speed,
- * not sexyness.
+ * not sexiness.
  * Jeremie 'ahFeel' BORDIER
  * ahFeel@rift.Fr
  */

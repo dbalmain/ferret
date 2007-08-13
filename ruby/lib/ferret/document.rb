@@ -25,7 +25,7 @@ module Ferret
   # textual values. If you are coming from a Lucene background you should note
   # that Fields don't have any properties except for the boost property. You
   # should use the Ferret::Index::FieldInfos class to set field properties
-  # accross the whole index instead.
+  # across the whole index instead.
   # 
   # === Boost
   #
@@ -57,7 +57,7 @@ module Ferret
     end
     alias :== :eql?
 
-    # Create a string represention of the document
+    # Create a string representation of the document
     def to_s
       buf = ["Document {"]
       self.keys.sort_by {|key| key.to_s}.each do |key|

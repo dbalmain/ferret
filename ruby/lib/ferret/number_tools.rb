@@ -3,7 +3,7 @@ require 'time'
 
 class Float
   # Return true if the float is within +precision+ of the other value +o+. This
-  # is used to accomodate for floating point errors.
+  # is used to accommodate for floating point errors.
   #
   # o::         value to compare with
   # precision:: the precision to use in the comparison.
@@ -49,7 +49,7 @@ class Integer
 
   # Convert the number to a lexicographically sortable string by padding with
   # 0s. You should make sure that you set the width to a number large enough to
-  # accomodate all possible values. Also note that this method will not work
+  # accommodate all possible values. Also note that this method will not work
   # with negative numbers. That is negative numbers will sort in the opposite
   # direction as positive numbers. If you have very large numbers or a mix of
   # positive and negative numbers you should use the Integer#to_s_lex method

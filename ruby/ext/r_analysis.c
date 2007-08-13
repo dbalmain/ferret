@@ -150,7 +150,7 @@ frt_set_token(Token *tk, VALUE rt)
  *  values as needed.  For example, if you have a stop word filter you will be
  *  skipping tokens. Let's say you have the stop words "the" and "and" and you
  *  parse the title "The Old Man and the Sea". The terms "Old", "Man" and
- *  "Sea" will have the position incerements 2, 1 and 3 respectively.
+ *  "Sea" will have the position increments 2, 1 and 3 respectively.
  *
  *  Another reason you might want to vary the position increment is if you are
  *  adding synonyms to the index. For example let's say you have the synonym
@@ -811,7 +811,7 @@ frt_a_letter_tokenizer_init(VALUE self, VALUE rstr)
  *     LetterTokenizer.new(lower = true) -> tokenizer
  *
  *  Create a new LetterTokenizer which optionally downcases tokens. Downcasing
- *  is done according the the current locale.
+ *  is done according the current locale.
  *
  *  lower:: set to false if you don't wish to downcase tokens
  */
@@ -842,7 +842,7 @@ frt_a_whitespace_tokenizer_init(VALUE self, VALUE rstr)
  *     WhiteSpaceTokenizer.new(lower = true) -> tokenizer
  *
  *  Create a new WhiteSpaceTokenizer which optionally downcases tokens.
- *  Downcasing is done according the the current locale.
+ *  Downcasing is done according the current locale.
  *
  *  lower:: set to false if you don't wish to downcase tokens
  */
@@ -873,7 +873,7 @@ frt_a_standard_tokenizer_init(VALUE self, VALUE rstr)
  *     StandardTokenizer.new(lower = true) -> tokenizer
  *
  *  Create a new StandardTokenizer which optionally downcases tokens.
- *  Downcasing is done according the the current locale.
+ *  Downcasing is done according the current locale.
  *
  *  lower:: set to false if you don't wish to downcase tokens
  */
@@ -896,7 +896,7 @@ frt_standard_tokenizer_init(VALUE self, VALUE rstr)
  *     AsciiLowerCaseFilter.new(token_stream) -> token_stream
  *
  *  Create an AsciiLowerCaseFilter which normalizes a token's text to
- *  lowercase but only for Ascii characters. For other characters use
+ *  lowercase but only for ASCII characters. For other characters use
  *  LowerCaseFilter.
  */
 static VALUE
@@ -1046,8 +1046,8 @@ static int frt_add_mappings_i(VALUE key, VALUE value, VALUE arg)
  *     MappingFilter.new(token_stream, mapping) -> token_stream
  *
  *  Create an MappingFilter which maps strings in tokens. This is usually used
- *  to map UTF-8 characters to ascii characters for easier searching and
- *  better searche recall. The mapping is compiled into a Deterministic Finite
+ *  to map UTF-8 characters to ASCII characters for easier searching and
+ *  better search recall. The mapping is compiled into a Deterministic Finite
  *  Automata so it is super fast. This Filter can therefor be used for
  *  indexing very large datasets. Currently regular expressions are not
  *  supported. If you are really interested in the feature, please contact me
@@ -1087,7 +1087,7 @@ frt_mapping_filter_init(VALUE self, VALUE rsub_ts, VALUE mapping)
  *                    algorithm="english",
  *                    encoding="UTF-8") -> token_stream
  *
- *  Create an StemFilter which uses a snowball stemmer (thankyou Martin
+ *  Create an StemFilter which uses a snowball stemmer (thank you Martin
  *  Porter) to stem words. You can optionally specify the algorithm (default:
  *  "english") and encoding (default: "UTF-8").
  *
@@ -1234,7 +1234,7 @@ lower = (argc ? RTEST(rlower) : dflt)
  *
  *  Create a new AsciiWhiteSpaceAnalyzer which downcases tokens by default
  *  but can optionally leave case as is. Lowercasing will only be done to
- *  ascii characters.
+ *  ASCII characters.
  *
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
@@ -1279,7 +1279,7 @@ frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
  *
  *  Create a new AsciiWhiteSpaceAnalyzer which downcases tokens by default
  *  but can optionally leave case as is. Lowercasing will only be done to
- *  ascii characters.
+ *  ASCII characters.
  *
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
@@ -1585,7 +1585,7 @@ static VALUE frt_set_locale(VALUE self, VALUE locale)
  *
  *  == Summary
  *
- *  A Token is an occurence of a term from the text of a field.  It consists
+ *  A Token is an occurrence of a term from the text of a field.  It consists
  *  of a term's text and the start and end offset of the term in the text of
  *  the field;
  * 
@@ -1648,7 +1648,7 @@ static void Init_TokenStream(void)
 /*
  *  Document-class: Ferret::Analysis::AsciiLetterTokenizer
  *
- *  A LetterTokenizer is a tokenizer that divides text at non-ascii letters.
+ *  A LetterTokenizer is a tokenizer that divides text at non-ASCII letters.
  *  That is to say, it defines tokens as maximal strings of adjacent letters,
  *  as defined by the regular expression _/[A-Za-z]+/_.
  *
@@ -1781,7 +1781,7 @@ static void Init_StandardTokenizer(void)
  *  Document-class: Ferret::Analysis::RegExpTokenizer
  *
  *  A tokenizer that recognizes tokens based on a regular expression passed to
- *  the contructor. Most possible tokenizers can be created using this class.
+ *  the constructor. Most possible tokenizers can be created using this class.
  *
  *  === Example
  *
@@ -1817,7 +1817,7 @@ static void Init_RegExpTokenizer(void)
  *  Document-class: Ferret::Analysis::AsciiLowerCaseFilter
  *
  *  AsciiLowerCaseFilter normalizes a token's text to lowercase but only for
- *  Ascii characters. For other characters use LowerCaseFilter.
+ *  ASCII characters. For other characters use LowerCaseFilter.
  *
  *  === Example
  *
@@ -1881,7 +1881,7 @@ static void Init_HyphenFilter(void)
  *  Document-class: Ferret::Analysis::MappingFilter
  *
  *  A MappingFilter maps strings in tokens. This is usually used to map UTF-8
- *  characters to ascii characters for easier searching and better searche
+ *  characters to ASCII characters for easier searching and better search
  *  recall. The mapping is compiled into a Deterministic Finite Automata so it
  *  is super fast. This Filter can therefor be used for indexing very large
  *  datasets. Currently regular expressions are not supported. If you are
@@ -2020,7 +2020,7 @@ static void Init_StemFilter(void)
  *  a policy for extracting index terms from text.
  * 
  *  Typical implementations first build a Tokenizer, which breaks the stream
- *  of characters from the Reader into raw Tokens. One or more TokenFilter s
+ *  of characters from the Reader into raw Tokens. One or more TokenFilters
  *  may then be applied to the output of the Tokenizer.
  * 
  *  The default Analyzer just creates a LowerCaseTokenizer which converts
@@ -2057,7 +2057,7 @@ static void Init_Analyzer(void)
  *  == Summary
  *
  *  An AsciiLetterAnalyzer creates a TokenStream that splits the input up into
- *  maximal strings of Ascii characters. If implemented in Ruby it would look
+ *  maximal strings of ASCII characters. If implemented in Ruby it would look
  *  like;
  *
  *    class AsciiLetterAnalyzer
@@ -2075,7 +2075,7 @@ static void Init_Analyzer(void)
  *    end
  *
  *  As you can see it makes use of the AsciiLetterTokenizer and
- *  AsciiLowerCaseFilter. Note that this tokenizer won't recognize non-ascii
+ *  AsciiLowerCaseFilter. Note that this tokenizer won't recognize non-ASCII
  *  characters so you should use the LetterAnalyzer is you want to analyze
  *  multi-byte data like "UTF-8".
  */
@@ -2194,7 +2194,7 @@ static void Init_WhiteSpaceAnalyzer(void)
  *  == Summary
  *
  *  The AsciiStandardAnalyzer is the most advanced of the available
- *  ascii-analyzers. If it were implemented in Ruby it would look like this;
+ *  ASCII-analyzers. If it were implemented in Ruby it would look like this;
  *
  *    class AsciiStandardAnalyzer
  *      def initialize(stop_words = FULL_ENGLISH_STOP_WORDS, lower = true)
@@ -2212,7 +2212,7 @@ static void Init_WhiteSpaceAnalyzer(void)
  *
  *  As you can see it makes use of the AsciiStandardTokenizer and you can also
  *  add your own list of stop-words if you wish. Note that this tokenizer
- *  won't recognize non-ascii characters so you should use the
+ *  won't recognize non-ASCII characters so you should use the
  *  StandardAnalyzer is you want to analyze multi-byte data like "UTF-8".
  */
 static void Init_AsciiStandardAnalyzer(void)

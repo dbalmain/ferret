@@ -40,7 +40,7 @@ frt_get_bv(BitVector *bv)
  *  call-seq:
  *     BitVector.new() -> new_bv
  *  
- *  Returns a new empty bit-vector object
+ *  Returns a new empty bit vector object
  */
 static VALUE 
 frt_bv_init(VALUE self)
@@ -124,7 +124,7 @@ frt_bv_get(VALUE self, VALUE rindex)
  *  call-seq:
  *     bv.count -> bit_count
  *  
- *  Count the number of bits set in the bit-vector. If the bit-vector has been
+ *  Count the number of bits set in the bit vector. If the bit vector has been
  *  negated using +#not+ then count the number of unset bits
  *  instead.
  */
@@ -140,7 +140,7 @@ frt_bv_count(VALUE self)
  *  call-seq:
  *     bv.clear -> self
  *  
- *  Clears all set bits in the bit-vector. Negated bit-vectors will still have
+ *  Clears all set bits in the bit vector. Negated bit vectors will still have
  *  all bits set to *off*.
  */
 VALUE
@@ -159,7 +159,7 @@ frt_bv_clear(VALUE self)
  *     bv1 != bv2    -> bool
  *     bv1.eql(bv2)  -> bool
  *  
- *  Compares two bit vectors and returns true if both bitvectors have the same
+ *  Compares two bit vectors and returns true if both bit vectors have the same
  *  bits set.
  */
 VALUE
@@ -339,10 +339,10 @@ frt_bv_reset_scan(VALUE self)
  *  call-seq:
  *     bv.next -> bit_num
  *  
- *  Returns the next set bit in the bit-vector scanning from low order to high
+ *  Returns the next set bit in the bit vector scanning from low order to high
  *  order. You should call +#reset_scan+ before calling this method
  *  if you want to scan from the beginning. It is automatically reset when you
- *  first create the bit-vector.
+ *  first create the bit vector.
  */
 VALUE
 frt_bv_next(VALUE self)
@@ -356,11 +356,11 @@ frt_bv_next(VALUE self)
  *  call-seq:
  *     bv.next_unset -> bit_num
  *  
- *  Returns the next unset bit in the bit-vector scanning from low order to
- *  high order. This method should only be called on bit-vectors which have
+ *  Returns the next unset bit in the bit vector scanning from low order to
+ *  high order. This method should only be called on bit vectors which have
  *  been flipped (negated). You should call +#reset_scan+ before
  *  calling this method if you want to scan from the beginning. It is
- *  automatically reset when you first create the bit-vector.
+ *  automatically reset when you first create the bit vector.
  */
 VALUE
 frt_bv_next_unset(VALUE self)
@@ -374,10 +374,10 @@ frt_bv_next_unset(VALUE self)
  *  call-seq:
  *     bv.next_from(from) -> bit_num
  *  
- *  Returns the next set bit in the bit-vector scanning from low order to
+ *  Returns the next set bit in the bit vector scanning from low order to
  *  high order and starting at +from+. The scan is inclusive so if
  *  +from+ is equal to 10 and +bv[10]+ is set it will
- *  return the number 10. If the bit-vector has been negated than you should
+ *  return the number 10. If the bit vector has been negated than you should
  *  use the +#next_unset_from+ method.
  */
 VALUE
@@ -396,10 +396,10 @@ frt_bv_next_from(VALUE self, VALUE rfrom)
  *  call-seq:
  *     bv.next_unset_from(from) -> bit_num
  *  
- *  Returns the next unset bit in the bit-vector scanning from low order to
+ *  Returns the next unset bit in the bit vector scanning from low order to
  *  high order and starting at +from+. The scan is inclusive so if
  *  +from+ is equal to 10 and +bv[10]+ is unset it will
- *  return the number 10. If the bit-vector has not been negated than you
+ *  return the number 10. If the bit vector has not been negated than you
  *  should use the +#next_from+ method.
  */
 VALUE
@@ -418,7 +418,7 @@ frt_bv_next_unset_from(VALUE self, VALUE rfrom)
  *  call-seq:
  *     bv.each { |bit_num| }
  *  
- *  Iterate through all the set bits in the bit-vector yeilding each one in
+ *  Iterate through all the set bits in the bit vector yielding each one in
  *  order
  */
 VALUE
@@ -445,9 +445,9 @@ frt_bv_each(VALUE self)
  *  call-seq:
  *     bv.to_a
  *  
- *  Iterate through all the set bits in the bit-vector adding the index of
+ *  Iterate through all the set bits in the bit vector adding the index of
  *  each set bit to an array. This is useful if you want to perform array
- *  methods on the bit-vecter. If you want to convert an array to a bit_vector
+ *  methods on the bit vector. If you want to convert an array to a bit_vector
  *  simply do this;
  *
  *    bv = [1, 12, 45, 367, 455].inject(BitVector.new) {|bv, i| bv.set(i)}
@@ -896,7 +896,7 @@ frt_pq_capa(VALUE self)
  *
  *  == Example
  *  
- *  Here is a toy example that sorts strings by their lenth and has a capicity
+ *  Here is a toy example that sorts strings by their length and has a capacity
  *  of 5;
  *    
  *    q = PriorityQueue.new(5) {|a, b| a.size < b.size}
