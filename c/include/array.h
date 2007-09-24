@@ -1,12 +1,18 @@
 #ifndef FRT_ARRAY_H
 #define FRT_ARRAY_H
 
+#if defined POSH_OS_SOLARIS || defined POSH_OS_SUNOS
+# define ARY_META_CNT 4
+#else
+# define ARY_META_CNT 3
+#endif
+
 #define ARY_INIT_CAPA 8
 #define ary_size(ary)      ary_sz(ary)
 #define ary_sz(ary)        (((int *)ary)[-1])
 #define ary_capa(ary)      (((int *)ary)[-2])
 #define ary_type_size(ary) (((int *)ary)[-3])
-#define ary_start(ary)     ((void **)&(((int *)ary)[-3]))
+#define ary_start(ary)     ((void **)&(((int *)ary)[-ARY_META_CNT]))
 #define ary_free(ary)      free(ary_start(ary))
 
 #define ary_new_type_capa(type, init_capa)\

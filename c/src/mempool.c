@@ -25,6 +25,9 @@ __inline void *mp_alloc(MemoryPool *mp, int size)
 {
     char *p;
     p = mp->curr_buffer + mp->pointer;
+#if defined POSH_OS_SOLARIS || defined POSH_OS_SUNOS
+    size = (((size - 1) >> 3) + 1) << 3;
+#endif
     mp->pointer += size;
 
     if (mp->pointer > mp->chunk_size) {

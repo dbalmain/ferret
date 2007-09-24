@@ -2,18 +2,19 @@
 #include "global.h"
 #include <string.h>
 
-#define DATA_SZ sizeof(int) * 3
+#define META_CNT ARY_META_CNT
+#define DATA_SZ sizeof(int) * META_CNT
 
 void **ary_new_i(int type_size, int init_capa)
 {
-    int *ary;
+    void **ary;
     if (init_capa <= 0) {
         init_capa = ARY_INIT_CAPA;
     }
-    ary = ((int *)ecalloc(DATA_SZ + init_capa * type_size));
-    ary[0] = type_size;
-    ary[1] = init_capa;
-    return (void **)&ary[3];
+    ary = (void **)&(((int *)ecalloc(DATA_SZ + init_capa * type_size))[META_CNT]);
+    ary_type_size(ary) = type_size;
+    ary_capa(ary) = init_capa;
+    return ary;
 }
 
 __inline void ary_resize_i(void ***ary, int size)
@@ -22,14 +23,14 @@ __inline void ary_resize_i(void ***ary, int size)
     if (size >= ary_sz(*ary)) {
         int capa = ary_capa(*ary);
         if (size >= capa) {
-            int *ary_start = &((int *)*ary)[-3];
+            int *ary_start = &((int *)*ary)[-META_CNT];
             while (size >= capa) {
                 capa <<= 1;
             }
 
             ary_start = (int *)erealloc(ary_start,
                                         DATA_SZ + capa * ary_type_size(*ary));
-            *ary = (void **)&(ary_start[3]);
+            *ary = (void **)&(ary_start[META_CNT]);
             memset(((char *)*ary) + ary_type_size(*ary) * ary_sz(*ary), 0,
                    (capa - ary_sz(*ary)) * ary_type_size(*ary));
             ary_capa(*ary) = capa;
