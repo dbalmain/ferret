@@ -1,5 +1,6 @@
 #ifndef FRT_ARRAY_H
 #define FRT_ARRAY_H
+#include "global.h"
 
 #if defined POSH_OS_SOLARIS || defined POSH_OS_SUNOS
 # define ARY_META_CNT 4

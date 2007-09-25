@@ -1,5 +1,4 @@
 #include "array.h"
-#include "global.h"
 #include <string.h>
 
 #define META_CNT ARY_META_CNT
