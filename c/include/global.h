@@ -11,6 +11,14 @@
 #define MAX_WORD_SIZE 255
 #define MAX_FILE_PATH 1024
 
+#if defined(__GNUC__)
+# define INLINE __inline__
+#elif defined (__SUNPRO_C)
+# define INLINE inline
+#else
+# define INLINE
+#endif
+
 typedef void (*free_ft)(void *key);
 
 #define NELEMS(array) ((int)(sizeof(array)/sizeof(array[0])))

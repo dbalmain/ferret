@@ -62,7 +62,7 @@ void xpush_context(xcontext_t *context)
     context->in_finally = false;
 }
 
-static __inline void xraise_context(xcontext_t *context,
+static INLINE void xraise_context(xcontext_t *context,
                                     volatile int excode,
                                     const char *const msg)
 {

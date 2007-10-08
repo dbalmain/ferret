@@ -11,7 +11,7 @@
  *
  ****************************************************************************/
 
-static __inline int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m) 
+static INLINE int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m) 
 {
     return (int)((1.0 - fuzq->min_sim) * (MIN(fuzq->text_len, m) + fuzq->pre_len));
 }
@@ -24,7 +24,7 @@ static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
     }
 }
 
-static __inline int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
+static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
 {
     return (m < TYPICAL_LONGEST_WORD) ? fuzq->max_distances[m]
         : fuzq_calculate_max_distance(fuzq, m);

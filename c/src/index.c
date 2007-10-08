@@ -206,7 +206,7 @@ HashTable *co_hash_create()
  *
  ****************************************************************************/
 
-__inline void fi_set_store(FieldInfo *fi, int store)
+INLINE void fi_set_store(FieldInfo *fi, int store)
 {
     switch (store) {
         case STORE_NO:
@@ -220,7 +220,7 @@ __inline void fi_set_store(FieldInfo *fi, int store)
     }
 }
 
-__inline void fi_set_index(FieldInfo *fi, int index)
+INLINE void fi_set_index(FieldInfo *fi, int index)
 {
     switch (index) {
         case INDEX_NO:
@@ -241,7 +241,7 @@ __inline void fi_set_index(FieldInfo *fi, int index)
     }
 }
 
-__inline void fi_set_term_vector(FieldInfo *fi, int term_vector)
+INLINE void fi_set_term_vector(FieldInfo *fi, int term_vector)
 {
     switch (term_vector) {
         case TERM_VECTOR_NO:
@@ -1568,7 +1568,7 @@ void fw_close(FieldsWriter *fw)
     free(fw);
 }
 
-static __inline void save_data(OutStream *fdt_out, char *data, int dlen)
+static INLINE void save_data(OutStream *fdt_out, char *data, int dlen)
 {
     os_write_vint(fdt_out, dlen);
     os_write_bytes(fdt_out, (uchar *)data, dlen);
@@ -1864,7 +1864,7 @@ void sfi_close(SegmentFieldIndex *sfi)
  * SegmentTermEnum
  ****************************************************************************/
 
-static __inline int term_read(char *buf, InStream *is)
+static INLINE int term_read(char *buf, InStream *is)
 {
     int start = (int)is_read_vint(is);
     int length = (int)is_read_vint(is);
@@ -2298,7 +2298,7 @@ TermInfosReader *tir_open(Store *store,
     return tir;
 }
 
-static __inline TermEnum *tir_enum(TermInfosReader *tir)
+static INLINE TermEnum *tir_enum(TermInfosReader *tir)
 {
     TermEnum *te;
     if (NULL == (te = thread_getspecific(tir->thread_te))) {
@@ -2424,7 +2424,7 @@ TermInfosWriter *tiw_open(Store *store,
     return tiw;
 }
 
-static __inline void tw_write_term(TermWriter *tw,
+static INLINE void tw_write_term(TermWriter *tw,
                                  OutStream *os,
                                  const char *term,
                                  int term_len)
@@ -2500,7 +2500,7 @@ void tiw_add(TermInfosWriter *tiw,
     tw_add(tiw->tis_writer, term, term_len, ti, tiw->skip_interval);
 }
 
-static __inline void tw_reset(TermWriter *tw)
+static INLINE void tw_reset(TermWriter *tw)
 {
     tw->counter = 0;
     tw->last_term = EMPTY_STRING;
@@ -3920,7 +3920,7 @@ typedef struct SegmentReader {
 #define SR(ir) ((SegmentReader *)(ir))
 #define SR_SIZE(ir) (SR(ir)->fr->size)
 
-static __inline FieldsReader *sr_fr(SegmentReader *sr)
+static INLINE FieldsReader *sr_fr(SegmentReader *sr)
 {
     FieldsReader *fr;
 
@@ -3932,12 +3932,12 @@ static __inline FieldsReader *sr_fr(SegmentReader *sr)
     return fr;
 }
 
-static __inline bool sr_is_deleted_i(SegmentReader *sr, int doc_num)
+static INLINE bool sr_is_deleted_i(SegmentReader *sr, int doc_num)
 {
     return (NULL != sr->deleted_docs && bv_get(sr->deleted_docs, doc_num));
 }
 
-static __inline void sr_get_norms_into_i(SegmentReader *sr, int field_num,
+static INLINE void sr_get_norms_into_i(SegmentReader *sr, int field_num,
                                        uchar *buf)
 {
     Norm *norm = h_get_int(sr->norms, field_num);
@@ -3956,7 +3956,7 @@ static __inline void sr_get_norms_into_i(SegmentReader *sr, int field_num,
     }
 }
 
-static __inline uchar *sr_get_norms_i(SegmentReader *sr, int field_num)
+static INLINE uchar *sr_get_norms_i(SegmentReader *sr, int field_num)
 {
     Norm *norm = h_get_int(sr->norms, field_num);
     if (NULL == norm) {                           /* not an indexed field */
@@ -5197,7 +5197,7 @@ static void dw_add_posting(MemoryPool *mp,
     }
 }
 
-static __inline void dw_add_offsets(DocWriter *dw, int pos, int start, int end)
+static INLINE void dw_add_offsets(DocWriter *dw, int pos, int start, int end)
 {
     if (pos >= dw->offsets_capa) {
         int old_capa = dw->offsets_capa;

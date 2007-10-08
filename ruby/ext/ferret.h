@@ -65,7 +65,7 @@ extern VALUE frt_hs_to_rb_ary(HashSet *hs);
 extern void *frt_rb_data_ptr(VALUE val);
 extern char * frt_field(VALUE rfield);
 extern VALUE frt_get_term(const char *field, const char *term);
-extern __inline char *json_concat_string(char *s, char *field);
+extern char *json_concat_string(char *s, char *field);
 extern char *rs2s(VALUE rstr);
 extern char *nstrdup(VALUE rstr);
 #define Frt_Make_Struct(klass)\

@@ -193,7 +193,7 @@ const int NUM_TRAILING_ZEROS[] = {
 /*
  * This method is highly optimized, hence the loop unrolling
  */
-static __inline int bv_get_1_offset(f_u32 word)
+static INLINE int bv_get_1_offset(f_u32 word)
 {
     if (word & 0xff) {
         return NUM_TRAILING_ZEROS[word & 0xff];
@@ -360,7 +360,7 @@ unsigned long bv_hash(BitVector *bv)
     return hash;
 }
 
-static __inline void bv_recapa(BitVector *bv, int new_capa)
+static INLINE void bv_recapa(BitVector *bv, int new_capa)
 {
     if (bv->capa < new_capa) {
         REALLOC_N(bv->bits, f_u32, new_capa);

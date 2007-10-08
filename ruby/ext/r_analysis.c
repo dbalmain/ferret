@@ -424,7 +424,7 @@ get_rb_token_stream(TokenStream *ts)
     return rts;
 }
 
-static inline VALUE
+static INLINE VALUE
 get_wrapped_ts(VALUE self, VALUE rstr, TokenStream *ts)
 {
     StringValue(rstr);
@@ -990,7 +990,7 @@ frt_stop_filter_init(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static __inline void frt_add_mapping_i(TokenStream *mf, VALUE from, char *to)
+static INLINE void frt_add_mapping_i(TokenStream *mf, VALUE from, char *to)
 {
     switch (TYPE(from)) {
         case T_STRING:

@@ -104,7 +104,7 @@ OutStream *os_new()
  *
  * @param the OutStream to flush
  */
-__inline void os_flush(OutStream *os)
+INLINE void os_flush(OutStream *os)
 {
     os->m->flush_i(os, os->buf.buf, os->buf.pos);
     os->buf.start += os->buf.pos;
@@ -143,7 +143,7 @@ void os_seek(OutStream *os, off_t new_pos)
  * @param b  the byte to write
  * @raise IO_ERROR if there is an IO error writing to the filesystem
  */
-__inline void os_write_byte(OutStream *os, uchar b)
+INLINE void os_write_byte(OutStream *os, uchar b)
 {
     if (os->buf.pos >= BUFFER_SIZE) {
         os_flush(os);
@@ -237,7 +237,7 @@ void is_refill(InStream *is)
  * @raise IO_ERROR if there is a error reading from the filesystem
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-__inline uchar is_read_byte(InStream *is)
+INLINE uchar is_read_byte(InStream *is)
 {
     if (is->buf.pos >= is->buf.len) {
         is_refill(is);
@@ -344,7 +344,7 @@ f_u64 is_read_u64(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-__inline unsigned int is_read_vint(InStream *is)
+INLINE unsigned int is_read_vint(InStream *is)
 {
     register unsigned int res, b;
     register int shift = 7;
@@ -374,7 +374,7 @@ __inline unsigned int is_read_vint(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-__inline off_t is_read_voff_t(InStream *is)
+INLINE off_t is_read_voff_t(InStream *is)
 {
     register off_t res, b;
     register int shift = 7;
@@ -403,7 +403,7 @@ __inline off_t is_read_voff_t(InStream *is)
     return res;
 }
 
-__inline void is_skip_vints(InStream *is, register int cnt)
+INLINE void is_skip_vints(InStream *is, register int cnt)
 {
     for (; cnt > 0; cnt--) {
         while ((is_read_byte(is) & 0x80) != 0) {
@@ -411,7 +411,7 @@ __inline void is_skip_vints(InStream *is, register int cnt)
     }
 }
 
-__inline void is_read_chars(InStream *is, char *buffer,
+INLINE void is_read_chars(InStream *is, char *buffer,
                                   int off, int len)
 {
     int end, i;
@@ -508,7 +508,7 @@ void os_write_u64(OutStream *os, f_u64 num)
 }
 
 /* optimized to use an unchecked write if there is space */
-__inline void os_write_vint(OutStream *os, register unsigned int num)
+INLINE void os_write_vint(OutStream *os, register unsigned int num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {
@@ -527,7 +527,7 @@ __inline void os_write_vint(OutStream *os, register unsigned int num)
 }
 
 /* optimized to use an unchecked write if there is space */
-__inline void os_write_voff_t(OutStream *os, register off_t num)
+INLINE void os_write_voff_t(OutStream *os, register off_t num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {

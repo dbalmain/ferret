@@ -196,7 +196,7 @@ frt_field(VALUE rfield)
  * Jeremie 'ahFeel' BORDIER
  * ahFeel@rift.Fr
  */
-__inline char *
+char *
 json_concat_string(char *s, char *field)
 {
     *(s++) = '"';

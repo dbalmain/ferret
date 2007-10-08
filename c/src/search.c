@@ -1371,7 +1371,7 @@ static Searcher *cdfsea_new(HashTable *df_map, int max_doc)
  ***************************************************************************/
 
 #define MSEA(searcher) ((MultiSearcher *)(searcher))
-static __inline int msea_get_searcher_index(Searcher *self, int n)
+static INLINE int msea_get_searcher_index(Searcher *self, int n)
 {
     MultiSearcher *msea = MSEA(self);
     int lo = 0;                 /* search starts array */

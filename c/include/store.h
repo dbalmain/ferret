@@ -606,7 +606,7 @@ extern InStream *is_clone(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern __inline uchar is_read_byte(InStream *is);
+extern INLINE uchar is_read_byte(InStream *is);
 
 /**
  * Read +len+ bytes from InStream +is+ and write them to buffer +buf+
@@ -669,7 +669,7 @@ extern f_u64 is_read_u64(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern __inline unsigned int is_read_vint(InStream *is);
+extern INLINE unsigned int is_read_vint(InStream *is);
 
 /**
  * Skip _cnt_ vints. This is a convenience method used for performance reasons
@@ -681,7 +681,7 @@ extern __inline unsigned int is_read_vint(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern __inline void is_skip_vints(InStream *is, register int cnt);
+extern INLINE void is_skip_vints(InStream *is, register int cnt);
 
 /**
  * Read a compressed (VINT) unsigned off_t from the InStream.
@@ -692,7 +692,7 @@ extern __inline void is_skip_vints(InStream *is, register int cnt);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern __inline off_t is_read_voff_t(InStream *is);
+extern INLINE off_t is_read_voff_t(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint

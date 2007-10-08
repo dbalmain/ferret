@@ -224,7 +224,7 @@ frt_td_to_s(int argc, VALUE *argv, VALUE self)
     return rstr;
 }
 
-__inline char *
+static INLINE char *
 frt_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
 {
 	int i, j;

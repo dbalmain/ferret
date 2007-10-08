@@ -675,7 +675,7 @@ bool fshq_less_than(const void *hit1, const void *hit2)
     }
 }
 
-__inline bool fshq_lt(Sorter *sorter, Hit *hit1, Hit *hit2)
+INLINE bool fshq_lt(Sorter *sorter, Hit *hit1, Hit *hit2)
 {
     Comparator *comp;
     int diff = 0, i;
@@ -734,7 +734,7 @@ Hit *fshq_pq_pop(PriorityQueue *pq)
     }
 }
 
-__inline void fshq_pq_up(PriorityQueue *pq)
+INLINE void fshq_pq_up(PriorityQueue *pq)
 {
     Hit **heap = (Hit **)pq->heap;
     Hit *node;

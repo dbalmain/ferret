@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-extern __inline int hlp_string_diff(register const char *const s1,
+extern int hlp_string_diff(register const char *const s1,
                                   register const char *const s2);
 extern f_i32 float2int(float f);
 extern float int2float(f_i32 i32);

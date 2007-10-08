@@ -16,7 +16,7 @@ typedef struct MemoryPool {
 
 extern MemoryPool *mp_new();
 extern MemoryPool *mp_new_capa(int chunk_size, int init_capa);
-extern __inline void *mp_alloc(MemoryPool *mp, int size);
+extern INLINE void *mp_alloc(MemoryPool *mp, int size);
 extern void mp_reset(MemoryPool *mp);
 extern void mp_destroy(MemoryPool *mp);
 extern char *mp_strdup(MemoryPool *mp, const char *str);

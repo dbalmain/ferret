@@ -108,7 +108,7 @@ void index_flush(Index *self)
     self->has_writes = false;
 }
 
-__inline void ensure_writer_open(Index *self)
+INLINE void ensure_writer_open(Index *self)
 {
     if (!self->iw) {
         INDEX_CLOSE_READER(self);
@@ -124,7 +124,7 @@ __inline void ensure_writer_open(Index *self)
     }
 }
 
-__inline void ensure_reader_open(Index *self)
+INLINE void ensure_reader_open(Index *self)
 {
     if (self->ir) {
         if (self->check_latest && !ir_is_latest(self->ir)) {
@@ -140,7 +140,7 @@ __inline void ensure_reader_open(Index *self)
     }
 }
 
-__inline void ensure_searcher_open(Index *self)
+INLINE void ensure_searcher_open(Index *self)
 {
     ensure_reader_open(self);
     if (!self->sea) {
@@ -187,7 +187,7 @@ bool index_is_deleted(Index *self, int doc_num)
     return is_del;
 }
 
-static __inline void index_add_doc_i(Index *self, Document *doc)
+static INLINE void index_add_doc_i(Index *self, Document *doc)
 {
     /* If there is a key specified delete the document with the same key */
     if (self->key) {

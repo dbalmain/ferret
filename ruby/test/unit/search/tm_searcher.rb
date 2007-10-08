@@ -235,10 +235,12 @@ module SearcherTests
     dir = Ferret::Store::RAMDirectory.new
     iw = Ferret::Index::IndexWriter.new(:dir => dir,
                   :analyzer => Ferret::Analysis::WhiteSpaceAnalyzer.new())
+    long_text = "big " + "between " * 2000 + 'house'
     [
       {:field => "the words we are searching for are one and two also " +
                  "sometimes looking for them as a phrase like this; one " +
-                 "two lets see how it goes"}
+                 "two lets see how it goes"},
+      {:long =>  'before ' * 1000 + long_text + ' after' * 1000},
     ].each {|doc| iw << doc }
     iw.close
     
@@ -352,6 +354,16 @@ module SearcherTests
                                     :excerpt_length => 10,
                                     :num_excerpts => 2)
     assert_equal(2, highlights.size)
+    assert_equal("<b>the words</b>...", highlights[0])
+    assert_equal("...<b>one</b> <b>two</b>...", highlights[1])
+
+    q = PhraseQuery.new(:long) << 'big' << 'house'
+    q.slop = 4000
+    highlights = searcher.highlight(q, 1, :long,
+                                    :excerpt_length => 400,
+                                    :num_excerpts => 2)
+    assert_equal(1, highlights.size)
+    puts highlights[0]
     assert_equal("<b>the words</b>...", highlights[0])
     assert_equal("...<b>one</b> <b>two</b>...", highlights[1])
   end

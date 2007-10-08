@@ -11,22 +11,22 @@ const char *EMPTY_STRING = "";
 
 bool x_do_logging = false;
 
-__inline int min3(int a, int b, int c)
+INLINE int min3(int a, int b, int c)
 {
     return MIN3(a, b, c);
 }
 
-__inline int min2(int a, int b)
+INLINE int min2(int a, int b)
 {
     return MIN(a, b);
 }
 
-__inline int max3(int a, int b, int c)
+INLINE int max3(int a, int b, int c)
 {
     return MAX3(a, b, c);
 }
 
-__inline int max2(int a, int b)
+INLINE int max2(int a, int b)
 {
     return MAX(a, b);
 }

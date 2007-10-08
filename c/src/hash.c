@@ -61,7 +61,7 @@ typedef HashEntry *(*lookup_ft)(struct HashTable *ht, register const void *key);
  * @param ht the HashTable to do the fast lookup in
  * @param the hashkey we are looking for
  */
-static __inline HashEntry *h_resize_lookup(HashTable *ht,
+static INLINE HashEntry *h_resize_lookup(HashTable *ht,
                                            register const unsigned long hash)
 {
     register unsigned long perturb;

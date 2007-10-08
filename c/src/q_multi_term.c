@@ -236,7 +236,7 @@ static bool multi_tsc_advance_to(Scorer *self, int target_doc_num)
     return (pq_top(tdew_pq) == NULL) ? false : true;
 }
 
-static __inline bool multi_tsc_skip_to(Scorer *self, int target_doc_num)
+static INLINE bool multi_tsc_skip_to(Scorer *self, int target_doc_num)
 {
     return multi_tsc_advance_to(self, target_doc_num) && multi_tsc_next(self);
 }

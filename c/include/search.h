@@ -872,6 +872,7 @@ typedef struct QParser
     bool close_def_fields : 1;
     bool destruct : 1;
     bool recovering : 1;
+    bool use_keywords : 1;
 } QParser;
 
 extern QParser *qp_new(HashSet *all_fields, HashSet *def_fields,

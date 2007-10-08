@@ -61,8 +61,8 @@ extern Explanation *index_explain(Index *self, Query *q, int doc_num);
 extern void index_auto_flush_ir(Index *self);
 extern void index_auto_flush_iw(Index *self);
 
-extern __inline void ensure_searcher_open(Index *self);
-extern __inline void ensure_reader_open(Index *self);
-extern __inline void ensure_writer_open(Index *self);
+extern INLINE void ensure_searcher_open(Index *self);
+extern INLINE void ensure_reader_open(Index *self);
+extern INLINE void ensure_writer_open(Index *self);
 
 #endif

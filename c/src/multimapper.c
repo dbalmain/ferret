@@ -121,7 +121,7 @@ MultiMapper *mulmap_new()
     return self;
 }
 
-static __inline void mulmap_free_dstates(MultiMapper *self)
+static INLINE void mulmap_free_dstates(MultiMapper *self)
 {
     if (self->d_size > 0) {
         int i;
@@ -151,7 +151,7 @@ void mulmap_add_mapping(MultiMapper *self, const char *pattern, const char *rep)
 }
 
 
-static __inline void mulmap_bv_set_states(BitVector *bv, int *states, int cnt)
+static INLINE void mulmap_bv_set_states(BitVector *bv, int *states, int cnt)
 {
     int i;
     for (i = cnt - 1; i >= 0; i--) {
