@@ -460,6 +460,26 @@ static void test_qp_prefix_query(tst_case *tc, void *data)
     qp_destroy(parser);
 }
 
+static void test_qp_keyword_switch(tst_case *tc, void *data)
+{
+    HashSet *all_fields = hs_new_str(NULL);
+    HashSet *def_fields = hs_new_str(NULL);
+    QParser *parser;
+    Query *q;
+    (void)data;
+    hs_add(all_fields, xx);
+    hs_add(def_fields, xx);
+
+    parser = qp_new(all_fields, def_fields, NULL, letter_analyzer_new(true));
+
+    PARSER_TEST("REQ www (xxx AND yyy) OR NOT zzz", "+www (+xxx +yyy) -zzz");
+
+    parser->use_keywords = false;
+    PARSER_TEST("REQ www (xxx AND yyy) OR NOT zzz", "req www (xxx and yyy) or not zzz");
+
+    qp_destroy(parser);
+}
+
 tst_suite *ts_q_parser(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
@@ -469,6 +489,7 @@ tst_suite *ts_q_parser(tst_suite *suite)
     tst_run_test(suite, test_qp_clean_str, NULL);
     tst_run_test(suite, test_qp_bad_queries, NULL);
     tst_run_test(suite, test_qp_prefix_query, NULL);
+    tst_run_test(suite, test_qp_keyword_switch, NULL);
 
     return suite;
 }

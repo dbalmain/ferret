@@ -2061,12 +2061,14 @@ get_word_done:
      * just checks for all of them. */
     *bufp = '\0';
     len = (int)(bufp - buf);
-    if (len == 3) {
-        if (buf[0] == 'A' && buf[1] == 'N' && buf[2] == 'D') return AND;
-        if (buf[0] == 'N' && buf[1] == 'O' && buf[2] == 'T') return NOT;
-        if (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'Q') return REQ;
+    if (qp->use_keywords) {
+        if (len == 3) {
+            if (buf[0] == 'A' && buf[1] == 'N' && buf[2] == 'D') return AND;
+            if (buf[0] == 'N' && buf[1] == 'O' && buf[2] == 'T') return NOT;
+            if (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'Q') return REQ;
+        }
+        if (len == 2 && buf[0] == 'O' && buf[1] == 'R') return OR;
     }
-    if (len == 2 && buf[0] == 'O' && buf[1] == 'R') return OR;
 
     /* found a word so return it. */
     lvalp->str = buf;
@@ -2648,6 +2650,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->max_clauses = QP_MAX_CLAUSES;
     self->handle_parse_errors = false;
     self->allow_any_fields = false;
+    self->use_keywords = true;
     self->def_slop = 0;
     self->fields_buf = hs_new_str(NULL);
     self->all_fields = all_fields;
