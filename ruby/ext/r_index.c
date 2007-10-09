@@ -2434,7 +2434,6 @@ frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
         len = FIX2LONG(arg2);
         return frt_get_doc_range(ir, pos, len, max);
     }
-    return Qnil;
 }
 
 /*
