@@ -221,4 +221,18 @@ class QueryParserTest < Test::Unit::TestCase
       assert_equal(expected, parser.parse(query_str).to_s("xxx"))
     end
   end
+
+  def test_use_keywords_switch
+    analyzer = LetterAnalyzer.new
+    parser = Ferret::QueryParser.new(:analyzer => analyzer,
+                                     :default_field => "xxx")
+    assert_equal("+www (+xxx +yyy) -zzz",
+                 parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"))
+
+    parser = Ferret::QueryParser.new(:analyzer => analyzer,
+                                     :default_field => "xxx",
+                                     :use_keywords => false)
+    assert_equal("req www (xxx and yyy) or not zzz",
+                 parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"))
+  end
 end
