@@ -130,7 +130,7 @@ frt_get_fields(VALUE rfields)
 static VALUE
 frt_qp_init(int argc, VALUE *argv, VALUE self)
 {
-    VALUE roptions;
+    VALUE roptions = Qnil;
     VALUE rval;
     Analyzer *analyzer = NULL;
     bool has_options = false;
@@ -160,6 +160,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
             }
         } else {
             def_fields = frt_get_fields(roptions);
+            roptions = Qnil;
         }
     }
     if (all_fields == NULL) {
@@ -175,7 +176,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
     qp->clean_str = true;
     qp->handle_parse_errors = true;
     /* handle options */
-    if (argc > 0) {
+    if (roptions != Qnil) {
         if (Qnil != (rval = rb_hash_aref(roptions, sym_handle_parse_errors))) {
             qp->handle_parse_errors = RTEST(rval);
         }
