@@ -950,12 +950,12 @@ static Token *std_next(TokenStream *ts)
         }
         t++;
     }
-    while (isurlxatpunc(t[-1])) {
+    while (isurlxatpunc(t[-1]) && t > ts->t) {
         t--;                /* strip trailing punctuation */
     }
 
-    if (t <= ts->t || (num_end != NULL && num_end <= ts->t)) {
-        fprintf(stderr, "Warning encoding error. Please check that you are using the correct locale for your input");
+    if (t < ts->t || (num_end != NULL && num_end < ts->t)) {
+        fprintf(stderr, "Warning: encoding error. Please check that you are using the correct locale for your input");
         return NULL;
     } else if (num_end == NULL || t > num_end) {
         ts->t = t;
