@@ -13,8 +13,6 @@
 
 #if defined(__GNUC__)
 # define INLINE __inline__
-#elif defined (__SUNPRO_C)
-# define INLINE inline
 #else
 # define INLINE
 #endif
