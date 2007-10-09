@@ -488,7 +488,7 @@ typedef struct Posting
     struct Posting *next;
 } Posting;
 
-extern INLINE Posting *p_new(MemoryPool *mp, int doc_num, int pos);
+extern Posting *p_new(MemoryPool *mp, int doc_num, int pos);
 
 /****************************************************************************
  *

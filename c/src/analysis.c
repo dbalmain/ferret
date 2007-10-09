@@ -1,6 +1,6 @@
 #include "analysis.h"
 #include "hash.h"
-#include <libstemmer.h>
+#include "libstemmer.h"
 #include <string.h>
 #include <ctype.h>
 #include <wctype.h>

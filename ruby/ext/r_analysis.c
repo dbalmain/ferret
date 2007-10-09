@@ -1193,6 +1193,16 @@ frt_get_analyzer(Analyzer *a)
     return self;
 }
 
+INLINE VALUE
+get_rb_ts_from_a(Analyzer *a, VALUE rfield, VALUE rstring)
+{
+    TokenStream *ts = a_get_ts(a, frt_field(rfield), rs2s(rstring));
+
+    /* Make sure that there is no entry already */
+    object_set(&ts->text, rstring);
+    return get_rb_token_stream(ts);
+}
+
 /*
  *  call-seq:
  *     analyzer.token_stream(field_name, input) -> token_stream
@@ -1209,17 +1219,12 @@ frt_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 {
     /* NOTE: Any changes made to this method may also need to be applied to
      * frt_re_analyzer_token_stream */
-    TokenStream *ts;
     Analyzer *a;
     GET_A(a, self);
 
     StringValue(rstring);
 
-    ts = a_get_ts(a, frt_field(rfield), rs2s(rstring));
-
-    /* Make sure that there is no entry already */
-    object_set(&ts->text, rstring);
-    return get_rb_token_stream(ts);
+    return get_rb_ts_from_a(a, rfield, rstring);
 }
 
 #define GET_LOWER(dflt) \
@@ -1455,6 +1460,37 @@ frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
 
     pfa_add_field(pfa, frt_field(rfield), a);
     return self;
+}
+
+/*
+ *  call-seq:
+ *     analyzer.token_stream(field_name, input) -> token_stream
+ *
+ *  Create a new TokenStream to tokenize +input+. The TokenStream created will 
+ *  also depend on the +field_name+ in the case of the PerFieldAnalyzer.
+ *  
+ *  field_name:: name of the field to be tokenized
+ *  input::      data from the field to be tokenized
+ */
+static VALUE
+frt_pfa_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
+{
+    Analyzer *pfa, *a;
+    char *field = frt_field(rfield);
+    GET_A(pfa, self);
+
+    StringValue(rstring);
+    a = (Analyzer *)h_get(PFA(pfa)->dict, field);
+    if (a == NULL) {
+        a = PFA(pfa)->default_a;
+    }
+    if (a->get_ts == cwa_get_ts) {
+        return rb_funcall(CWA(a)->ranalyzer, id_token_stream, 2,
+                          ID2SYM(rb_intern(field)), rb_str_new2(rs2s(rstring)));
+    }
+    else {
+        return get_rb_ts_from_a(a, rfield, rstring);
+    }
 }
 
 /*** RegExpAnalyzer ***/
@@ -2292,6 +2328,8 @@ static void Init_PerFieldAnalyzer(void)
                      frt_per_field_analyzer_add_field, 2);
     rb_define_method(cPerFieldAnalyzer, "[]=",
                      frt_per_field_analyzer_add_field, 2);
+    rb_define_method(cPerFieldAnalyzer, "token_stream",
+                     frt_pfa_analyzer_token_stream, 2);
 }
 
 /*

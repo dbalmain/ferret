@@ -55,6 +55,7 @@ task :valgrind do
      "--leak-check=yes --show-reachable=yes -v ruby test/test_all.rb"
   #sh "valgrind --suppressions=ferret_valgrind.supp " +
   #   "--leak-check=yes --show-reachable=yes -v ruby test/unit/index/tc_index_reader.rb"
+  #valgrind --gen-suppressions=yes --suppressions=ferret_valgrind.supp --leak-check=yes --show-reachable=yes -v ruby test/test_all.rb
 end
 
 task :default => :test_all
