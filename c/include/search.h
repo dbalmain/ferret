@@ -408,6 +408,7 @@ typedef struct ConstantScoreQuery
 {
     Query   super;
     Filter *filter;
+    Query  *original;
 } ConstantScoreQuery;
 
 extern Query *csq_new(Filter *filter);

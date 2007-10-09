@@ -241,6 +241,7 @@ module SearcherTests
                  "sometimes looking for them as a phrase like this; one " +
                  "two lets see how it goes"},
       {:long =>  'before ' * 1000 + long_text + ' after' * 1000},
+      {:dates => '20070505 20071230 20060920 20081111'},
     ].each {|doc| iw << doc }
     iw.close
     
@@ -356,6 +357,19 @@ module SearcherTests
     assert_equal(2, highlights.size)
     assert_equal("<b>the words</b>...", highlights[0])
     assert_equal("...<b>one</b> <b>two</b>...", highlights[1])
+
+    # {:dates => '20070505, 20071230, 20060920, 20081111'},
+    [
+      [RangeQuery.new(:dates, :>= => '20081111'),
+        '20070505 20071230 20060920 <b>20081111</b>'],
+      [RangeQuery.new(:dates, :>= => '20070101'),
+        '<b>20070505</b> <b>20071230</b> 20060920 <b>20081111</b>'],
+      [PrefixQuery.new(:dates, '2007'),
+        '<b>20070505</b> <b>20071230</b> 20060920 20081111'],
+    ].each do |query, expected|
+      assert_equal([expected],
+                   searcher.highlight(query, 2, :dates))
+    end
 
     #q = PhraseQuery.new(:long) << 'big' << 'house'
     #q.slop = 4000

@@ -2712,26 +2712,31 @@ frt_sea_highlight(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "31", &rquery, &rdoc_id, &rfield, &roptions);
     Data_Get_Struct(rquery, Query, query);
-    if (Qnil != (v = rb_hash_aref(roptions, sym_num_excerpts))) {
-        num_excerpts =  FIX2INT(v);
-    }
-    if (Qnil != (v = rb_hash_aref(roptions, sym_excerpt_length))) {
-        if (v == sym_all) {
-            num_excerpts = 1;
-            excerpt_length = INT_MAX/2;
+    if (argc > 3) {
+        if (TYPE(roptions) != T_HASH) {
+           rb_raise(rb_eArgError, "The fourth argument to Searcher#highlight must be a hash");
         }
-        else {
-            excerpt_length = FIX2INT(v);
+        if (Qnil != (v = rb_hash_aref(roptions, sym_num_excerpts))) {
+            num_excerpts =  FIX2INT(v);
         }
-    }
-    if (Qnil != (v = rb_hash_aref(roptions, sym_pre_tag))) {
-        pre_tag = rs2s(rb_obj_as_string(v));
-    }
-    if (Qnil != (v = rb_hash_aref(roptions, sym_post_tag))) {
-        post_tag = rs2s(rb_obj_as_string(v));
-    }
-    if (Qnil != (v = rb_hash_aref(roptions, sym_ellipsis))) {
-        ellipsis = rs2s(rb_obj_as_string(v));
+        if (Qnil != (v = rb_hash_aref(roptions, sym_excerpt_length))) {
+            if (v == sym_all) {
+                num_excerpts = 1;
+                excerpt_length = INT_MAX/2;
+            }
+            else {
+                excerpt_length = FIX2INT(v);
+            }
+        }
+        if (Qnil != (v = rb_hash_aref(roptions, sym_pre_tag))) {
+            pre_tag = rs2s(rb_obj_as_string(v));
+        }
+        if (Qnil != (v = rb_hash_aref(roptions, sym_post_tag))) {
+            post_tag = rs2s(rb_obj_as_string(v));
+        }
+        if (Qnil != (v = rb_hash_aref(roptions, sym_ellipsis))) {
+            ellipsis = rs2s(rb_obj_as_string(v));
+        }
     }
     
     if ((excerpts = searcher_highlight(sea,

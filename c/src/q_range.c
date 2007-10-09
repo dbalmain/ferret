@@ -269,13 +269,44 @@ static void rq_destroy(Query *self)
     q_destroy_i(self);
 }
 
+static MatchVector *rq_get_matchv_i(Query *self, MatchVector *mv,
+                                    TermVector *tv)
+{
+    Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
+    if (strcmp(tv->field, range->field) == 0) {
+        int i, j;
+        char *upper_text = range->upper_term;
+        char *lower_text = range->lower_term;
+        int upper_limit = range->include_upper ? 1 : 0;
+        int lower_limit = range->include_lower ? 1 : 0;
+
+        for (i = tv->term_cnt - 1; i >= 0; i--) {
+            TVTerm *tv_term = &(tv->terms[i]);
+            char *text = tv_term->text;
+            if ((!upper_text || strcmp(text, upper_text) < upper_limit) && 
+                (!lower_text || strcmp(lower_text, text) < lower_limit)) {
+
+                for (j = 0; j < tv_term->freq; j++) {
+                    int pos = tv_term->positions[j];
+                    matchv_add(mv, pos, pos);
+                }
+            }
+        }
+    }
+    return mv;
+}
+
 static Query *rq_rewrite(Query *self, IndexReader *ir)
 {
+    Query *csq;
     Range *r = RQ(self)->range;
     Filter *filter = rfilt_new(r->field, r->lower_term, r->upper_term,
                                r->include_lower, r->include_upper);
     (void)ir;
-    return csq_new_nr(filter);
+    csq = csq_new_nr(filter);
+    ((ConstantScoreQuery *)csq)->original = self;
+    csq->get_matchv_i = &rq_get_matchv_i;
+    return (Query *)csq;
 }
 
 static unsigned long rq_hash(Query *self)

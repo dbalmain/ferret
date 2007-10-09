@@ -623,13 +623,18 @@ MatchVector *searcher_get_match_vector(Searcher *self,
                                        const char *field)
 {
     MatchVector *mv = matchv_new();
-    Query *rewritten_query = self->rewrite(self, query);
+    bool rewrite = query->get_matchv_i == q_get_matchv_i;
     TermVector *tv = self->get_term_vector(self, doc_num, field);
+    if (rewrite) {
+        query = self->rewrite(self, query);
+    }
     if (tv && tv->term_cnt > 0 && tv->terms[0].positions != NULL) {
-        mv = rewritten_query->get_matchv_i(rewritten_query, mv, tv);
+        mv = query->get_matchv_i(query, mv, tv);
         tv_destroy(tv);
     }
-    q_deref(rewritten_query);
+    if (rewrite) {
+        q_deref(query);
+    }
     return mv;
 }
 
@@ -846,6 +851,7 @@ char **searcher_highlight(Searcher *self,
         MatchVector *mv;
         query = self->rewrite(self, query);
         mv = query->get_matchv_i(query, matchv_new(), tv);
+        q_deref(query);
         if (lazy_df->len < (excerpt_len * num_excerpts)) {
             excerpt_strs = ary_new_type_capa(char *, 1);
             ary_push(excerpt_strs,
@@ -947,7 +953,6 @@ char **searcher_highlight(Searcher *self,
             pq_destroy(excerpt_pq);
         }
         matchv_destroy(mv);
-        q_deref(query);
     }
     if (tv) tv_destroy(tv);
     if (lazy_doc) lazy_doc_close(lazy_doc);
