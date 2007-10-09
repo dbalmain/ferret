@@ -749,4 +749,14 @@ class IndexTest < Test::Unit::TestCase
     assert_equal('[]', index.search("xxx").to_json)
     index.close
   end
+
+  def test_large_query_delete
+    index = Ferret::I.new
+    20.times do
+      index << {:id => 'one'}
+      index << {:id => 'two'}
+    end
+    index.query_delete('id:one')
+    assert_equal(20, index.size)
+  end
 end

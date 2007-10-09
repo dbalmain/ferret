@@ -461,7 +461,7 @@ module Ferret::Index
         ensure_writer_open()
         ensure_searcher_open()
         query = do_process_query(query)
-        @searcher.search_each(query) do |doc, score|
+        @searcher.search_each(query, :limit => :all) do |doc, score|
           @reader.delete(doc)
         end
         flush() if @auto_flush
