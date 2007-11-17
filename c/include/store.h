@@ -176,7 +176,11 @@ struct Store
         CompoundStore *cmpd;    /* for compound_store only */
     } dir;
 
+#ifdef POSH_OS_WIN32
+    int file_mode;
+#else
     mode_t file_mode;
+#endif
     HashSet *locks;
 
     /**
