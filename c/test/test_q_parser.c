@@ -465,7 +465,6 @@ static void test_qp_keyword_switch(tst_case *tc, void *data)
     HashSet *all_fields = hs_new_str(NULL);
     HashSet *def_fields = hs_new_str(NULL);
     QParser *parser;
-    Query *q;
     (void)data;
     hs_add(all_fields, xx);
     hs_add(def_fields, xx);

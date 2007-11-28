@@ -14,7 +14,7 @@ void tt_token(Token *tk,
     static char buf[3000];
     if (!tk_eq(tk_set(&tk_exp, str, (int)strlen(str), start, end, 1), tk)) {
         sprintf(buf, "Token1[%d:%d:%s] != Token2[%d:%d:%s]\n",
-                tk->start, tk->end, tk->text, start, end, str);
+                (int)tk->start, (int)tk->end, tk->text, start, end, str);
         tst_assert(line_num, tc, false, buf);
     }
     tst_int_equal(line_num, tc, strlen(tk->text), tk->len);
@@ -31,7 +31,7 @@ void tt_token_pi(Token *tk,
     static char buf[3000];
     if (!tk_eq(tk_set(&tk_exp, str, (int)strlen(str), start, end, pi), tk)) {
         sprintf(buf, "Token1[%d:%d:%s-%d] != Token2[%d:%d:%s-%d]\n",
-                tk->start, tk->end, tk->text, tk->pos_inc, start, end, str, pi);
+                (int)tk->start, (int)tk->end, tk->text, tk->pos_inc, start, end, str, pi);
         tst_assert(line_num, tc, false, buf);
     }
     tst_int_equal(line_num, tc, strlen(tk->text), tk->len);

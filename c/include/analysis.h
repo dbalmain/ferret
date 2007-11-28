@@ -16,16 +16,16 @@ typedef struct Token
 {
     char text[MAX_WORD_SIZE];
     int len;
-    int start;
-    int end;
+    off_t start;
+    off_t end;
     int pos_inc;
 } Token;
 
 extern Token *tk_new();
 extern void tk_destroy(void *p);
-extern Token *tk_set(Token *tk, char *text, int tlen, int start, int end,
+extern Token *tk_set(Token *tk, char *text, int tlen, off_t start, off_t end,
                      int pos_inc);
-extern Token *tk_set_no_len(Token *tk, char *text, int start, int end,
+extern Token *tk_set_no_len(Token *tk, char *text, off_t start, off_t end,
                             int pos_inc);
 extern int tk_eq(Token *tk1, Token *tk2);
 extern int tk_cmp(Token *tk1, Token *tk2);

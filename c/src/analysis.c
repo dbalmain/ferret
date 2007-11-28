@@ -13,7 +13,7 @@
  ****************************************************************************/
 
 INLINE Token *tk_set(Token *tk,
-                     char *text, int tlen, int start, int end, int pos_inc)
+                     char *text, int tlen, off_t start, off_t end, int pos_inc)
 {
     if (tlen >= MAX_WORD_SIZE) {
         tlen = MAX_WORD_SIZE - 1;
@@ -31,16 +31,16 @@ INLINE Token *tk_set_ts(Token *tk,
                         char *start, char *end, char *text, int pos_inc)
 {
     return tk_set(tk, start, (int)(end - start),
-                  (int)(start - text), (int)(end - text), pos_inc);
+                  (off_t)(start - text), (off_t)(end - text), pos_inc);
 }
 
 INLINE Token *tk_set_no_len(Token *tk,
-                            char *text, int start, int end, int pos_inc)
+                            char *text, off_t start, off_t end, int pos_inc)
 {
     return tk_set(tk, text, (int)strlen(text), start, end, pos_inc);
 }
 
-INLINE Token *w_tk_set(Token *tk, wchar_t *text, int start, int end,
+INLINE Token *w_tk_set(Token *tk, wchar_t *text, off_t start, off_t end,
                        int pos_inc)
 {
     int len = wcstombs(tk->text, text, MAX_WORD_SIZE - 1);
@@ -374,8 +374,8 @@ static Token *mb_wst_next_lc(TokenStream *ts)
     }
     *w = 0;
     ts->t = t;
-    return w_tk_set(&(CTS(ts)->token), wbuf, (int)(start - ts->text),
-                    (int)(t - ts->text), 1);
+    return w_tk_set(&(CTS(ts)->token), wbuf, (off_t)(start - ts->text),
+                    (off_t)(t - ts->text), 1);
 }
 
 TokenStream *mb_whitespace_tokenizer_new(bool lowercase)
@@ -512,8 +512,8 @@ Token *mb_lt_next_lc(TokenStream *ts)
     }
     *w = 0;
     ts->t = t;
-    return w_tk_set(&(CTS(ts)->token), wbuf, (int)(start - ts->text),
-                    (int)(t - ts->text), 1);
+    return w_tk_set(&(CTS(ts)->token), wbuf, (off_t)(start - ts->text),
+                    (off_t)(t - ts->text), 1);
 }
 
 TokenStream *mb_letter_tokenizer_new(bool lowercase)
@@ -926,8 +926,8 @@ static Token *std_next(TokenStream *ts)
         }
         ts->t = t + len;
         token[len] = 0;
-        return tk_set(&(CTS(ts)->token), token, len, (int)(start - ts->text),
-               (int)(ts->t - ts->text), 1);
+        return tk_set(&(CTS(ts)->token), token, len, (off_t)(start - ts->text),
+               (off_t)(ts->t - ts->text), 1);
     }
 
     /* now see how long a url we can find. */
@@ -974,8 +974,8 @@ static Token *std_next(TokenStream *ts)
                 }
             }
             tk_set(&(CTS(ts)->token), token, token_i,
-                   (int)(start - ts->text),
-                   (int)(t - ts->text), 1);
+                   (off_t)(start - ts->text),
+                   (off_t)(t - ts->text), 1);
         }
         else { /* just return the url as is */
             tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);

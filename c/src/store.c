@@ -403,6 +403,36 @@ INLINE off_t is_read_voff_t(InStream *is)
     return res;
 }
 
+/* optimized to use unchecked read_byte if there is definitely space */
+INLINE unsigned long long is_read_vll(InStream *is)
+{
+    register unsigned long long res, b;
+    register int shift = 7;
+
+    if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
+        b = is_read_byte(is);
+        res = b & 0x7F;                 /* 0x7F = 0b01111111 */
+
+        while ((b & 0x80) != 0) {       /* 0x80 = 0b10000000 */
+            b = is_read_byte(is);
+            res |= (b & 0x7F) << shift;
+            shift += 7;
+        }
+    }
+    else {                              /* unchecked optimization */
+        b = read_byte(is);
+        res = b & 0x7F;                 /* 0x7F = 0b01111111 */
+
+        while ((b & 0x80) != 0) {       /* 0x80 = 0b10000000 */
+            b = read_byte(is);
+            res |= (b & 0x7F) << shift;
+            shift += 7;
+        }
+    }
+
+    return res;
+}
+
 INLINE void is_skip_vints(InStream *is, register int cnt)
 {
     for (; cnt > 0; cnt--) {
@@ -528,6 +558,25 @@ INLINE void os_write_vint(OutStream *os, register unsigned int num)
 
 /* optimized to use an unchecked write if there is space */
 INLINE void os_write_voff_t(OutStream *os, register off_t num)
+{
+    if (os->buf.pos > VINT_END) {
+        while (num > 127) {
+            os_write_byte(os, (uchar)((num & 0x7f) | 0x80));
+            num >>= 7;
+        }
+        os_write_byte(os, (uchar)num);
+    }
+    else {
+        while (num > 127) {
+            write_byte(os, (uchar)((num & 0x7f) | 0x80));
+            num >>= 7;
+        }
+        write_byte(os, (uchar)num);
+    }
+}
+
+/* optimized to use an unchecked write if there is space */
+INLINE void os_write_vll(OutStream *os, register unsigned long long num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {

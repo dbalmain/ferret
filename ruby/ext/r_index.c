@@ -1192,8 +1192,8 @@ static VALUE
 frt_get_tv_offsets(Offset *offset)
 {
     return rb_struct_new(cTVOffsets,
-                         INT2FIX(offset->start),
-                         INT2FIX(offset->end),
+                         ULL2NUM((unsigned long long)offset->start),
+                         ULL2NUM((unsigned long long)offset->end),
                          NULL);
 }
 
