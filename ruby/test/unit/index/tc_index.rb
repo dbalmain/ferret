@@ -759,4 +759,15 @@ class IndexTest < Test::Unit::TestCase
     index.query_delete('id:one')
     assert_equal(20, index.size)
   end
+
+  def test_query_update_delete_more_than_ten
+    index = Ferret::I.new
+    20.times {|i| index << {:id => i, :find => 'match', :change => 'one'} }
+
+    assert_equal(20, index.search('find:match').total_hits)
+    index.query_update('find:match', {:change => 'two'})
+    assert_equal(20, index.search('find:match AND change:two').total_hits)
+    index.query_delete('find:match')
+    assert_equal(0, index.size)
+  end
 end
