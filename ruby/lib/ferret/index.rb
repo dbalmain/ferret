@@ -528,7 +528,7 @@ module Ferret::Index
         ensure_searcher_open()
         docs_to_add = []
         query = do_process_query(query)
-        @searcher.search_each(query) do |id, score|
+        @searcher.search_each(query, :limit => :all) do |id, score|
           document = @searcher[id].load
           if new_val.is_a?(Hash)
             document.merge!(new_val)
