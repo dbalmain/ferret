@@ -77,7 +77,7 @@ module Ferret::Browser
     end
 
     def tick_or_cross(t)
-      "<img src=\"/s/i/#{t ?'tick':'cross'}.png\" alt=\"#{t ?'yes':'no'}\"/>"
+      "<img src=\"/s/i/#{t ? 'tick' : 'cross'}.png\" alt=\"#{t ? 'yes' : 'no'}\"/>"
     end
   end
 
