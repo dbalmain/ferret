@@ -26,7 +26,7 @@ const Config default_config = {
     SKIP_INTERVAL,  /* skip interval */
     10,             /* default merge factor */
     10000,          /* max_buffered_docs */
-    INT_MAX,        /* max_merged_docs */
+    INT_MAX,        /* max_merge_docs */
     10000,          /* maximum field length (number of terms) */
     true            /* use compound file by default */
 };
