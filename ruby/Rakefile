@@ -41,7 +41,7 @@ SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
 
 CLEAN.include(FileList['**/*.o', '**/*.obj', 'InstalledFiles',
                        '.config', 'ext/cferret.c'])
-CLOBBER.include(FileList['**/*.so'], 'ext/Makefile', EXT_SRC_DEST)
+CLOBBER.include(FileList['ext/*.so'], 'ext/Makefile', EXT_SRC_DEST)
 POLISH = Rake::FileList.new.include(FileList['**/*.so'], 'ext/Makefile')
 
 desc "Clean specifically for the release."

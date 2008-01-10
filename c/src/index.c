@@ -1450,12 +1450,12 @@ TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
         if (store_offsets) {
             int num_positions = tv->offset_cnt = is_read_vint(fdt_in);
             Offset *offsets = tv->offsets = ALLOC_N(Offset, num_positions);
-            long long offset = 0;
+            f_i64 offset = 0;
             for (i = 0; i < num_positions; i++) {
                 offsets[i].start =
-                    (off_t)(offset += (long long)is_read_vll(fdt_in));
+                    (off_t)(offset += (f_i64)is_read_vll(fdt_in));
                 offsets[i].end =
-                    (off_t)(offset += (long long)is_read_vll(fdt_in));
+                    (off_t)(offset += (f_i64)is_read_vll(fdt_in));
             }
         }
     }
@@ -1683,13 +1683,13 @@ void fw_add_postings(FieldsWriter *fw,
 
     if (fi_store_offsets(fi)) {
         /* use delta encoding for offsets */
-        long long last_end = 0;
+        f_i64 last_end = 0;
         os_write_vint(fdt_out, offset_count);  /* write shared prefix length */
         for (i = 0; i < offset_count; i++) {
-            long long start = (long long)offsets[i].start;
-            long long end = (long long)offsets[i].end;
-            os_write_vll(fdt_out, (unsigned long long)(start - last_end));
-            os_write_vll(fdt_out, (unsigned long long)(end - start));
+            f_i64 start = (f_i64)offsets[i].start;
+            f_i64 end = (f_i64)offsets[i].end;
+            os_write_vll(fdt_out, (f_u64)(start - last_end));
+            os_write_vll(fdt_out, (f_u64)(end - start));
             last_end = end;
         }
     }

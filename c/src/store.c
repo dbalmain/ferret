@@ -404,9 +404,9 @@ INLINE off_t is_read_voff_t(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-INLINE unsigned long long is_read_vll(InStream *is)
+INLINE f_u64 is_read_vll(InStream *is)
 {
-    register unsigned long long res, b;
+    register f_u64 res, b;
     register int shift = 7;
 
     if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
@@ -576,7 +576,7 @@ INLINE void os_write_voff_t(OutStream *os, register off_t num)
 }
 
 /* optimized to use an unchecked write if there is space */
-INLINE void os_write_vll(OutStream *os, register unsigned long long num)
+INLINE void os_write_vll(OutStream *os, register f_u64 num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {

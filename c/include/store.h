@@ -559,14 +559,14 @@ extern void os_write_vint(OutStream *os, register unsigned int num);
 extern void os_write_voff_t(OutStream *os, register off_t num);
 
 /**
- * Write an unsigned long long to OutStream in compressed VINT format.
+ * Write an unsigned 64bit int to OutStream in compressed VINT format.
  * TODO: describe VINT format
  *
  * @param os OutStream to write to
- * @param num the long long to write
+ * @param num the 64bit int to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vll(OutStream *os, register unsigned long long num);
+extern void os_write_vll(OutStream *os, register f_u64 num);
 
 /**
  * Write a string to the OutStream. A string is an integer +length+ in VINT
@@ -709,15 +709,15 @@ extern INLINE void is_skip_vints(InStream *is, register int cnt);
 extern INLINE off_t is_read_voff_t(InStream *is);
 
 /**
- * Read a compressed (VINT) unsigned long long from the InStream.
+ * Read a compressed (VINT) unsigned 64bit int from the InStream.
  * TODO: describe VINT format
  *
  * @param is the InStream to read from
- * @return a long long
+ * @return a 64bit int
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE unsigned long long is_read_vll(InStream *is);
+extern INLINE f_u64 is_read_vll(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint
