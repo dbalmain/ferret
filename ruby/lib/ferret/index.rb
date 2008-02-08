@@ -882,15 +882,13 @@ module Ferret::Index
             raise ArgumentError, "Cannot delete for arg of type #{id.class}"
           end
         end
-        @dir.synchrolock do
-          if ids.size > 0
-            ensure_reader_open
-            ids.each {|id| @reader.delete(id)}
-          end
-          if terms.size > 0
-            ensure_writer_open()
-            @writer.delete(@id_field, terms)
-          end
+        if ids.size > 0
+          ensure_reader_open
+          ids.each {|id| @reader.delete(id)}
+        end
+        if terms.size > 0
+          ensure_writer_open()
+          @writer.delete(@id_field, terms)
         end
         return self
       end
