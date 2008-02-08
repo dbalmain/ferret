@@ -2676,9 +2676,12 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
  *                  on this, see the documentation for SortField
  *  :filter::       a Filter object to filter the search results with
  *  :filter_proc::  a filter Proc is a Proc which takes the doc_id, the score
- *                  and the Searcher object as its parameters and returns a
- *                  Boolean value specifying whether the result should be
- *                  included in the result set.
+ *                  and the Searcher object as its parameters and returns
+ *                  either a Boolean value specifying whether the result
+ *                  should be included in the result set, or a Float between 0
+ *                  and 1.0 to be used as a factor to scale the score of the
+ *                  object. This can be used, for example, to weight the score
+ *                  of a matched document by it's age.
  */
 static VALUE
 frt_sea_search(int argc, VALUE *argv, VALUE self)
