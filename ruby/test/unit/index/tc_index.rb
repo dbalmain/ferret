@@ -462,6 +462,95 @@ class IndexTest < Test::Unit::TestCase
     index.close
   end
 
+  def test_index_key_batch0
+    data = {
+      "0" => {:id => "0", :val => "one"},
+      "0" => {:id => "0", :val => "two"},
+      "1" =>{:id => "1", :val => "three"},
+      "1" => {:id => "1", :val => "four"},
+    }
+
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
+                      :key => :id)
+    index.batch_update data
+    assert_equal(2, index.size)
+    index.close
+  end
+
+  def test_index_key_batch1
+    data0 = {
+      "0" => {:id => "0", :val => "one"},
+      "0" => {:id => "0", :val => "two"},
+      "1" =>{:id => "1", :val => "three"},
+      "2" => {:id => "1", :val => "four"},
+    }
+
+    data1 = {
+      "0" => {:id => "0", :val => "one"},
+      "3" => {:id => "3", :val => "two"},
+      "2" =>{:id => "2", :val => "three"},
+      "1" => {:id => "1", :val => "four"},
+      "4" => {:id => "4", :val => "four"},
+    }
+
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
+                      :key => :id)
+    index.batch_update data0
+    assert_equal(3, index.size)
+    index.batch_update data1
+    assert_equal(5, index.size)
+    index.close
+  end
+
+  def test_index_key_delete_batch0
+    data0 = {
+      "0" => {:id => "0", :val => "one"},
+      "0" => {:id => "0", :val => "two"},
+      "1" =>{:id => "1", :val => "three"},
+      "2" => {:id => "2", :val => "four"},
+      "0" => {:id => "0", :val => "four"},
+    }
+
+    data1 = ["0", "1"];
+
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new, :key => :id)
+    index.batch_update data0
+
+    assert_equal("four", index["0"][:val])
+    assert_equal("three", index["1"][:val])
+    assert_equal("four", index["2"][:val])
+
+    assert_equal(3, index.size)
+    index.delete data1
+    assert_equal(1, index.size)
+    assert_equal("four", index["2"][:val])
+
+    index.close
+  end
+
+  def test_index_key_delete_batch0
+    index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
+    1000.times {|i| index << {:id => "#{i}", :content => "content #{i}"}}
+    assert_equal(1000, index.size)
+    assert_equal("content 876", index['876'][:content])
+
+    new_docs = Array.new(1000) {|i| {:id => i, :content => "#{i} > content"}}
+    index.batch_update(new_docs)
+    assert_equal(1000, index.size)
+    assert_equal("128 > content", index['128'][:content])
+
+    new_docs = Array.new(1000) {|i| {:id => i.to_s, :content => "_(#{i})_"}}
+    index.batch_update(new_docs)
+    assert_equal(1000, index.size)
+    assert_equal("_(287)_", index['287'][:content])
+
+    new_docs = {}
+    1000.times {|i| new_docs[i.to_s] = {:id => i, :content => "Hash(#{i})"}}
+    index.batch_update(new_docs)
+    assert_equal(1000, index.size)
+    assert_equal("Hash(78)", index['78'][:content])
+  end
+
   def test_index_multi_key
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
                       :key => [:id, :table])

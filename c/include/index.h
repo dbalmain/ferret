@@ -924,6 +924,8 @@ extern IndexWriter *iw_open(Store *store, volatile Analyzer *analyzer,
                             const Config *config);
 extern void iw_delete_term(IndexWriter *iw, const char *field,
                            const char *term);
+extern void iw_delete_terms(IndexWriter *iw, const char *field, 
+                            char **terms, const int term_cnt);
 extern void iw_close(IndexWriter *iw);
 extern void iw_add_doc(IndexWriter *iw, Document *doc);
 extern int iw_doc_count(IndexWriter *iw);

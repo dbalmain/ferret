@@ -1194,6 +1194,7 @@ static void test_iw_del_terms(tst_case *tc, void *data)
     IndexWriter *iw;
     IndexReader *ir;
     Document **docs = prep_book_list();
+    char *terms[3];
     config.merge_factor = 4;
     config.max_buffered_docs = 3;
 
@@ -1219,13 +1220,14 @@ static void test_iw_del_terms(tst_case *tc, void *data)
     Aiequal(BOOK_LIST_LENGTH, ir->max_doc(ir));
     ir_close(ir);
 
-    /* test deleting multiple Documents */
+    /* test deleting multiple Terms */
     iw = iw_open(store, whitespace_analyzer_new(false), &config);
     iw_delete_term(iw, title, "The");
-    iw_delete_term(iw, author, "Berger");
-    iw_delete_term(iw, author, "Middleton");
-    iw_delete_term(iw, author, "DBC");
     iw_delete_term(iw, title, "Blind");
+    terms[0] = "Berger";
+    terms[1] = "Middleton";
+    terms[2] = "DBC";
+    iw_delete_terms(iw, author, terms, 3);
     iw_close(iw);
 
     ir = ir_open(store);

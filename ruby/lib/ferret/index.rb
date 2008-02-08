@@ -408,7 +408,7 @@ module Ferret::Index
     #
     # If +arg+ is a String then search for the first document with +arg+ in
     # the +id+ field. The +id+ field is either :id or whatever you set
-    # :id_field parameter to when you create the Index object.
+    # +:id_field+ parameter to when you create the Index object.
     def doc(*arg)
       @dir.synchronize do
         id = arg[0]
@@ -431,18 +431,28 @@ module Ferret::Index
     # document number. Will raise an error if the document does not exist.
     #
     # If +arg+ is a String then search for the documents with +arg+ in the
-    # +id+ field. The +id+ field is either :id or whatever you set :id_field
+    # +id+ field. The +id+ field is either :id or whatever you set +:id_field+
     # parameter to when you create the Index object. Will fail quietly if the
     # no document exists.
+    #
+    # If +arg+ is a Hash or an Array then a batch delete will be performed.
+    # If +arg+ is an Array then it will be considered an array of +id+'s. If
+    # it is a Hash, then its keys will be used instead as the Array of
+    # document +id+'s. If the +id+ is an Integer then it is considered a
+    # Ferret document number and the corresponding document will be deleted.
+    # If the +id+ is a String or a Symbol then the +id+ will be considered a
+    # term and the documents that contain that term in the +:id_field+ will be
+    # deleted.
     def delete(arg)
       @dir.synchrolock do
-        ensure_writer_open()
         if arg.is_a?(String) or arg.is_a?(Symbol)
           ensure_writer_open()
           @writer.delete(@id_field, arg.to_s)
         elsif arg.is_a?(Integer)
           ensure_reader_open()
           cnt = @reader.delete(arg)
+        elsif arg.is_a?(Hash) or arg.is_a?(Array)
+          batch_delete(arg)
         else
           raise ArgumentError, "Cannot delete for arg of type #{arg.class}"
         end
@@ -479,6 +489,7 @@ module Ferret::Index
     # Update the document referenced by the document number +id+ if +id+ is an
     # integer or all of the documents which have the term +id+ if +id+ is a
     # term..
+    # For batch update of set of documents, for performance reasons, see batch_update
     #
     # id::      The number of the document to update. Can also be a string
     #           representing the value in the +id+ field. Also consider using
@@ -497,6 +508,73 @@ module Ferret::Index
         flush() if @auto_flush
       end
     end
+
+    # Batch updates the documents in an index. You can pass either a Hash or
+    # an Array.
+    #
+    # === Array (recommended)
+    #
+    # If you pass an Array then each value needs to be a Document or a Hash
+    # and each of those documents must have an +:id_field+ which will be used
+    # to delete the old document that this document is replacing.
+    #
+    # === Hash
+    #
+    # If you pass a Hash then the keys of the Hash will be considered the
+    # +id+'s and the values will be the new documents to replace the old ones
+    # with.If the +id+ is an Integer then it is considered a Ferret document
+    # number and the corresponding document will be deleted.  If the +id+ is a
+    # String or a Symbol then the +id+ will be considered a term and the
+    # documents that contain that term in the +:id_field+ will be deleted.
+    #
+    # Note: No error will be raised if the document does not currently
+    # exist. A new document will simply be created.
+    #
+    # == Examples
+    #
+    #   # will replace the documents with the +id+'s id:133 and id:254
+    #   @index.batch_update({
+    #       '133' => {:id => '133', :content => 'yada yada yada'},
+    #       '253' => {:id => '253', :content => 'bla bla bal'}
+    #     })
+    #
+    #   # will replace the documents with the Ferret Document numbers 2 and 92
+    #   @index.batch_update({
+    #       2  => {:id => '133', :content => 'yada yada yada'},
+    #       92 => {:id => '253', :content => 'bla bla bal'}
+    #     })
+    #
+    #   # will replace the documents with the +id+'s id:133 and id:254
+    #   # this is recommended as it guarantees no duplicate keys
+    #   @index.batch_update([
+    #       {:id => '133', :content => 'yada yada yada'},
+    #       {:id => '253', :content => 'bla bla bal'}
+    #     ])
+    #
+    # docs:: A Hash of id/document pairs. The set of documents to be updated
+    def batch_update(docs)
+      @dir.synchrolock do
+        ids = values = nil
+        case docs
+        when Array
+          ids = docs.collect{|doc| doc[@id_field].to_s}
+          if ids.include?(nil)
+            raise ArgumentError, "all documents must have an #{@id_field} " 
+                                 "field when doing a batch update"
+          end
+        when Hash
+          ids = docs.keys
+          docs = docs.values
+        else
+          raise ArgumentError, "must pass Hash or Array, not #{docs.class}"
+        end
+        batch_delete(ids)
+        ensure_writer_open()
+        docs.each {|new_doc| @writer << new_doc }
+        flush()
+      end
+    end
+
 
     # Update all the documents returned by the query.
     #
@@ -778,6 +856,45 @@ module Ferret::Index
           @writer = nil
         end
       end
+
+      # If +docs+ is a Hash or an Array then a batch delete will be performed.
+      # If +docs+ is an Array then it will be considered an array of +id+'s. If
+      # it is a Hash, then its keys will be used instead as the Array of
+      # document +id+'s. If the +id+ is an Integers then it is considered a
+      # Ferret document number and the corresponding document will be deleted.
+      # If the +id+ is a String or a Symbol then the +id+ will be considered a
+      # term and the documents that contain that term in the +:id_field+ will
+      # be deleted.
+      #
+      # docs:: An Array of docs to be deleted, or a Hash (in which case the keys
+      # are used)
+      def batch_delete(docs)
+        docs = docs.keys if docs.is_a?(Hash)
+        raise ArgumentError, "must pass Array or Hash" unless docs.is_a? Array
+        ids = []
+        terms = []
+        docs.each do |doc|
+          case doc
+          when String:  terms << doc
+          when Symbol:  terms << doc.to_s
+          when Integer: ids   << doc
+          else
+            raise ArgumentError, "Cannot delete for arg of type #{id.class}"
+          end
+        end
+        @dir.synchrolock do
+          if ids.size > 0
+            ensure_reader_open
+            ids.each {|id| @reader.delete(id)}
+          end
+          if terms.size > 0
+            ensure_writer_open()
+            @writer.delete(@id_field, terms)
+          end
+        end
+        return self
+      end
+
   end
 end
 

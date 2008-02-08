@@ -6049,6 +6049,45 @@ void iw_delete_term(IndexWriter *iw, const char *field, const char *term)
     }
 }
 
+void iw_delete_terms(IndexWriter *iw, const char *field,
+                     char **terms, const int term_cnt)
+{
+    int field_num = fis_get_field_num(iw->fis, field);
+    if (field_num >= 0) {
+        int i;
+        mutex_lock(&iw->mutex);
+        iw_commit_i(iw);
+        do {
+            SegmentInfos *sis = iw->sis;
+            const int seg_cnt = sis->size;
+            bool did_delete = false;
+            for (i = 0; i < seg_cnt; i++) {
+                IndexReader *ir = sr_open(sis, iw->fis, i, false);
+                TermDocEnum *tde = ir->term_docs(ir);
+                int j;
+                for (j = 0 ; j < term_cnt; j++) {
+                    const char *term = terms[j];
+                    ir->deleter = iw->deleter;
+                    stde_seek(tde, field_num, term);
+                    while (tde->next(tde)) {
+                        did_delete = true;
+                        sr_delete_doc_i(ir, STDE(tde)->doc_num);
+                    }
+                }
+                tde_destroy(tde);
+                sr_commit_i(ir);
+                ir_close(ir);
+            }
+            if (did_delete) {
+                mutex_lock(&iw->store->mutex);
+                sis_write(iw->sis, iw->store, iw->deleter);
+                mutex_unlock(&iw->store->mutex);
+            }
+        } while (0);
+        mutex_unlock(&iw->mutex);
+    }
+}
+
 static void iw_optimize_i(IndexWriter *iw)
 {
     int min_segment;

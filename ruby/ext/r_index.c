@@ -1611,18 +1611,31 @@ frt_iw_add_readers(VALUE self, VALUE rreaders)
 
 /*
  *  call-seq:
- *     iw.delete(field, term) -> iw
+ *     iw.delete(field, term)  -> iw
+ *     iw.delete(field, terms) -> iw
  *
- *  Delete all documents in the index with the term +term+ in the field
- *  +field+. You should usually have a unique document id which you use with
- *  this method, rather then deleting all documents with the word "the" in
- *  them. You may however use this method to delete spam.
+ *  Delete all documents in the index with the given +term+ or +terms+ in the
+ *  field +field+. You should usually have a unique document id which you use
+ *  with this method, rather then deleting all documents with the word "the"
+ *  in them. There are of course exceptions to this rule. For example, you may
+ *  want to delete all documents with the term "viagra" when deleting spam.
  */
 static VALUE
 frt_iw_delete(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
-    iw_delete_term(iw, frt_field(rfield), StringValuePtr(rterm));
+    if (TYPE(rterm) == T_ARRAY) {
+        const int term_cnt = RARRAY(rterm)->len;
+        int i;
+        char **terms = ALLOC_N(char *, term_cnt);
+        for (i = 0; i < term_cnt; i++) {
+            terms[i] = StringValuePtr(RARRAY(rterm)->ptr[i]);
+        }
+        iw_delete_terms(iw, frt_field(rfield), terms, term_cnt);
+        free(terms);
+    } else {
+        iw_delete_term(iw, frt_field(rfield), StringValuePtr(rterm));
+    }
     return self;
 }
 
