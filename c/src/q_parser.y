@@ -803,7 +803,9 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
     }
 */
 
-    rq = rq_new(field, from, to, inc_lower, inc_upper);
+    rq = qp->use_typed_range_query ?
+        trq_new(field, from, to, inc_lower, inc_upper) :
+        rq_new(field, from, to, inc_lower, inc_upper);
     return rq;
 }
 
@@ -839,6 +841,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->handle_parse_errors = false;
     self->allow_any_fields = false;
     self->use_keywords = true;
+    self->use_typed_range_query = false;
     self->def_slop = 0;
     self->fields_buf = hs_new_str(NULL);
     self->all_fields = all_fields;
