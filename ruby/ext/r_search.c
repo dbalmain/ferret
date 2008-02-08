@@ -2427,13 +2427,25 @@ frt_sea_max_doc(VALUE self)
     return INT2FIX(sea->max_doc(sea));
 }
 
-static bool
+static float
 call_filter_proc(int doc_id, float score, Searcher *self)
 {
-    return RTEST(rb_funcall((VALUE)self->arg, id_call, 3,
-                            INT2FIX(doc_id),
-                            rb_float_new((double)score),
-                            object_get(self))); 
+    VALUE val = rb_funcall((VALUE)self->arg, id_call, 3,
+                           INT2FIX(doc_id),
+                           rb_float_new((double)score),
+                           object_get(self)); 
+    switch (TYPE(val)) {
+        case T_NIL:
+        case T_FALSE:
+            return 0.0f;
+        case T_FLOAT:
+        {
+            double d = NUM2DBL(val);
+            return (d >= 0.0 && d <= 1.0) ? (float)d : 1.0f;
+        }
+        default:
+            return 1.0f;
+    }
 }
 
 typedef struct CWrappedFilter

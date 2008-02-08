@@ -1016,7 +1016,8 @@ static int isea_max_doc(Searcher *self)
 #define IS_FILTERED(bits, filter_func, scorer, searcher) \
 ((bits && !bv_get(bits, scorer->doc))\
  || (filter_func \
-     && !filter_func(scorer->doc, scorer->score(scorer), searcher)))
+     && !(filter_factor = \
+          filter_func(scorer->doc, scorer->score(scorer), searcher))))
 
 static TopDocs *isea_search_w(Searcher *self,
                               Weight *weight,
@@ -1034,6 +1035,7 @@ static TopDocs *isea_search_w(Searcher *self,
     Hit hit;
     int total_hits = 0;
     float score, max_score = 0.0;
+    float filter_factor = 1.0;
     BitVector *bits = (filter
                        ? filt_get_bv(filter, ISEA(self)->ir)
                        : NULL);
@@ -1073,7 +1075,7 @@ static TopDocs *isea_search_w(Searcher *self,
             continue;
         }
         total_hits++;
-        score = scorer->score(scorer);
+        score = filter_factor * scorer->score(scorer);
         if (score > max_score) max_score = score;
         hit.doc = scorer->doc; hit.score = score;
         hq_insert(hq, &hit);
@@ -1125,6 +1127,7 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
                                void *arg)
 {
     Scorer *scorer;
+    float filter_factor = 1.0;
     BitVector *bits = (filter
                        ? filt_get_bv(filter, ISEA(self)->ir)
                        : NULL);
@@ -1138,7 +1141,7 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
         if (IS_FILTERED(bits, filter_func, scorer, self)) {
             continue;
         }
-        fn(self, scorer->doc, scorer->score(scorer), arg);
+        fn(self, scorer->doc, filter_factor * scorer->score(scorer), arg);
     }
     scorer->destroy(scorer);
 }
@@ -1167,7 +1170,9 @@ static Query *isea_rewrite(Searcher *self, Query *original)
     return query;
 }
 
-static Explanation *isea_explain(Searcher *self, Query *query, int doc_num)
+static Explanation *isea_explain(Searcher *self,
+                                 Query *query,
+                                 int doc_num)
 {
     Weight *weight = q_weight(query, self);
     Explanation *e =  weight->explain(weight, ISEA(self)->ir, doc_num);

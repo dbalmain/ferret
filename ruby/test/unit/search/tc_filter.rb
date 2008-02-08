@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + "/../../test_helper"
+require 'date'
 
 
 class FilterTest < Test::Unit::TestCase
@@ -36,16 +37,6 @@ class FilterTest < Test::Unit::TestCase
     assert_equal(expected.size, top_docs.hits.size)
     top_docs.total_hits.times do |i|
       assert_equal(expected[i], top_docs.hits[i].doc)
-    end
-  end
-
-  def test_filter_proc
-    searcher = Searcher.new(@dir)
-    q = MatchAllQuery.new()
-    filter_proc = lambda {|doc, score, s| (s[doc][:int] % 2) == 0}
-    top_docs = searcher.search(q, :filter_proc => filter_proc)
-    top_docs.hits.each do |hit|
-      assert_equal(0, searcher[hit.doc][:int] % 2)
     end
   end
 
@@ -131,5 +122,35 @@ class FilterTest < Test::Unit::TestCase
     q = MatchAllQuery.new
     filt = CustomFilter.new
     do_test_top_docs(searcher, q, [0, 2, 4], filt)
+  end
+
+  def test_filter_proc
+    searcher = Searcher.new(@dir)
+    q = MatchAllQuery.new()
+    filter_proc = lambda {|doc, score, s| (s[doc][:int] % 2) == 0}
+    top_docs = searcher.search(q, :filter_proc => filter_proc)
+    top_docs.hits.each do |hit|
+      assert_equal(0, searcher[hit.doc][:int] % 2)
+    end
+  end
+
+  def test_score_modifying_filter_proc
+    searcher = Searcher.new(@dir)
+    q = MatchAllQuery.new()
+    start_date = Date.parse('2008-02-08')
+    date_half_life_50 = lambda do |doc, score, s|
+      days = (start_date - Date.parse(s[doc][:date], '%Y%m%d')).to_i
+      1.0 / (2.0 ** (days.to_f / 50.0))
+    end
+    top_docs = searcher.search(q, :filter_proc => date_half_life_50)
+    docs = top_docs.hits.collect {|hit| hit.doc}
+    assert_equal(docs, [2,4,9,8,6,3,5,1,7,0])
+    rev_date_half_life_50 = lambda do |doc, score, s|
+      days = (start_date - Date.parse(s[doc][:date], '%Y%m%d')).to_i
+      1.0 - 1.0 / (2.0 ** (days.to_f / 50.0))
+    end
+    top_docs = searcher.search(q, :filter_proc => rev_date_half_life_50)
+    docs = top_docs.hits.collect {|hit| hit.doc}
+    assert_equal(docs, [0,7,1,3,5,6,8,9,2,4])
   end
 end

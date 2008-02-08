@@ -77,8 +77,12 @@ static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
          * might want to remove this to visually check the explanations */
         if (total_hits == top_docs->total_hits) {
             Explanation *e = searcher->explain(searcher, query, hit->doc);
+            float escore = e->value;
             /* char *t; printf("%s\n", t = expl_to_s(e, 0)); free(t); */
-            Afequal(hit->score, e->value);
+            if (ff) {
+                escore *= ff(hit->doc, escore, searcher);
+            }
+            Afequal(hit->score, escore);
             expl_destroy(e);
         }
     }
@@ -238,20 +242,35 @@ static void test_query_filter_hash(tst_case *tc, void *data)
     filt_deref(f1);
 }
 
-static bool odd_number_filter(int doc_num, float score, Searcher *sea)
+static float odd_number_filter(int doc_num, float score, Searcher *sea)
 {
-    bool is_ok = false;
+    float is_ok = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
     LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
 
-    if (((num[0] - '0') % 2) == 0) {
-        is_ok = true;
+    if ((atoi(num) % 2) == 0) {
+        is_ok = 1.0;
     }
 
     lazy_doc_close(lazy_doc);
     return is_ok;
+}
+
+static float distance_filter(int doc_num, float score, Searcher *sea)
+{
+    int start_point = 7;
+    float distance = 0.0;
+    LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
+    LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
+    char *num = lazy_df_get_data(lazy_df, 0);
+    (void)score;
+
+    distance = 1.0 / (1 + (start_point - atoi(num)) * (start_point - atoi(num)));
+
+    lazy_doc_close(lazy_doc);
+    return distance;
 }
 
 static void test_filter_func(tst_case *tc, void *data)
@@ -264,6 +283,20 @@ static void test_filter_func(tst_case *tc, void *data)
                         &odd_number_filter, "0,2,4,6,8", -1);
     check_filtered_hits(tc, searcher, q, rf, 
                         &odd_number_filter, "2,4,6", -1);
+    filt_deref(rf);
+    q_deref(q);
+}
+
+static void test_score_altering_filter_func(tst_case *tc, void *data)
+{
+    Searcher *searcher = (Searcher *)data;
+    Query *q = maq_new();
+    Filter *rf = rfilt_new(num, "4", "8", true, true);
+
+    check_filtered_hits(tc, searcher, q, NULL,
+                        &distance_filter, "7,6,8,5,9,4,3,2,1,0", -1);
+    check_filtered_hits(tc, searcher, q, rf, 
+                        &distance_filter, "7,6,8,5,4", -1);
     filt_deref(rf);
     q_deref(q);
 }
@@ -286,6 +319,7 @@ tst_suite *ts_filter(tst_suite *suite)
     tst_run_test(suite, test_query_filter, (void *)searcher);
     tst_run_test(suite, test_query_filter_hash, NULL);
     tst_run_test(suite, test_filter_func, searcher);
+    tst_run_test(suite, test_score_altering_filter_func, searcher);
 
     store_deref(store);
     searcher->close(searcher);

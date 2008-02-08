@@ -731,7 +731,7 @@ extern bool fdshq_lt(FieldDoc *fd1, FieldDoc *fd2);
  *
  ***************************************************************************/
 
-typedef bool (*filter_ft)(int doc_num, float score, Searcher *self);
+typedef float (*filter_ft)(int doc_num, float score, Searcher *self);
 
 struct Searcher
 {
