@@ -201,6 +201,26 @@ module SearcherTests
     check_hits(rq, [15,16,17])
   end
 
+  def test_typed_range_query()
+    rq = TypedRangeQuery.new(:number, :>= => "-1.0", :<= => 1.0)
+    check_hits(rq, [0,1,4,10,15,17])
+
+    rq = TypedRangeQuery.new(:number, :>  => "-1.0", :<  => 1.0)
+    check_hits(rq, [0,1,4,15])
+
+    # text hexadecimal
+    rq = TypedRangeQuery.new(:number, :>  =>  "1.0", :<= =>"0xa")
+    check_hits(rq, [6,7,9,12])
+
+    # below range - no results
+    rq = TypedRangeQuery.new(:number, :>  =>  "10051006", :<  =>"10051010")
+    check_hits(rq, [])
+
+    # above range - no results
+    rq = TypedRangeQuery.new(:number, :>  =>  "-12518421", :<  =>"-12518420")
+    check_hits(rq, [])
+  end
+
   def test_prefix_query()
     pq = PrefixQuery.new(:category, "cat1")
     check_hits(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17])
@@ -358,7 +378,6 @@ module SearcherTests
     assert_equal("<b>the words</b>...", highlights[0])
     assert_equal("...<b>one</b> <b>two</b>...", highlights[1])
 
-    # {:dates => '20070505, 20071230, 20060920, 20081111'},
     [
       [RangeQuery.new(:dates, :>= => '20081111'),
         '20070505 20071230 20060920 <b>20081111</b>'],

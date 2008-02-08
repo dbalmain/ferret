@@ -22,6 +22,7 @@ static VALUE cMultiTermQuery;
 static VALUE cBooleanQuery;
 static VALUE cBooleanClause;
 static VALUE cRangeQuery;
+static VALUE cTypedRangeQuery;
 static VALUE cPhraseQuery;
 static VALUE cPrefixQuery;
 static VALUE cWildcardQuery;
@@ -41,6 +42,7 @@ static VALUE cSpanNotQuery;
 static ID id_bits;
 static VALUE cFilter;
 static VALUE cRangeFilter;
+static VALUE cTypedRangeFilter;
 static VALUE cQueryFilter;
 
 /* MultiTermQuery */
@@ -524,6 +526,9 @@ frt_get_q(Query *q)
             case RANGE_QUERY:
                 self = MK_QUERY(cRangeQuery, q);
                 break;
+            case TYPED_RANGE_QUERY:
+                self = MK_QUERY(cTypedRangeQuery, q);
+                break;
             case WILD_CARD_QUERY:
                 self = MK_QUERY(cWildcardQuery, q);
                 break;
@@ -1006,19 +1011,19 @@ get_range_params(VALUE roptions, char **lterm, char **uterm,
     VALUE v;
     Check_Type(roptions, T_HASH);
     if (Qnil != (v = rb_hash_aref(roptions, sym_lower))) {
-        *lterm = StringValuePtr(v);
+        *lterm = rs2s(rb_obj_as_string(v));
         *include_lower = true;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_upper))) {
-        *uterm = StringValuePtr(v);
+        *uterm = rs2s(rb_obj_as_string(v));
         *include_upper = true;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_lower_exclusive))) {
-        *lterm = StringValuePtr(v);
+        *lterm = rs2s(rb_obj_as_string(v));
         *include_lower = false;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_upper_exclusive))) {
-        *uterm = StringValuePtr(v);
+        *uterm = rs2s(rb_obj_as_string(v));
         *include_upper = false;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_include_lower))) {
@@ -1028,19 +1033,19 @@ get_range_params(VALUE roptions, char **lterm, char **uterm,
         *include_upper = RTEST(v);
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_greater_than))) {
-        *lterm = StringValuePtr(v);
+        *lterm = rs2s(rb_obj_as_string(v));
         *include_lower = false;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_greater_than_or_equal_to))) {
-        *lterm = StringValuePtr(v);
+        *lterm = rs2s(rb_obj_as_string(v));
         *include_lower = true;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_less_than))) {
-        *uterm = StringValuePtr(v);
+        *uterm = rs2s(rb_obj_as_string(v));
         *include_upper = false;
     }
     if (Qnil != (v = rb_hash_aref(roptions, sym_less_than_or_equal_to))) {
-        *uterm = StringValuePtr(v);
+        *uterm = rs2s(rb_obj_as_string(v));
         *include_upper = true;
     }
     if (!*lterm && !*uterm) {
@@ -1054,11 +1059,6 @@ get_range_params(VALUE roptions, char **lterm, char **uterm,
     if (*include_upper && !*uterm) {
         rb_raise(rb_eArgError,
                  "The upper bound should not be nil if it is inclusive");
-    }
-    if (*uterm && *lterm && (strcmp(*uterm, *lterm) < 0)) {
-        rb_raise(rb_eArgError,
-                 "The upper bound should greater than the lower bound."
-                 " %s > %s", *lterm, *uterm);
     }
 }
 
@@ -1083,6 +1083,7 @@ get_range_params(VALUE roptions, char **lterm, char **uterm,
  *    q = RangeQuery.new(:date, :lower => "200501", :upper => 200502)
  *    # is equivalent to
  *    q = RangeQuery.new(:date, :>= => "200501", :<= => 200502)
+ *
  */
 static VALUE
 frt_rq_init(VALUE self, VALUE rfield, VALUE roptions)
@@ -1097,6 +1098,58 @@ frt_rq_init(VALUE self, VALUE rfield, VALUE roptions)
     q = rq_new(frt_field(rfield),
                lterm, uterm,
                include_lower, include_upper);
+    Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
+    object_add(q, self);
+    return self;
+}
+
+/****************************************************************************
+ *
+ * TypedRangeQuery Methods
+ *
+ ****************************************************************************/
+
+/*
+ *  call-seq:
+ *     TypedRangeQuery.new(field, options = {}) -> range_query
+ *
+ *  Create a new TypedRangeQuery on field +field+. This differs from the
+ *  standard RangeQuery in that it allows range queries with unpadded numbers,
+ *  both positive and negative, integer and float. You can even use
+ *  hexadecimal numbers. However it could be a lot slower than the standard
+ *  RangeQuery on large indexes.
+ *
+ *  There are two ways to build a range query. With the old-style options;
+ *  +:lower+, +:upper+, +:include_lower+ and +:include_upper+ or the new style
+ *  options; +:<+, +:<=+, +:>+ and +:>=+. The options' names should speak for
+ *  themselves.  In the old-style options, limits are inclusive by default.
+ *
+ *  == Examples
+ *
+ *    q = TypedRangeQuery.new(:date, :lower => "0.1", :include_lower => false)
+ *    # is equivalent to
+ *    q = TypedRangeQuery.new(:date, :< => "0.1")
+ *    # is equivalent to
+ *    q = TypedRangeQuery.new(:date, :lower_exclusive => "0.1")
+ *
+ *    # Note that you numbers can be strings or actual numbers
+ *    q = TypedRangeQuery.new(:date, :lower => "-12.32", :upper => 0.21)
+ *    # is equivalent to
+ *    q = TypedRangeQuery.new(:date, :>= => "-12.32", :<= => 0.21)
+ */
+static VALUE
+frt_trq_init(VALUE self, VALUE rfield, VALUE roptions)
+{
+    Query *q;
+    char *lterm = NULL;
+    char *uterm = NULL;
+    bool include_lower = false;
+    bool include_upper = false;
+    
+    get_range_params(roptions, &lterm, &uterm, &include_lower, &include_upper);
+    q = trq_new(frt_field(rfield),
+                lterm, uterm,
+                include_lower, include_upper);
     Frt_Wrap_Struct(self, NULL, &frt_q_free, q);
     object_add(q, self);
     return self;
@@ -1938,6 +1991,53 @@ frt_rf_init(VALUE self, VALUE rfield, VALUE roptions)
     get_range_params(roptions, &lterm, &uterm, &include_lower, &include_upper);
     f = rfilt_new(frt_field(rfield), lterm, uterm,
                   include_lower, include_upper);
+    Frt_Wrap_Struct(self, NULL, &frt_f_free, f);
+    object_add(f, self);
+    return self;
+}
+
+/****************************************************************************
+ *
+ * TypedRangeFilter Methods
+ *
+ ****************************************************************************/
+
+
+/*
+ *  call-seq:
+ *     TypedRangeFilter.new(field, options = {}) -> range_query
+ *
+ *  Create a new TypedRangeFilter on field +field+. There are two ways to
+ *  build a range filter. With the old-style options; +:lower+, +:upper+,
+ *  +:include_lower+ and +:include_upper+ or the new style options; +:<+,
+ *  +:<=+, +:>+ and +:>=+. The options' names should speak for themselves.
+ *  In the old-style options, limits are inclusive by default.
+ *
+ *  == Examples
+ *
+ *    f = TypedRangeFilter.new(:date, :lower => "0.1", :include_lower => false)
+ *    # is equivalent to 
+ *    f = TypedRangeFilter.new(:date, :< => "0.1")
+ *    # is equivalent to 
+ *    f = TypedRangeFilter.new(:date, :lower_exclusive => "0.1")
+ *
+ *    # Note that you numbers can be strings or actual numbers
+ *    f = TypedRangeFilter.new(:date, :lower => "-132.2", :upper => -1.4)
+ *    # is equivalent to 
+ *    f = TypedRangeFilter.new(:date, :>= => "-132.2", :<= => -1.4)
+ */
+static VALUE
+frt_trf_init(VALUE self, VALUE rfield, VALUE roptions)
+{
+    Filter *f;
+    char *lterm = NULL;
+    char *uterm = NULL;
+    bool include_lower = false;
+    bool include_upper = false;
+    
+    get_range_params(roptions, &lterm, &uterm, &include_lower, &include_upper);
+    f = trfilt_new(frt_field(rfield), lterm, uterm,
+                   include_lower, include_upper);
     Frt_Wrap_Struct(self, NULL, &frt_f_free, f);
     object_add(f, self);
     return self;
@@ -3224,6 +3324,26 @@ Init_BooleanClause(void)
  *  2006 inclusive you would write the query like this;
  *
  *    query = RangeQuery.new(:create_date, :>= "20060101", :<= "20060126")
+ *
+ *  == Range queries on numbers
+ *
+ *  There is now a new query called TypedRangeQuery which detects the type of
+ *  the range and if the range is numerical it will find a numerical range.
+ *  This allows you to do range queries with negative numbers and without
+ *  having to pad the field. However, RangeQuery will perform a lot faster on
+ *  large indexes so if you are working with a very large index you will need
+ *  to normalize your number fields so that they are a fixed width and always
+ *  positive. That way the standard String range query will do fine.
+ *
+ *  For example, if you have the numbers;
+ *
+ *    [10, -999, -90, 100, 534]
+ *
+ *  Then the can be normalized to;
+ *
+ *    # note that we have added 1000 to all numbers to make them all positive
+ *    [1010, 0001, 0910, 1100, 1534]
+ *
  */
 static void
 Init_RangeQuery(void)
@@ -3244,6 +3364,41 @@ Init_RangeQuery(void)
     rb_define_alloc_func(cRangeQuery, frt_data_alloc);
 
     rb_define_method(cRangeQuery, "initialize", frt_rq_init, 2);
+}
+
+/*
+ *  Document-class: Ferret::Search::TypedRangeQuery
+ *
+ *  == Summary
+ *
+ *  TypedRangeQuery is used to find documents with terms in a range.
+ *  RangeQuerys are usually used on untokenized fields like date fields or
+ *  number fields. TypedRangeQuery is particularly useful for fields with
+ *  unnormalized numbers, both positive and negative, integer and float.
+ *
+ *  == Example
+ *
+ *  To find all documents written between January 1st 2006 and January 26th
+ *  2006 inclusive you would write the query like this;
+ *
+ *    query = RangeQuery.new(:create_date, :>= "-1.0", :<= "10.0")
+ *
+ *  == Performance Note
+ *
+ *  TypedRangeQuery works by converting all the terms in a field to numbers
+ *  and then comparing those numbers with the range bondaries. This can have
+ *  quite an impact on performance on large indexes so in those cases it is
+ *  usually better to use a standard RangeQuery. This will require a little
+ *  work on your behalf. See RangeQuery for notes on how to do this.
+ */
+static void
+Init_TypedRangeQuery(void)
+{
+    cTypedRangeQuery =
+        rb_define_class_under(mSearch, "TypedRangeQuery", cQuery);
+    rb_define_alloc_func(cTypedRangeQuery, frt_data_alloc);
+
+    rb_define_method(cTypedRangeQuery, "initialize", frt_trq_init, 2);
 }
 
 /*
@@ -3774,6 +3929,11 @@ Init_Spans(void)
  *  Find all documents created before 5th of September 2002.
  *
  *    filter = RangeFilter.new(:created_on, :< => "20020905")
+ *
+ *  == Number fields
+ *
+ *  See RangeQuery for notes on how to use the RangeFilter on a field
+ *  containing numbers.
  */
 static void
 Init_RangeFilter(void)
@@ -3783,6 +3943,34 @@ Init_RangeFilter(void)
     rb_define_alloc_func(cRangeFilter, frt_data_alloc);
 
     rb_define_method(cRangeFilter, "initialize", frt_rf_init, 2);
+}
+
+/*
+ *  Document-class: Ferret::Search::TypedRangeFilter
+ *
+ *  == Summary
+ *
+ *  TypedRangeFilter filters a set of documents which contain a
+ *  lexicographical range of terms (ie "aaa", "aab", "aac", etc), unless the
+ *  range boundaries happen to be numbers (positive, negative, integer,
+ *  float), in which case a numerical filter is applied. See also
+ *  TypedRangeQuery
+ *
+ *  == Example
+ *
+ *  Find all products that cost less than  or equal to $50.00.
+ *
+ *    filter = TypedRangeFilter.new(:created_on, :<= => "50.00")
+ */
+static void
+Init_TypedRangeFilter(void)
+{
+    cTypedRangeFilter =
+        rb_define_class_under(mSearch, "TypedRangeFilter", cFilter);
+    frt_mark_cclass(cTypedRangeFilter);
+    rb_define_alloc_func(cTypedRangeFilter, frt_data_alloc);
+
+    rb_define_method(cTypedRangeFilter, "initialize", frt_trf_init, 2);
 }
 
 /*
@@ -4094,6 +4282,7 @@ Init_Search(void)
     Init_MultiTermQuery();
     Init_BooleanQuery();
     Init_RangeQuery();
+    Init_TypedRangeQuery();
     Init_PhraseQuery();
     Init_PrefixQuery();
     Init_WildcardQuery();
@@ -4107,6 +4296,7 @@ Init_Search(void)
     /* Filters */
     Init_Filter();
     Init_RangeFilter();
+    Init_TypedRangeFilter();
     Init_QueryFilter();
 
     /* Sorting */

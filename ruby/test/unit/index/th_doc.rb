@@ -281,32 +281,49 @@ module IndexTestHelper
   def self.prepare_search_docs
     i = 1
     [
-      ["20050930", "cat1/",             "word1"                               ],
-      ["20051001", "cat1/sub1",         "word1 word2 the quick brown fox"     ],
-      ["20051002", "cat1/sub1/subsub1", "word1 word3"                         ],
-      ["20051003", "cat1/sub2",         "word1 word3"                         ],
-      ["20051004", "cat1/sub2/subsub2", "word1 word2"                         ],
-      ["20051005", "cat2/sub1",         "word1"                               ],
-      ["20051006", "cat2/sub1",         "word1 word3"                         ],
-      ["20051007", "cat2/sub1",         "word1"                               ],
-      ["20051008", "cat2/sub1",         "word1 word2 word3 the fast brown fox"],
-      ["20051009", "cat3/sub1",         "word1"                               ],
-      ["20051010", "cat3/sub1",         "word1"                               ],
-      ["20051011", "cat3/sub1",         "word1 word3 the quick red fox"       ],
-      ["20051012", "cat3/sub1",         "word1"                               ],
-      ["20051013", "cat1/sub2",         "word1"                               ],
-      ["20051014", "cat1/sub1",         "word1 word3 the quick hairy fox"     ],
-      ["20051015", "cat1/sub2/subsub1", "word1"                               ],
-      ["20051016", "cat1/sub1/subsub2",
-        "word1 the quick fox is brown and hairy and a little red"             ],
-      ["20051017", "cat1/",
-        "word1 the brown fox is quick and red"                                ]
-    ].map do |date, category, field| 
+      ["20050930", "cat1/",             0.123,
+        "word1"                                                             ],
+      ["20051001", "cat1/sub1",         0.954,
+        "word1 word2 the quick brown fox"                                   ],
+      ["20051002", "cat1/sub1/subsub1", 908.125,
+        "word1 word3"                                                       ],
+      ["20051003", "cat1/sub2",         3999,
+        "word1 word3"                                                       ],
+      ["20051004", "cat1/sub2/subsub2", "+.3412",
+        "word1 word2"                                                       ],
+      ["20051005", "cat2/sub1",         -1.298,
+        "word1"                                                             ],
+      ["20051006", "cat2/sub1",         "2",
+        "word1 word3"                                                       ],
+      ["20051007", "cat2/sub1",         "+8.894",
+        "word1"                                                             ],
+      ["20051008", "cat2/sub1",         "+21235.2135",
+        "word1 word2 word3 the fast brown fox"                              ],
+      ["20051009", "cat3/sub1",         "10.0",
+        "word1"                                                             ],
+      ["20051010", "cat3/sub1",         1,
+        "word1"                                                             ],
+      ["20051011", "cat3/sub1",         -12518419,
+        "word1 word3 the quick red fox"                                     ],
+      ["20051012", "cat3/sub1",         "0xa",
+        "word1"                                                             ],
+      ["20051013", "cat1/sub2",         "0xeF4D8a",
+        "word1"                                                             ],
+      ["20051014", "cat1/sub1",         "91239",
+        "word1 word3 the quick hairy fox"                                   ],
+      ["20051015", "cat1/sub2/subsub1", "-.89321",
+        "word1"                                                             ],
+      ["20051016", "cat1/sub1/subsub2", -89,
+        "word1 the quick fox is brown and hairy and a little red"           ],
+      ["20051017", "cat1/",             "-1.0",
+        "word1 the brown fox is quick and red"                              ]
+    ].map do |date, category, number, field| 
       doc = Ferret::Document.new(i)
       i += 1
       doc[:date] = date
       doc[:category] = category
       doc[:field] = field
+      doc[:number] = number
       doc
     end
   end
