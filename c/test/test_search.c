@@ -152,55 +152,57 @@ struct Data {
     char *date;
     char *field;
     char *cat;
+    char *number;
 };
 
 static const char *date = "date";
 static const char *field = "field";
 static const char *cat = "cat";
+static const char *number = "number";
 
 #define SEARCH_DOCS_SIZE 18
+struct Data test_data[SEARCH_DOCS_SIZE] = {
+    {"20050930", "word1",
+        "cat1/",                ".123"},
+    {"20051001", "word1 word2 the quick brown fox",
+        "cat1/sub1",            "0.954"},
+    {"20051002", "word1 word3",
+        "cat1/sub1/subsub1",    "908.123434"},
+    {"20051003", "word1 word3",
+        "cat1/sub2",            "3999"},
+    {"20051004", "word1 word2",
+        "cat1/sub2/subsub2",    "+.3413"},
+    {"20051005", "word1",
+        "cat2/sub1",            "-1.1298"},
+    {"20051006", "word1 word3",
+        "cat2/sub1",            "2"},
+    {"20051007", "word1",
+        "cat2/sub1",            "+8.894"},
+    {"20051008", "word1 word2 word3 the fast brown fox",
+        "cat2/sub1",            "+84783.13747"},
+    {"20051009", "word1",
+        "cat3/sub1",            "10.0"},
+    {"20051010", "word1",
+        "cat3/sub1",            "1"},
+    {"20051011", "word1 word3 the quick red fox",
+        "cat3/sub1",            "-12518419"},
+    {"20051012", "word1",
+        "cat3/sub1",            "0xa"},
+    {"20051013", "word1",
+        "cat1/sub2",            "0xeF4D8a"},
+    {"20051014", "word1 word3 the quick hairy fox",
+        "cat1/sub1",            "98132"},
+    {"20051015", "word1",
+        "cat1/sub2/subsub1",    "-.89321"},
+    {"20051016", "word1 the quick fox is brown and hairy and a little red",
+        "cat1/sub1/subsub2",    "-89"},
+    {"20051017", "word1 the brown fox is quick and red",
+        "cat1/",                "-1.0"}
+};
 static void prepare_search_index(Store *store)
 {
     int i;
     IndexWriter *iw;
-    struct Data data[SEARCH_DOCS_SIZE] = {
-        {"20050930", "word1",
-            "cat1/"},
-        {"20051001", "word1 word2 the quick brown fox",
-            "cat1/sub1"},
-        {"20051002", "word1 word3",
-            "cat1/sub1/subsub1"},
-        {"20051003", "word1 word3",
-            "cat1/sub2"},
-        {"20051004", "word1 word2",
-            "cat1/sub2/subsub2"},
-        {"20051005", "word1",
-            "cat2/sub1"},
-        {"20051006", "word1 word3",
-            "cat2/sub1"},
-        {"20051007", "word1",
-            "cat2/sub1"},
-        {"20051008", "word1 word2 word3 the fast brown fox",
-            "cat2/sub1"},
-        {"20051009", "word1",
-            "cat3/sub1"},
-        {"20051010", "word1",
-            "cat3/sub1"},
-        {"20051011", "word1 word3 the quick red fox",
-            "cat3/sub1"},
-        {"20051012", "word1",
-            "cat3/sub1"},
-        {"20051013", "word1",
-            "cat1/sub2"},
-        {"20051014", "word1 word3 the quick hairy fox",
-            "cat1/sub1"},
-        {"20051015", "word1",
-            "cat1/sub2/subsub1"},
-        {"20051016", "word1 the quick fox is brown and hairy and a little red",
-            "cat1/sub1/subsub2"},
-        {"20051017", "word1 the brown fox is quick and red",
-            "cat1/"}
-    };
 
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
     index_create(store, fis);
@@ -210,9 +212,10 @@ static void prepare_search_index(Store *store)
     for (i = 0; i < SEARCH_DOCS_SIZE; i++) {
         Document *doc = doc_new();
         doc->boost = (float)(i+1);
-        doc_add_field(doc, df_add_data(df_new(date), data[i].date));
-        doc_add_field(doc, df_add_data(df_new(field), data[i].field));
-        doc_add_field(doc, df_add_data(df_new(cat), data[i].cat));
+        doc_add_field(doc, df_add_data(df_new(date), test_data[i].date));
+        doc_add_field(doc, df_add_data(df_new(field), test_data[i].field));
+        doc_add_field(doc, df_add_data(df_new(cat), test_data[i].cat));
+        doc_add_field(doc, df_add_data(df_new(number), test_data[i].number));
         iw_add_doc(iw, doc);
         doc_destroy(doc);
     }
@@ -1000,6 +1003,104 @@ static void test_range_query_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
+static void test_typed_range_query(tst_case *tc, void *data)
+{
+    Searcher *searcher = (Searcher *)data;
+    Query *trq;
+    trq = trq_new(number, "-1.0", "1.0", true, true);
+    check_hits(tc, searcher, trq, "0,1,4,10,15,17", -1);
+    q_deref(trq);
+
+    trq = trq_new(number, "-1.0", "1.0", false, false);
+    check_hits(tc, searcher, trq, "0,1,4,15", -1);
+    q_deref(trq);
+
+    /* text hexadecimal */
+    trq = trq_new(number, "1.0", "10", false, true);
+    check_hits(tc, searcher, trq, "6,7,9,12", -1);
+    q_deref(trq);
+
+    /* below range - no results */
+    trq = trq_new(number, "10051006", "10051010", false, false);
+    check_hits(tc, searcher, trq, "", -1);
+    q_deref(trq);
+
+    /* above range - no results */
+    trq = trq_new(number, "-12518421", "-12518420", true, true);
+    check_hits(tc, searcher, trq, "", -1);
+    q_deref(trq);
+}
+
+static void test_typed_range_query_hash(tst_case *tc, void *data)
+{
+    Query *q1, *q2;
+    (void)data;
+    q1 = trq_new(date, "20051006", "20051010", true, true);
+    q2 = trq_new(date, "20051006", "20051010", true, true);
+
+    Assert(q_eq(q1, q1), "Test same queries are equal");
+    Aiequal(q_hash(q1), q_hash(q2));
+    Assert(q_eq(q1, q2), "Queries are equal");
+    q_deref(q2);
+
+    q2 = trq_new(date, "20051006", "20051010", true, false);
+    Assert(q_hash(q1) != q_hash(q2), "Upper bound include differs");
+    Assert(!q_eq(q1, q2), "Upper bound include differs");
+    q_deref(q2);
+
+    q2 = trq_new(date, "20051006", "20051010", false, true);
+    Assert(q_hash(q1) != q_hash(q2), "Lower bound include differs");
+    Assert(!q_eq(q1, q2), "Lower bound include differs");
+    q_deref(q2);
+
+    q2 = trq_new(date, "20051006", "20051011", true, true);
+    Assert(q_hash(q1) != q_hash(q2), "Upper bound differs");
+    Assert(!q_eq(q1, q2), "Upper bound differs");
+    q_deref(q2);
+
+    q2 = trq_new(date, "20051005", "20051010", true, true);
+    Assert(q_hash(q1) != q_hash(q2), "Lower bound differs");
+    Assert(!q_eq(q1, q2), "Lower bound differs");
+    q_deref(q2);
+
+    q2 = trq_new(date, "20051006", NULL, true, false);
+    Assert(q_hash(q1) != q_hash(q2), "Upper bound is NULL");
+    Assert(!q_eq(q1, q2), "Upper bound is NULL");
+    q_deref(q2);
+
+    q2 = trq_new(date, NULL, "20051010", false, true);
+    Assert(q_hash(q1) != q_hash(q2), "Lower bound is NULL");
+    Assert(!q_eq(q1, q2), "Lower bound is NULL");
+    q_deref(q2);
+
+    q2 = trq_new(field, "20051006", "20051010", true, true);
+    Assert(q_hash(q1) != q_hash(q2), "Field differs");
+    Assert(!q_eq(q1, q2), "Field differs");
+    q_deref(q2);
+    q_deref(q1);
+
+    q1 = trq_new(date, NULL, "20051010", false, true);
+    q2 = trq_new(date, NULL, "20051010", false, true);
+    Aiequal(q_hash(q1), q_hash(q2));
+    Assert(q_eq(q1, q2), "Queries are equal");
+    q_deref(q2);
+    q_deref(q1);
+
+    q1 = trq_new(date, "20051010", NULL, true, false);
+    q2 = trq_new(date, "20051010", NULL, true, false);
+    Aiequal(q_hash(q1), q_hash(q2));
+    Assert(q_eq(q1, q2), "Queries are equal");
+    q_deref(q2);
+    q_deref(q1);
+
+    q1 = trq_new(date, "20051010", NULL, true, false);
+    q2 = rq_new(date, "20051010", NULL, true, false);
+    Assert(q_hash(q1) != q_hash(q2), "TypedRangeQuery is not RangeQuery");
+    Assert(!q_eq(q1, q2), "Queries are not equal");
+    q_deref(q2);
+    q_deref(q1);
+}
+
 static void test_wildcard_match(tst_case *tc, void *data)
 {
     (void)data;
@@ -1153,6 +1254,9 @@ tst_suite *ts_search(tst_suite *suite)
     tst_run_test(suite, test_range_query, (void *)searcher);
     tst_run_test(suite, test_range_query_hash, NULL);
 
+    tst_run_test(suite, test_typed_range_query, (void *)searcher);
+    tst_run_test(suite, test_typed_range_query_hash, NULL);
+
     tst_run_test(suite, test_wildcard_match, (void *)searcher);
     tst_run_test(suite, test_wildcard_query, (void *)searcher);
     tst_run_test(suite, test_wildcard_query_hash, NULL);
@@ -1182,6 +1286,7 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
         doc_add_field(doc, df_add_data(df_new(date), data[i].date));
         doc_add_field(doc, df_add_data(df_new(field), data[i].field));
         doc_add_field(doc, df_add_data(df_new(cat), data[i].cat));
+        doc_add_field(doc, df_add_data(df_new(number), data[i].number));
         iw_add_doc(iw, doc);
         doc_destroy(doc);
     }
@@ -1290,48 +1395,6 @@ static void test_query_combine(tst_case *tc, void *data)
 
 tst_suite *ts_multi_search(tst_suite *suite)
 {
-    struct Data data0[] = {
-        {"20050930", "word1",
-            "cat1/"},
-        {"20051001", "word1 word2 the quick brown fox",
-            "cat1/sub1"},
-        {"20051002", "word1 word3",
-            "cat1/sub1/subsub1"},
-        {"20051003", "word1 word3",
-            "cat1/sub2"},
-        {"20051004", "word1 word2",
-            "cat1/sub2/subsub2"},
-        {"20051005", "word1",
-            "cat2/sub1"},
-        {"20051006", "word1 word3",
-            "cat2/sub1"},
-        {"20051007", "word1",
-            "cat2/sub1"},
-        {"20051008", "word1 word2 word3 the fast brown fox",
-            "cat2/sub1"}
-    };
-
-    struct Data data1[] = {
-        {"20051009", "word1",
-            "cat3/sub1"},
-        {"20051010", "word1",
-            "cat3/sub1"},
-        {"20051011", "word1 word3 the quick red fox",
-            "cat3/sub1"},
-        {"20051012", "word1",
-            "cat3/sub1"},
-        {"20051013", "word1",
-            "cat1/sub2"},
-        {"20051014", "word1 word3 the quick hairy fox",
-            "cat1/sub1"},
-        {"20051015", "word1",
-            "cat1/sub2/subsub1"},
-        {"20051016", "word1 the quick fox is brown and hairy and a little red",
-            "cat1/sub1/subsub2"},
-        {"20051017", "word1 the brown fox is quick and red",
-            "cat1/"}
-    };
-
     Store *store0 = open_ram_store();
     Store *store1 = open_ram_store();
 
@@ -1341,8 +1404,8 @@ tst_suite *ts_multi_search(tst_suite *suite)
 
     suite = tst_add_suite(suite, "test_multi_search");
 
-    prepare_multi_search_index(store0, data0, NELEMS(data0), 1);
-    prepare_multi_search_index(store1, data1, NELEMS(data1), 1 + NELEMS(data0));
+    prepare_multi_search_index(store0, test_data, 9, 1);
+    prepare_multi_search_index(store1, test_data + 9, NELEMS(test_data) - 9, 10);
 
     ir0 = ir_open(store0);
     ir1 = ir_open(store1);
@@ -1360,6 +1423,7 @@ tst_suite *ts_multi_search(tst_suite *suite)
     tst_run_test(suite, test_multi_phrase_query, (void *)searcher);
     tst_run_test(suite, test_prefix_query, (void *)searcher);
     tst_run_test(suite, test_range_query, (void *)searcher);
+    tst_run_test(suite, test_typed_range_query, (void *)searcher);
     tst_run_test(suite, test_wildcard_query, (void *)searcher);
 
     tst_run_test(suite, test_query_combine, NULL);

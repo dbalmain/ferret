@@ -129,6 +129,16 @@ extern Filter *rfilt_new(const char *field,
 
 /***************************************************************************
  *
+ * TypedRangeFilter
+ *
+ ***************************************************************************/
+
+extern Filter *trfilt_new(const char *field,
+                          const char *lower_term, const char *upper_term,
+                          bool include_lower, bool include_upper);
+
+/***************************************************************************
+ *
  * QueryFilter
  *
  ***************************************************************************/
@@ -184,6 +194,7 @@ enum QUERY_TYPE
     FILTERED_QUERY,
     MATCH_ALL_QUERY,
     RANGE_QUERY,
+    TYPED_RANGE_QUERY,
     WILD_CARD_QUERY,
     FUZZY_QUERY,
     PREFIX_QUERY,
@@ -444,6 +455,18 @@ extern Query *rq_new_less(const char *field, const char *upper_term,
                           bool include_upper);
 extern Query *rq_new_more(const char *field, const char *lower_term,
                           bool include_lower);
+
+/***************************************************************************
+ * TypedRangeQuery
+ ***************************************************************************/
+
+extern Query *trq_new(const char *field, const char *lower_term,
+                      const char *upper_term, bool include_lower,
+                      bool include_upper);
+extern Query *trq_new_less(const char *field, const char *upper_term,
+                           bool include_upper);
+extern Query *trq_new_more(const char *field, const char *lower_term,
+                           bool include_lower);
 
 /***************************************************************************
  * SpanQuery

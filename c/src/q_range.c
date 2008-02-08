@@ -131,6 +131,60 @@ Range *range_new(const char *field, const char *lower_term,
     return range;
 }
 
+Range *trange_new(const char *field, const char *lower_term,
+                  const char *upper_term, bool include_lower,
+                  bool include_upper)
+{
+    Range *range; 
+    int len;
+    double upper_num, lower_num;
+
+    if (!lower_term && !upper_term) {
+        RAISE(ARG_ERROR, "Nil bounds for range. A range must include either "
+              "lower bound or an upper bound");
+    }
+    if (include_lower && !lower_term) {
+        RAISE(ARG_ERROR, "Lower bound must be non-nil to be inclusive. That "
+              "is, if you specify :include_lower => true when you create a "
+              "range you must include a :lower_term");
+    }
+    if (include_upper && !upper_term) {
+        RAISE(ARG_ERROR, "Upper bound must be non-nil to be inclusive. That "
+              "is, if you specify :include_upper => true when you create a "
+              "range you must include a :upper_term");
+    }
+    if (upper_term && lower_term) {
+        if ((!lower_term ||
+             (sscanf(lower_term, "%lg%n", &lower_num, &len) &&
+              (int)strlen(lower_term) == len)) &&
+            (!upper_term ||
+             (sscanf(upper_term, "%lg%n", &upper_num, &len) &&
+              (int)strlen(upper_term) == len)))
+        {
+            if (upper_num < lower_num) {
+                RAISE(ARG_ERROR, "Upper bound must be greater than lower bound."
+                      " numbers \"%s\" < \"%s\"", upper_term, lower_term);
+            }
+        }
+        else {
+            if (upper_term && lower_term &&
+                (strcmp(upper_term, lower_term) < 0)) {
+                RAISE(ARG_ERROR, "Upper bound must be greater than lower bound."
+                      " \"%s\" < \"%s\"", upper_term, lower_term);
+            }
+        }
+    }
+
+    range = ALLOC(Range);
+
+    range->field = estrdup((char *)field);
+    range->lower_term = lower_term ? estrdup(lower_term) : NULL;
+    range->upper_term = upper_term ? estrdup(upper_term) : NULL;
+    range->include_lower = include_lower;
+    range->include_upper = include_upper;
+    return range;
+}
+
 /***************************************************************************
  *
  * RangeFilter
@@ -245,6 +299,141 @@ Filter *rfilt_new(const char *field,
     return filt;
 }
 
+/***************************************************************************
+ *
+ * RangeFilter
+ *
+ ***************************************************************************/
+
+static char *trfilt_to_s(Filter *filt)
+{
+    char *rstr = range_to_s(RF(filt)->range, "", 1.0);
+    char *rfstr = strfmt("TypedRangeFilter< %s >", rstr);
+    free(rstr);
+    return rfstr;
+}
+
+enum TYPED_RANGE_CHECK {
+    TRC_NONE    = 0x00,
+    TRC_LE      = 0x01,
+    TRC_LT      = 0x02,
+    TRC_GE      = 0x04,
+    TRC_GE_LE   = 0x05,
+    TRC_GE_LT   = 0x06,
+    TRC_GT      = 0x08,
+    TRC_GT_LE   = 0x09,
+    TRC_GT_LT   = 0x0a
+};
+
+#define SET_DOCS(cond)\
+do {\
+    if (term[0] > '9') break; /* done */\
+    sscanf(term, "%lg%n", &num, &len);\
+    if (len == te->curr_term_len) { /* We have a number */\
+        if (cond) {\
+            tde->seek_te(tde, te);\
+            while (tde->next(tde)) {\
+                bv_set(bv, tde->doc_num(tde));\
+            }\
+        }\
+    }\
+} while (te->next(te))
+  
+
+static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
+{
+    Range *range = RF(filt)->range;
+    double lnum = 0.0, unum = 0.0;
+    int len = 0;
+    const char *lt = range->lower_term;
+    const char *ut = range->upper_term;
+    if ((!lt || (sscanf(lt, "%lg%n", &lnum, &len) && (int)strlen(lt) == len)) &&
+        (!ut || (sscanf(ut, "%lg%n", &unum, &len) && (int)strlen(ut) == len)))
+    {
+        BitVector *bv = bv_new_capa(ir->max_doc(ir));
+        FieldInfo *fi = fis_get_field(ir->fis, range->field);
+        /* the field info exists we need to add docs to the bit vector,
+         * otherwise we just return an empty bit vector */
+        if (fi) {
+            const int field_num = fi->number;
+            char *term;
+            double num;
+            TermEnum* te;
+            TermDocEnum *tde;
+            enum TYPED_RANGE_CHECK check;
+
+            te = ir->terms(ir, field_num);
+            if (te->skip_to(te, "+.") == NULL) {
+                te->close(te);
+                return bv;
+            }
+
+            tde = ir->term_docs(ir);
+            term = te->curr_term;
+
+            if (lt) {
+               check = range->include_lower ? TRC_GE : TRC_GT;
+            }
+            if (ut) {
+               check |= range->include_upper ? TRC_LE : TRC_LT;
+            }
+
+            switch(check) {
+                case TRC_LE:
+                    SET_DOCS(num <= unum);
+                    break;
+                case TRC_LT:
+                    SET_DOCS(num <  unum);
+                    break;
+                case TRC_GE:
+                    SET_DOCS(num >= lnum);
+                    break;
+                case TRC_GE_LE:
+                    SET_DOCS(num >= lnum && num <= unum);
+                    break;
+                case TRC_GE_LT:
+                    SET_DOCS(num >= lnum && num <  unum);
+                    break;
+                case TRC_GT:
+                    SET_DOCS(num >  lnum);
+                    break;
+                case TRC_GT_LE:
+                    SET_DOCS(num >  lnum && num <= unum);
+                    break;
+                case TRC_GT_LT:
+                    SET_DOCS(num >  lnum && num <  unum);
+                    break;
+                case TRC_NONE:
+                    RAISE(ARG_ERROR, "Nil bounds for range. A range must "
+                          "include either lower bound or an upper bound");
+            }
+            tde->close(tde);
+            te->close(te);
+        }
+
+        return bv;
+    }
+    else {
+        return rfilt_get_bv_i(filt, ir);
+    }
+}
+
+Filter *trfilt_new(const char *field,
+                   const char *lower_term, const char *upper_term,
+                   bool include_lower, bool include_upper)
+{
+    Filter *filt = filt_new(RangeFilter);
+    RF(filt)->range =  trange_new(field, lower_term, upper_term,
+                                  include_lower, include_upper); 
+
+    filt->get_bv_i  = &trfilt_get_bv_i;
+    filt->hash      = &rfilt_hash;
+    filt->eq        = &rfilt_eq;
+    filt->to_s      = &trfilt_to_s;
+    filt->destroy_i = &rfilt_destroy_i;
+    return filt;
+}
+
 /*****************************************************************************
  *
  * RangeQuery
@@ -285,8 +474,8 @@ static MatchVector *rq_get_matchv_i(Query *self, MatchVector *mv,
             char *text = tv_term->text;
             if ((!upper_text || strcmp(text, upper_text) < upper_limit) && 
                 (!lower_text || strcmp(lower_text, text) < lower_limit)) {
-
-                for (j = 0; j < tv_term->freq; j++) {
+                const int tv_term_freq = tv_term->freq;
+                for (j = 0; j < tv_term_freq; j++) {
                     int pos = tv_term->positions[j];
                     matchv_add(mv, pos, pos);
                 }
@@ -341,6 +530,131 @@ Query *rq_new(const char *field, const char *lower_term,
 
     self->type              = RANGE_QUERY;
     self->rewrite           = &rq_rewrite;
+    self->to_s              = &rq_to_s;
+    self->hash              = &rq_hash;
+    self->eq                = &rq_eq;
+    self->destroy_i         = &rq_destroy;
+    self->create_weight_i   = &q_create_weight_unsup;
+    return self;
+}
+
+/*****************************************************************************
+ *
+ * TypedRangeQuery
+ *
+ *****************************************************************************/
+
+#define SET_TERMS(cond)\
+for (i = tv->term_cnt - 1; i >= 0; i--) {\
+    TVTerm *tv_term = &(tv->terms[i]);\
+    char *text = tv_term->text;\
+    double num = sscanf(text, "%lg%n", &num, &len);\
+    if ((int)strlen(text) != len) { /* We have a number */\
+        if (cond) {\
+            const int tv_term_freq = tv_term->freq;\
+            for (j = 0; j < tv_term_freq; j++) {\
+                int pos = tv_term->positions[j];\
+                matchv_add(mv, pos, pos);\
+            }\
+        }\
+    }\
+}\
+
+static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
+                                     TermVector *tv)
+{
+    Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
+    if (strcmp(tv->field, range->field) != 0) {
+        double lnum = 0.0, unum = 0.0;
+        int len = 0;
+        const char *lt = range->lower_term;
+        const char *ut = range->upper_term;
+        if ((!lt || (sscanf(lt,"%lg%n",&lnum,&len) && (int)strlen(lt) == len))&&
+            (!ut || (sscanf(ut,"%lg%n",&unum,&len) && (int)strlen(ut) == len)))
+        {
+            enum TYPED_RANGE_CHECK check;
+            int i = 0, j = 0;
+
+            if (lt) {
+               check = range->include_lower ? TRC_GE : TRC_GT;
+            }
+            if (ut) {
+               check |= range->include_upper ? TRC_LE : TRC_LT;
+            }
+
+            switch(check) {
+                case TRC_LE:
+                    SET_TERMS(num <= unum);
+                    break;
+                case TRC_LT:
+                    SET_TERMS(num <  unum);
+                    break;
+                case TRC_GE:
+                    SET_TERMS(num >= lnum);
+                    break;
+                case TRC_GE_LE:
+                    SET_TERMS(num >= lnum && num <= unum);
+                    break;
+                case TRC_GE_LT:
+                    SET_TERMS(num >= lnum && num <  unum);
+                    break;
+                case TRC_GT:
+                    SET_TERMS(num >  lnum);
+                    break;
+                case TRC_GT_LE:
+                    SET_TERMS(num >  lnum && num <= unum);
+                    break;
+                case TRC_GT_LT:
+                    SET_TERMS(num >  lnum && num <  unum);
+                    break;
+                case TRC_NONE:
+                    RAISE(ARG_ERROR, "Nil bounds for range. A range must "
+                          "include either lower bound or an upper bound");
+            }
+
+        }
+        else {
+            return rq_get_matchv_i(self, mv, tv);
+        }
+    }
+    return mv;
+}
+
+static Query *trq_rewrite(Query *self, IndexReader *ir)
+{
+    Query *csq;
+    Range *r = RQ(self)->range;
+    Filter *filter = trfilt_new(r->field, r->lower_term, r->upper_term,
+                                r->include_lower, r->include_upper);
+    (void)ir;
+    csq = csq_new_nr(filter);
+    ((ConstantScoreQuery *)csq)->original = self;
+    csq->get_matchv_i = &trq_get_matchv_i;
+    return (Query *)csq;
+}
+
+Query *trq_new_less(const char *field, const char *upper_term,
+                    bool include_upper)
+{
+    return trq_new(field, NULL, upper_term, false, include_upper);
+}
+
+Query *trq_new_more(const char *field, const char *lower_term,
+                    bool include_lower)
+{
+    return trq_new(field, lower_term, NULL, include_lower, false);
+}
+
+Query *trq_new(const char *field, const char *lower_term,
+               const char *upper_term, bool include_lower, bool include_upper)
+{
+    Query *self     = q_new(RangeQuery);
+
+    RQ(self)->range = trange_new(field, lower_term, upper_term,
+                                 include_lower, include_upper); 
+
+    self->type              = TYPED_RANGE_QUERY;
+    self->rewrite           = &trq_rewrite;
     self->to_s              = &rq_to_s;
     self->hash              = &rq_hash;
     self->eq                = &rq_eq;
