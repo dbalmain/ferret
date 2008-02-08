@@ -212,6 +212,14 @@ module SearcherTests
     rq = TypedRangeQuery.new(:number, :>  =>  "1.0", :<= =>"0xa")
     check_hits(rq, [6,7,9,12])
 
+    # test single bound
+    rq = TypedRangeQuery.new(:number, :<= =>  "0.0")
+    check_hits(rq, [5,11,15,16,17])
+
+    # test single bound
+    rq = TypedRangeQuery.new(:number, :>  =>  "0.0")
+    check_hits(rq, [0,1,2,3,4,6,7,8,9,10,12,13,14])
+
     # below range - no results
     rq = TypedRangeQuery.new(:number, :>  =>  "10051006", :<  =>"10051010")
     check_hits(rq, [])

@@ -360,7 +360,7 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
             double num;
             TermEnum* te;
             TermDocEnum *tde;
-            enum TYPED_RANGE_CHECK check;
+            enum TYPED_RANGE_CHECK check = TRC_NONE;
 
             te = ir->terms(ir, field_num);
             if (te->skip_to(te, "+.") == NULL) {
@@ -372,10 +372,10 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
             term = te->curr_term;
 
             if (lt) {
-               check = range->include_lower ? TRC_GE : TRC_GT;
+                check = range->include_lower ? TRC_GE : TRC_GT;
             }
             if (ut) {
-               check |= range->include_upper ? TRC_LE : TRC_LT;
+                check |= range->include_upper ? TRC_LE : TRC_LT;
             }
 
             switch(check) {
@@ -572,7 +572,7 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
         if ((!lt || (sscanf(lt,"%lg%n",&lnum,&len) && (int)strlen(lt) == len))&&
             (!ut || (sscanf(ut,"%lg%n",&unum,&len) && (int)strlen(ut) == len)))
         {
-            enum TYPED_RANGE_CHECK check;
+            enum TYPED_RANGE_CHECK check = TRC_NONE;
             int i = 0, j = 0;
 
             if (lt) {

@@ -75,7 +75,14 @@ module Ferret::Index
     #                         Directory object to this class and you want
     #                         Index to close it when it is closed itself then
     #                         set this to true.
-    # 
+    # use_typed_range_query:: Default: true. Use TypedRangeQuery instead of
+    #                         the standard RangeQuery when parsing
+    #                         range queries. This is useful if you have number
+    #                         fields which you want to perform range queries
+    #                         on. You won't need to pad or normalize the data
+    #                         in the field in anyway to get correct results.
+    #                         However, performance will be a lot slower for
+    #                         large indexes, hence the default.
     # Some examples;
     #
     #   index = Index::Index.new(:analyzer => WhiteSpaceAnalyzer.new())
@@ -138,6 +145,9 @@ module Ferret::Index
         IndexWriter.new(options).close
       end
       options[:analyzer]||= Ferret::Analysis::StandardAnalyzer.new
+      if options[:use_typed_range_query].nil?
+        options[:use_typed_range_query] = true
+      end
 
       @searcher = nil
       @writer = nil

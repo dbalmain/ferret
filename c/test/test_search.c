@@ -1020,6 +1020,16 @@ static void test_typed_range_query(tst_case *tc, void *data)
     check_hits(tc, searcher, trq, "6,7,9,12", -1);
     q_deref(trq);
 
+    /* test single bound */
+    trq = trq_new(number, NULL, "0", false, true);
+    check_hits(tc, searcher, trq, "5,11,15,16,17", -1);
+    q_deref(trq);
+
+    /* test single bound */
+    trq = trq_new(number, "0", NULL, false, false);
+    check_hits(tc, searcher, trq, "0,1,2,3,4,6,7,8,9,10,12,13,14", -1);
+    q_deref(trq);
+
     /* below range - no results */
     trq = trq_new(number, "10051006", "10051010", false, false);
     check_hits(tc, searcher, trq, "", -1);
@@ -1028,6 +1038,11 @@ static void test_typed_range_query(tst_case *tc, void *data)
     /* above range - no results */
     trq = trq_new(number, "-12518421", "-12518420", true, true);
     check_hits(tc, searcher, trq, "", -1);
+    q_deref(trq);
+
+    /* should be normal range query for string fields */
+    trq = trq_new(cat, "cat2", NULL, true, false);
+    check_hits(tc, searcher, trq, "5,6,7,8,9,10,11,12", -1);
     q_deref(trq);
 }
 
