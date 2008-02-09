@@ -1113,6 +1113,10 @@ frt_stem_filter_init(int argc, VALUE *argv, VALUE self)
 
     Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
     object_add(ts, self);
+    if (((StemFilter *)ts)->stemmer == NULL) {
+        rb_raise(rb_eArgError, "No stemmer could be found with the encoding "
+                 "%s and the language %s", charenc, algorithm);
+    }
     return self;
 }
 
@@ -2004,13 +2008,25 @@ static void Init_StopFilter(void)
  *     "finnish",    | "fi", "fin"              | "ISO_8859_1", "UTF_8"
  *     "french",     | "fr", "fra", "fre"       | "ISO_8859_1", "UTF_8"
  *     "german",     | "de", "deu", "ge", "ger" | "ISO_8859_1", "UTF_8"
+ *     "hungarian",  | "hu", "hun"              | "ISO_8859_1", "UTF_8"
  *     "italian",    | "it", "ita"              | "ISO_8859_1", "UTF_8"
  *     "norwegian",  | "nl", "no"               | "ISO_8859_1", "UTF_8"
  *     "porter",     |                          | "ISO_8859_1", "UTF_8"
  *     "portuguese", | "por", "pt"              | "ISO_8859_1", "UTF_8"
+ *     "romanian",   | "ro", "ron", "rum"       | "ISO_8859_2", "UTF_8"
  *     "russian",    | "ru", "rus"              | "KOI8_R",     "UTF_8"
  *     "spanish",    | "es", "esl"              | "ISO_8859_1", "UTF_8"
  *     "swedish",    | "sv", "swe"              | "ISO_8859_1", "UTF_8"
+ *     "turkish",    | "tr", "tur"              |               "UTF_8"
+ *
+ *
+ *  === New Stemmers
+ *
+ *  The following stemmers have recently benn added. Please try them out;
+ *
+ *    * Hungarian
+ *    * Romanian
+ *    * Turkish
  *
  *  === Example
  *
@@ -2464,6 +2480,8 @@ Init_Analysis(void)
                     get_rstopwords(FULL_RUSSIAN_STOP_WORDS));
     rb_define_const(mAnalysis, "FULL_FINNISH_STOP_WORDS",
                     get_rstopwords(FULL_FINNISH_STOP_WORDS));
+    rb_define_const(mAnalysis, "FULL_HUNGARIAN_STOP_WORDS",
+                    get_rstopwords(FULL_HUNGARIAN_STOP_WORDS));
 
     Init_Token();
     Init_TokenStream();

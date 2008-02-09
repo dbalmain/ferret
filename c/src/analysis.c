@@ -1409,10 +1409,35 @@ TokenStream *stem_filter_new(TokenStream *ts, const char *algorithm,
                              const char *charenc)
 {
     TokenStream *tf = tf_new(StemFilter, ts);
+    char *my_algorithm = NULL;
+    char *my_charenc   = NULL;
+    char *s = NULL;
 
-    StemFilt(tf)->stemmer   = sb_stemmer_new(algorithm, charenc);
-    StemFilt(tf)->algorithm = algorithm ? estrdup(algorithm) : NULL;
-    StemFilt(tf)->charenc   = charenc ? estrdup(charenc) : NULL;
+    if (algorithm) {
+        my_algorithm = estrdup(algorithm);
+
+        /* algorithms are lowercase */
+        s = my_algorithm;
+        while (*s) {
+            *s = tolower(*s);
+            s++;
+        }
+        StemFilt(tf)->algorithm = my_algorithm;
+    }
+
+    if (charenc) {
+        my_charenc   = estrdup(charenc);
+
+        /* encodings are uppercase and use '_' instead of '-' */
+        s = my_charenc;
+        while (*s) {
+            *s = (*s == '-') ? '_' : toupper(*s);
+            s++;
+        }
+        StemFilt(tf)->charenc = my_charenc;
+    }
+
+    StemFilt(tf)->stemmer   = sb_stemmer_new(my_algorithm, my_charenc);
 
     tf->next = &stemf_next;
     tf->destroy_i = &stemf_destroy_i;

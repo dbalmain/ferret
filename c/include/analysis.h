@@ -148,6 +148,7 @@ extern const char *FULL_NORWEGIAN_STOP_WORDS[];
 extern const char *FULL_DANISH_STOP_WORDS[];
 extern const char *FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FULL_FINNISH_STOP_WORDS[];
+extern const char *FULL_HUNGARIAN_STOP_WORDS[];
 
 extern TokenStream *stop_filter_new_with_words_len(TokenStream *ts,
                                                    const char **words, int len);
