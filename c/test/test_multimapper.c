@@ -33,6 +33,7 @@ static void test_multimapper_utf8(tst_case * tc, void *data)
 {
     char text[] = "zàáâãäåāăz";
     char dest[1000];
+    char *dest_dynamic;
     MultiMapper *mapper = mulmap_new();
     (void)data;
 
@@ -46,6 +47,9 @@ static void test_multimapper_utf8(tst_case * tc, void *data)
     mulmap_add_mapping(mapper, "ă", "a");
     mulmap_compile(mapper);
     Asequal("zaaaaaaaaz", mulmap_map(mapper, dest, text, 1000));
+    dest_dynamic = mulmap_dynamic_map(mapper, text);
+    Asequal("zaaaaaaaaz", dest_dynamic);
+    free(dest_dynamic);
     mulmap_destroy(mapper);
 }
 

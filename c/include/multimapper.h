@@ -45,6 +45,7 @@ extern MultiMapper *mulmap_new();
 extern void mulmap_add_mapping(MultiMapper *self, const char *p, const char *r);
 extern void mulmap_compile(MultiMapper *self);
 extern char *mulmap_map(MultiMapper *self, char *to, char *from, int capa);
+extern char *mulmap_dynamic_map(MultiMapper *self, char *from);
 extern int mulmap_map_len(MultiMapper *self, char *to, char *from, int capa);
 extern void mulmap_destroy(MultiMapper *self);
 

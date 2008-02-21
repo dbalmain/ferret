@@ -1668,6 +1668,8 @@ static void Init_Token(void)
 /*
  *  Document-class: Ferret::Analysis::TokenStream
  *
+ *  == Summary
+ *
  *  A TokenStream enumerates the sequence of tokens, either from
  *  fields of a document or from query text.
  * 
@@ -1687,6 +1689,8 @@ static void Init_TokenStream(void)
 
 /*
  *  Document-class: Ferret::Analysis::AsciiLetterTokenizer
+ *
+ *  == Summary
  *
  *  A LetterTokenizer is a tokenizer that divides text at non-ASCII letters.
  *  That is to say, it defines tokens as maximal strings of adjacent letters,
@@ -1709,6 +1713,8 @@ static void Init_AsciiLetterTokenizer(void)
 
 /*
  *  Document-class: Ferret::Analysis::LetterTokenizer
+ *
+ *  == Summary
  *
  *  A LetterTokenizer is a tokenizer that divides text at non-letters. That is
  *  to say, it defines tokens as maximal strings of adjacent letters, as
@@ -1733,6 +1739,8 @@ static void Init_LetterTokenizer(void)
 /*
  *  Document-class: Ferret::Analysis::AsciiWhiteSpaceTokenizer
  *
+ *  == Summary
+ *
  *  A WhiteSpaceTokenizer is a tokenizer that divides text at white-space.
  *  Adjacent sequences of non-WhiteSpace characters form tokens.
  *
@@ -1755,6 +1763,8 @@ static void Init_AsciiWhiteSpaceTokenizer(void)
 /*
  *  Document-class: Ferret::Analysis::WhiteSpaceTokenizer
  *
+ *  == Summary
+ *
  *  A WhiteSpaceTokenizer is a tokenizer that divides text at white-space.
  *  Adjacent sequences of non-WhiteSpace characters form tokens.
  *
@@ -1775,6 +1785,8 @@ static void Init_WhiteSpaceTokenizer(void)
 
 /*
  *  Document-class: Ferret::Analysis::AsciiStandardTokenizer
+ *
+ *  == Summary
  *
  *  The standard tokenizer is an advanced tokenizer which tokenizes most
  *  words correctly as well as tokenizing things like email addresses, web
@@ -1798,6 +1810,8 @@ static void Init_AsciiStandardTokenizer(void)
 /*
  *  Document-class: Ferret::Analysis::StandardTokenizer
  *
+ *  == Summary
+ *
  *  The standard tokenizer is an advanced tokenizer which tokenizes most
  *  words correctly as well as tokenizing things like email addresses, web
  *  addresses, phone numbers, etc.
@@ -1819,6 +1833,8 @@ static void Init_StandardTokenizer(void)
 
 /*
  *  Document-class: Ferret::Analysis::RegExpTokenizer
+ *
+ *  == Summary
  *
  *  A tokenizer that recognizes tokens based on a regular expression passed to
  *  the constructor. Most possible tokenizers can be created using this class.
@@ -1856,6 +1872,8 @@ static void Init_RegExpTokenizer(void)
 /*
  *  Document-class: Ferret::Analysis::AsciiLowerCaseFilter
  *
+ *  == Summary
+ *
  *  AsciiLowerCaseFilter normalizes a token's text to lowercase but only for
  *  ASCII characters. For other characters use LowerCaseFilter.
  *
@@ -1876,6 +1894,8 @@ static void Init_AsciiLowerCaseFilter(void)
 
 /*
  *  Document-class: Ferret::Analysis::LowerCaseFilter
+ *
+ *  == Summary
  *
  *  LowerCaseFilter normalizes a token's text to lowercase based on the
  *  current locale.
@@ -1898,6 +1918,8 @@ static void Init_LowerCaseFilter(void)
 /*
  *  Document-class: Ferret::Analysis::HyphenFilter
  *
+ *  == Summary
+ *
  *  HyphenFilter filters hyphenated words by adding both the word concatenated
  *  into a single word and split into multiple words. ie "e-mail" becomes
  *  "email" and "e mail". This way a search for "e-mail", "email" and "mail"
@@ -1919,6 +1941,8 @@ static void Init_HyphenFilter(void)
 
 /*
  *  Document-class: Ferret::Analysis::MappingFilter
+ *
+ *  == Summary
  *
  *  A MappingFilter maps strings in tokens. This is usually used to map UTF-8
  *  characters to ASCII characters for easier searching and better search
@@ -1968,6 +1992,8 @@ static void Init_MappingFilter(void)
 
 /*
  *  Document-class: Ferret::Analysis::StopFilter
+ *
+ *  == Summary
  *
  *  A StopFilter filters *stop-words* from a TokenStream. Stop-words are words
  *  that you don't wish to be index. Usually they will be common words like

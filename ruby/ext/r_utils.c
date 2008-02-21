@@ -1,5 +1,7 @@
 #include "ferret.h"
 #include "bitvector.h"
+#include "multimapper.h"
+#include <st.h>
 
 /*****************
  *** BitVector ***
@@ -38,7 +40,7 @@ frt_get_bv(BitVector *bv)
 
 /*
  *  call-seq:
- *     BitVector.new() -> new_bv
+ *     BitVector.new() -> new_bit_vector
  *  
  *  Returns a new empty bit vector object
  */
@@ -561,6 +563,166 @@ Init_BitVector(void)
     rb_define_method(cBitVector, "to_a", frt_bv_to_a, 0);
 }
 
+/*******************
+ *** MultiMapper ***
+ *******************/
+static VALUE cMultiMapper;
+
+static void
+frt_mulmap_free(void *p)
+{
+    object_del(p);
+    mulmap_destroy((MultiMapper *)p);
+}
+
+static VALUE
+frt_mulmap_alloc(VALUE klass)
+{
+    MultiMapper *mulmap = mulmap_new();
+    VALUE rmulmap = Data_Wrap_Struct(klass, NULL, &frt_mulmap_free, mulmap);
+    object_add(mulmap, rmulmap);
+    return rmulmap;
+}
+
+/* XXX: Duplication from frt_add_mapping_i in r_analysis.c */
+static INLINE void frt_mulmap_add_mapping_i(MultiMapper *mulmap, VALUE from,
+                                            char *to)
+{
+    switch (TYPE(from)) {
+        case T_STRING:
+            mulmap_add_mapping(mulmap, rs2s(from), to);
+            break;
+        case T_SYMBOL:
+            mulmap_add_mapping(mulmap, rb_id2name(SYM2ID(from)), to);
+            break;
+        default:
+            rb_raise(rb_eArgError,
+                     "cannot map from %s with MappingFilter",
+                     rs2s(rb_obj_as_string(from)));
+            break;
+    }
+}
+
+/* XXX: Duplication from frt_add_mappings_i in r_analysis.c */
+static int frt_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
+{
+    if (key == Qundef) {
+        return ST_CONTINUE;
+    } else {
+        MultiMapper *mulmap = (MultiMapper *)arg;
+        char *to;
+        switch (TYPE(value)) {
+            case T_STRING:
+                to = rs2s(value);
+                break;
+            case T_SYMBOL:
+                to = rb_id2name(SYM2ID(value));
+                break;
+            default:
+                rb_raise(rb_eArgError,
+                         "cannot map to %s with MultiMapper",
+                         rs2s(rb_obj_as_string(key)));
+                break;
+        }
+        if (TYPE(key) == T_ARRAY) {
+            int i;
+            for (i = RARRAY(key)->len - 1; i >= 0; i--) {
+                frt_mulmap_add_mapping_i(mulmap, RARRAY(key)->ptr[i], to);
+            }
+        }
+        else {
+            frt_mulmap_add_mapping_i(mulmap, key, to);
+        }
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     MultiMapper.new() -> new_multi_mapper
+ *  
+ *  Returns a new multi-mapper object and compiles it for optimization.
+ *
+ *  Note that MultiMapper is immutable.
+ */
+static VALUE 
+frt_mulmap_init(VALUE self, VALUE rmappings)
+{
+    MultiMapper *mulmap = DATA_PTR(self);
+    rb_hash_foreach(rmappings, frt_mulmap_add_mappings_i, (VALUE)mulmap);
+    mulmap_compile(mulmap);
+
+    return self;
+}
+
+/*
+ *  call-seq:
+ *     multi_mapper.map(string) -> mapped_string
+ *  
+ *  Performs all the mappings on the string.
+ */
+VALUE
+frt_mulmap_map(VALUE self, VALUE rstring)
+{
+    MultiMapper *mulmap = DATA_PTR(self);
+    char *string = rs2s(rb_obj_as_string(rstring));
+    char *mapped_string = mulmap_dynamic_map(mulmap, string);
+    VALUE rmapped_string = rb_str_new2(mapped_string);
+    free(mapped_string);
+    return rmapped_string;
+}
+
+/*  
+ *  Document-class: Ferret::Utils::MultiMapper
+ *
+ *  == Summary
+ *
+ *  A MultiMapper performs a list of mappings from one string to another. You
+ *  could of course just use gsub to do this but when you are just mapping
+ *  strings, this is much faster.
+ *
+ *  Note that MultiMapper is immutable.
+ *
+ *  == Example
+ *
+ *     mapping = {
+ *       ['à','á','â','ã','ä','å','ā','ă']         => 'a',
+ *       'æ'                                       => 'ae',
+ *       ['ď','đ']                                 => 'd',
+ *       ['ç','ć','č','ĉ','ċ']                     => 'c',
+ *       ['è','é','ê','ë','ē','ę','ě','ĕ','ė',]    => 'e',
+ *       ['ƒ']                                     => 'f',
+ *       ['ĝ','ğ','ġ','ģ']                         => 'g',
+ *       ['ĥ','ħ']                                 => 'h',
+ *       ['ì','ì','í','î','ï','ī','ĩ','ĭ']         => 'i',
+ *       ['į','ı','ĳ','ĵ']                         => 'j',
+ *       ['ķ','ĸ']                                 => 'k',
+ *       ['ł','ľ','ĺ','ļ','ŀ']                     => 'l',
+ *       ['ñ','ń','ň','ņ','ŉ','ŋ']                 => 'n',
+ *       ['ò','ó','ô','õ','ö','ø','ō','ő','ŏ','ŏ'] => 'o',
+ *       ['œ']                                     => 'oek',
+ *       ['ą']                                     => 'q',
+ *       ['ŕ','ř','ŗ']                             => 'r',
+ *       ['ś','š','ş','ŝ','ș']                     => 's',
+ *       ['ť','ţ','ŧ','ț']                         => 't',
+ *       ['ù','ú','û','ü','ū','ů','ű','ŭ','ũ','ų'] => 'u',
+ *       ['ŵ']                                     => 'w',
+ *       ['ý','ÿ','ŷ']                             => 'y',
+ *       ['ž','ż','ź']                             => 'z'
+ *     mapper = MultiMapper.new(mapping)
+ *     mapped_string = mapper.map(string)
+ */
+static void
+Init_MultiMapper(void)
+{
+    /* MultiMapper */
+    cMultiMapper = rb_define_class_under(mUtils, "MultiMapper", rb_cObject);
+    rb_define_alloc_func(cMultiMapper, frt_mulmap_alloc);
+
+    rb_define_method(cMultiMapper, "initialize", frt_mulmap_init, 1);
+    rb_define_method(cMultiMapper, "map", frt_mulmap_map, 1);
+}
+
 /*********************
  *** PriorityQueue ***
  *********************/
@@ -947,6 +1109,7 @@ extern VALUE mFerret = rb_define_module("Ferret");
  *  useful when indexing with Ferret. They are;
  *
  *  * BitVector
+ *  * MultiMapper
  *  * PriorityQueue
  *  * => more to come
  *
@@ -959,5 +1122,6 @@ Init_Utils(void)
     mUtils = rb_define_module_under(mFerret, "Utils");
 
     Init_BitVector();
+    Init_MultiMapper();
     Init_PriorityQueue();
 }

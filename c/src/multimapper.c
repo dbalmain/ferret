@@ -263,7 +263,7 @@ int mulmap_map_len(MultiMapper *self, char *to, char *from, int capa)
     DeterministicState *state = start;
     char *s = from, *d = to, *end = to + capa - 1;
     if (self->d_size == 0) {
-        RAISE(STATE_ERROR, "You forgot to compile your MultiMapper");
+        mulmap_compile(self);
     }
     while (*s && d < end) {
         state = state->next[UCtoI(*s)];
@@ -289,6 +289,45 @@ int mulmap_map_len(MultiMapper *self, char *to, char *from, int capa)
 char *mulmap_map(MultiMapper *self, char *to, char *from, int capa)
 {
     mulmap_map_len(self, to, from, capa);
+    return to;
+}
+
+/* Maps a string to a dynamically allocated string */
+char *mulmap_dynamic_map(MultiMapper *self, char *from)
+{
+    DeterministicState *start = self->dstates[0];
+    DeterministicState *state = start;
+    int capa = strlen(from);
+    char *to = frt_calloc(capa);
+    char *s = from, *d = to, *end = to + capa - 1;
+    if (self->d_size == 0) {
+        mulmap_compile(self);
+    }
+    do {
+        while (*s && d < end) {
+            state = state->next[UCtoI(*s)];
+            if (state->mapping) {
+                int len = state->mapping_len;
+                d -= (state->longest_match - 1);
+                if ((d + len) > end) {
+                    len = end - d;
+                }
+                memcpy(d, state->mapping, len);
+                d += len;
+                state = start;
+            }
+            else {
+                *(d++) = *s;
+            }
+            s++;
+        }
+        if (*s) {
+            capa += 1024;
+            frt_realloc(to, capa);
+            end = to + capa - 1;
+        }
+    } while(*s);
+    *d = '\0';
     return to;
 }
 
