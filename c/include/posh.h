@@ -1,7 +1,7 @@
 /**
 @file posh.h
 @author Brian Hook
-@version 1.3.001
+@version 1.3.002
 
 Header file for POSH, the Portable Open Source Harness project.
 
@@ -62,6 +62,7 @@ REVISION:
 I've been lax about revision histories, so this starts at, um, 1.3.001.
 Sorry for any inconveniences.
 
+1.3.002 - 8/29/2006 - Removed FORCE_DOXYGEN stuff
 1.3.001 - 2/23/2006 - Incorporated fix for bug reported by Bill Cary,
                       where I was not detecting Visual Studio
                       compilation on x86-64 systems.  Added check for
@@ -522,9 +523,7 @@ Metrowerks:
 ** -----------------------------------------------------------------------------
 */
 #if !defined POSH_OS_STRING
-#  if !defined FORCE_DOXYGEN
-#    define POSH_OS_EMBEDDED 1 
-#  endif
+#  define POSH_OS_EMBEDDED 1 
 #  if defined _R5900
 #     define POSH_OS_STRING "Sony PS2(embedded)"
 #  else
@@ -617,13 +616,6 @@ Metrowerks:
 #  define POSH_IMPORTEXPORT
 #endif
 
-#if defined FORCE_DOXYGEN
-#  define POSH_DLL    
-#  define POSH_BUILDING_LIB
-#  undef POSH_DLL
-#  undef POSH_BUILDING_LIB
-#endif
-
 /*
 ** ----------------------------------------------------------------------------
 ** (Re)define POSH_PUBLIC_API export signature 
@@ -654,10 +646,6 @@ Metrowerks:
 #else
 #  define POSH_ENDIAN_STRING "big"
 #  define POSH_BIG_ENDIAN 1
-#endif
-
-#if defined FORCE_DOXYGEN
-#  define POSH_LITTLE_ENDIAN
 #endif
 
 /*
@@ -707,15 +695,6 @@ typedef unsigned long long posh_u64_t;
 #define POSH_I64( x ) ((posh_i64_t)x)
 #define POSH_U64( x ) ((posh_u64_t)x)
 #define POSH_I64_PRINTF_PREFIX "I64"
-#endif
-
-#ifdef FORCE_DOXYGEN
-typedef long long posh_i64_t;
-typedef unsigned long posh_u64_t;
-#  define POSH_64BIT_INTEGER
-#  define POSH_I64_PRINTF_PREFIX
-#  define POSH_I64(x)
-#  define POSH_U64(x)
 #endif
 
 /** Minimum value for a 64-bit signed integer */
@@ -810,8 +789,6 @@ typedef signed char    posh_i8_t;
 ** Sanity checks on expected sizes
 ** ----------------------------------------------------------------------------
 */
-#if !defined FORCE_DOXYGEN
-
 POSH_COMPILE_TIME_ASSERT(posh_byte_t, sizeof(posh_byte_t) == 1);
 POSH_COMPILE_TIME_ASSERT(posh_u8_t, sizeof(posh_u8_t) == 1);
 POSH_COMPILE_TIME_ASSERT(posh_i8_t, sizeof(posh_i8_t) == 1);
@@ -828,8 +805,6 @@ POSH_COMPILE_TIME_ASSERT(posh_i32_t, sizeof(posh_i32_t) == 4);
 #if defined POSH_64BIT_INTEGER
    POSH_COMPILE_TIME_ASSERT(posh_u64_t, sizeof(posh_u64_t) == 8);
    POSH_COMPILE_TIME_ASSERT(posh_i64_t, sizeof(posh_i64_t) == 8);
-#endif
-
 #endif
 
 /*
@@ -851,7 +826,7 @@ POSH_COMPILE_TIME_ASSERT(posh_i32_t, sizeof(posh_i32_t) == 4);
 
 #if defined POSH_64BIT_POINTER
    POSH_COMPILE_TIME_ASSERT( posh_64bit_pointer, sizeof( void * ) == 8 );
-#elif !defined FORCE_DOXYGEN
+#else
 /* if this assertion is hit then you're on a system that either has 64-bit
    addressing and we didn't catch it, or you're on a system with 16-bit
    pointers.  In the latter case, POSH doesn't actually care, we're just
@@ -861,10 +836,6 @@ POSH_COMPILE_TIME_ASSERT(posh_i32_t, sizeof(posh_i32_t) == 4);
    If this assertion is triggered on a known 32 or 64-bit platform, 
    please let us know (poshlib@poshlib.org) */
    POSH_COMPILE_TIME_ASSERT( posh_32bit_pointer, sizeof( void * ) == 4 );
-#endif
-
-#if defined FORCE_DOXYGEN
-#  define POSH_64BIT_POINTER
 #endif
 
 /*
@@ -906,11 +877,6 @@ double      POSH_ReadDoubleFromLittle( const void *src );
 double      POSH_ReadDoubleFromBig( const void *src );
 */
 #endif /* !defined POSH_NO_FLOAT */
-
-#if defined FORCE_DOXYGEN
-#  define POSH_NO_FLOAT
-#  undef  POSH_NO_FLOAT
-#endif
 
 extern posh_u16_t  POSH_SwapU16( posh_u16_t u );
 extern posh_i16_t  POSH_SwapI16( posh_i16_t u );
