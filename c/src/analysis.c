@@ -759,8 +759,9 @@ static int mb_std_get_apostrophe(char *input)
     return (int)(t - input);
 }
 
-static int std_get_url(char *input, char *token, int i)
+static char *std_get_url(char *input, char *token, int i, int *len)
 {
+    char *next = NULL;
     while (isurlc(input[i])) {
         if (isurlpunc(input[i]) && isurlpunc(input[i - 1])) {
             break; /* can't have two puncs in a row */
@@ -770,13 +771,21 @@ static int std_get_url(char *input, char *token, int i)
         }
         i++;
     }
+    next = input + i;
+
+    /* We don't want to index past the end of the token capacity) */
+    if (i >= MAX_WORD_SIZE) {
+        i = MAX_WORD_SIZE - 1;
+    }
 
     /* strip trailing puncs */
     while (isurlpunc(input[i - 1])) {
         i--;
     }
+    *len = i;
+    token[i] = '\0';
 
-    return i;
+    return next;
 }
 
 /* Company names can contain '@' and '&' like AT&T and Excite@Home. Let's
@@ -909,6 +918,7 @@ static Token *std_next(TokenStream *ts)
         /* check for a known url start */
         token[token_i] = '\0';
         t += 3;
+        token_i += 3;
         while (*t == '/') {
             t++;
         }
@@ -917,17 +927,16 @@ static Token *std_next(TokenStream *ts)
              memcmp(token, "http", 4) == 0 ||
              memcmp(token, "https", 5) == 0 ||
              memcmp(token, "file", 4) == 0)) {
-            len = std_get_url(t, token, 0); /* dispose of first part of the URL */
+            ts->t = std_get_url(t, token, 0, &len); /* dispose of first part of the URL */
         }
         else {              /* still treat as url but keep the first part */
             token_i = (int)(t - start);
             memcpy(token, start, token_i * sizeof(char));
-            len = token_i + std_get_url(t, token, token_i); /* keep start */
+            ts->t = std_get_url(t, token, token_i, &len); /* keep start */
         }
-        ts->t = t + len;
-        token[len] = 0;
-        return tk_set(&(CTS(ts)->token), token, len, (off_t)(start - ts->text),
-               (off_t)(ts->t - ts->text), 1);
+        return tk_set(&(CTS(ts)->token), token, len,
+                      (off_t)(start - ts->text),
+                      (off_t)(ts->t - ts->text), 1);
     }
 
     /* now see how long a url we can find. */

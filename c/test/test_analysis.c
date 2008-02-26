@@ -443,7 +443,7 @@ void test_standard_tokenizer(tst_case *tc, void *data)
     test_token(ts_next(ts), "-52", 32, 35);
     test_token(ts_next(ts), "Address", 40, 47);
     test_token(ts_next(ts), "23", 49, 51);
-    test_token(ts_next(ts), "www.google.com/results", 55, 84);
+    test_token(ts_next(ts), "www.google.com/results", 55, 85);
     test_token(ts_next(ts), "TNT", 86, 91);
     test_token(ts_next(ts), "123-1235-ASD-1234", 93, 110);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
@@ -452,6 +452,17 @@ void test_standard_tokenizer(tst_case *tc, void *data)
     Aiequal(2, ts->ref_cnt);
     ts_deref(ts);
     Aiequal(1, ts->ref_cnt);
+    ts->reset(ts, "http://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    test_token(ts_next(ts), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxx", 0, 280);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
 }
 
@@ -471,7 +482,7 @@ void test_mb_standard_tokenizer(tst_case *tc, void *data)
     test_token(ts_next(ts), "-52", 32, 35);
     test_token(ts_next(ts), "Address", 40, 47);
     test_token(ts_next(ts), "23", 49, 51);
-    test_token(ts_next(ts), "www.google.com/results", 55, 84);
+    test_token(ts_next(ts), "www.google.com/results", 55, 85);
     test_token(ts_next(ts), "TNT", 86, 91);
     test_token(ts_next(ts), "123-1235-ASD-1234", 93, 110);
     test_token(ts_next(ts), "23", 111, 113);
@@ -485,6 +496,17 @@ void test_mb_standard_tokenizer(tst_case *tc, void *data)
     Aiequal(2, ts->ref_cnt);
     ts_deref(ts);
     Aiequal(1, ts->ref_cnt);
+    ts->reset(ts, "http://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    test_token(ts_next(ts), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxx", 0, 280);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
 }
 
@@ -505,7 +527,7 @@ void test_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "mail", 27, 31, 1);
     test_token_pi(ts_next(ts), "address", 40, 47, 3);
     test_token_pi(ts_next(ts), "-23", 49, 52, 1);
-    test_token_pi(ts_next(ts), "www.google.com/results", 55, 84, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
     test_token_pi(ts_next(ts), "tnt", 86, 91, 1);
     test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
@@ -532,7 +554,7 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "mail", 27, 31, 1);
     test_token_pi(ts_next(ts), "Address", 40, 47, 3);
     test_token_pi(ts_next(ts), "-23", 49, 52, 1);
-    test_token_pi(ts_next(ts), "www.google.com/results", 55, 84, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
     test_token_pi(ts_next(ts), "TNT", 86, 91, 1);
     test_token_pi(ts_next(ts), "123-1235-ASD-1234", 93, 110, 1);
     test_token_pi(ts_next(ts), "23", 111, 113, 1);
@@ -551,7 +573,7 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "mail", 27, 31, 1);
     test_token_pi(ts_next(ts), "address", 40, 47, 3);
     test_token_pi(ts_next(ts), "-23", 49, 52, 1);
-    test_token_pi(ts_next(ts), "www.google.com/results", 55, 84, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
     test_token_pi(ts_next(ts), "tnt", 86, 91, 1);
     test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
     test_token_pi(ts_next(ts), "23", 111, 113, 1);
@@ -572,7 +594,7 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "mail", 27, 31, 1);
     test_token_pi(ts_next(ts), "and", 32, 35, 1);
     test_token_pi(ts_next(ts), "address", 40, 47, 2);
-    test_token_pi(ts_next(ts), "www.google.com/results", 55, 84, 2);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 2);
     test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 2);
     test_token_pi(ts_next(ts), "23", 111, 113, 1);
     test_token_pi(ts_next(ts), "áägç", 117, 124, 1);
@@ -588,7 +610,7 @@ void test_mb_standard_analyzer(tst_case *tc, void *data)
     test_token_pi(ts_next(ts2), "mail", 27, 31, 1);
     test_token_pi(ts_next(ts2), "and", 32, 35, 1);
     test_token_pi(ts_next(ts2), "address", 40, 47, 2);
-    test_token_pi(ts_next(ts2), "www.google.com/results", 55, 84, 2);
+    test_token_pi(ts_next(ts2), "www.google.com/results", 55, 85, 2);
     test_token_pi(ts_next(ts2), "123-1235-asd-1234", 93, 110, 2);
     test_token_pi(ts_next(ts2), "23", 111, 113, 1);
     test_token_pi(ts_next(ts2), "áägç", 117, 124, 1);
@@ -661,7 +683,7 @@ void test_lowercase_filter(tst_case *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "address", 40, 47);
     test_token(ts_next(ts), "-23", 49, 52);
-    test_token(ts_next(ts), "www.google.com/results", 55, 84);
+    test_token(ts_next(ts), "www.google.com/results", 55, 85);
     test_token(ts_next(ts), "tnt", 86, 91);
     test_token(ts_next(ts), "123-1235-asd-1234", 93, 110);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
@@ -691,7 +713,7 @@ void test_hyphen_filter(tst_case *tc, void *data)
     test_token_pi(ts_next(ts), "52", 32, 34, 1);
     test_token_pi(ts_next(ts), "address", 40, 47, 1);
     test_token_pi(ts_next(ts), "-23", 49, 52, 1);
-    test_token_pi(ts_next(ts), "www.google.com/results", 55, 84, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
     test_token_pi(ts_next(ts), "tnt", 86, 91, 1);
     test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
     test_token_pi(ts_next(ts), "longhyphenatedword", 111, 134, 1);

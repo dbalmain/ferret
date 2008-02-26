@@ -408,4 +408,24 @@ module SearcherTests
     #assert_equal("<b>the words</b>...", highlights[0])
     #assert_equal("...<b>one</b> <b>two</b>...", highlights[1])
   end
+
+  def test_highlighter_with_standard_analyzer()
+    dir = Ferret::Store::RAMDirectory.new
+    iw = Ferret::Index::IndexWriter.new(:dir => dir,
+                  :analyzer => Ferret::Analysis::StandardAnalyzer.new())
+    [
+        {:field => "field has a url http://ferret.davebalmain.com/trac/ end"},
+    ].each {|doc| iw << doc }
+    iw.close
+    
+    searcher = Searcher.new(dir)
+
+    q = TermQuery.new(:field, "ferret.davebalmain.com/trac");
+    highlights = searcher.highlight(q, 0, :field,
+                                    :excerpt_length => 1000,
+                                    :num_excerpts => 1)
+    assert_equal(1, highlights.size)
+    assert_equal("field has a url <b>http://ferret.davebalmain.com/trac/</b> end",
+                 highlights[0])
+  end
 end
