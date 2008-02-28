@@ -52,14 +52,14 @@ void prepare_filter_index(Store *store)
 }
 
 static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
-                                Filter *f, filter_ft ff,
+                                Filter *f, PostFilter *post_filter,
                                 char *expected_hits, char top)
 {
     static int num_array[ARRAY_SIZE];
     int i;
     int total_hits = s2l(expected_hits, num_array);
     TopDocs *top_docs = searcher_search(searcher, query, 0, total_hits + 1,
-                                        f, NULL, ff);
+                                        f, NULL, post_filter);
     Aiequal(total_hits, top_docs->total_hits);
     Aiequal(total_hits, top_docs->size);
 
@@ -79,8 +79,9 @@ static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
             Explanation *e = searcher->explain(searcher, query, hit->doc);
             float escore = e->value;
             /* char *t; printf("%s\n", t = expl_to_s(e, 0)); free(t); */
-            if (ff) {
-                escore *= ff(hit->doc, escore, searcher);
+            if (post_filter) {
+                escore *= post_filter->filter_func(hit->doc, escore, searcher,
+                                                   post_filter->arg);
             }
             Afequal(hit->score, escore);
             expl_destroy(e);
@@ -242,13 +243,14 @@ static void test_query_filter_hash(tst_case *tc, void *data)
     filt_deref(f1);
 }
 
-static float odd_number_filter(int doc_num, float score, Searcher *sea)
+static float odd_number_filter(int doc_num, float score, Searcher *sea, void *arg)
 {
     float is_ok = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
     LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
+    (void)arg;
 
     if ((atoi(num) % 2) == 0) {
         is_ok = 1.0;
@@ -258,16 +260,16 @@ static float odd_number_filter(int doc_num, float score, Searcher *sea)
     return is_ok;
 }
 
-static float distance_filter(int doc_num, float score, Searcher *sea)
+static float distance_filter(int doc_num, float score, Searcher *sea, void *arg)
 {
-    int start_point = 7;
+    int start_point = *((int *)arg);
     float distance = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
     LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
 
-    distance = 1.0 / (1 + (start_point - atoi(num)) * (start_point - atoi(num)));
+    distance = 1.0/(1 + (start_point - atoi(num)) * (start_point - atoi(num)));
 
     lazy_doc_close(lazy_doc);
     return distance;
@@ -278,11 +280,12 @@ static void test_filter_func(tst_case *tc, void *data)
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
     Filter *rf = rfilt_new(num, "2", "6", true, true);
+    PostFilter odd_filter = (PostFilter){&odd_number_filter, NULL};
 
     check_filtered_hits(tc, searcher, q, NULL,
-                        &odd_number_filter, "0,2,4,6,8", -1);
+                        &odd_filter, "0,2,4,6,8", -1);
     check_filtered_hits(tc, searcher, q, rf, 
-                        &odd_number_filter, "2,4,6", -1);
+                        &odd_filter, "2,4,6", -1);
     filt_deref(rf);
     q_deref(q);
 }
@@ -292,11 +295,13 @@ static void test_score_altering_filter_func(tst_case *tc, void *data)
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
     Filter *rf = rfilt_new(num, "4", "8", true, true);
+    int start_point = 7;
+    PostFilter dist_filter = (PostFilter){&distance_filter, &start_point};
 
     check_filtered_hits(tc, searcher, q, NULL,
-                        &distance_filter, "7,6,8,5,9,4,3,2,1,0", -1);
+                        &dist_filter, "7,6,8,5,9,4,3,2,1,0", -1);
     check_filtered_hits(tc, searcher, q, rf, 
-                        &distance_filter, "7,6,8,5,4", -1);
+                        &dist_filter, "7,6,8,5,4", -1);
     filt_deref(rf);
     q_deref(q);
 }

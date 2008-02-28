@@ -288,13 +288,13 @@ Query *index_get_query(Index *self, char *qstr)
 
 TopDocs *index_search_str(Index *self, char *qstr, int first_doc,
                           int num_docs, Filter *filter, Sort *sort,
-                          filter_ft filter_func)
+                          PostFilter *post_filter)
 {
     Query *query;
     TopDocs *td;
     query = index_get_query(self, qstr); /* will ensure_searcher is open */
     td = searcher_search(self->sea, query, first_doc, num_docs,
-                         filter, sort, filter_func);
+                         filter, sort, post_filter);
     q_deref(query);
     return td;
 }
@@ -391,19 +391,21 @@ static void index_qdel_i(Searcher *sea, int doc_num, float score, void *arg)
     ir_delete_doc(((IndexSearcher *)sea)->ir, doc_num);
 }
 
-void index_delete_query(Index *self, Query *q, Filter *f, filter_ft ff)
+void index_delete_query(Index *self, Query *q, Filter *f,
+                        PostFilter *post_filter)
 {
     mutex_lock(&self->mutex);
     ensure_searcher_open(self);
-    searcher_search_each(self->sea, q, f, ff, &index_qdel_i, NULL);
+    searcher_search_each(self->sea, q, f, post_filter, &index_qdel_i, NULL);
     AUTOFLUSH_IR;
     mutex_unlock(&self->mutex);
 }
 
-void index_delete_query_str(Index *self, char *qstr, Filter *f, filter_ft ff)
+void index_delete_query_str(Index *self, char *qstr, Filter *f,
+                            PostFilter *post_filter)
 {
     Query *q = index_get_query(self, qstr);
-    index_delete_query(self, q, f, ff);
+    index_delete_query(self, q, f, post_filter);
     q_deref(q);
 }
 

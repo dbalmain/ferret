@@ -117,6 +117,7 @@ static VALUE sym_all;
 static VALUE sym_sort;
 static VALUE sym_filter;
 static VALUE sym_filter_proc;
+static VALUE sym_c_filter_proc;
 
 static VALUE sym_excerpt_length;
 static VALUE sym_num_excerpts;  
@@ -2528,9 +2529,9 @@ frt_sea_max_doc(VALUE self)
 }
 
 static float
-call_filter_proc(int doc_id, float score, Searcher *self)
+call_filter_proc(int doc_id, float score, Searcher *self, void *arg)
 {
-    VALUE val = rb_funcall((VALUE)self->arg, id_call, 3,
+    VALUE val = rb_funcall((VALUE)arg, id_call, 3,
                            INT2FIX(doc_id),
                            rb_float_new((double)score),
                            object_get(self)); 
@@ -2604,7 +2605,8 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
     Sort *sort = NULL;
     TopDocs *td;
 
-    filter_ft filter_func = NULL;
+    PostFilter post_filter_holder;
+    PostFilter *post_filter = NULL;
 
     if (Qnil != roptions) {
         if (Qnil != (rval = rb_hash_aref(roptions, sym_offset))) {
@@ -2628,9 +2630,17 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
         if (Qnil != (rval = rb_hash_aref(roptions, sym_filter))) {
             filter = frt_get_cwrapped_filter(rval);
         }
+        if (Qnil != (rval = rb_hash_aref(roptions, sym_c_filter_proc))) {
+                post_filter = DATA_PTR(rval);
+        }
         if (Qnil != (rval = rb_hash_aref(roptions, sym_filter_proc))) {
-            filter_func = &call_filter_proc;
-            sea->arg = (void *)rval;
+            if (post_filter) {
+                rb_raise(rb_eArgError, "Cannot pass both :filter_proc and "
+                         ":c_filter_proc to the same search");
+            }
+            post_filter_holder.filter_func = &call_filter_proc;
+            post_filter_holder.arg = (void *)rval;
+            post_filter = &post_filter_holder;
         }
         if (Qnil != (rval = rb_hash_aref(roptions, sym_sort))) {
             if (TYPE(rval) != T_DATA || CLASS_OF(rval) == cSortField) {
@@ -2640,7 +2650,7 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
         }
     }
 
-    td = sea->search(sea, query, offset, limit, filter, sort, filter_func, 0);
+    td = sea->search(sea, query, offset, limit, filter, sort, post_filter, 0);
     if (filter) filt_deref(filter);
     return td;
 }
@@ -4203,12 +4213,13 @@ static void
 Init_Searcher(void)
 {
     /* option hash keys for Searcher#search */
-    sym_offset      = ID2SYM(rb_intern("offset"));
-    sym_limit       = ID2SYM(rb_intern("limit"));
-    sym_all         = ID2SYM(rb_intern("all"));
-    sym_filter      = ID2SYM(rb_intern("filter"));
-    sym_filter_proc = ID2SYM(rb_intern("filter_proc"));
-    sym_sort        = ID2SYM(rb_intern("sort"));
+    sym_offset          = ID2SYM(rb_intern("offset"));
+    sym_limit           = ID2SYM(rb_intern("limit"));
+    sym_all             = ID2SYM(rb_intern("all"));
+    sym_filter          = ID2SYM(rb_intern("filter"));
+    sym_filter_proc     = ID2SYM(rb_intern("filter_proc"));
+    sym_c_filter_proc   = ID2SYM(rb_intern("c_filter_proc"));
+    sym_sort            = ID2SYM(rb_intern("sort"));
 
     sym_excerpt_length  = ID2SYM(rb_intern("excerpt_length"));
     sym_num_excerpts    = ID2SYM(rb_intern("num_excerpts"));  

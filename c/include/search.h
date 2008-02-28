@@ -754,7 +754,13 @@ extern bool fdshq_lt(FieldDoc *fd1, FieldDoc *fd2);
  *
  ***************************************************************************/
 
-typedef float (*filter_ft)(int doc_num, float score, Searcher *self);
+typedef float (*filter_ft)(int doc_num, float score, Searcher *self, void *arg);
+
+typedef struct PostFilter
+{
+    float (*filter_func)(int doc_num, float score, Searcher *self, void *arg);
+    void *arg;  
+} PostFilter;
 
 struct Searcher
 {
@@ -767,19 +773,19 @@ struct Searcher
     Weight      *(*create_weight)(Searcher *self, Query *query);
     TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
                            int num_docs, Filter *filter, Sort *sort,
-                           filter_ft filter_func,
+                           PostFilter *post_filter,
                            bool load_fields);
     TopDocs     *(*search_w)(Searcher *self, Weight *weight, int first_doc,
                              int num_docs, Filter *filter, Sort *sort,
-                             filter_ft filter_func,
+                             PostFilter *post_filter,
                              bool load_fields);
     void         (*search_each)(Searcher *self, Query *query, Filter *filter,
-                                filter_ft filter_func,
+                                PostFilter *post_filter,
                                 void (*fn)(Searcher *, int, float, void *),
                                 void *arg);
     void         (*search_each_w)(Searcher *self, Weight *weight,
                                   Filter *filter,
-                                  filter_ft filter_func,
+                                  PostFilter *post_filter,
                                   void (*fn)(Searcher *, int, float, void *),
                                   void *arg);
     Query       *(*rewrite)(Searcher *self, Query *original);
@@ -789,7 +795,6 @@ struct Searcher
                                     const char *field);
     Similarity  *(*get_similarity)(Searcher *self);
     void         (*close)(Searcher *self);
-    void        *arg; /* used to pass values to Searcher functions */
 };
 
 #define searcher_doc_freq(s, t)         s->doc_freq(s, t)

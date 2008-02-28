@@ -43,7 +43,7 @@ extern void index_add_string(Index *self, char *str, Analyzer *analyzer);
 extern void index_add_array(Index *self, char **ary, Analyzer *analyzer);
 extern TopDocs *index_search_str(Index *self, char *query, int first_doc,
                                  int num_docs, Filter *filter,
-                                 Sort *sort, filter_ft filter_func);
+                                 Sort *sort, PostFilter *post_filter);
 extern Query *index_get_query(Index *self, char *qstr);
 extern Document *index_get_doc(Index *self, int doc_num);
 extern Document *index_get_doc_ts(Index *self, int doc_num);
@@ -53,9 +53,9 @@ extern Document *index_get_doc_term(Index *self, const char *field,
 extern void index_delete(Index *self, int doc_num);
 extern void index_delete_term(Index *self, const char *field, const char *term);
 extern void index_delete_id(Index *self, const char *id);
-extern void index_delete_query(Index *self, Query *q, Filter *f, filter_ft ff);
+extern void index_delete_query(Index *self, Query *q, Filter *f, PostFilter *pf);
 extern void index_delete_query_str(Index *self, char *qstr,
-                                   Filter *f, filter_ft ff);
+                                   Filter *f, PostFilter *pf);
 extern int index_term_id(Index *self, const char *field, const char *term);
 extern Explanation *index_explain(Index *self, Query *q, int doc_num);
 extern void index_auto_flush_ir(Index *self);

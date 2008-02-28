@@ -1,1 +1,4 @@
 * add .. operator to query parser
+* fix compression. I guess I'll just assume zlib is installed,
+  as I think it has to be for ruby to be installed.
+* add rake install

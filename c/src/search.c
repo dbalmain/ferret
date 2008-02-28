@@ -5,7 +5,7 @@
 
 /***************************************************************************
  *
- * Explanation
+ * Explanation - Used to give details for query scores
  *
  ***************************************************************************/
 
@@ -46,7 +46,8 @@ char *expl_to_s_depth(Explanation *expl, int depth)
     memset(buffer, ' ', sizeof(char) * depth * 2);
     buffer[depth*2] = 0;
 
-    buffer = estrcat(buffer, strfmt("%f = %s\n", expl->value, expl->description));
+    buffer = estrcat(buffer, strfmt("%f = %s\n",
+                                    expl->value, expl->description));
     for (i = 0; i < num_details; i++) {
         buffer = estrcat(buffer, expl_to_s_depth(expl->details[i], depth + 1));
     }
@@ -441,8 +442,8 @@ Query *q_create(size_t size)
     Query *self = (Query *)ecalloc(size);
 #ifdef DEBUG
     if (size < sizeof(Query)) {
-        RAISE(FERRET_ERROR, "Size of a query <%d> should never be smaller than the "
-              "size of a Query struct <%d>", (int)size, (int)sizeof(Query));
+        RAISE(FERRET_ERROR, "Size of a query <%d> should never be smaller than "
+              "the size of a Query struct <%d>", (int)size, (int)sizeof(Query));
     }
 #endif
     self->boost             = 1.0;
@@ -1013,11 +1014,12 @@ static int isea_max_doc(Searcher *self)
     return ir->max_doc(ir);
 }
 
-#define IS_FILTERED(bits, filter_func, scorer, searcher) \
+#define IS_FILTERED(bits, post_filter, scorer, searcher) \
 ((bits && !bv_get(bits, scorer->doc))\
- || (filter_func \
+ || (post_filter \
      && !(filter_factor = \
-          filter_func(scorer->doc, scorer->score(scorer), searcher))))
+          post_filter->filter_func(scorer->doc, scorer->score(scorer),\
+                                   searcher, post_filter->arg))))
 
 static TopDocs *isea_search_w(Searcher *self,
                               Weight *weight,
@@ -1025,7 +1027,7 @@ static TopDocs *isea_search_w(Searcher *self,
                               int num_docs,
                               Filter *filter,
                               Sort *sort,
-                              filter_ft filter_func,
+                              PostFilter *post_filter,
                               bool load_fields)
 {
     int max_size = num_docs + (num_docs == INT_MAX ? 0 : first_doc);
@@ -1071,7 +1073,7 @@ static TopDocs *isea_search_w(Searcher *self,
     }
 
     while (scorer->next(scorer)) {
-        if (IS_FILTERED(bits, filter_func, scorer, self)) {
+        if (IS_FILTERED(bits, post_filter, scorer, self)) {
             continue;
         }
         total_hits++;
@@ -1110,19 +1112,19 @@ static TopDocs *isea_search(Searcher *self,
                             int num_docs,
                             Filter *filter,
                             Sort *sort,
-                            filter_ft filter_func,
+                            PostFilter *post_filter,
                             bool load_fields)
 {
     TopDocs *td;
     Weight *weight = q_weight(query, self);
     td = isea_search_w(self, weight, first_doc, num_docs, filter,
-                         sort, filter_func, load_fields);
+                         sort, post_filter, load_fields);
     weight->destroy(weight);
     return td;
 }
 
 static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
-                               filter_ft filter_func,
+                               PostFilter *post_filter,
                                void (*fn)(Searcher *, int, float, void *),
                                void *arg)
 {
@@ -1138,7 +1140,7 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
     }
 
     while (scorer->next(scorer)) {
-        if (IS_FILTERED(bits, filter_func, scorer, self)) {
+        if (IS_FILTERED(bits, post_filter, scorer, self)) {
             continue;
         }
         fn(self, scorer->doc, filter_factor * scorer->score(scorer), arg);
@@ -1147,12 +1149,12 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
 }
 
 static void isea_search_each(Searcher *self, Query *query, Filter *filter,
-                             filter_ft filter_func,
+                             PostFilter *post_filter,
                              void (*fn)(Searcher *, int, float, void *),
                              void *arg)
 {
     Weight *weight = q_weight(query, self);
-    isea_search_each_w(self, weight, filter, filter_func, fn, arg);
+    isea_search_each_w(self, weight, filter, post_filter, fn, arg);
     weight->destroy(weight);
 }
 
@@ -1273,38 +1275,38 @@ static Weight *cdfsea_create_weight(Searcher *self, Query *query)
 }
 
 static TopDocs *cdfsea_search_w(Searcher *self, Weight *w, int fd, int nd,
-                                Filter *f, Sort *s, filter_ft ff, bool load)
+                                Filter *f, Sort *s, PostFilter *pf, bool load)
 {
     (void)self; (void)w; (void)fd; (void)nd;
-    (void)f; (void)s; (void)ff; (void)load;
+    (void)f; (void)s; (void)pf; (void)load;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
     return NULL;
 }
 
 static TopDocs *cdfsea_search(Searcher *self, Query *q, int fd, int nd,
-                              Filter *f, Sort *s, filter_ft ff, bool load)
+                              Filter *f, Sort *s, PostFilter *pf, bool load)
 {
     (void)self; (void)q; (void)fd; (void)nd;
-    (void)f; (void)s; (void)ff; (void)load;
+    (void)f; (void)s; (void)pf; (void)load;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
     return NULL;
 }
 
 static void cdfsea_search_each(Searcher *self, Query *query, Filter *filter,
-                               filter_ft ff, 
+                               PostFilter *pf, 
                                void (*fn)(Searcher *, int, float, void *),
                                void *arg)
 {
-    (void)self; (void)query; (void)filter; (void)ff; (void)fn; (void)arg;
+    (void)self; (void)query; (void)filter; (void)pf; (void)fn; (void)arg;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
 }
 
 static void cdfsea_search_each_w(Searcher *self, Weight *w, Filter *filter,
-                                 filter_ft ff, 
+                                 PostFilter *pf, 
                                  void (*fn)(Searcher *, int, float, void *),
                                  void *arg)
 {
-    (void)self; (void)w; (void)filter; (void)ff; (void)fn; (void)arg;
+    (void)self; (void)w; (void)filter; (void)pf; (void)fn; (void)arg;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
 }
 
@@ -1496,7 +1498,7 @@ void msea_search_each_i(Searcher *self, int doc_num, float score, void *arg)
 }
 
 static void msea_search_each_w(Searcher *self, Weight *w, Filter *filter,
-                               filter_ft filter_func,
+                               PostFilter *post_filter,
                                void (*fn)(Searcher *, int, float, void *),
                                void *arg)
 {
@@ -1510,17 +1512,18 @@ static void msea_search_each_w(Searcher *self, Weight *w, Filter *filter,
     for (i = 0; i < msea->s_cnt; i++) {
         s = msea->searchers[i];
         mse_arg.start = msea->starts[i];
-        s->search_each_w(s, w, filter, filter_func,
+        s->search_each_w(s, w, filter, post_filter,
                          &msea_search_each_i, &mse_arg);
     }
 }
 
 static void msea_search_each(Searcher *self, Query *query, Filter *filter,
-                             filter_ft filter_func,
-                             void (*fn)(Searcher *, int, float, void *), void *arg)
+                             PostFilter *post_filter,
+                             void (*fn)(Searcher *, int, float, void *),
+                             void *arg)
 {
     Weight *w = q_weight(query, self);
-    msea_search_each_w(self, w, filter, filter_func, fn, arg);
+    msea_search_each_w(self, w, filter, post_filter, fn, arg);
     w->destroy(w);
 }
 
@@ -1548,7 +1551,7 @@ static TopDocs *msea_search_w(Searcher *self,
                               int num_docs,
                               Filter *filter,
                               Sort *sort,
-                              filter_ft filter_func,
+                              PostFilter *post_filter,
                               bool load_fields)
 {
     int max_size = num_docs + (num_docs == INT_MAX ? 0 : first_doc);
@@ -1578,7 +1581,7 @@ static TopDocs *msea_search_w(Searcher *self,
     for (i = 0; i < MSEA(self)->s_cnt; i++) {
         Searcher *s = MSEA(self)->searchers[i];
         TopDocs *td = s->search_w(s, weight, 0, max_size,
-                                  filter, sort, filter_func, true);
+                                  filter, sort, post_filter, true);
         /*if (sort) printf("sort = %s\n", sort_to_s(sort)); */
         if (td->size > 0) {
             /*printf("td->size = %d %d\n", td->size, num_docs); */
@@ -1627,13 +1630,13 @@ static TopDocs *msea_search(Searcher *self,
                             int num_docs,
                             Filter *filter,
                             Sort *sort,
-                            filter_ft filter_func,
+                            PostFilter *post_filter,
                             bool load_fields)
 {
     TopDocs *td;
     Weight *weight = q_weight(query, self);
     td = msea_search_w(self, weight, first_doc, num_docs, filter,
-                       sort, filter_func, load_fields);
+                       sort, post_filter, load_fields);
     weight->destroy(weight);
     return td;
 }
