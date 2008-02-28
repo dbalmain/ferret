@@ -130,6 +130,7 @@ end
 # Testing
 ##############################################################################
 
+task :test => 'test:units'
 namespace :test do
   desc "Run tests with Valgrind"
   task :valgrind do
@@ -252,11 +253,7 @@ if ENV['FERRET_DEV']
   desc "Generate and upload a new release"
   task :release => 'release:release'
   namespace :release do
-    task :release => [
-      :status_check,
-      'test:all',
-      :package,
-      :tag] do
+    task :release => [:status_check, 'test:all', :package, :tag] do
       say 
       say "**************************************************************"
       say "* Release #{Ferret::VERSION} Complete."

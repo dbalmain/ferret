@@ -25,7 +25,7 @@ class SampleLargeTest < Test::Unit::TestCase
   end
   
   def test_read_file_after_two_gigs
-    assert @index.reader[RECORDS - 5].load.is_a?Hash
+    assert @index.reader[RECORDS - 5].load.is_a?(Hash)
   end
   
   def create_index!
