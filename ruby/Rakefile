@@ -255,7 +255,6 @@ if ENV['FERRET_DEV']
     task :release => [
       :status_check,
       'test:all',
-      :update_version,
       :package,
       :tag] do
       say 
@@ -264,7 +263,7 @@ if ENV['FERRET_DEV']
       say "* Packages ready to upload."
       say "**************************************************************"
       say 
-      reversion("lib/ferret_version.rb")
+      reversion("lib/ferret/version.rb")
     end
 
     # Validate that everything is ready to go for a release.
@@ -285,19 +284,27 @@ if ENV['FERRET_DEV']
         new_version = gets.chomp!
       end until prompt("Change to version #{new_version}?")
       
-      open(fn) do |ferret_in|
-        open(fn + ".new", "w") do |ferret_out|
-          ferret_in.each do |line|
-            if line =~ /^  VERSION\s*=\s*/
-              ferret_out.puts "  VERSION = '#{new_version}'"
-            else
-              ferret_out.puts line
+      if ENV['RELTEST']
+        say "Would change the version in lib/ferret/version.rb from"
+        say "    #{Ferret::VERSION} => #{new_version}"
+        say "and then commit the changes with the command"
+        say "   svn ci -m \"Updated to version #{new_version}\" " +
+            "lib/ferret/version.rb"
+      else
+        open(fn) do |ferret_in|
+          open(fn + ".new", "w") do |ferret_out|
+            ferret_in.each do |line|
+              if line =~ /^  VERSION\s*=\s*/
+                ferret_out.puts "  VERSION = '#{new_version}'"
+              else
+                ferret_out.puts line
+              end
             end
           end
         end
+        mv fn + ".new", fn
+        sh %{svn ci -m "Updated to version #{new_version}" lib/ferret/version.rb}
       end
-      mv fn + ".new", fn
-      sh %{svn ci -m "Updated to version #{new_version}" lib/ferret/version.rb}
     end
 
     # Tag all the SVN files with the latest release number

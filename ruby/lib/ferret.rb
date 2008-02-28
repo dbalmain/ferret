@@ -23,7 +23,7 @@
 # :include: ../TUTORIAL
 $: << File.expand_path(File.join(File.dirname(__FILE__), "../ext"))
 require 'ferret_ext'
-require 'ferret_version'
+require 'ferret/version'
 require 'ferret/document'
 require 'ferret/index'
 require 'ferret/field_infos'
