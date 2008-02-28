@@ -24,12 +24,6 @@ def prompt(msg)
   end
 end
 
-case gets.chomp!
-when /^(y(es)?)?$/i: puts true
-else
-  puts false
-end
-
 task :default => 'test:unit'
 #task :default => :build do
 #  sh "ruby test/unit/index/tc_index.rb"
@@ -309,10 +303,9 @@ if ENV['FERRET_DEV']
     # Tag all the SVN files with the latest release number
     task :tag => :status_check do
       reltag = "REL-#{Ferret::VERSION}"
-      reltag << ENV['REUSE'] if ENV['REUSE']
       say "Tagging SVN with [#{reltag}]"
       if ENV['RELTEST']
-        say "Release Task Testing, skipping SVN tagging. Would do the following;"
+        say "Release Task Testing, skipping SVN tagging. Would do;"
         say %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
       else
         sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
