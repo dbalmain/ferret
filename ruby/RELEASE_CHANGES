@@ -1,0 +1,129 @@
+(in /home/dave/w/ferret/ruby)
+------------------------------------------------------------------------
+r828 | dbalmain | 2008-02-29 10:48:33 +1100 (Fri, 29 Feb 2008) | 1 line
+
+Moved largefile test to a new long_running test directory so that tests can be run more easily
+------------------------------------------------------------------------
+r826 | dbalmain | 2008-02-29 10:09:48 +1100 (Fri, 29 Feb 2008) | 1 line
+
+Updated references to ferret/version.rb. Updated Rakefile to allow release task testing
+------------------------------------------------------------------------
+r825 | dbalmain | 2008-02-29 10:02:27 +1100 (Fri, 29 Feb 2008) | 1 line
+
+Updated Rakefile to clean it up (added namespaces).
+------------------------------------------------------------------------
+r824 | dbalmain | 2008-02-29 10:01:08 +1100 (Fri, 29 Feb 2008) | 1 line
+
+Updated :filter_proc so that custom PostFilter extensions can be built and applied to searches. See ruby/examples/c_extensions/age_filter
+------------------------------------------------------------------------
+r823 | dbalmain | 2008-02-26 18:44:39 +1100 (Tue, 26 Feb 2008) | 1 line
+
+Fixed ticket #277. This will also help with the correct highlighting of matching urls in queries
+------------------------------------------------------------------------
+r822 | dbalmain | 2008-02-22 12:46:48 +1100 (Fri, 22 Feb 2008) | 1 line
+
+Updated to latest posh.h => http://poshlib.hookatooka.com/poshlib/
+------------------------------------------------------------------------
+r821 | dbalmain | 2008-02-22 09:05:25 +1100 (Fri, 22 Feb 2008) | 1 line
+
+Added ruby bindings to MultiMapper for testing in Ruby
+------------------------------------------------------------------------
+r820 | dbalmain | 2008-02-09 14:30:55 +1100 (Sat, 09 Feb 2008) | 1 line
+
+Updated svn:ignore properties to handle new stemmer files
+------------------------------------------------------------------------
+r819 | dbalmain | 2008-02-09 14:27:46 +1100 (Sat, 09 Feb 2008) | 9 lines
+
+Fixed Ticket #337. StemFilter.new now works with 'English', :english or
+'EnGlIsH' and 'UTF_8' or 'utf-8' etc.
+
+Also, good news for Norwegians, Romanians, Turks and Finns. We now have 3 new
+stemmers for Norwegian, Romanian and Turkish and 2 new stop-word lists for
+Finnish and Hungarian. Please try them out and let me know if there are any
+problems.
+
+
+------------------------------------------------------------------------
+r818 | dbalmain | 2008-02-09 13:20:37 +1100 (Sat, 09 Feb 2008) | 1 line
+
+Removed old version of stemmer. Making way for new version. This will break build temporarily
+------------------------------------------------------------------------
+r817 | dbalmain | 2008-02-09 11:55:02 +1100 (Sat, 09 Feb 2008) | 1 line
+
+Added a very useful group_by example.
+------------------------------------------------------------------------
+r816 | dbalmain | 2008-02-09 09:26:20 +1100 (Sat, 09 Feb 2008) | 1 line
+
+Updated documentation for :filter_proc to indicate that you can return a Float to be used to modify the score.
+------------------------------------------------------------------------
+r815 | dbalmain | 2008-02-09 00:27:58 +1100 (Sat, 09 Feb 2008) | 1 line
+
+Made TypedRangeQuery the default range query when used from Ferret::Index::Index
+------------------------------------------------------------------------
+r814 | dbalmain | 2008-02-08 23:16:55 +1100 (Fri, 08 Feb 2008) | 1 line
+
+Made the TypedRangeQuery optional in the query parser
+------------------------------------------------------------------------
+r813 | dbalmain | 2008-02-08 23:12:13 +1100 (Fri, 08 Feb 2008) | 1 line
+
+Added TypedRangeQuery and TypedRangeFilter to the ruby bindings
+------------------------------------------------------------------------
+r812 | dbalmain | 2008-02-08 22:19:31 +1100 (Fri, 08 Feb 2008) | 1 line
+
+Added TypedRangeQuery so that you can do range queries with unpadded numbers
+------------------------------------------------------------------------
+r811 | dbalmain | 2008-02-08 16:22:06 +1100 (Fri, 08 Feb 2008) | 3 lines
+
+Whoops, quick fix. Had unnecessarily nested locks.
+
+
+------------------------------------------------------------------------
+r810 | dbalmain | 2008-02-08 16:17:33 +1100 (Fri, 08 Feb 2008) | 1 line
+
+Added patch for Ticket #340 which adds batch updating and deleting. Made significant modifications from the patch.
+------------------------------------------------------------------------
+r809 | dbalmain | 2008-02-08 13:49:07 +1100 (Fri, 08 Feb 2008) | 18 lines
+
+Added score filter. This enables you to filter the results and modify the score
+to change the sort order.
+
+For example to modify the scoring so that a document with todays date gets
+twice the score factor as a document 50 days ago and four times the score
+factor of a document 100 days ago (ie a half life of 50 days) you would do
+this;
+
+    fifty_day_half_life_filter = lambda do |doc, score, searcher|
+      days = (Date.today() - Date.parse(searcher[doc][:date])).to_i
+      1.0 / (2.0 ** (days.to_f / 50.0))
+    end
+
+    top_docs = @searcher.search(q, :filter_proc => fifty_day_half_life_filter)
+
+
+
+
+------------------------------------------------------------------------
+r808 | dbalmain | 2008-01-11 07:14:01 +1100 (Fri, 11 Jan 2008) | 1 line
+
+Changed unsigned long longs to f_u64 type to fix ticket #336
+------------------------------------------------------------------------
+r807 | dbalmain | 2008-01-11 07:12:40 +1100 (Fri, 11 Jan 2008) | 1 line
+
+Changed unsigned long longs to f_u64 type to fix ticket #336
+------------------------------------------------------------------------
+r806 | dbalmain | 2008-01-11 07:01:00 +1100 (Fri, 11 Jan 2008) | 1 line
+
+Minor comment correction
+------------------------------------------------------------------------
+r805 | dbalmain | 2007-12-12 10:28:23 +1100 (Wed, 12 Dec 2007) | 1 line
+
+Fixed Ticket #332. Added spaces so that code parses correctly.
+------------------------------------------------------------------------
+r804 | dbalmain | 2007-12-03 11:20:34 +1100 (Mon, 03 Dec 2007) | 1 line
+
+Added test for ticket #324
+------------------------------------------------------------------------
+r803 | dbalmain | 2007-12-03 11:12:55 +1100 (Mon, 03 Dec 2007) | 1 line
+
+Fixed Ferret::Index::Index#query_update for ticket #324. Was only updating a maximum of 10 records.
+------------------------------------------------------------------------

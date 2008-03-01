@@ -7,22 +7,27 @@ require 'rake/testtask'
 $:. << 'lib'
 require 'ferret/version'
 
+
 def say(msg='')
   STDERR.puts msg
 end
 
 def prompt(msg)
-  print "#{msg} [Yna]: "
+  STDERR.print "#{msg} [Yna]: "
   while true
-    case gets.chomp!
+    case STDIN.gets.chomp!
     when /^(y(es)?)?$/i: return true
     when /^no?$/i: return false
     when /^a(bort)?$/i: fail('aborted')
     else
-      puts "Sorry, didn't understand your answer. Please type y, n or a."
+      STDERR.print "Sorry, I don't understand. Please type y, n or a: "
     end
   end
 end
+
+windows = (RUBY_PLATFORM =~ /win/) rescue nil
+SUDO = windows ? "" : "sudo "
+
 
 task :default => 'test:unit'
 #task :default => :build do
@@ -78,7 +83,7 @@ namespace :build do
     cp "ext/inc/lang.h", "ext/lang.h"
     cp "ext/inc/threading.h", "ext/threading.h"
     cd "ext"
-    if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
+    if windows and ENV['make'].nil?
       begin
         sh "nmake"
       rescue Exception => e
@@ -149,6 +154,14 @@ namespace :test do
     t.verbose = true
   end
   task :unit => :units
+
+  desc "run tests using locally installed gem"
+  Rake::TestTask.new("installed") do |t|
+    t.libs << "test/unit"
+    t.ruby_opts << '-rtest/test_installed'
+    t.pattern = 'test/unit/t[cs]_*.rb'
+    t.verbose = true
+  end
 end
 
 ##############################################################################
@@ -158,6 +171,9 @@ end
 desc "Generate API documentation"
 task :doc => 'doc:rdoc'
 namespace :doc do
+  if allison_template = Gem.cache.search('allison').last.full_gem_path
+    allison_template = File.join(allison_template, 'lib/allison.rb')
+  end
   desc "Generate documentation for the application"
   $rd = Rake::RDocTask.new do |rdoc|
     rdoc.rdoc_dir = 'doc/api'
@@ -165,6 +181,7 @@ namespace :doc do
     rdoc.options << '--line-numbers'
     rdoc.options << '--inline-source'
     rdoc.options << '--charset=utf-8'
+    rdoc.template = allison_template if allison_template
     rdoc.rdoc_files.include('README')
     rdoc.rdoc_files.include('TODO')
     rdoc.rdoc_files.include('TUTORIAL')
@@ -178,10 +195,15 @@ namespace :doc do
   task :todo do
     FileList['**/*.rb', 'ext/*.[ch]'].egrep /[#*].*(FIXME|TODO|TBD)/i
   end
+
+  task :publish => :rdoc do
+    sh %{scp -r doc/api/ www@davebalmain.com:/var/www/ferret/}
+
+  end
 end
 
 ##############################################################################
-# Packaging
+# Packaging and Installing
 ##############################################################################
 
 PKG_FILES = FileList[
@@ -228,7 +250,7 @@ spec = Gem::Specification.new do |s|
     '--main' << 'README' << '--line-numbers' <<
     'TUTORIAL' << 'TODO'
 
-  if RUBY_PLATFORM =~ /mswin/
+  if windows
     s.files = PKG_FILES.to_a + ["ext/#{EXT}"]
     s.extensions.clear
     s.platform = Gem::Platform::WIN32
@@ -238,12 +260,35 @@ spec = Gem::Specification.new do |s|
 end
 
 package_task = Rake::GemPackageTask.new(spec) do |pkg|
-  unless RUBY_PLATFORM =~ /mswin/
+  unless windows
     pkg.need_zip = true
     pkg.need_tar = true
   end
 end
 
+desc "Run :gem and install the resulting gem"
+task :install => :gem do
+  sh "#{SUDO}gem install pkg/ferret-#{Ferret::VERSION}.gem --no-rdoc --no-ri -l"
+end
+
+desc "Run :clobber and uninstall the .gem"
+task :uninstall => :clobber do
+  sh "#{SUDO}gem uninstall ferret"
+end
+
+def list_changes_since_last_release
+  tag_listing = `svn list svn://davebalmain.com/ferret/tags`
+  last_tag = tag_listing.split("\n").last
+  log = `svn log --stop-on-copy svn://davebalmain.com/ferret/tags/#{last_tag}`
+  first_log = log.split(/-------+/)[-2]
+  last_revision = /^r(\d+)\s+\|/.match(first_log)[1]
+  `svn log .. -rHEAD:#{last_revision}`
+end
+
+desc "List changes since last release"
+task :changes do
+  puts list_changes_since_last_release
+end
 
 if ENV['FERRET_DEV']
   ##############################################################################
@@ -266,9 +311,8 @@ if ENV['FERRET_DEV']
     # Validate that everything is ready to go for a release.
     task :status_check do
       # Are all source files checked in?
-      data = `svn -q --ignore-externals status`
-      unless data =~ /^$/
-        fail "'svn -q status' is not clean ... do you have unchecked-in files?"
+      unless `svn -q --ignore-externals status` =~ /^$/
+        #fail "'svn -q status' is not clean ... do you have unchecked-in files?"
       end
       
       say "No outstanding checkins found ... OK"
@@ -278,7 +322,7 @@ if ENV['FERRET_DEV']
       new_version = nil
       begin
         print "Ferret is currently at #{Ferret::VERSION}. What version now? "
-        new_version = gets.chomp!
+        new_version = STDIN.gets.chomp!
       end until prompt("Change to version #{new_version}?")
       
       if ENV['RELTEST']
@@ -314,6 +358,20 @@ if ENV['FERRET_DEV']
       else
         sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
       end
+    end
+
+    desc "Publish gem on rubyforge for download. Will only do the linux version"
+    task :publish do
+      require 'rubyforge'
+      require 'rake/contrib/rubyforgepublisher'
+      version = Ferret::VERSION
+
+      packages = %w(gem tgz zip).map {|ext| "pkg/ferret-#{version}.#{ext}"}
+
+      rubyforge = RubyForge.new
+      rubyforge.login
+      rubyforge.add_release('ferret', 'ferret',
+                            "ferret-#{version}", *packages)
     end
   end
 end

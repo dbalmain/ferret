@@ -1,6 +1,11 @@
 $:.unshift File.dirname(__FILE__)
-$:.unshift File.join(File.dirname(__FILE__), '../lib')
-$:.unshift File.join(File.dirname(__FILE__), '../ext')
+if $test_installed_gem
+  require 'rubygems'
+  require 'ferret'
+else
+  $:.unshift File.join(File.dirname(__FILE__), '../lib')
+  $:.unshift File.join(File.dirname(__FILE__), '../ext')
+end
 
 ENV['LANG'] = "en_US.UTF-8"
 ENV['LC_CTYPE'] = "en_US.UTF-8"

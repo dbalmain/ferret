@@ -1,0 +1,58 @@
+The most significant update in this release is that you can now alter the
+scoring, thereby altering the ordering of search results. A great application of
+this is that you can now change the weight of a document based on its age;
+
+    require 'ferret'
+
+    age_weight = lambda do |doc, score, searcher|
+      age = (Date.today - Date.parse(searcher[doc][:date])).to_i
+      1 / 2 ** (age.to_f/365)
+    end
+
+    index = Ferret::I.new
+
+    sales = [
+      { :artist => 'Giovanni Bellini',
+        :date => '2006-10-23',
+        :work => 'Transfiguration'
+      },
+      { :artist => 'Giovanni Bellini',
+        :date => '2008-01-05',
+        :work => 'Pesaro Altarpiece'
+      },
+      { :artist => 'Gentile Bellini',
+        :date => '2008-02-10',
+        :work => 'St. Dominic'
+      },
+    ].each {|doc| index << doc}
+
+    puts index.search('artist:(Giovanni Bellini)').to_s(:work)
+    # =>
+    #   TopDocs: total_hits = 3, max_score = 0.767351 [
+    #           0 "Transfiguration": 0.767351
+    #           1 "Pesaro Altarpiece": 0.767351
+    #           2 "St. Dominic": 0.129147
+    #   ]
+
+    puts index.search('artist:(Giovanni Bellini)',
+                      :filter_proc => age_weight).to_s(:work)
+    # =>
+    #   TopDocs: total_hits = 3, max_score = 0.718006 [
+    #           1 "Pesaro Altarpiece": 0.718006
+    #           0 "Transfiguration": 0.311937
+    #           2 "St. Dominic": 0.129147
+    #   ]
+
+You can also now write your own C extensions to filter the search results. You
+can see an example of this by downloading the source and looking at;
+
+    ferret_unzipped/ruby/examples/c_extensions/age_filter/
+
+Alternatively, you can view the code at;
+
+    http://ferret.davebalmain.com/trac/browser/trunk/ruby/examples/c_extensions?rev=828
+
+Also, good news for Norwegians, Romanians, Turks and Finns. We now have 3 new
+stemmers for Norwegian, Romanian and Turkish and 2 new stop-word lists for
+Finnish and Hungarian. Please try them out and let me know if there are any
+problems.

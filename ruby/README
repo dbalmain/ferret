@@ -1,6 +1,6 @@
 = Ferret
 
-Ferret is a Ruby port of the Java Lucene search engine.
+Ferret is a Ruby search library inspired by the Java Lucene search engine.
 (http://jakarta.apache.org/lucene/) In the same way as Lucene, it is not a
 standalone application, but a library you can use to index documents and
 search for things in them later.
