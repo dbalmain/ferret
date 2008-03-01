@@ -1,39 +1,19 @@
 = Ferret
 
-Ferret is a Ruby search library inspired by the Java Lucene search engine.
-(http://jakarta.apache.org/lucene/) In the same way as Lucene, it is not a
-standalone application, but a library you can use to index documents and
+Ferret is a Ruby search library inspired by the Apache Lucene search engine for
+Java (http://jakarta.apache.org/lucene/). In the same way as Lucene, it is not
+a standalone application, but a library you can use to index documents and
 search for things in them later.
 
 == Requirements
 
 * Ruby 1.8
-* C compiler to build the extension. Tested with gcc, VC6 and VC2005
+* C compiler to build the extension. Tested with gcc, VC6
+* make (or nmake on windows)
 
 == Installation
 
-If you have gems installed you can simply do;
-
   gem install ferret
-
-Otherwise, you will need Rake installed. De-compress the archive and enter its top directory.
-
-  tar zxpvf ferret-<version>.tar.gz
-  cd ferret-<version>
-
-Run the following;
-
-  $ rake ext
-  $ ruby setup.rb config
-  $ ruby setup.rb setup
-  # ruby setup.rb install
-  
-These simple steps install ferret in the default location of Ruby libraries.
-You can also install files into your favorite directory by supplying setup.rb
-some options. Try;
-
- $ ruby setup.rb --help
-
 
 == Usage
 

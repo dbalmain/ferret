@@ -41,12 +41,15 @@ task :default => 'test:unit'
 task :build => 'build:compile'
 namespace :build do
   EXT = "ferret_ext.so"
+  # Note: libstemmer.[h] is necessary so that the file isn't included when it
+  # doesn't exist. It needs to have one regular expression element.
   EXT_SRC = FileList["../c/src/*.[c]", "../c/include/*.h",
                      "../c/lib/libstemmer_c/src_c/*.[ch]",
                      "../c/lib/libstemmer_c/runtime/*.[ch]",
                      "../c/lib/libstemmer_c/libstemmer/*.[ch]",
-                     "../c/lib/libstemmer_c/include/libstemmer.h"]
+                     "../c/lib/libstemmer_c/include/libstemmer.[h]"]
   EXT_SRC.exclude('../c/**/ind.[ch]')
+  puts EXT_SRC
 
   EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
   SRC = FileList["ext/*.[ch]", EXT_SRC_DEST].uniq
@@ -76,12 +79,23 @@ namespace :build do
     end
   end if File.exists?("../c")
 
+  inc_headers = %w(lang threading).map do |header|
+    orig_header = "ext/inc/#{header}.h"
+    if File.exists?(orig_header)
+      inc_header = "ext/#{header}.h"
+      file orig_header => inc_headers do
+        cp inc_headers, orig_header
+      end
+      inc_header
+    else
+      nil
+    end
+  end.compact
+
   desc "Build the extension (ferret_ext.so). You'll need a C compiler and Make."
   task :compile => ["ext/#{EXT}"] + SRC
 
-  file "ext/#{EXT}" => ["ext/Makefile"] do
-    cp "ext/inc/lang.h", "ext/lang.h"
-    cp "ext/inc/threading.h", "ext/threading.h"
+  file "ext/#{EXT}" => ["ext/Makefile"] + inc_headers do
     cd "ext"
     if windows and ENV['make'].nil?
       begin
@@ -108,20 +122,6 @@ namespace :build do
       sh "make"
     end
     cd ".."
-  end
-
-  # The following files are special tasks for the C files which are swapped for
-  # inclusion in the ruby bindings with the ones used in straight C Ferret.
-  #
-  # For example, pthread is used in straight C but not in the Ruby bindings.
-  file "ext/lang.h" => ["ext/inc/lang.h"] do
-    rm_f "ext/lang.h"
-    cp "ext/inc/lang.h", "ext/lang.h"
-  end
-
-  file "ext/threading.h" => ["ext/inc/threading.h"] do
-    rm_f "ext/threading.h"
-    cp "ext/inc/threading.h", "ext/threading.h"
   end
 
   file "ext/Makefile" => SRC do

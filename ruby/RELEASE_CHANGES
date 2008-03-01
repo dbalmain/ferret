@@ -1,5 +1,13 @@
 (in /home/dave/w/ferret/ruby)
 ------------------------------------------------------------------------
+r830 | dbalmain | 2008-03-01 14:10:47 +1100 (Sat, 01 Mar 2008) | 1 line
+
+A few more updates to the build system
+------------------------------------------------------------------------
+r829 | dbalmain | 2008-03-01 13:55:16 +1100 (Sat, 01 Mar 2008) | 1 line
+
+A few more updates to the build system
+------------------------------------------------------------------------
 r828 | dbalmain | 2008-02-29 10:48:33 +1100 (Fri, 29 Feb 2008) | 1 line
 
 Moved largefile test to a new long_running test directory so that tests can be run more easily

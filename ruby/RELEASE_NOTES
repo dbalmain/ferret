@@ -1,6 +1,8 @@
 The most significant update in this release is that you can now alter the
 scoring, thereby altering the ordering of search results. A great application of
-this is that you can now change the weight of a document based on its age;
+this is that you can now change the weight of a document based on its age. In
+this example we have 365 day half life, ie a year-old document has half the
+weight of a new document and twice the weight of a 2-year-old document;
 
     require 'ferret'
 
