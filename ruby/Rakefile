@@ -195,11 +195,6 @@ namespace :doc do
   task :todo do
     FileList['**/*.rb', 'ext/*.[ch]'].egrep /[#*].*(FIXME|TODO|TBD)/i
   end
-
-  task :publish => :rdoc do
-    sh %{scp -r doc/api/ www@davebalmain.com:/var/www/ferret/}
-
-  end
 end
 
 ##############################################################################
@@ -312,7 +307,7 @@ if ENV['FERRET_DEV']
     task :status_check do
       # Are all source files checked in?
       unless `svn -q --ignore-externals status` =~ /^$/
-        #fail "'svn -q status' is not clean ... do you have unchecked-in files?"
+        fail "'svn -q status' is not clean ... do you have unchecked-in files?"
       end
       
       say "No outstanding checkins found ... OK"
@@ -360,8 +355,20 @@ if ENV['FERRET_DEV']
       end
     end
 
+  end
+
+  ##############################################################################
+  # Publishing
+  ##############################################################################
+
+  namespace :publish do
+    PUBLISH_PROMPT = <<-EOF
+      Make sure you updated RELEASE_NOTES and RELEASE_CHANGES and that the
+      package exists. Are you sure you want to continue?
+    EOF
     desc "Publish gem on rubyforge for download. Will only do the linux version"
-    task :publish do
+    task :release do
+      exit unless prompt(PUBLISH_PROMPT)
       require 'rubyforge'
       require 'rake/contrib/rubyforgepublisher'
       version = Ferret::VERSION
@@ -373,6 +380,14 @@ if ENV['FERRET_DEV']
       rubyforge.add_release('ferret', 'ferret',
                             "ferret-#{version}", *packages)
     end
+
+    desc "Publish the documentation"
+    task :docs => 'doc:rdoc' do
+      sh %{scp -r doc/api/ www@davebalmain.com:/var/www/ferret/}
+    end
+
+    desc "Publish the documentation and release"
+    task :all => [:doc, :release]
   end
 end
    
