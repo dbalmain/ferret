@@ -1073,11 +1073,17 @@ static TopDocs *isea_search_w(Searcher *self,
     }
 
     while (scorer->next(scorer)) {
-        if (IS_FILTERED(bits, post_filter, scorer, self)) {
+        if (bits && !bv_get(bits, scorer->doc)) continue;
+        score = scorer->score(scorer);
+        if (post_filter &&
+            !(filter_factor = post_filter->filter_func(scorer->doc,
+                                                       score,
+                                                       self,
+                                                       post_filter->arg))) {
             continue;
         }
         total_hits++;
-        score = filter_factor * scorer->score(scorer);
+        if (filter_factor < 1.0) score *= filter_factor;
         if (score > max_score) max_score = score;
         hit.doc = scorer->doc; hit.score = score;
         hq_insert(hq, &hit);
@@ -1140,10 +1146,16 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
     }
 
     while (scorer->next(scorer)) {
-        if (IS_FILTERED(bits, post_filter, scorer, self)) {
+        if (bits && !bv_get(bits, scorer->doc)) continue;
+        float score = scorer->score(scorer);
+        if (post_filter &&
+            !(filter_factor = post_filter->filter_func(scorer->doc,
+                                                       score,
+                                                       self,
+                                                       post_filter->arg))) {
             continue;
         }
-        fn(self, scorer->doc, filter_factor * scorer->score(scorer), arg);
+        fn(self, scorer->doc, filter_factor * score, arg);
     }
     scorer->destroy(scorer);
 }
