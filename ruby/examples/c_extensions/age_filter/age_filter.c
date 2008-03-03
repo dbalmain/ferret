@@ -23,7 +23,7 @@ static float age_filter(int doc_num, float score, Searcher *searcher, void *arg)
                 " integer. <day> field was '%s'.", day_str);
     }
     age = today - day;
-    return 1.0/pow(2.0, age);
+    return 1.0/pow(2.0, age/50.0);
 }
 
 static VALUE age_filter_init(VALUE self, VALUE rdate_int)

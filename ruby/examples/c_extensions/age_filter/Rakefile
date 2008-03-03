@@ -1,0 +1,20 @@
+require 'rake'
+require 'rake/clean'
+
+EXT = "age_filter.so"
+
+CLEAN.include     ['*.o', '*.obj']
+CLOBBER.include   ['*.so', 'Makefile']
+
+file "#{EXT}" => ["Makefile", 'age_filter.c'] do
+  sh 'make'
+end
+
+file 'Makefile' do
+  sh 'ruby extconf.rb'
+end
+
+desc "Run the example"
+task :default => EXT do
+  sh 'ruby test.rb'
+end

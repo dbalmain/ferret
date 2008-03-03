@@ -49,7 +49,6 @@ namespace :build do
                      "../c/lib/libstemmer_c/libstemmer/*.[ch]",
                      "../c/lib/libstemmer_c/include/libstemmer.[h]"]
   EXT_SRC.exclude('../c/**/ind.[ch]')
-  puts EXT_SRC
 
   EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
   SRC = FileList["ext/*.[ch]", EXT_SRC_DEST].uniq
@@ -383,7 +382,7 @@ if ENV['FERRET_DEV']
 
     desc "Publish the documentation"
     task :docs => 'doc:rdoc' do
-      sh %{scp -r doc/api/ www@davebalmain.com:/var/www/ferret/}
+      sh %{rsync -rzv --delete doc/api/ www@davebalmain.com:/var/www/ferret/}
     end
 
     desc "Publish the documentation and release"
