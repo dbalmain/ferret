@@ -22,6 +22,7 @@ static float age_filter(int doc_num, float score, Searcher *searcher, void *arg)
         rb_raise(rb_eStandardError, "Couldn't parse <day> field in index as an"
                 " integer. <day> field was '%s'.", day_str);
     }
+    lazy_doc_close(lazy_doc);
     age = today - day;
     return 1.0/pow(2.0, age/50.0);
 }
