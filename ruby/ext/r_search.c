@@ -191,8 +191,9 @@ frt_td_to_s(int argc, VALUE *argv, VALUE self)
     VALUE rhits = rb_funcall(self, id_hits, 0);
     Searcher *sea = (Searcher *)DATA_PTR(rb_funcall(self, id_searcher, 0));
     const int len = RARRAY(rhits)->len;
+    int capa = len * 64 + 100;
+    int p = 0;
     char *str = ALLOC_N(char, len * 64 + 100);
-    char *s = str;
     char *field = "id";
     VALUE rstr;
 
@@ -200,28 +201,34 @@ frt_td_to_s(int argc, VALUE *argv, VALUE self)
         field = frt_field(argv[0]);
     }
 
-    sprintf(s, "TopDocs: total_hits = %ld, max_score = %f [\n",
+    sprintf(str, "TopDocs: total_hits = %ld, max_score = %f [\n",
             FIX2INT(rb_funcall(self, id_total_hits, 0)),
             NUM2DBL(rb_funcall(self, id_max_score, 0)));
-    s += strlen(s);
+    p = (int)strlen(str);
 
     for (i = 0; i < len; i++) {
         VALUE rhit = RARRAY(rhits)->ptr[i];
         int doc_id = FIX2INT(rb_funcall(rhit, id_doc, 0));
         char *value = "";
+        size_t value_len = 0;
         LazyDoc *lzd = sea->get_lazy_doc(sea, doc_id);
         LazyDocField *lzdf = h_get(lzd->field_dict, field);
         if (NULL != lzdf) {
             value = lazy_df_get_data(lzdf, 0);
+            value_len = strlen(value);
+        }
+        if (p + value_len + 64 > capa) {
+            capa += (value_len + 64) * (len - i);
+            REALLOC_N(str, char, capa);
         }
 
-        sprintf(s, "\t%d \"%s\": %f\n", doc_id, value,
+        sprintf(str + p, "\t%d \"%s\": %0.5f\n", doc_id, value,
                 NUM2DBL(rb_funcall(rhit, id_score, 0)));
-        s += strlen(s);
+        p += strlen(str + p);
         lazy_doc_close(lzd);
     }
 
-    sprintf(s, "]\n");
+    sprintf(str + p, "]\n");
     rstr = rb_str_new2(str);
     free(str);
     return rstr;
