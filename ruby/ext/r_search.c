@@ -706,6 +706,25 @@ frt_mtq_add_term(int argc, VALUE *argv, VALUE self)
 
 typedef Query *(*mtq_maker_ft)(const char *field, const char *term);
 
+static int
+get_max_terms(VALUE rmax_terms, int max_terms)
+{
+    VALUE v;
+    switch (TYPE(rmax_terms)) {
+        case T_HASH:
+            if (Qnil != (v = rb_hash_aref(rmax_terms, sym_max_terms))) {
+                max_terms = FIX2INT(v);
+            }
+            break;
+        case T_FIXNUM:
+            max_terms = FIX2INT(rmax_terms);
+            break;
+        default:
+            raise(rb_eArgError, "max_terms must be an integer");
+    }
+    return max_terms;
+}
+
 static VALUE
 frt_mtq_init_specific(int argc, VALUE *argv, VALUE self, mtq_maker_ft mm)
 {
@@ -715,7 +734,7 @@ frt_mtq_init_specific(int argc, VALUE *argv, VALUE self, mtq_maker_ft mm)
     Query *q;
 
     if (rb_scan_args(argc, argv, "21", &rfield, &rterm, &rmax_terms) == 3) {
-        max_terms = FIX2INT(rmax_terms);
+        max_terms = get_max_terms(rmax_terms, max_terms);
     }
 
     q = (*mm)(frt_field(rfield), StringValuePtr(rterm));

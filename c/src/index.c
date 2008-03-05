@@ -1237,20 +1237,24 @@ void lazy_df_get_bytes(LazyDocField *self, char *buf, int start, int len)
 
 static LazyDoc *lazy_doc_new(int size, InStream *fdt_in)
 {
+    //Jx
     LazyDoc *self = ALLOC(LazyDoc);
     self->field_dict = h_new_str(NULL, (free_ft)&lazy_df_destroy);
     self->size = size;
     self->fields = ALLOC_AND_ZERO_N(LazyDocField *, size);
     self->fields_in = is_clone(fdt_in);
+    //Jx
     return self;
 }
 
 void lazy_doc_close(LazyDoc *self)
 {
+    //Jx
     h_destroy(self->field_dict);
     is_close(self->fields_in);
     free(self->fields);
     free(self);
+    //Jx
 }
 
 static void lazy_doc_add_field(LazyDoc *self, LazyDocField *lazy_df, int i)
