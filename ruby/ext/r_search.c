@@ -2660,13 +2660,18 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
                 post_filter = DATA_PTR(rval);
         }
         if (Qnil != (rval = rb_hash_aref(roptions, sym_filter_proc))) {
-            if (post_filter) {
-                rb_raise(rb_eArgError, "Cannot pass both :filter_proc and "
-                         ":c_filter_proc to the same search");
+            if (rb_respond_to(rval, id_call)) {
+                if (post_filter) {
+                    rb_raise(rb_eArgError, "Cannot pass both :filter_proc and "
+                             ":c_filter_proc to the same search");
+                }
+                post_filter_holder.filter_func = &call_filter_proc;
+                post_filter_holder.arg = (void *)rval;
+                post_filter = &post_filter_holder;
             }
-            post_filter_holder.filter_func = &call_filter_proc;
-            post_filter_holder.arg = (void *)rval;
-            post_filter = &post_filter_holder;
+            else {
+                post_filter = DATA_PTR(rval);
+            }
         }
         if (Qnil != (rval = rb_hash_aref(roptions, sym_sort))) {
             if (TYPE(rval) != T_DATA || CLASS_OF(rval) == cSortField) {

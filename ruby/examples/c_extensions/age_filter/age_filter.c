@@ -6,10 +6,65 @@ static VALUE mFerretExt;
 static VALUE cAgeFilter;
 static VALUE cCachedAgeFilter;
 
+/******************************************************************************
+ * This is an example implementation of a C-extension for Ferret. Ferret is
+ * already an extremely fast search library so sometimes it makes sense to
+ * extend it with C instead of slowing it down with a bunch of Ruby code.
+ *
+ * Situation
+ * =========
+ * We have a large Ferret index (more than a million documents) and we'd like
+ * to sort our search results based on the age of the documents, the more
+ * recent being the most relevant.
+ *
+ * Solution 1 - A Naive Ruby Implementation
+ * ----------------------------------------
+ * The initial solution to this would be to write a filter_proc that adjusts
+ * the score based on the age of the document. To do this we'll add a field
+ * to each of our documents containing the date. To make things simple for
+ * ourselves we'll store the date as an integer as in the following example;
+ *
+ *   DAY = 60*60*24
+ *   $index = Ferret::I.new(:default_field => 'content',
+ *                          :dir => 'index')
+ *   documents.each do |document|
+ *     $index << {
+ *       :day => document.time.to_i / DAY,
+ *       :content => document.content
+ *     }
+ *   end
+ *
+ * The :day field in the index will store the number of days after epoch that
+ * the document was created. So to get the age (in days) of the 5th document
+ * in the index you would do this;
+ *
+ *   TODAY = Time.now/DAY
+ *   document5_age_in_days = TODAY - $index[5][:day].to_i
+ *
+ * Now to filter our search results. We'll use a half life of 50 days. That
+ * is, a document will be twice as relevant as a similar document produced 50
+ * days previously and 4 times as relevant as a document dated 100 days
+ * before. (You can play with this value to see what works best for you).
+ * Creating the filter_proc to do this turns out to be quite easy.
+ *
+ *   age_filter = lambda do |doc, score, searcher|
+ *     1.0 / 2 ** ((TODAY - searcher[doc][:day].to_i)/50.0)
+ *   end
+ *
+ * Our testing shows that this filter works correctly. However, we now have a
+ * slight problem. It's too slow! (see benchmark-results.txt). Originally, it
+ * took 0.04 seconds per query but now our queries are taking 45 seconds each.
+ * This obviously isn't good enough. So your first thought might be to write a
+ * C-extension to speed things up.
+ *
+ * Solution 2 - A Naive C extension
+ * --------------------------------
+ * The naive C implementation below is basically just a rewrite of the
+ * filter_proc in C.
+ *
+ ******************************************************************************/
 /***********************************************************************
- *
- * A simple implementation of an age filter.
- *
+ * A naive implementation of an age filter.
  ***********************************************************************/
 static VALUE age_filter_alloc(VALUE klass)
 {
@@ -43,9 +98,7 @@ static VALUE age_filter_init(VALUE self, VALUE rdate_int)
 }
 
 /***********************************************************************
- *
  * A cached implementation of an age filter.
- *
  ***********************************************************************/
 
 static void caf_free(void *p)

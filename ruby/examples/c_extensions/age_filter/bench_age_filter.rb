@@ -34,18 +34,18 @@ Benchmark.bmbm do |x|
       $index.search(SEARCH).to_s(:day)
     end
   end
-  x.report("ruby-simple-filter") do
-    age_filter = lambda{|d, s, sea| 1.0/2**((TODAY - sea[d][:day].to_i)/50.0)}
-    N.times do
-      $index.search(SEARCH, :filter_proc => age_filter).to_s(:day)
-    end
-  end
-  x.report("c-simple-filter") do
-    age_filter = FerretExt::AgeFilter.new(TODAY)
-    N.times do
-      $index.search(SEARCH, :c_filter_proc => age_filter).to_s(:day)
-    end
-  end
+  #x.report("ruby-simple-filter") do
+  #  age_filter = lambda{|d, s, sea| 1.0/2**((TODAY - sea[d][:day].to_i)/50.0)}
+  #  N.times do
+  #    $index.search(SEARCH, :filter_proc => age_filter).to_s(:day)
+  #  end
+  #end
+  #x.report("c-simple-filter") do
+  #  age_filter = FerretExt::AgeFilter.new(TODAY)
+  #  N.times do
+  #    $index.search(SEARCH, :filter_proc => age_filter).to_s(:day)
+  #  end
+  #end
   x.report("ruby-cache-build") do
     $days = Array.new($index.size)
     $index.reader.terms(:day).each do |day_str, freq|
@@ -66,7 +66,7 @@ Benchmark.bmbm do |x|
   end
   x.report("c-cached-filter") do
     N.times do
-      $index.search(SEARCH, :c_filter_proc => $age_filter).to_s(:day)
+      $index.search(SEARCH, :filter_proc => $age_filter).to_s(:day)
     end
   end
 end
