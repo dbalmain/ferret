@@ -47,14 +47,14 @@ Benchmark.bmbm do |x|
   #  end
   #end
   x.report("ruby-cache-build") do
-    $days = Array.new($index.size)
+    $day_cache = Array.new($index.size)
     $index.reader.terms(:day).each do |day_str, freq|
       day = day_str.to_i
       $index.reader.term_docs_for(:day, day_str).each do |doc, freq|
-        $days[doc] = day
+        $day_cache[doc] = day
       end
     end
-    $age_filter = lambda{|d, s, sea| 1.0/2**((TODAY - $days[d])/50.0)}
+    $age_filter = lambda{|d, s, sea| 1.0/2**((TODAY - $day_cache[d])/50.0)}
   end
   x.report("ruby-cached-filter") do
     N.times do
