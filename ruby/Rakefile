@@ -159,8 +159,8 @@ end
 desc "Generate API documentation"
 task :doc => 'doc:rdoc'
 namespace :doc do
-  if allison_template = Gem.cache.search('allison').last.full_gem_path
-    allison_template = File.join(allison_template, 'lib/allison.rb')
+  if allison = Gem.cache.search('allison').last
+    allison_template = File.join(allison.full_gem_path, 'lib/allison.rb')
   end
   desc "Generate documentation for the application"
   $rd = Rake::RDocTask.new do |rdoc|
