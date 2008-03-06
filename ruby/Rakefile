@@ -48,7 +48,9 @@ namespace :build do
                      "../c/lib/libstemmer_c/runtime/*.[ch]",
                      "../c/lib/libstemmer_c/libstemmer/*.[ch]",
                      "../c/lib/libstemmer_c/include/libstemmer.[h]"]
-  EXT_SRC.exclude('../c/**/ind.[ch]')
+  EXT_SRC.exclude('../c/**/ind.[ch]',
+                  '../c/include/threading.h',
+                  '../c/include/lang.h')
 
   EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
   SRC = FileList["ext/*.[ch]", EXT_SRC_DEST].uniq
@@ -78,23 +80,10 @@ namespace :build do
     end
   end if File.exists?("../c")
 
-  inc_headers = %w(lang threading).map do |header|
-    orig_header = "ext/inc/#{header}.h"
-    if File.exists?(orig_header)
-      inc_header = "ext/#{header}.h"
-      file orig_header => inc_headers do
-        cp inc_headers, orig_header
-      end
-      inc_header
-    else
-      nil
-    end
-  end.compact
-
   desc "Build the extension (ferret_ext.so). You'll need a C compiler and Make."
   task :compile => ["ext/#{EXT}"] + SRC
 
-  file "ext/#{EXT}" => ["ext/Makefile"] + inc_headers do
+  file "ext/#{EXT}" => "ext/Makefile" do
     cd "ext"
     if windows and ENV['make'].nil?
       begin

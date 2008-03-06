@@ -727,7 +727,7 @@ get_max_terms(VALUE rmax_terms, int max_terms)
             max_terms = FIX2INT(rmax_terms);
             break;
         default:
-            raise(rb_eArgError, "max_terms must be an integer");
+            rb_raise(rb_eArgError, "max_terms must be an integer");
     }
     return max_terms;
 }
