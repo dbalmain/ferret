@@ -259,6 +259,16 @@ task :uninstall => :clobber do
   sh "#{SUDO}gem uninstall ferret"
 end
 
+desc "Same as :install but you must be rootgem"
+task :root_install => :gem do
+  sh "gem install pkg/ferret-#{Ferret::VERSION}.gem --no-rdoc --no-ri -l"
+end
+
+desc "Same as :uninstall but you must be root"
+task :root_uninstall => :clobber do
+  sh "gem uninstall ferret"
+end
+
 def list_changes_since_last_release
   tag_listing = `svn list svn://davebalmain.com/ferret/tags`
   last_tag = tag_listing.split("\n").last
