@@ -23,34 +23,34 @@ void test_write_to(tst_case * tc, void *data)
         strcat(buf, str);
     }
 
-    ostream = ram_store->new_output(ram_store, "rw_funny_string.test");
+    ostream = ram_store->new_output(ram_store, "_rw_funny_string.cfs");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
 
-    fs_ostream = fs_store->new_output(fs_store, "rw_funny_string.test");
+    fs_ostream = fs_store->new_output(fs_store, "_rw_funny_string.cfs");
     ramo_write_to(ostream, fs_ostream);
 
     os_close(ostream);
     os_close(fs_ostream);
 
-    istream = fs_store->open_input(fs_store, "rw_funny_string.test");
+    istream = fs_store->open_input(fs_store, "_rw_funny_string.cfs");
     Asequal(str, tmp = is_read_string(istream));
     free(tmp);
     Asequal(buf, tmp = is_read_string(istream));
     free(tmp);
     is_close(istream);
 
-    Aiequal(9012, fs_store->length(fs_store, "rw_funny_string.test"));
+    Aiequal(9012, fs_store->length(fs_store, "_rw_funny_string.cfs"));
     store_deref(ram_store);
     ram_store = open_ram_store_and_copy(fs_store, false);
 
-    istream = ram_store->open_input(ram_store, "rw_funny_string.test");
+    istream = ram_store->open_input(ram_store, "_rw_funny_string.cfs");
     Asequal(str, tmp = is_read_string(istream));
     free(tmp);
     Asequal(buf, tmp = is_read_string(istream));
     free(tmp);
     is_close(istream);
-    Aiequal(9012, ram_store->length(ram_store, "rw_funny_string.test"));
+    Aiequal(9012, ram_store->length(ram_store, "_rw_funny_string.cfs"));
 
     fs_store->clear_all(fs_store);
     store_deref(fs_store);

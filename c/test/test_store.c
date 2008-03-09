@@ -36,19 +36,25 @@ static void test_basic_file_ops(tst_case *tc, void *data)
     Store *store = (Store *)data;
 
     store->clear_all(store);    /* Make sure the test directory is empty. */
-    Assert(!store->exists(store, "file1"),
+    Assert(!store->exists(store, "_1.f1"),
            "File1 should not been created yet");
-    store->touch(store, "file1");
+    store->touch(store, "_1.f1");
     Aiequal(1, store->count(store));
     Assert(store->count(store) == 1, "The store now contains one file");
-    Assert(store->exists(store, "file1"), "File1 should now been created");
-    store->touch(store, "file2");
+    Assert(store->exists(store, "_1.f1"), "File1 should now been created");
+    store->touch(store, "_1.f2");
     Assert(store->count(store) == 2, "The store now contains two files");
-    Assert(store->exists(store, "file2"), "File2 should now been created");
-    store->remove(store, "file1");
+    Assert(store->exists(store, "_1.f2"), "File2 should now been created");
+    store->remove(store, "_1.f1");
     Assert(store->count(store) == 1, "The store now contains one file");
-    Assert(!store->exists(store, "file1"), "File1 should have been removed");
-    Assert(store->exists(store, "file2"), "File2 should still exist");
+    Assert(!store->exists(store, "_1.f1"), "File1 should have been removed");
+    Assert(store->exists(store, "_1.f2"), "File2 should still exist");
+
+    /* test that lock files get deleted by clear_all */
+    store->touch(store, "ferret-write.lck");
+    Assert(store->exists(store, "ferret-write.lck"),"lock should still exist");
+    store->clear_all(store);
+    Assert(!store->exists(store, "ferret-write.lck"), "lock should be deleted");
 }
 
 /**
@@ -80,16 +86,16 @@ static void test_each(tst_case *tc, void *data)
     ea.p = ea.str;
 
     store->clear_all(store);    /* Make sure the test directory is empty. */
-    store->touch(store, "file1");
-    store->touch(store, "file2");
-    store->touch(store, "file3");
-    store->touch(store, "file4");
-    store->each(store, (void (*)(char *fname, void *arg))&concat_filenames, &ea);
+    store->touch(store, "_1.f1");
+    store->touch(store, "_1.f2");
+    store->touch(store, "_1.f3");
+    store->touch(store, "_1.f4");
+    store->each(store, (void(*)(char *fname, void *arg))&concat_filenames, &ea);
     *(ea.p) = 0;
-    Assert(strstr(ea.str, "file1") != NULL, "should contain this file");
-    Assert(strstr(ea.str, "file2") != NULL, "should contain this file");
-    Assert(strstr(ea.str, "file3") != NULL, "should contain this file");
-    Assert(strstr(ea.str, "file4") != NULL, "should contain this file");
+    Assert(strstr(ea.str, "_1.f1") != NULL, "should contain this file");
+    Assert(strstr(ea.str, "_1.f2") != NULL, "should contain this file");
+    Assert(strstr(ea.str, "_1.f3") != NULL, "should contain this file");
+    Assert(strstr(ea.str, "_1.f4") != NULL, "should contain this file");
     Aiequal(20, strlen(ea.str));
 }
 
@@ -100,15 +106,15 @@ static void test_rename(tst_case *tc, void *data)
 {
     int cnt_before, cnt_after;
     Store *store = (Store *)data;
-    store->touch(store, "from");
-    Assert(store->exists(store, "from"), "File should exist");
-    Assert(!store->exists(store, "to"), "File should not exist");
+    store->touch(store, "_from.f1");
+    Assert(store->exists(store, "_from.f1"), "File should exist");
+    Assert(!store->exists(store, "_to.f1"), "File should not exist");
     cnt_before = store->count(store);
-    store->rename(store, "from", "to");
+    store->rename(store, "_from.f1", "_to.f1");
     cnt_after = store->count(store);
     Aiequal(cnt_before, cnt_after);
-    Assert(store->exists(store, "to"), "File should now exist");
-    Assert(!store->exists(store, "from"), "File should no longer exist");
+    Assert(store->exists(store, "_to.f1"), "File should now exist");
+    Assert(!store->exists(store, "_from.f1"), "File should no longer exist");
 }
 
 /**
@@ -119,21 +125,21 @@ static void test_rw_bytes(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
     uchar bytes[6] = { 0x34, 0x87, 0xF9, 0xEA, 0x00, 0xFF };
-    OutStream *ostream = store->new_output(store, "rw_byte.test");
+    OutStream *ostream = store->new_output(store, "_rw_byte.cfs");
     InStream *istream;
-    Assert(store->exists(store, "rw_byte.test"), "File should now exist");
+    Assert(store->exists(store, "_rw_byte.cfs"), "File should now exist");
     for (i = 0; i < 6; i++) {
         os_write_byte(ostream, bytes[i]);
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_byte.test");
+    istream = store->open_input(store, "_rw_byte.cfs");
     for (i = 0; i < 6; i++) {
         Aiequal(bytes[i], is_read_byte(istream));
     }
     is_close(istream);
-    Aiequal(6, store->length(store, "rw_byte.test"));
-    Assert(store->exists(store, "rw_byte.test"), "File should now exist");
+    Aiequal(6, store->length(store, "_rw_byte.cfs"));
+    Assert(store->exists(store, "_rw_byte.cfs"), "File should now exist");
 }
 
 /**
@@ -143,7 +149,7 @@ static void test_rw_i32(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    OutStream *ostream = store->new_output(store, "rw_int.test");
+    OutStream *ostream = store->new_output(store, "_rw_int.cfs");
     InStream *istream;
     f_i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
 
@@ -152,13 +158,13 @@ static void test_rw_i32(tst_case *tc, void *data)
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_int.test");
+    istream = store->open_input(store, "_rw_int.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(ints[i], is_read_i32(istream));
     }
 
     is_close(istream);
-    Aiequal(16, store->length(store, "rw_int.test"));
+    Aiequal(16, store->length(store, "_rw_int.cfs"));
 }
 
 /**
@@ -170,7 +176,7 @@ static void test_rw_i64(tst_case *tc, void *data)
     Store *store = (Store *)data;
     f_u64 longs[4] =
         { POSH_I64_MIN, POSH_I64_MAX, POSH_I64(-1), POSH_I64(0) };
-    OutStream *ostream = store->new_output(store, "rw_long.test");
+    OutStream *ostream = store->new_output(store, "_rw_long.cfs");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -178,12 +184,12 @@ static void test_rw_i64(tst_case *tc, void *data)
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_long.test");
+    istream = store->open_input(store, "_rw_long.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(longs[i], is_read_i64(istream));
     }
     is_close(istream);
-    Aiequal(32, store->length(store, "rw_long.test"));
+    Aiequal(32, store->length(store, "_rw_long.cfs"));
 }
 
 /**
@@ -194,7 +200,7 @@ static void test_rw_u32(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
     f_u32 uints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
-    OutStream *ostream = store->new_output(store, "rw_uint.test");
+    OutStream *ostream = store->new_output(store, "_rw_uint.cfs");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -202,12 +208,12 @@ static void test_rw_u32(tst_case *tc, void *data)
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_uint.test");
+    istream = store->open_input(store, "_rw_uint.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(uints[i], is_read_u32(istream));
     }
     is_close(istream);
-    Aiequal(16, store->length(store, "rw_uint.test"));
+    Aiequal(16, store->length(store, "_rw_uint.cfs"));
 }
 
 /**
@@ -219,7 +225,7 @@ static void test_rw_u64(tst_case *tc, void *data)
     Store *store = (Store *)data;
     f_u64 ulongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
-    OutStream *ostream = store->new_output(store, "rw_ulong.test");
+    OutStream *ostream = store->new_output(store, "_rw_ulong.cfs");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -227,12 +233,12 @@ static void test_rw_u64(tst_case *tc, void *data)
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_ulong.test");
+    istream = store->open_input(store, "_rw_ulong.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(ulongs[i], is_read_u64(istream));
     }
     is_close(istream);
-    Aiequal(32, store->length(store, "rw_ulong.test"));
+    Aiequal(32, store->length(store, "_rw_ulong.cfs"));
 }
 
 /**
@@ -243,7 +249,7 @@ static void test_rw_vints(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
     unsigned int vints[4] = { UINT_MAX, 0, 10000, 1 };
-    OutStream *ostream = store->new_output(store, "rw_vint.test");
+    OutStream *ostream = store->new_output(store, "_rw_vint.cfs");
     InStream *istream;
 
     for (i = 0; i < 4; i++) {
@@ -251,7 +257,7 @@ static void test_rw_vints(tst_case *tc, void *data)
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_vint.test");
+    istream = store->open_input(store, "_rw_vint.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(vints[i], is_read_vint(istream));
     }
@@ -275,14 +281,14 @@ static void test_rw_voff_ts(tst_case *tc, void *data)
     else {
         voff_ts[0] = POSH_I32_MAX;
     }
-    ostream = store->new_output(store, "rw_voff_t.test");
+    ostream = store->new_output(store, "_rw_voff_t.cfs");
 
     for (i = 0; i < 4; i++) {
         os_write_voff_t(ostream, (off_t)voff_ts[i]);
     }
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_voff_t.test");
+    istream = store->open_input(store, "_rw_voff_t.cfs");
     for (i = 0; i < 4; i++) {
         Aiequal(voff_ts[i], is_read_voff_t(istream));
     }
@@ -307,12 +313,12 @@ static void test_rw_strings(tst_case *tc, void *data)
         strcat(buf, str);
     }
 
-    ostream = store->new_output(store, "rw_string.test");
+    ostream = store->new_output(store, "_rw_string.cfs");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_string.test");
+    istream = store->open_input(store, "_rw_string.cfs");
 
     tmp = is_read_string(istream);
     Asequal(str, tmp);
@@ -321,7 +327,7 @@ static void test_rw_strings(tst_case *tc, void *data)
     Asequal(buf, tmp);
     free(tmp);
     is_close(istream);
-    Aiequal(59063, store->length(store, "rw_string.test"));
+    Aiequal(59063, store->length(store, "_rw_string.cfs"));
 }
 
 /**
@@ -341,12 +347,12 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
         strcat(buf, str);
     }
 
-    ostream = store->new_output(store, "rw_funny_string.test");
+    ostream = store->new_output(store, "_funny_string.cfs");
     os_write_string(ostream, str);
     os_write_string(ostream, buf);
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_funny_string.test");
+    istream = store->open_input(store, "_funny_string.cfs");
     tmp = is_read_string(istream);
     Asequal(str, tmp);
     free(tmp);
@@ -354,7 +360,7 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
     Asequal(buf, tmp);
     free(tmp);
     is_close(istream);
-    Aiequal(9012, store->length(store, "rw_funny_string.test"));
+    Aiequal(9012, store->length(store, "_funny_string.cfs"));
 }
 
 /**
@@ -366,7 +372,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     int i;
     Store *store = (Store *)data;
 
-    OutStream *ostream = store->new_output(store, "rw_seek.test");
+    OutStream *ostream = store->new_output(store, "_rw_seek.cfs");
     char text[60] = "This is another int test string !@#$%#$%&%$*%^&*()(_";
     InStream *istream;
 
@@ -385,7 +391,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
     os_write_voff_t(ostream, 98763210);
     os_close(ostream);
 
-    istream = store->open_input(store, "rw_seek.test");
+    istream = store->open_input(store, "_rw_seek.cfs");
     is_seek(istream, 56);
     Aiequal(56, is_pos(istream));
     Aiequal(12345, is_read_vint(istream));
@@ -405,14 +411,14 @@ static void test_is_clone(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    OutStream *ostream = store->new_output(store, "clone.test");
+    OutStream *ostream = store->new_output(store, "_clone.cfs");
     InStream *istream, *alt_istream;
 
     for (i = 0; i < 10; i++) {
         os_write_i64(ostream, i);
     }
     os_close(ostream);
-    istream = store->open_input(store, "clone.test");
+    istream = store->open_input(store, "_clone.cfs");
     is_seek(istream, 24);
     alt_istream = is_clone(istream);
     Aiequal(is_pos(istream), is_pos(alt_istream));
@@ -436,12 +442,12 @@ static void test_read_bytes(tst_case *tc, void *data)
 {
     char str[11] = "0000000000";
     Store *store = (Store *)data;
-    OutStream *ostream = store->new_output(store, "read_bytes.test");
+    OutStream *ostream = store->new_output(store, "_read_bytes.cfs");
     InStream *istream;
 
     os_write_bytes(ostream, (uchar *)"how are you doing?", 18);
     os_close(ostream);
-    istream = store->open_input(store, "read_bytes.test");
+    istream = store->open_input(store, "_read_bytes.cfs");
     is_read_bytes(istream, (uchar *)(str + 2), 4);
     Asequal("00how 0000", str);
     is_read_bytes(istream, (uchar *)(str + 1), 8);

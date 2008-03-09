@@ -18,7 +18,7 @@ class FSStoreTest < Test::Unit::TestCase
   end
 
   def test_fslock
-    lock_name = "lfile"
+    lock_name = "_file.f1"
     lock_file_path = make_lock_file_path(lock_name)
     assert(! File.exists?(lock_file_path), "There should be no lock file")
     lock = @dir.make_lock(lock_name)

@@ -163,7 +163,7 @@ Range *trange_new(const char *field, const char *lower_term,
         {
             if (upper_num < lower_num) {
                 RAISE(ARG_ERROR, "Upper bound must be greater than lower bound."
-                      " numbers \"%s\" < \"%s\"", upper_term, lower_term);
+                      " numbers \"%lg\" < \"%lg\"", upper_num, lower_num);
             }
         }
         else {

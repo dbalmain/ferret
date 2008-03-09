@@ -212,7 +212,6 @@ module SearcherTests
         # text hexadecimal
         rq = TypedRangeQuery.new(:number, :>  =>  "1.0", :<= =>"0xa")
         check_hits(rq, [6,7,9,12])
-        puts 'hello'
     end
 
     # test single bound

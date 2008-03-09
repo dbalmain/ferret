@@ -48,7 +48,6 @@ const char *COMPOUND_EXTENSIONS[] = {
     "frq", "prx", "fdx", "fdt", "tfx", "tix", "tis"
 };
 
-
 static const char BASE36_DIGITMAP[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 static char *u64_to_str36(char *buf, int buf_size, f_u64 u)
@@ -897,8 +896,14 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                 /* OK, we've tried the same segments_N file twice in a row, so
                  * this must be a real error.  We throw the original exception
                  * we got. */
+                char *listing, listing_buffer[1024];
+                listing = store_to_s(store);
+                strncpy(listing_buffer, listing, 1023);
+                listing_buffer[1023] = '\0';
+                free(listing);
                 RAISE(IO_ERROR,
-                      "Error reading the segment infos. Store listing was\n");
+                      "Error reading the segment infos. Store:\n %s\n",
+                      listing_buffer);
             }
             else {
                 micro_sleep(50000);
@@ -3287,19 +3292,18 @@ TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms, int t_cnt)
 static HashTable *fn_extensions = NULL;
 static void file_name_filter_init()
 {
-    if (NULL == fn_extensions) {
-        int i;
-        fn_extensions = h_new_str((free_ft)NULL, (free_ft)NULL);
-        for (i = 0; i < NELEMS(INDEX_EXTENSIONS); i++) {
-          h_set(fn_extensions, INDEX_EXTENSIONS[i], (char *)INDEX_EXTENSIONS[i]);
-        }
-        register_for_cleanup(fn_extensions, (free_ft)&h_destroy);
+    int i;
+    fn_extensions = h_new_str((free_ft)NULL, (free_ft)NULL);
+    for (i = 0; i < NELEMS(INDEX_EXTENSIONS); i++) {
+      h_set(fn_extensions, INDEX_EXTENSIONS[i], (char *)INDEX_EXTENSIONS[i]);
     }
+    register_for_cleanup(fn_extensions, (free_ft)&h_destroy);
 }
 
-static bool file_name_filter_accept(char *file_name)
+bool file_name_filter_is_index_file(char *file_name, bool include_locks)
 {
     char *p = strrchr(file_name, '.');
+    if (NULL == fn_extensions) file_name_filter_init();
     if (NULL != p) {
         char *extension = p + 1;
         if (NULL != h_get(fn_extensions, extension)) {
@@ -3308,6 +3312,10 @@ static bool file_name_filter_accept(char *file_name)
         else if ((*extension == 'f' || *extension == 's')
                  && *(extension + 1) >= '0'
                  && *(extension + 1) <= '9') {
+            return true;
+        }
+        else if (include_locks && (strcmp(extension, "lck") == 0)
+                               && (strncmp(file_name, "ferret", 6) == 0)) {
             return true;
         }
     }
@@ -3411,7 +3419,7 @@ static void deleter_find_deletable_files_i(char *file_name, void *arg)
     struct DelFilesArg *dfa = (struct DelFilesArg *)arg;
     Deleter *dlr = dfa->dlr;
 
-    if (file_name_filter_accept(file_name)
+    if (file_name_filter_is_index_file(file_name, false)
         && 0 != strcmp(file_name, dfa->curr_seg_file_name)
         && 0 != strcmp(file_name, SEGMENTS_GEN_FILE_NAME)) {
 
@@ -3511,7 +3519,6 @@ void deleter_find_deletable_files(Deleter *dlr)
      * and add to deletable if they are not referenced by the current segments
      * info: */
     sis_curr_seg_file_name(dfa.curr_seg_file_name, store);
-    file_name_filter_init();
 
     store->each(store, &deleter_find_deletable_files_i, &dfa);
     h_destroy(dfa.current);

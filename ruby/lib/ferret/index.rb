@@ -40,7 +40,7 @@ module Ferret::Index
     # default_input_field::   Default: "id". This specifies the default field
     #                         that will be used when you add a simple string
     #                         to the index using #add_document or <<.
-    # id_field:               Default: "id". This field is as the field to
+    # id_field::              Default: "id". This field is as the field to
     #                         search when doing searches on a term. For
     #                         example, if you do a lookup by term "cat", ie
     #                         index["cat"], this will be the field that is

@@ -14,6 +14,7 @@
 # endif
 # ifndef DIR_SEPARATOR
 #   define DIR_SEPARATOR "\\"
+#   define DIR_SEPARATOR_CHAR '\\'
 # endif
 # ifndef S_IRUSR
 #   define S_IRUSR _S_IREAD
@@ -23,6 +24,7 @@
 # endif
 #else
 # define DIR_SEPARATOR "/"
+# define DIR_SEPARATOR_CHAR '/'
 # include <unistd.h>
 # include <dirent.h>
 #endif
@@ -35,6 +37,8 @@ extern void store_destroy(Store *store);
 extern OutStream *os_new();
 extern InStream *is_new();
 extern int file_is_lock(char *filename);
+extern bool file_name_filter_is_index_file(char *file_name, bool include_locks);
+
 
 /**
  * Create a filepath for a file in the store using the operating systems
@@ -188,7 +192,15 @@ static void fs_clear_all(Store *store)
     while ((de = readdir(d)) != NULL) {
         if (de->d_name[0] > '/') { /* skip ., .., / and '\0'*/
             char path[MAX_FILE_PATH];
-            remove(join_path(path, store->dir.path, de->d_name));
+            char *basename;
+            join_path(path, store->dir.path, de->d_name);
+            /* get basename of path */
+            basename = strrchr(path, DIR_SEPARATOR_CHAR);
+            basename = (basename ? basename + 1 : path);
+            /* we don't want to delete no index files here */
+            if (file_name_filter_is_index_file(basename, true)) {
+                remove(path);
+            }
         }
     }
     closedir(d);
