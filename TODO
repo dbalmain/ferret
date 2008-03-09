@@ -2,8 +2,6 @@ TODO
 ====
 * C
   - IMPORTANT:
-    + FIX :create parameter so that it only deletes the files owned by
-      Ferret.
     + FIX file descriptor overflow. See Tickets #341 and #343
   - integrate gcov
   - add .. operator to query parser. For example, [100 200] could be written as
@@ -55,3 +53,4 @@ Someday Maybe
 Done
 ====
 * add rake install task
+* FIX :create parameter so that it only deletes the files owned by Ferret.
