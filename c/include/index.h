@@ -683,6 +683,7 @@ typedef struct FieldsWriter
     FieldInfos *fis;
     OutStream  *fdt_out;
     OutStream  *fdx_out;
+    OutStream  *buffer;
     TVField    *tv_fields;
     off_t       start_ptr;
 } FieldsWriter;

@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -g -DDEBUG -D_FILE_OFFSET_BITS=64
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -D_FILE_OFFSET_BITS=64 -g -DDEBUG 
 
 LFLAGS = -lm -lpthread
 
@@ -22,6 +22,9 @@ testall: $(OBJS) $(TEST_OBJS)
 
 valgrind: testall
 	valgrind --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
+
+b: bench
+	./bench
 
 bench: bench.c $(OBJS)
 	$(CC) $(CFLAGS) -lpthread bench.c $(OBJS) $(LFLAGS) -o bench

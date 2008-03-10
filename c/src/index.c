@@ -1327,10 +1327,8 @@ static DocField *fr_df_new(char *name, int size)
 Document *fr_get_doc(FieldsReader *fr, int doc_num)
 {
     int i, j;
-    FieldInfo *fi;
     off_t pos;
-    int stored_cnt, field_num, df_size;
-    DocField *df;
+    int stored_cnt;
     Document *doc = doc_new();
     InStream *fdx_in = fr->fdx_in;
     InStream *fdt_in = fr->fdt_in;
@@ -1341,22 +1339,26 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
     stored_cnt = is_read_vint(fdt_in);
 
     for (i = 0; i < stored_cnt; i++) {
-        field_num = is_read_vint(fdt_in);
-        fi = fr->fis->fields[field_num];
-        df_size = is_read_vint(fdt_in);
-        df = fr_df_new(fi->name, df_size);
+        const int field_num = is_read_vint(fdt_in);
+        FieldInfo *fi = fr->fis->fields[field_num];
+        const int df_size = is_read_vint(fdt_in);
+        DocField *df = fr_df_new(fi->name, df_size);
 
         for (j = 0; j < df_size; j++) {
             df->lengths[j] = is_read_vint(fdt_in);
         }
 
+        doc_add_field(doc, df);
+    }
+    for (i = 0; i < stored_cnt; i++) {
+        DocField *df = doc->fields[i];
+        const int df_size = df->size;
         for (j = 0; j < df_size; j++) {
             const int read_len = df->lengths[j] + 1;
             df->data[j] = ALLOC_N(char, read_len);
             is_read_bytes(fdt_in, (uchar *)df->data[j], read_len);
             df->data[j][read_len - 1] = '\0';
         }
-        doc_add_field(doc, df);
     }
 
     return doc;
@@ -1364,11 +1366,10 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
 
 LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
 {
+    int start = 0;
     int i, j;
-    FieldInfo *fi;
     off_t pos;
-    int stored_cnt, field_num;
-    LazyDocField *lazy_df;
+    int stored_cnt;
     LazyDoc *lazy_doc;
     InStream *fdx_in = fr->fdx_in;
     InStream *fdt_in = fr->fdt_in;
@@ -1380,29 +1381,28 @@ LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
     lazy_doc = lazy_doc_new(stored_cnt, fdt_in);
 
     for (i = 0; i < stored_cnt; i++) {
-        off_t start = 0, end;
-        int data_cnt;
-        field_num = is_read_vint(fdt_in);
-        fi = fr->fis->fields[field_num];
-        data_cnt = is_read_vint(fdt_in);
-        lazy_df = lazy_df_new(fi->name, data_cnt);
+        FieldInfo *fi = fr->fis->fields[is_read_vint(fdt_in)];
+        const int data_cnt = is_read_vint(fdt_in);
+        LazyDocField *lazy_df = lazy_df_new(fi->name, data_cnt);
+        const int field_start = start;
 
         /* get the starts relative positions this time around */
         for (j = 0; j < data_cnt; j++) {
             lazy_df->data[j].start = start;
             start += 1 + (lazy_df->data[j].length = is_read_vint(fdt_in));
         }
-        end = is_pos(fdt_in) + start;
-        lazy_df->len = start - 1;
+        lazy_df->len = start - field_start - 1;
 
-        /* correct the starts to their correct absolute positions */
-        start = is_pos(fdt_in);
+        lazy_doc_add_field(lazy_doc, lazy_df, i);
+    }
+    /* correct the starts to their correct absolute positions */
+    for (i = 0; i < stored_cnt; i++) {
+        LazyDocField *lazy_df = lazy_doc->fields[i];
+        const int data_cnt = lazy_df->size;
+        const int start = is_pos(fdt_in);
         for (j = 0; j < data_cnt; j++) {
             lazy_df->data[j].start += start;
         }
-
-        lazy_doc_add_field(lazy_doc, lazy_df, i);
-        is_seek(fdt_in, end);
     }
 
     return lazy_doc;
@@ -1561,6 +1561,8 @@ FieldsWriter *fw_open(Store *store, const char *segment, FieldInfos *fis)
     strcpy(file_name + segment_len, ".fdx");
     fw->fdx_out = store->new_output(store, file_name);
 
+    fw->buffer = ram_new_buffer();
+
     fw->fis = fis;
     fw->tv_fields = ary_new_type_capa(TVField, TV_FIELD_INIT_CAPA);
 
@@ -1571,6 +1573,7 @@ void fw_close(FieldsWriter *fw)
 {
     os_close(fw->fdt_out);
     os_close(fw->fdx_out);
+    ram_destroy_buffer(fw->buffer);
     ary_free(fw->tv_fields);
     free(fw);
 }
@@ -1600,6 +1603,7 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
     ary_size(fw->tv_fields) = 0;
     os_write_u64(fdx_out, fw->start_ptr);
     os_write_vint(fdt_out, stored_cnt);
+    ramo_reset(fw->buffer);
 
     for (i = 0; i < doc_size; i++) {
         df = doc->fields[i];
@@ -1607,7 +1611,7 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
         if (fi_is_stored(fi)) {
             const int df_size = df->size;
             os_write_vint(fdt_out, fi->number);
-            os_write_vint(fdt_out, df->size);
+            os_write_vint(fdt_out, df_size);
             /**
              * TODO: add compression
              */
@@ -1615,13 +1619,14 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
                 os_write_vint(fdt_out, df->lengths[j]);
             }
             for (j = 0; j < df_size; j++) {
-                os_write_bytes(fdt_out, (uchar *)df->data[j], df->lengths[j]);
+                os_write_bytes(fw->buffer, (uchar *)df->data[j], df->lengths[j]);
                 /* leave a space between fields as that is how they are
                  * analyzed */
-                os_write_byte(fdt_out, ' ');
+                os_write_byte(fw->buffer, ' ');
             }
         }
     }
+    ramo_write_to(fw->buffer, fdt_out); 
 }
 
 void fw_write_tv_index(FieldsWriter *fw)
@@ -6220,7 +6225,7 @@ static void iw_cp_fields(IndexWriter *iw, SegmentReader *sr,
         int i;
         const int max_doc = sr_max_doc(IR(sr));
         for (i = 0; i < max_doc; i++) {
-            int j;
+            int j, data_len = 0;
             const int field_cnt = is_read_vint(fdt_in);
             int tv_cnt;
             off_t doc_start_ptr = os_pos(fdt_out);
@@ -6232,7 +6237,6 @@ static void iw_cp_fields(IndexWriter *iw, SegmentReader *sr,
                 int k;
                 const int field_num = map[is_read_vint(fdt_in)];
                 const int df_size = is_read_vint(fdt_in);
-                int data_len = 0;
                 os_write_vint(fdt_out, field_num);
                 os_write_vint(fdt_out, df_size);
                 /* sum total lengths of DocField */
@@ -6242,8 +6246,8 @@ static void iw_cp_fields(IndexWriter *iw, SegmentReader *sr,
                     os_write_vint(fdt_out, flen);
                     data_len +=  flen + 1;
                 }
-                is2os_copy_bytes(fdt_in, fdt_out, data_len);
             }
+            is2os_copy_bytes(fdt_in, fdt_out, data_len);
 
             /* Write TermVectors */
             /* write TVs up to TV index */
