@@ -23,8 +23,11 @@ testall: $(OBJS) $(TEST_OBJS)
 valgrind: testall
 	valgrind --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
 
-b: bench
-	./bench
+b: load_bench
+	./load_bench
+
+load_bench: load_bench.c $(OBJS)
+	$(CC) $(CFLAGS) -lpthread load_bench.c $(OBJS) $(LFLAGS) -o load_bench
 
 bench: bench.c $(OBJS)
 	$(CC) $(CFLAGS) -lpthread bench.c $(OBJS) $(LFLAGS) -o bench
