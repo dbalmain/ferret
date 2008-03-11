@@ -1815,7 +1815,7 @@ static void test_ir_compression(tst_case *tc, void *data)
     LazyDocField *lz_df1, *lz_df2;
     Document *doc = ir->get_doc(ir, 0);
     DocField *df1, *df2;
-    uchar buf1[20], buf2[20];
+    char buf1[20], buf2[20];
     Aiequal(3, doc->size);
 
     df1 = doc_get_field(doc, changing_field);

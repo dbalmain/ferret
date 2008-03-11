@@ -1,0 +1,10 @@
+Added fixes to remove the following errors;
+
+lib/bzlib/bzlib.c:102: warning: unused parameter ‘opaque’
+lib/bzlib/bzlib.c:109: warning: unused parameter ‘opaque’
+lib/bzlib/bzlib.c: In function ‘bzopen_or_bzdopen’:
+lib/bzlib/bzlib.c:1430: warning: implicit declaration of function ‘fdopen’
+lib/bzlib/bzlib.c:1430: warning: assignment makes pointer from integer without a cast
+lib/bzlib/bzlib.c: At top level:
+lib/bzlib/bzlib.c:1505: warning: unused parameter ‘b’
+

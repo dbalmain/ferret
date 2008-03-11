@@ -4,11 +4,11 @@ LFLAGS = -lm -lpthread -lz
 
 include lib/libstemmer_c/mkinc.mak
 
-STEMMER_OBJS = $(patsubst %.c,src/libstemmer_c/%.o, $(snowball_sources))
+BZLIB_SRCS = bzlib.c blocksort.c compress.c crctable.c decompress.c huffman.c randtable.c
 
 TEST_OBJS = test_multimapper.o test_q_const_score.o test_threading.o test_q_fuzzy.o test_term.o test_q_filtered.o testhelper.o test_hash.o test_fs_store.o test_segments.o test_similarity.o test_except.o test_store.o test_highlighter.o test_hashset.o test_global.o test_bitvector.o test_search.o test_fields.o test_index.o test_mempool.o test_compound_io.o test_q_parser.o test_term_vectors.o test_array.o test_document.o test_helper.o test_test.o test.o test_q_span.o test_analysis.o test_filter.o test_priorityqueue.o test_sort.o test_ram_store.o test_file_deleter.o
 
-OBJS = q_multi_term.o hashset.o q_match_all.o bitvector.o mempool.o index.o compound_io.o q_wildcard.o ind.o priorityqueue.o q_range.o q_prefix.o array.o hash.o fs_store.o multimapper.o similarity.o except.o ram_store.o q_boolean.o q_phrase.o global.o q_filtered_query.o q_const_score.o term_vectors.o stopwords.o search.o q_fuzzy.o posh.o q_parser.o document.o helper.o q_span.o analysis.o filter.o q_term.o sort.o store.o libstemmer.o
+OBJS = q_multi_term.o hashset.o q_match_all.o bitvector.o mempool.o index.o compound_io.o q_wildcard.o ind.o priorityqueue.o q_range.o q_prefix.o array.o hash.o fs_store.o multimapper.o similarity.o except.o ram_store.o q_boolean.o q_phrase.o global.o q_filtered_query.o q_const_score.o term_vectors.o stopwords.o search.o q_fuzzy.o posh.o q_parser.o document.o helper.o q_span.o analysis.o filter.o q_term.o sort.o store.o libstemmer.o bzlib.o
 
 vpath %.c test src
 
@@ -39,6 +39,9 @@ search_bench: search_bench.c $(OBJS)
 
 sort_bench: sort_bench.c $(OBJS)
 	$(CC) $(CFLAGS) sort_bench.c $(OBJS) $(LFLAGS) -o sort_bench
+
+bzlib.o: $(BZLIB_SRCS:%.c=lib/bzlib/%.o)
+	$(AR) -cru $@ $^
 
 libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
 	$(AR) -cru $@ $^
