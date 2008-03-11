@@ -37,6 +37,8 @@ static char *ste_next(TermEnum *te);
 #define FORMAT 0
 #define SEGMENTS_GEN_FILE_NAME "segments"
 #define MAX_EXT_LEN 10
+#define ZLIB_BUFFER_SIZE 16348
+#define ZLIB_LEVEL 9
 
 /* *** Must be three characters *** */
 const char *INDEX_EXTENSIONS[] = {
@@ -1178,12 +1180,14 @@ f_u64 sis_read_current_version(Store *store)
  *
  ****************************************************************************/
 
-static LazyDocField *lazy_df_new(const char *name, const int size)
+static LazyDocField *lazy_df_new(const char *name, const int size,
+                                 bool is_compressed)
 {
     LazyDocField *self = ALLOC(LazyDocField);
     self->name = estrdup(name);
     self->size = size;
     self->data = ALLOC_AND_ZERO_N(LazyDocFieldData, size);
+    self->is_compressed = is_compressed;
     return self;
 }
 
@@ -1200,6 +1204,81 @@ static void lazy_df_destroy(LazyDocField *self)
     free(self);
 }
 
+/* good zlib example at http://www.zlib.net/zlib_how.html */
+
+/* report a zlib or i/o error */
+static void zraise(int ret)
+{
+    switch (ret) {
+    case Z_ERRNO:
+        if (ferror(stdin))
+            RAISE(IO_ERROR, "zlib: error reading stdin");
+        if (ferror(stdout))
+            RAISE(IO_ERROR, "zlib: error writing stdout");
+        break;
+    case Z_STREAM_ERROR:
+        RAISE(IO_ERROR, "zlib: invalid compression level");
+        break;
+    case Z_DATA_ERROR:
+        RAISE(IO_ERROR, "zlib: invalid or incomplete deflate data");
+        break;
+    case Z_MEM_ERROR:
+        RAISE(IO_ERROR, "zlib: out of memory");
+        break;
+    case Z_VERSION_ERROR:
+        RAISE(IO_ERROR, "zlib: version mismatch!");
+        break;
+    default:
+        RAISE(EXCEPTION, "zlib: unknown error");
+    }
+}
+
+static char *read_zipped_bytes(InStream *is, int zip_len, int *len)
+{
+    int buf_out_idx = 0, ret, read_len;
+    uchar *buf_out = NULL;
+    uchar buf_in[ZLIB_BUFFER_SIZE];
+    z_stream zstrm;
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.avail_in = 0;
+    zstrm.next_in = Z_NULL;
+    if ((ret = inflateInit(&zstrm)) != Z_OK) zraise(ret);
+
+    do {
+        read_len = zip_len > ZLIB_BUFFER_SIZE ? ZLIB_BUFFER_SIZE : zip_len;
+        is_read_bytes(is, buf_in, zip_len);
+        zip_len -= read_len;
+        zstrm.avail_in = read_len;
+        zstrm.next_in = buf_in;
+
+        do {
+            zstrm.avail_out = ZLIB_BUFFER_SIZE;
+            REALLOC_N(buf_out, uchar, buf_out_idx + ZLIB_BUFFER_SIZE);
+            zstrm.next_out = buf_out + buf_out_idx;
+            ret = inflate(&zstrm, Z_NO_FLUSH);
+            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            switch(ret) {
+            case Z_NEED_DICT:
+                ret = Z_DATA_ERROR;     /* and fall through */
+            case Z_DATA_ERROR:
+            case Z_MEM_ERROR:
+                zraise(ret);
+            }
+            buf_out_idx += ZLIB_BUFFER_SIZE - zstrm.avail_out;
+        } while (zstrm.avail_out == 0);
+    } while (ret != Z_STREAM_END && zip_len != 0);
+
+    /* clean up */
+    (void)inflateEnd(&zstrm);
+
+    buf_out[buf_out_idx] = '\0';
+    REALLOC_N(buf_out, uchar, buf_out_idx + 1);
+    *len = buf_out_idx;
+    return (char *)buf_out;
+}
+
 char *lazy_df_get_data(LazyDocField *self, int i)
 {
     char *text = NULL;
@@ -1207,10 +1286,17 @@ char *lazy_df_get_data(LazyDocField *self, int i)
         text = self->data[i].text;
         if (NULL == text) {
             const int read_len = self->data[i].length + 1;
-            self->data[i].text = text = ALLOC_N(char, read_len);
             is_seek(self->doc->fields_in, self->data[i].start);
-            is_read_bytes(self->doc->fields_in, (uchar *)text, read_len);
-            text[read_len - 1] = '\0';
+            if (self->is_compressed) {
+                text = self->data[i].text = 
+                    read_zipped_bytes(self->doc->fields_in, read_len,
+                                      &(self->data[i].length));
+            }
+            else {
+                self->data[i].text = text = ALLOC_N(char, read_len);
+                is_read_bytes(self->doc->fields_in, (uchar *)text, read_len);
+                text[read_len - 1] = '\0';
+            }
         }
     }
 
@@ -1219,6 +1305,16 @@ char *lazy_df_get_data(LazyDocField *self, int i)
 
 void lazy_df_get_bytes(LazyDocField *self, char *buf, int start, int len)
 {
+    if (self->is_compressed == 1) {
+        int i;
+        self->len = 0;
+        for (i = self->size-1; i >= 0; i--) {
+            (void)lazy_df_get_data(self, i);
+            self->len += self->data[i].length + 1;
+        }
+        self->len--; /* each field separated by ' ' but no need to add to end */
+        self->is_compressed = 2;
+    }
     if (start < 0 || start >= self->len) {
         RAISE(IO_ERROR, "start out of range in LazyDocField#get_bytes. %d "
               "is not between 0 and %d", start, self->len);
@@ -1230,8 +1326,37 @@ void lazy_df_get_bytes(LazyDocField *self, char *buf, int start, int len)
         RAISE(IO_ERROR, "Tried to read past end of field. Field is only %d "
               "bytes long but tried to read to %d", self->len, start + len);
     }
-    is_seek(self->doc->fields_in, self->data[0].start + start);
-    is_read_bytes(self->doc->fields_in, (uchar *)buf, len);
+    if (self->is_compressed) {
+        int cur_start = 0, buf_start = 0, cur_end, i, copy_start, copy_len;
+        for (i = 0; i < self->size; i++) {
+            cur_end = cur_start + self->data[i].length;
+            if (start < cur_end) {
+                copy_start = start > cur_start ? start - cur_start : 0;
+                copy_len = cur_end - cur_start - copy_start;
+                if (copy_len >= len) {
+                    copy_len = len;
+                    len = 0;
+                }
+                else {
+                    len -= copy_len;
+                }
+                memcpy(buf + buf_start,
+                       self->data[i].text + copy_start,
+                       copy_len);
+                buf_start += copy_len;
+                if (len > 0) {
+                    buf[buf_start++] = ' ';
+                    len--;
+                }
+                if (len == 0) break;
+            }
+            cur_start = cur_end + 1;
+        }
+    }
+    else {
+        is_seek(self->doc->fields_in, self->data[0].start + start);
+        is_read_bytes(self->doc->fields_in, (uchar *)buf, len);
+    }
 }
 
 /****************************************************************************
@@ -1312,7 +1437,7 @@ void fr_close(FieldsReader *fr)
     free(fr);
 }
 
-static DocField *fr_df_new(char *name, int size)
+static DocField *fr_df_new(char *name, int size, bool is_compressed)
 {
     DocField *df = ALLOC(DocField);
     df->name = estrdup(name);
@@ -1321,7 +1446,20 @@ static DocField *fr_df_new(char *name, int size)
     df->lengths = ALLOC_N(int, df->capa);
     df->destroy_data = true;
     df->boost = 1.0;
+    df->is_compressed = is_compressed;
     return df;
+}
+
+static void fr_read_zipped_fields(FieldsReader *fr, DocField *df)
+{
+    int i;
+    const int df_size = df->size;
+    InStream *fdt_in = fr->fdt_in;
+
+    for (i = 0; i < df_size; i++) {
+        const int zip_len = df->lengths[i] + 1;
+        df->data[i] = read_zipped_bytes(fdt_in, zip_len, &(df->lengths[i]));
+    }
 }
 
 Document *fr_get_doc(FieldsReader *fr, int doc_num)
@@ -1342,7 +1480,7 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
         const int field_num = is_read_vint(fdt_in);
         FieldInfo *fi = fr->fis->fields[field_num];
         const int df_size = is_read_vint(fdt_in);
-        DocField *df = fr_df_new(fi->name, df_size);
+        DocField *df = fr_df_new(fi->name, df_size, fi_is_compressed(fi));
 
         for (j = 0; j < df_size; j++) {
             df->lengths[j] = is_read_vint(fdt_in);
@@ -1352,12 +1490,17 @@ Document *fr_get_doc(FieldsReader *fr, int doc_num)
     }
     for (i = 0; i < stored_cnt; i++) {
         DocField *df = doc->fields[i];
-        const int df_size = df->size;
-        for (j = 0; j < df_size; j++) {
-            const int read_len = df->lengths[j] + 1;
-            df->data[j] = ALLOC_N(char, read_len);
-            is_read_bytes(fdt_in, (uchar *)df->data[j], read_len);
-            df->data[j][read_len - 1] = '\0';
+        if (df->is_compressed) {
+            fr_read_zipped_fields(fr, df);
+        }
+        else {
+            const int df_size = df->size;
+            for (j = 0; j < df_size; j++) {
+                const int read_len = df->lengths[j] + 1;
+                df->data[j] = ALLOC_N(char, read_len);
+                is_read_bytes(fdt_in, (uchar *)df->data[j], read_len);
+                df->data[j][read_len - 1] = '\0';
+            }
         }
     }
 
@@ -1383,7 +1526,8 @@ LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
     for (i = 0; i < stored_cnt; i++) {
         FieldInfo *fi = fr->fis->fields[is_read_vint(fdt_in)];
         const int data_cnt = is_read_vint(fdt_in);
-        LazyDocField *lazy_df = lazy_df_new(fi->name, data_cnt);
+        LazyDocField *lazy_df = lazy_df_new(fi->name, data_cnt,
+                                            fi_is_compressed(fi));
         const int field_start = start;
 
         /* get the starts relative positions this time around */
@@ -1578,10 +1722,31 @@ void fw_close(FieldsWriter *fw)
     free(fw);
 }
 
-static INLINE void save_data(OutStream *fdt_out, char *data, int dlen)
+static int fw_write_zipped_bytes(FieldsWriter *fw, uchar *data, int length)
 {
-    os_write_vint(fdt_out, dlen);
-    os_write_bytes(fdt_out, (uchar *)data, dlen);
+    int ret, buf_size, zip_len = 0;
+    uchar out_buffer[ZLIB_BUFFER_SIZE];
+    z_stream zstrm; 
+    zstrm.avail_in = length;
+    zstrm.next_in = data;
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    if ((ret = deflateInit(&zstrm, ZLIB_LEVEL)) != Z_OK) zraise(ret);
+
+    do {
+        zstrm.avail_out = ZLIB_BUFFER_SIZE;
+        zstrm.next_out = out_buffer;
+        ret = deflate(&zstrm, Z_FINISH); /* no bad return value */
+        assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+        zip_len += buf_size = ZLIB_BUFFER_SIZE - zstrm.avail_out;
+        os_write_bytes(fw->buffer, out_buffer, buf_size);
+    } while (zstrm.avail_out == 0);
+    assert(zstrm.avail_in == 0);       /* all input will be used */
+
+    /* clean up */
+    (void)deflateEnd(&zstrm);
+    return zip_len;
 }
 
 void fw_add_doc(FieldsWriter *fw, Document *doc)
@@ -1612,17 +1777,24 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
             const int df_size = df->size;
             os_write_vint(fdt_out, fi->number);
             os_write_vint(fdt_out, df_size);
-            /**
-             * TODO: add compression
-             */
-            for (j = 0; j < df_size; j++) {
-                os_write_vint(fdt_out, df->lengths[j]);
+            if (fi_is_compressed(fi)) {
+                for (j = 0; j < df_size; j++) {
+                    const int length = df->lengths[j];
+                    int zip_len = fw_write_zipped_bytes(fw,
+                                                        (uchar*)df->data[j],
+                                                        length);
+                    os_write_vint(fdt_out, zip_len - 1);
+                }
             }
-            for (j = 0; j < df_size; j++) {
-                os_write_bytes(fw->buffer, (uchar *)df->data[j], df->lengths[j]);
-                /* leave a space between fields as that is how they are
-                 * analyzed */
-                os_write_byte(fw->buffer, ' ');
+            else {
+                for (j = 0; j < df_size; j++) {
+                    const int length = df->lengths[j];
+                    os_write_vint(fdt_out, length);
+                    os_write_bytes(fw->buffer, (uchar*)df->data[j], length);
+                    /* leave a space between fields as that is how they are
+                     * analyzed */
+                    os_write_byte(fw->buffer, ' ');
+                }
             }
         }
     }
@@ -2273,7 +2445,8 @@ TermEnum *mte_new(MultiReader *mr, int field_num, const char *term)
                 || (tew->term && (tew->term[0] != '\0'))) {
                 pq_push(mte->tew_queue, tew);          /* initialize queue */
             }
-        } else {
+        }
+        else {
             /* add the term_enum_wrapper just in case */
             sub_te = reader->terms(reader, 0);
             sub_te->field_num = -1;
@@ -2954,9 +3127,11 @@ static void mtde_seek_te(TermDocEnum *tde, TermEnum *te)
         mtde->state[index] = 1;
         if (tde->close == stde_close) {
             stde_seek_ti(STDE(tde), MTE(te)->tis + i);
-        } else if (tde->close == stpe_close) {
+        }
+        else if (tde->close == stpe_close) {
             stpe_seek_ti(STDE(tde), MTE(te)->tis + i);
-        } else {
+        }
+        else {
             tde->seek(tde, MTE(te)->tews[index].te->field_num, te->curr_term);
         }
     }
@@ -2973,7 +3148,8 @@ static void mtde_seek(TermDocEnum *tde, int field_num, const char *term)
     te->set_field(te, field_num);
     if (NULL != (t = te->skip_to(te, term)) && 0 == strcmp(term, t)) {
         mtde_seek_te(tde, te);
-    } else {
+    }
+    else {
         memset(mtde->state, 0, mtde->ir_cnt);
     }
 }
@@ -3440,7 +3616,8 @@ static void deleter_find_deletable_files_i(char *file_name, void *arg)
         if (NULL != p) {
             *p = '\0';
             extension = p + 1;
-        } else {
+        }
+        else {
             extension = NULL;
         }
 
@@ -3835,7 +4012,8 @@ void ir_close(IndexReader *ir)
 
         mutex_destroy(&ir->mutex);
         free(ir);
-    } else {
+    }
+    else {
         mutex_unlock(&ir->mutex);
     }
 
@@ -4077,7 +4255,8 @@ static void sr_commit_i(IndexReader *ir)
         if (SR(ir)->undelete_all) {
             si->del_gen = -1;
             SR(ir)->undelete_all = false;
-        } else {
+        }
+        else {
             /* (SR(ir)->deleted_docs_dirty) re-write deleted */
             si->del_gen++;
             fn_for_generation(tmp_file_name, segment, "del", si->del_gen);

@@ -8,6 +8,7 @@ static char *text = "text";
 static char *author = "author";
 static char *year = "year";
 static char *changing_field = "changing_field";
+static char *compressed_field = "compressed_field";
 static char *tag = "tag";
 
 extern HashTable *dw_invert_field(DocWriter *dw,
@@ -354,8 +355,13 @@ Document **prep_ir_test_docs()
     int i;
     char buf[2000] = "";
     Document **docs = ALLOC_N(Document *, IR_TEST_DOC_CNT);
+    DocField *df;
+
     docs[0] = doc_new();
     doc_add_field(docs[0], df_add_data(df_new(changing_field), 
+            estrdup("word3 word4 word1 word2 word1 word3 word4 word1 "
+                    "word3 word3")))->destroy_data = true;
+    doc_add_field(docs[0], df_add_data(df_new(compressed_field), 
             estrdup("word3 word4 word1 word2 word1 word3 word4 word1 "
                     "word3 word3")))->destroy_data = true;
     doc_add_field(docs[0], df_add_data(df_new(body), 
@@ -368,6 +374,18 @@ Document **prep_ir_test_docs()
     docs[2] = doc_new();
     doc_add_field(docs[2], df_add_data(df_new(body), 
             estrdup("Some read Random Sentence read")))->destroy_data = true;
+    df = df_new(tag);
+    df_add_data(df, estrdup("one"));
+    df_add_data(df, estrdup("two"));
+    df_add_data(df, estrdup("three"));
+    df_add_data(df, estrdup("four"));
+    doc_add_field(docs[2], df)->destroy_data = true;
+    df = df_new(compressed_field);
+    df_add_data(df, estrdup("one"));
+    df_add_data(df, estrdup("two"));
+    df_add_data(df, estrdup("three"));
+    df_add_data(df, estrdup("four"));
+    doc_add_field(docs[2], df)->destroy_data = true;
     docs[3] = doc_new();
     doc_add_field(docs[3], df_add_data(df_new(title), 
             estrdup("War And Peace")))->destroy_data = true;
@@ -1346,19 +1364,24 @@ static ReaderTestEnvironment *reader_test_env_new(int type)
                 DocField *df = doc->fields[k];
                 fis = iw->fis;
                 if (NULL == fis_get_field(fis, df->name)) {
-                    if (strcmp("author", df->name) == 0) {
-                        fis_add_field(fis, fi_new("author", STORE_YES, INDEX_YES,
+                    if (strcmp(author, df->name) == 0) {
+                        fis_add_field(fis, fi_new(author, STORE_YES, INDEX_YES,
                                   TERM_VECTOR_WITH_POSITIONS));
-                    } else if (strcmp("title", df->name) == 0) {
-                        fis_add_field(fis, fi_new("title", STORE_YES,
+                    } else if (strcmp(title, df->name) == 0) {
+                        fis_add_field(fis, fi_new(title, STORE_YES,
                                                   INDEX_UNTOKENIZED,
                                                   TERM_VECTOR_WITH_OFFSETS));
-                    } else if (strcmp("year", df->name) == 0) {
-                        fis_add_field(fis, fi_new("year", STORE_YES,
+                    } else if (strcmp(year, df->name) == 0) {
+                        fis_add_field(fis, fi_new(year, STORE_YES,
                                                   INDEX_UNTOKENIZED,
                                                   TERM_VECTOR_NO));
-                    } else if (strcmp("text", df->name) == 0) {
-                        fis_add_field(fis, fi_new("text", STORE_NO, INDEX_YES,
+                    } else if (strcmp(text, df->name) == 0) {
+                        fis_add_field(fis, fi_new(text, STORE_NO, INDEX_YES,
+                                                  TERM_VECTOR_NO));
+                    } else if (strcmp(compressed_field, df->name) == 0) {
+                        fis_add_field(fis, fi_new(compressed_field,
+                                                  STORE_COMPRESS,
+                                                  INDEX_YES,
                                                   TERM_VECTOR_NO));
                     }
                 }
@@ -1412,13 +1435,15 @@ static void write_ir_test_docs(Store *store)
 
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_new("author", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new(author, STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_new("title", STORE_YES, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(title, STORE_YES, INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("year", STORE_YES, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(year, STORE_YES, INDEX_UNTOKENIZED,
                               TERM_VECTOR_NO));
-    fis_add_field(fis, fi_new("text", STORE_NO, INDEX_YES,
+    fis_add_field(fis, fi_new(text, STORE_NO, INDEX_YES,
+                              TERM_VECTOR_NO));
+    fis_add_field(fis, fi_new(compressed_field, STORE_COMPRESS, INDEX_YES,
                               TERM_VECTOR_NO));
     index_create(store, fis);
     fis_deref(fis);
@@ -1780,6 +1805,58 @@ static void test_ir_get_doc(tst_case *tc, void *data)
     Apnull(df); /* text is not stored */
 
     doc_destroy(doc);
+}
+
+static void test_ir_compression(tst_case *tc, void *data)
+{ 
+    int i;
+    IndexReader *ir = (IndexReader *)data;
+    LazyDoc *lz_doc;
+    LazyDocField *lz_df1, *lz_df2;
+    Document *doc = ir->get_doc(ir, 0);
+    DocField *df1, *df2;
+    uchar buf1[20], buf2[20];
+    Aiequal(3, doc->size);
+
+    df1 = doc_get_field(doc, changing_field);
+    df2 = doc_get_field(doc, compressed_field);
+    Asequal(df1->data[0], df2->data[0]);
+    Assert(df1->lengths[0] == df2->lengths[0], "Field lengths should be equal");
+    doc_destroy(doc);
+
+    doc = ir->get_doc(ir, 2);
+    df1 = doc_get_field(doc, tag);
+    df2 = doc_get_field(doc, compressed_field);
+    for (i = 0; i < 4; i++) {
+        Asequal(df1->data[i], df2->data[i]);
+        Assert(df1->lengths[i] == df2->lengths[i], "Field lengths not equal");
+    }
+    doc_destroy(doc);
+
+    lz_doc = ir->get_lazy_doc(ir, 0);
+    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, changing_field);
+    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    Asequal(lazy_df_get_data(lz_df1, 0), lazy_df_get_data(lz_df2, 0));
+    lazy_doc_close(lz_doc);
+
+    lz_doc = ir->get_lazy_doc(ir, 2);
+    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
+    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    for (i = 0; i < 4; i++) {
+        Asequal(lazy_df_get_data(lz_df1, i), lazy_df_get_data(lz_df2, i));
+    }
+    lazy_doc_close(lz_doc);
+
+    lz_doc = ir->get_lazy_doc(ir, 2);
+    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
+    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lazy_df_get_bytes(lz_df1, buf1, 5, 11);
+    lazy_df_get_bytes(lz_df2, buf2, 5, 11);
+    buf2[11] = buf1[11] = '\0';
+    //printf("Read in buf1 <%s>\n", buf1);
+    //printf("Read in buf2 <%s>\n", buf2);
+    Asequal(buf1, buf2);
+    lazy_doc_close(lz_doc);
 }
 
 static void test_ir_mtdpe(tst_case *tc, void *data)
@@ -2158,6 +2235,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_segment_reader_basic_ops");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_segment_get_doc");
+    tst_run_test_with_name(suite, test_ir_compression, ir,
+                           "test_segment_compression");
     tst_run_test_with_name(suite, test_ir_term_enum, ir,
                            "test_segment_term_enum");
     tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,
@@ -2182,6 +2261,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_multi_reader_basic_ops");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_multi_get_doc");
+    tst_run_test_with_name(suite, test_ir_compression, ir,
+                           "test_multi_compression");
     tst_run_test_with_name(suite, test_ir_term_enum, ir,
                            "test_multi_term_enum");
     tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,
@@ -2206,6 +2287,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_multi_ext_reader_basic_ops");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_multi_ext_get_doc");
+    tst_run_test_with_name(suite, test_ir_compression, ir,
+                           "test_multi_ext_compression");
     tst_run_test_with_name(suite, test_ir_term_enum, ir,
                            "test_multi_ext_term_enum");
     tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,
@@ -2231,6 +2314,8 @@ tst_suite *ts_index(tst_suite * suite)
                            "test_add_indexes_reader_basic_ops");
     tst_run_test_with_name(suite, test_ir_get_doc, ir,
                            "test_add_indexes_get_doc");
+    tst_run_test_with_name(suite, test_ir_compression, ir,
+                           "test_add_indexes_compression");
     tst_run_test_with_name(suite, test_ir_term_enum, ir,
                            "test_add_indexes_term_enum");
     tst_run_test_with_name(suite, test_ir_term_doc_enum, ir,

@@ -1,6 +1,6 @@
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -D_FILE_OFFSET_BITS=64 -g -DDEBUG 
 
-LFLAGS = -lm -lpthread
+LFLAGS = -lm -lpthread -lz
 
 include lib/libstemmer_c/mkinc.mak
 
@@ -21,8 +21,10 @@ testall: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
 
 valgrind: testall
-	valgrind --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
+	valgrind --suppressions=valgrind.supp --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
 
+gen_valsupp: testall
+	valgrind --suppressions=valgrind.supp --gen-suppressions=yes --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
 b: load_bench
 	./load_bench
 

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #define MAX_WORD_SIZE 255
 #define MAX_FILE_PATH 1024

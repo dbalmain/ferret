@@ -1,0 +1,47 @@
+{
+   ZLib0::deflate::Cond
+   Memcheck:Cond
+   fun:deflate
+}
+{
+   ZLib::deflate::Cond
+   Memcheck:Cond
+   obj:/usr/lib/libz.so.1.2.3.3
+   fun:deflate
+}
+{
+   ZLib0::deflate::Value8
+   Memcheck:Value8
+   fun:inflate
+}
+{
+   ZLib::deflate::Value8
+   Memcheck:Value8
+   obj:/usr/lib/libz.so.1.2.3.3
+   fun:deflate
+}
+{
+   ZLib3::deflate::Value8
+   Memcheck:Value8
+   obj:/usr/lib/libz.so.1.2.3.3
+   obj:/usr/lib/libz.so.1.2.3.3
+   obj:/usr/lib/libz.so.1.2.3.3
+   fun:deflate
+}
+{
+   ZLib0::inflate::Cond
+   Memcheck:Cond
+   fun:inflate
+}
+{
+   ZLib::inflate::Cond
+   Memcheck:Cond
+   obj:/usr/lib/libz.so.1.2.3.3
+   fun:inflate
+}
+{
+   ZLib::inflate::Value8
+   Memcheck:Value8
+   obj:/usr/lib/libz.so.1.2.3.3
+   fun:inflate
+}

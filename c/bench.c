@@ -25,7 +25,7 @@ main(int argc, char **argv)
     Document *doc;
     int end;
     clock_t time_taken = clock();
-    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
+    FieldInfos *fis = fis_new(STORE_COMPRESS, INDEX_YES, TERM_VECTOR_NO);
     fis_add_field(fis, fi_new("name", STORE_YES, INDEX_UNTOKENIZED, TERM_VECTOR_NO));
     index_create(store, fis);
     fis_deref(fis);
@@ -39,6 +39,7 @@ main(int argc, char **argv)
     config.merge_factor = 1000;
     config.chunk_size = 0x4000000;
     config.max_buffered_docs = 0x100000;
+    config.use_compound_file = false;
 
     iw = iw_open(store, a, &config);
     //for (i = 0; i < MAX_DOCS; i++) {
@@ -92,7 +93,6 @@ main(int argc, char **argv)
             if (strstr(de2->d_name, ".txt") != NULL) {
                 //if (strstr(de->d_name, "Bazaar") != NULL) 
                 doc = doc_new();
-                doc_add_field(doc, df_add_data(df_new("name"), de2->d_name));
                 sprintf(fname, "%s/%s/%s", CORPUS_DIR, de->d_name, de2->d_name);
                 file = fopen(fname, "r");
                 end = fread(data, 1, MAX_FILE_SIZE, file);
@@ -101,6 +101,9 @@ main(int argc, char **argv)
                 }
                 data[end] = '\0';
                 doc_add_field(doc, df_add_data_len(df_new("text"), data, end));
+                doc_add_field(doc, df_add_data_len(df_new("text2"), data, end));
+                doc_add_field(doc, df_add_data_len(df_new("text3"), data, end));
+                doc_add_field(doc, df_add_data(df_new("name"), de2->d_name));
                 iw_add_doc(iw, doc);
                 fclose(file);
                 doc_destroy(doc);

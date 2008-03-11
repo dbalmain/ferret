@@ -1,6 +1,7 @@
 #ifndef FRT_INDEX_H
 #define FRT_INDEX_H
 
+#include <zlib.h>
 #include "global.h"
 #include "document.h"
 #include "analysis.h"
@@ -626,10 +627,11 @@ typedef struct LazyDoc LazyDoc;
 typedef struct LazyDocField
 {
     char             *name;
-    int               size; /* number of data elements */
     LazyDocFieldData *data;
-    int               len;  /* length of data elements concatenated */
     LazyDoc          *doc;
+    int               size; /* number of data elements */
+    int               len;  /* length of data elements concatenated */
+    bool              is_compressed : 2; /* set to 2 after all data is loaded */
 } LazyDocField;
 
 extern char *lazy_df_get_data(LazyDocField *self, int i);
@@ -670,7 +672,7 @@ extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
 extern LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num);
 extern HashTable *fr_get_tv(FieldsReader *fr, int doc_num);
 extern TermVector *fr_get_field_tv(FieldsReader *fr, int doc_num,
-                            int field_num);
+                                   int field_num);
 
 /****************************************************************************
  *

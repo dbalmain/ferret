@@ -20,6 +20,7 @@ typedef struct DocField
     char **data;
     float boost;
     bool destroy_data : 1;
+    bool is_compressed : 1;
 } DocField;
 
 extern DocField *df_new(const char *name);
