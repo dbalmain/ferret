@@ -1286,11 +1286,6 @@ static char *is_read_zipped_bytes(InStream *is, int zip_len, int *len)
     return (char *)buf_out;
 }
 #else /* use bzlib */
-void bz_internal_error(int errcode)
-{
-    (void)errcode;
-}
-
 static void zraise(int ret)
 {
     switch (ret) {

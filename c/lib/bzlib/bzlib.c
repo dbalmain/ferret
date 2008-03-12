@@ -84,6 +84,9 @@ void BZ2_bz__AssertH__fail ( int errcode )
 
    exit(3);
 }
+#else
+void BZ2_bz__AssertH__fail ( int errcode ) { (void)errcode; }
+void bz_internal_error     ( int errcode ) { (void)errcode; }
 #endif
 
 
