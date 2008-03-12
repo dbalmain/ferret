@@ -1,4 +1,11 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -D_FILE_OFFSET_BITS=64 -g -DDEBUG 
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -D_FILE_OFFSET_BITS=64 -DBZ_NO_STDIO -g -DDEBUG
+# common options
+#  -D_FILE_OFFSET_BITS=64	// set this option for large-file support
+#  -g						// set -g for debugging purposes
+#  -pg						// use this option if you want to use gprof
+#  -DDEBUG					// some error checking only occurs in DEBUG mode
+#  -DBZ_NO_STDIO			// There really is no need for bzlib to use stdio
+#  -DUSE_ZLIB              	// use zlib instead of bzlib
 
 LFLAGS = -lm -lpthread -lz
 
@@ -12,7 +19,7 @@ OBJS = q_multi_term.o hashset.o q_match_all.o bitvector.o mempool.o index.o comp
 
 vpath %.c test src
 
-vpath %.h test include lib/libstemmer_c/include
+vpath %.h test include lib/libstemmer_c/include lib/bzlib/
 
 runtests: testall
 	./testall -v -f -q

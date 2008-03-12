@@ -1,7 +1,6 @@
 #ifndef FRT_INDEX_H
 #define FRT_INDEX_H
 
-#include <zlib.h>
 #include "global.h"
 #include "document.h"
 #include "analysis.h"

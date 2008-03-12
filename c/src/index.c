@@ -6,6 +6,11 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#ifdef USE_ZLIB
+# include <zlib.h>
+#else
+# include "bzlib.h"
+#endif
 
 #define GET_LOCK(lock, name, store, err_msg) do {\
     lock = store->open_lock(store, name);\
@@ -37,8 +42,8 @@ static char *ste_next(TermEnum *te);
 #define FORMAT 0
 #define SEGMENTS_GEN_FILE_NAME "segments"
 #define MAX_EXT_LEN 10
-#define ZLIB_BUFFER_SIZE 16348
-#define ZLIB_LEVEL 9
+#define ZIP_BUFFER_SIZE 16348
+#define ZIP_LEVEL 9
 
 /* *** Must be three characters *** */
 const char *INDEX_EXTENSIONS[] = {
@@ -1204,6 +1209,7 @@ static void lazy_df_destroy(LazyDocField *self)
     free(self);
 }
 
+#ifdef USE_ZLIB
 /* good zlib example at http://www.zlib.net/zlib_how.html */
 
 /* report a zlib or i/o error */
@@ -1233,29 +1239,29 @@ static void zraise(int ret)
     }
 }
 
-static char *read_zipped_bytes(InStream *is, int zip_len, int *len)
+static char *is_read_zipped_bytes(InStream *is, int zip_len, int *len)
 {
     int buf_out_idx = 0, ret, read_len;
     uchar *buf_out = NULL;
-    uchar buf_in[ZLIB_BUFFER_SIZE];
+    uchar buf_in[ZIP_BUFFER_SIZE];
     z_stream zstrm;
-    zstrm.zalloc = Z_NULL;
-    zstrm.zfree = Z_NULL;
-    zstrm.opaque = Z_NULL;
-    zstrm.avail_in = 0;
+    zstrm.zalloc  = Z_NULL;
+    zstrm.zfree   = Z_NULL;
+    zstrm.opaque  = Z_NULL;
     zstrm.next_in = Z_NULL;
+    zstrm.avail_in = 0;
     if ((ret = inflateInit(&zstrm)) != Z_OK) zraise(ret);
 
     do {
-        read_len = zip_len > ZLIB_BUFFER_SIZE ? ZLIB_BUFFER_SIZE : zip_len;
+        read_len = zip_len > ZIP_BUFFER_SIZE ? ZIP_BUFFER_SIZE : zip_len;
         is_read_bytes(is, buf_in, zip_len);
         zip_len -= read_len;
         zstrm.avail_in = read_len;
         zstrm.next_in = buf_in;
+        zstrm.avail_out = ZIP_BUFFER_SIZE;
 
         do {
-            zstrm.avail_out = ZLIB_BUFFER_SIZE;
-            REALLOC_N(buf_out, uchar, buf_out_idx + ZLIB_BUFFER_SIZE);
+            REALLOC_N(buf_out, uchar, buf_out_idx + ZIP_BUFFER_SIZE);
             zstrm.next_out = buf_out + buf_out_idx;
             ret = inflate(&zstrm, Z_NO_FLUSH);
             assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
@@ -1264,9 +1270,10 @@ static char *read_zipped_bytes(InStream *is, int zip_len, int *len)
                 ret = Z_DATA_ERROR;     /* and fall through */
             case Z_DATA_ERROR:
             case Z_MEM_ERROR:
+                (void)inflateEnd(&zstrm);
                 zraise(ret);
             }
-            buf_out_idx += ZLIB_BUFFER_SIZE - zstrm.avail_out;
+            buf_out_idx += ZIP_BUFFER_SIZE - zstrm.avail_out;
         } while (zstrm.avail_out == 0);
     } while (ret != Z_STREAM_END && zip_len != 0);
 
@@ -1278,6 +1285,90 @@ static char *read_zipped_bytes(InStream *is, int zip_len, int *len)
     *len = buf_out_idx;
     return (char *)buf_out;
 }
+#else
+static void zraise(int ret)
+{
+    switch (ret) {
+    case BZ_IO_ERROR:
+        if (ferror(stdin))
+            RAISE(IO_ERROR, "bzlib: error reading stdin");
+        if (ferror(stdout))
+            RAISE(IO_ERROR, "bzlib: error writing stdout");
+        break;
+    case BZ_CONFIG_ERROR:
+        RAISE(IO_ERROR, "bzlib: system configuration error");
+        break;
+    case BZ_SEQUENCE_ERROR: /* shouldn't occur if code is correct */
+        RAISE(IO_ERROR, "bzlib: !!BUG!! sequence error");
+        break;
+    case BZ_PARAM_ERROR:    /* shouldn't occur if code is correct */
+        RAISE(IO_ERROR, "bzlib: !!BUG!! parameter error");
+        break;
+    case BZ_MEM_ERROR:
+        RAISE(IO_ERROR, "bzlib: memory error");
+        break;
+    case BZ_DATA_ERROR:
+        RAISE(IO_ERROR, "bzlib: data integrity check error");
+        break;
+    case BZ_DATA_ERROR_MAGIC:
+        RAISE(IO_ERROR, "bzlib: data integrity check - non-matching magic");
+        break;
+    case BZ_UNEXPECTED_EOF:
+        RAISE(IO_ERROR, "bzlib: unexpected end-of-file");
+        break;
+    case BZ_OUTBUFF_FULL:
+        RAISE(IO_ERROR, "bzlib: output buffer full");
+        break;
+    default:
+        RAISE(EXCEPTION, "bzlib: unknown error");
+    }
+}
+
+static char *is_read_zipped_bytes(InStream *is, int zip_len, int *len)
+{
+    int buf_out_idx = 0, ret, read_len;
+    char *buf_out = NULL;
+    char buf_in[ZIP_BUFFER_SIZE];
+    bz_stream zstrm;
+    zstrm.bzalloc = NULL;
+    zstrm.bzfree  = NULL;
+    zstrm.opaque  = NULL;
+    zstrm.next_in = NULL;
+    zstrm.avail_in = 0;
+    if ((ret = BZ2_bzDecompressInit(&zstrm, 0, 0)) != BZ_OK) zraise(ret);
+
+    do {
+        read_len = zip_len > ZIP_BUFFER_SIZE ? ZIP_BUFFER_SIZE : zip_len;
+        is_read_bytes(is, (uchar *)buf_in, zip_len);
+        zip_len -= read_len;
+        zstrm.avail_in = read_len;
+        zstrm.next_in = buf_in;
+        zstrm.avail_out = ZIP_BUFFER_SIZE;
+
+        do {
+            REALLOC_N(buf_out, char, buf_out_idx + ZIP_BUFFER_SIZE);
+            zstrm.next_out = buf_out + buf_out_idx;
+            ret = BZ2_bzDecompress(&zstrm);
+            assert(ret != BZ_SEQUENCE_ERROR);  /* state not clobbered */
+            if (ret != BZ_OK && ret != BZ_STREAM_END) {
+                (void)BZ2_bzDecompressEnd(&zstrm);
+                zraise(ret);
+            }
+            buf_out_idx += ZIP_BUFFER_SIZE - zstrm.avail_out;
+        } while (zstrm.avail_out == 0);
+    } while (ret != BZ_STREAM_END && zip_len != 0);
+
+    /* clean up */
+    (void)BZ2_bzDecompressEnd(&zstrm);
+
+    buf_out[buf_out_idx] = '\0';
+    REALLOC_N(buf_out, char, buf_out_idx + 1);
+    *len = buf_out_idx;
+    return (char *)buf_out;
+}
+
+#endif
+
 
 char *lazy_df_get_data(LazyDocField *self, int i)
 {
@@ -1289,8 +1380,8 @@ char *lazy_df_get_data(LazyDocField *self, int i)
             is_seek(self->doc->fields_in, self->data[i].start);
             if (self->is_compressed) {
                 text = self->data[i].text = 
-                    read_zipped_bytes(self->doc->fields_in, read_len,
-                                      &(self->data[i].length));
+                    is_read_zipped_bytes(self->doc->fields_in, read_len,
+                                         &(self->data[i].length));
             }
             else {
                 self->data[i].text = text = ALLOC_N(char, read_len);
@@ -1458,7 +1549,7 @@ static void fr_read_zipped_fields(FieldsReader *fr, DocField *df)
 
     for (i = 0; i < df_size; i++) {
         const int zip_len = df->lengths[i] + 1;
-        df->data[i] = read_zipped_bytes(fdt_in, zip_len, &(df->lengths[i]));
+        df->data[i] = is_read_zipped_bytes(fdt_in, zip_len, &(df->lengths[i]));
     }
 }
 
@@ -1722,32 +1813,63 @@ void fw_close(FieldsWriter *fw)
     free(fw);
 }
 
-static int fw_write_zipped_bytes(FieldsWriter *fw, uchar *data, int length)
+#ifdef USE_ZLIB
+static int os_write_zipped_bytes(OutStream* out_stream, uchar *data, int length)
 {
     int ret, buf_size, zip_len = 0;
-    uchar out_buffer[ZLIB_BUFFER_SIZE];
+    uchar out_buffer[ZIP_BUFFER_SIZE];
     z_stream zstrm; 
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree  = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    if ((ret = deflateInit(&zstrm, ZIP_LEVEL)) != Z_OK) zraise(ret);
+
     zstrm.avail_in = length;
     zstrm.next_in = data;
-    zstrm.zalloc = Z_NULL;
-    zstrm.zfree = Z_NULL;
-    zstrm.opaque = Z_NULL;
-    if ((ret = deflateInit(&zstrm, ZLIB_LEVEL)) != Z_OK) zraise(ret);
+    zstrm.avail_out = ZIP_BUFFER_SIZE;
+    zstrm.next_out = out_buffer;
 
     do {
-        zstrm.avail_out = ZLIB_BUFFER_SIZE;
-        zstrm.next_out = out_buffer;
         ret = deflate(&zstrm, Z_FINISH); /* no bad return value */
-        assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
-        zip_len += buf_size = ZLIB_BUFFER_SIZE - zstrm.avail_out;
-        os_write_bytes(fw->buffer, out_buffer, buf_size);
+        assert(ret != Z_STREAM_ERROR) ;  /* state not clobbered */
+        zip_len += buf_size = ZIP_BUFFER_SIZE - zstrm.avail_out;
+        os_write_bytes(out_stream, out_buffer, buf_size);
     } while (zstrm.avail_out == 0);
-    assert(zstrm.avail_in == 0);       /* all input will be used */
+    assert(zstrm.avail_in == 0);         /* all input will be used */
 
     /* clean up */
     (void)deflateEnd(&zstrm);
     return zip_len;
 }
+#else
+static int os_write_zipped_bytes(OutStream* out_stream, uchar *data, int length)
+{
+    int ret, buf_size, zip_len = 0;
+    char out_buffer[ZIP_BUFFER_SIZE];
+    bz_stream zstrm; 
+    zstrm.bzalloc = NULL;
+    zstrm.bzfree  = NULL;
+    zstrm.opaque = NULL;
+    if ((ret = BZ2_bzCompressInit(&zstrm, ZIP_LEVEL, 0, 0)) != BZ_OK) zraise(ret);
+
+    zstrm.avail_in = length;
+    zstrm.next_in = (char *)data;
+    zstrm.avail_out = ZIP_BUFFER_SIZE;
+    zstrm.next_out = out_buffer;
+
+    do {
+        ret = BZ2_bzCompress(&zstrm, BZ_FINISH); /* no bad return value */
+        assert(ret != BZ_SEQUENCE_ERROR);        /* state not clobbered */
+        zip_len += buf_size = ZIP_BUFFER_SIZE - zstrm.avail_out;
+        os_write_bytes(out_stream, (uchar *)out_buffer, buf_size);
+    } while (zstrm.avail_out == 0);
+    assert(zstrm.avail_in == 0);       /* all input will be used */
+
+    /* clean up */
+    (void)BZ2_bzCompressEnd(&zstrm);
+    return zip_len;
+}
+#endif
 
 void fw_add_doc(FieldsWriter *fw, Document *doc)
 {
@@ -1780,7 +1902,7 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
             if (fi_is_compressed(fi)) {
                 for (j = 0; j < df_size; j++) {
                     const int length = df->lengths[j];
-                    int zip_len = fw_write_zipped_bytes(fw,
+                    int zip_len = os_write_zipped_bytes(fw->buffer,
                                                         (uchar*)df->data[j],
                                                         length);
                     os_write_vint(fdt_out, zip_len - 1);
