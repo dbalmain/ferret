@@ -34,6 +34,10 @@ task :default => 'test:unit'
 #  sh "ruby test/unit/index/tc_index.rb"
 #end
 
+  BZLIB_SRC = FileList["../c/lib/bzlib/*.h"] +
+              FileList["../c/lib/bzlib/*.c"].map do |fn|
+                fn.gsub(%r{/([^/]*.c)}, '/BZ_\1')
+              end
 ##############################################################################
 # Building
 ##############################################################################
@@ -44,6 +48,7 @@ namespace :build do
   # Note: libstemmer.[h] is necessary so that the file isn't included when it
   # doesn't exist. It needs to have one regular expression element.
   EXT_SRC = FileList["../c/src/*.[c]", "../c/include/*.h",
+                     "../c/lib/bzlib/*.[ch]",
                      "../c/lib/libstemmer_c/src_c/*.[ch]",
                      "../c/lib/libstemmer_c/runtime/*.[ch]",
                      "../c/lib/libstemmer_c/libstemmer/*.[ch]",
@@ -52,7 +57,15 @@ namespace :build do
                   '../c/include/threading.h',
                   '../c/include/lang.h')
 
-  EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
+  EXT_SRC_MAP = {}
+  EXT_SRC_DEST = EXT_SRC.map do |fn|
+    ext_fn = File.join("ext", File.basename(fn))
+    if fn =~ /.c$/ and fn =~ /(bzlib|stemmer)/
+      prefix = $1.upcase
+      ext_fn.gsub!(/ext\//, "ext/#{prefix}_")
+    end
+    EXT_SRC_MAP[fn] = ext_fn
+  end
   SRC = FileList["ext/*.[ch]", EXT_SRC_DEST].uniq
 
   CLEAN.include     ['**/*.o', '**/*.obj', '.config', 'ext/cferret.c']
@@ -62,7 +75,8 @@ namespace :build do
   # belong in the ../c directory in source the working copy and they need
   # to be linked to in the ext directory
   EXT_SRC.each do |fn|
-    dest_fn = File.join("ext", File.basename(fn))
+    dest_fn = EXT_SRC_MAP[fn]
+    # prepend lib files to avoid conflicts
     file dest_fn => fn do |t|
       safe_ln fn, dest_fn
 

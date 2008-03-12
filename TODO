@@ -6,9 +6,6 @@ TODO
   - integrate gcov
   - add .. operator to query parser. For example, [100 200] could be written as
     100..200 or 100...201 like in Ruby Ranges
-  - fix compression. Currently nothing is happening if you set a field to
-    :compress. I guess we'll just assume zlib is installed, as I think it has to
-    be for Ruby to be installed. 
   - improve unit test code. I'd like to implement some way to print out a stack
     trace when a test fails so that it is easy to find the source of the error.
       * See http://www.nongnu.org/libunwind/
@@ -21,6 +18,7 @@ TODO
     environment.
   - Add optional logging. To be enabled at compilation time, perhaps?
   - Add a field cache to Searcher
+  - Add support for changing zlib and bzlib compression parameters
 
 * C bindings
   - argument checking for every method. We need a new api for argument checking
@@ -54,3 +52,7 @@ Done
 ====
 * add rake install task
 * FIX :create parameter so that it only deletes the files owned by Ferret.
+* fix compression. Currently nothing is happening if you set a field to
+  :compress. I guess we'll just assume zlib is installed, as I think it has to
+  be for Ruby to be installed. 
+* add bzlib support
