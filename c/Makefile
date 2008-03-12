@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -fno-common -D_FILE_OFFSET_BITS=64 -DBZ_NO_STDIO -g -DDEBUG
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -Ilib/bzlib -fno-common -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -g -DDEBUG
 # common options
 #  -D_FILE_OFFSET_BITS=64	// set this option for large-file support
 #  -g						// set -g for debugging purposes
@@ -26,7 +26,7 @@ runtests: testall
 
 testall: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
-
+ 
 valgrind: testall
 	valgrind --suppressions=valgrind.supp --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
 

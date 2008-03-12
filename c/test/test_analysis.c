@@ -947,7 +947,7 @@ tst_suite *ts_analysis(tst_suite *suite)
 {
     bool u = false;
     char *locale = setlocale(LC_ALL, "");
-    if (strstr(locale, "utf") || strstr(locale, "UTF")) u = true;
+    if (locale && (strstr(locale, "utf") || strstr(locale, "UTF"))) u = true;
 
     suite = ADD_SUITE(suite);
 

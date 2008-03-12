@@ -30,8 +30,6 @@
 
 #include "bzlib_private.h"
 
-/* Ferret: for some reason this doesn't seem to be defined in my stdio.h */
-extern FILE *fdopen(int fildes, const char *mode);
 
 
 /*---------------------------------------------------*/
