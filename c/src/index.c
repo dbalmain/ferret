@@ -6446,7 +6446,7 @@ void iw_close(IndexWriter *iw)
     free(iw);
 }
 
-IndexWriter *iw_open(Store *store, volatile Analyzer *analyzer,
+IndexWriter *iw_open(Store *store, Analyzer *analyzer,
                      const Config *config)
 {
     IndexWriter *iw = ALLOC_AND_ZERO(IndexWriter);

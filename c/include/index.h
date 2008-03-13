@@ -922,7 +922,7 @@ struct IndexWriter
 
 extern void index_create(Store *store, FieldInfos *fis);
 extern bool index_is_locked(Store *store);
-extern IndexWriter *iw_open(Store *store, volatile Analyzer *analyzer,
+extern IndexWriter *iw_open(Store *store, Analyzer *analyzer,
                             const Config *config);
 extern void iw_delete_term(IndexWriter *iw, const char *field,
                            const char *term);
