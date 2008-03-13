@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -fno-stack-protector -Iinclude -Ilib/libstemmer_c/include -Ilib/bzlib -fno-common -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -g -DDEBUG
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -Ilib/bzlib -fno-common -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -g -DDEBUG
 # common options
 #  -D_FILE_OFFSET_BITS=64	// set this option for large-file support
 #  -g						// set -g for debugging purposes
@@ -21,12 +21,14 @@ vpath %.c test src
 
 vpath %.h test include lib/libstemmer_c/include lib/bzlib/
 
+all: runtests
+
 runtests: testall
 	./testall -v -f -q
 
 testall: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
- 
+
 valgrind: testall
 	valgrind --suppressions=valgrind.supp --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
 
@@ -58,7 +60,7 @@ q_parser.o: src/q_parser.c
 
 src/q_parser.c: src/q_parser.y
 
-.PHONY: clean
+.PHONY: clean all
 clean:
 	rm -f *.o testall gmon.out bench search_bench
 testhelper.o: except.h posh.h testhelper.h global.h lang.h config.h

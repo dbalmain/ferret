@@ -33,7 +33,7 @@ struct OutStreamMethods {
      * @param len the number of characters to write
      * @raise IO_ERROR if there is an error writing the characters
      */
-    void (*flush_i)(struct OutStream *os, uchar *buf, int len);
+    void (*flush_i)(struct OutStream *os, const uchar *buf, int len);
 
     /**
      * Seek +pos+ in the output stream
@@ -108,7 +108,7 @@ struct InStreamMethods
      * @raise IO_ERROR if there is an error getting the file length
      */
     off_t (*length_i)(struct InStream *is);
-    
+
     /**
      * Close the resources allocated to the inputstream +is+
      *
@@ -190,7 +190,7 @@ struct Store
      * @param filename the name of the file to create
      * @raise IO_ERROR if the file cannot be created
      */
-    void (*touch)(Store *store, char *filename);
+    void (*touch)(Store *store, const char *filename);
 
     /**
      * Return true if a file of name +filename+ exists in +store+.
@@ -200,7 +200,7 @@ struct Store
      * @returns true if the file exists
      * @raise IO_ERROR if there is an error checking for the files existance
      */
-    int (*exists)(Store *store, char *filename);
+    int (*exists)(Store *store, const char *filename);
 
     /**
      * Remove the file +filename+ from the +store+
@@ -210,7 +210,7 @@ struct Store
      * @returns On success, zero is returned.  On error, -1 is returned, and errno
      *          is set appropriately.
      */
-    int (*remove)(Store *store, char *filename);
+    int (*remove)(Store *store, const char *filename);
 
     /**
      * Rename the file in the +store+ from the name +from+ to the name +to+.
@@ -220,7 +220,7 @@ struct Store
      * @param to the new name of the file
      * @raise IO_ERROR if there is an error renaming the file
      */
-    void (*rename)(Store *store, char *from, char *to);
+    void (*rename)(Store *store, const char *from, const char *to);
 
     /**
      * Returns the number of files in the store.
@@ -243,7 +243,7 @@ struct Store
      * @param arg the argument to pass to the function
      * @raise IO_ERROR if there is an error opening the directory
      */
-    void (*each)(Store *store, void (*func)(char *fname, void *arg),
+    void (*each)(Store *store, void (*func)(const char *fname, void *arg),
                   void *arg);
 
     /**
@@ -278,7 +278,7 @@ struct Store
      * @return the length of the file in bytes
      * @raise IO_ERROR if there is an error checking the file length
      */
-    off_t (*length)(Store *store, char *filename);
+    off_t (*length)(Store *store, const char *filename);
 
     /**
      * Allocate the resources needed for the output stream in the +store+ with
@@ -307,7 +307,7 @@ struct Store
      * @param store self
      * @param lock the lock to obtain
      */
-    Lock *(*open_lock_i)(Store *store, char *lockname);
+    Lock *(*open_lock_i)(Store *store, const char *lockname);
 
     /**
      * Returns true if +lock+ is locked. To test if the file is locked:wq
@@ -366,7 +366,7 @@ extern Store *open_ram_store_and_copy(Store *store, bool close_store);
  */
 extern Store *open_cmpd_store(Store *store, const char *filename);
 
-/* 
+/*
  * == RamStore functions ==
  *
  * These functions or optimizations to be used when you know you are using a
@@ -419,7 +419,7 @@ extern void ram_destroy_buffer(OutStream *os);
  * Call the function +func+ with the +lock+ locked. The argument +arg+ will be
  * passed to +func+. If you need to pass more than one argument you should use
  * a struct. When the function is finished, release the lock.
- * 
+ *
  * @param lock     lock to be locked while func is called
  * @param func     function to call with the lock locked
  * @param arg      argument to pass to the function
@@ -433,7 +433,7 @@ extern void with_lock(Lock *lock, void (*func)(void *arg), void *arg);
  * +func+ with the lock locked. The argument +arg+ will be passed to +func+.
  * If you need to pass more than one argument you should use a struct. When
  * the function is finished, release and destroy the lock.
- * 
+ *
  * @param store     store to open the lock in
  * @param lock_name name of the lock to open
  * @param func      function to call with the lock locked
@@ -441,7 +441,7 @@ extern void with_lock(Lock *lock, void (*func)(void *arg), void *arg);
  * @raise IO_ERROR  if the lock is already locked
  * @see with_lock
  */
-extern void with_lock_name(Store *store, char *lock_name,
+extern void with_lock_name(Store *store, const char *lock_name,
                            void (*func)(void *arg), void *arg);
 
 /**
@@ -468,7 +468,7 @@ extern void os_flush(OutStream *os);
 extern void os_close(OutStream *os);
 
 /**
- * Return the current position of OutStream +os+. 
+ * Return the current position of OutStream +os+.
  *
  * @param os the OutStream to get the position from
  * @return the current position in OutStream +os+
@@ -499,7 +499,7 @@ extern void os_write_byte(OutStream *os, uchar b);
  * @param buf the buffer from which to get the bytes to write.
  * @raise IO_ERROR if there is an IO error writing to the file-system
  */
-extern void os_write_bytes(OutStream *os, uchar *buf, int len);
+extern void os_write_bytes(OutStream *os, const uchar *buf, int len);
 
 /**
  * Write a 32-bit signed integer to the OutStream
@@ -577,7 +577,7 @@ extern void os_write_vll(OutStream *os, register f_u64 num);
  * @param str the string to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_string(OutStream *os, char *str);
+extern void os_write_string(OutStream *os, const char *str);
 /**
  * Get the current position within an InStream.
  *
@@ -772,6 +772,6 @@ extern void is2os_copy_vints(InStream *is, OutStream *os, int cnt);
  */
 extern char *store_to_s(Store *store);
 
-extern Lock *open_lock(Store *store, char *lockname);
+extern Lock *open_lock(Store *store, const char *lockname);
 extern void close_lock(Lock *lock);
 #endif

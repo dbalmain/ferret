@@ -429,7 +429,7 @@ FieldInfos *fis_read(InStream *is)
         fis_deref(fis);
     XENDTRY
 
-    return fis; 
+    return fis;
 }
 
 void fis_write(FieldInfos *fis, OutStream *os)
@@ -503,7 +503,7 @@ char *fis_to_s(FieldInfos *fis)
     FieldInfo *fi;
     const int fis_size = fis->size;
 
-    sprintf(buf, 
+    sprintf(buf,
             "default:\n"
             "  store: %s\n"
             "  index: %s\n"
@@ -514,12 +514,12 @@ char *fis_to_s(FieldInfos *fis)
     pos = (int)strlen(buf);
     for (i = 0; i < fis_size; i++) {
         fi = fis->fields[i];
-        sprintf(buf + pos, 
+        sprintf(buf + pos,
                 "  %s:\n"
                 "    boost: %f\n"
                 "    store: %s\n"
                 "    index: %s\n"
-                "    term_vector: %s\n", 
+                "    term_vector: %s\n",
                 fi->name, fi->boost, fi_store_str(fi),
                 fi_index_str(fi), fi_term_vector_str(fi));
 
@@ -672,7 +672,7 @@ char *si_norm_file_name(SegmentInfo *si, char *buf, int field_num)
     }
 }
 
-void deleter_queue_file(Deleter *dlr, char *file_name);
+void deleter_queue_file(Deleter *dlr, const char *file_name);
 #define DEL(file_name) deleter_queue_file(dlr, file_name)
 
 static void si_delete_files(SegmentInfo *si, FieldInfos *fis, Deleter *dlr)
@@ -714,7 +714,7 @@ static void si_delete_files(SegmentInfo *si, FieldInfos *fis, Deleter *dlr)
  ****************************************************************************/
 
 #include <time.h>
-static char *new_segment(f_i64 generation) 
+static char *new_segment(f_i64 generation)
 {
     char buf[SEGMENT_NAME_MAX_LENGTH];
     char *fn_p = u64_to_str36(buf, SEGMENT_NAME_MAX_LENGTH - 1,
@@ -733,7 +733,7 @@ typedef struct FindSegmentsFile {
     void  *p_return;
 } FindSegmentsFile;
 
-static void which_gen_i(char *file_name, void *arg)
+static void which_gen_i(const char *file_name, void *arg)
 {
     f_i64 *max_generation = (f_i64 *)arg;
     if (0 == strncmp(SEGMENTS_FILE_NAME"_", file_name,
@@ -1126,7 +1126,7 @@ void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
         os_write_u32(os, FORMAT);
         os_write_u64(os, ++(sis->version)); /* every write changes the index */
         os_write_u64(os, sis->counter);
-        os_write_vint(os, sis->size); 
+        os_write_vint(os, sis->size);
         for (i = 0; i < sis_size; i++) {
             si_write(sis->segs[i], os);
         }
@@ -1379,7 +1379,7 @@ char *lazy_df_get_data(LazyDocField *self, int i)
             const int read_len = self->data[i].length + 1;
             is_seek(self->doc->fields_in, self->data[i].start);
             if (self->is_compressed) {
-                text = self->data[i].text = 
+                text = self->data[i].text =
                     is_read_zipped_bytes(self->doc->fields_in, read_len,
                                          &(self->data[i].length));
             }
@@ -1517,7 +1517,7 @@ FieldsReader *fr_clone(FieldsReader *orig)
     memcpy(fr, orig, sizeof(FieldsReader));
     fr->fdx_in = is_clone(orig->fdx_in);
     fr->fdt_in = is_clone(orig->fdt_in);
-    
+
     return fr;
 }
 
@@ -1649,7 +1649,7 @@ TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
     InStream *fdt_in = fr->fdt_in;
     FieldInfo *fi = fr->fis->fields[field_num];
     const int num_terms = is_read_vint(fdt_in);
-    
+
     tv->field_num = field_num;
     tv->field = estrdup(fi->name);
 
@@ -1818,7 +1818,7 @@ static int os_write_zipped_bytes(OutStream* out_stream, uchar *data, int length)
 {
     int ret, buf_size, zip_len = 0;
     uchar out_buffer[ZIP_BUFFER_SIZE];
-    z_stream zstrm; 
+    z_stream zstrm;
     zstrm.zalloc = Z_NULL;
     zstrm.zfree  = Z_NULL;
     zstrm.opaque = Z_NULL;
@@ -1846,7 +1846,7 @@ static int os_write_zipped_bytes(OutStream* out_stream, uchar *data, int length)
 {
     int ret, buf_size, zip_len = 0;
     char out_buffer[ZIP_BUFFER_SIZE];
-    bz_stream zstrm; 
+    bz_stream zstrm;
     zstrm.bzalloc = NULL;
     zstrm.bzfree  = NULL;
     zstrm.opaque = NULL;
@@ -1920,7 +1920,7 @@ void fw_add_doc(FieldsWriter *fw, Document *doc)
             }
         }
     }
-    ramo_write_to(fw->buffer, fdt_out); 
+    ramo_write_to(fw->buffer, fdt_out);
 }
 
 void fw_write_tv_index(FieldsWriter *fw)
@@ -2068,12 +2068,12 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
         ste_reset(index_te);
         is_seek(STE(index_te)->is, sti->index_ptr);
         STE(index_te)->size = sti->index_size;
-        
+
         sti->index_terms = ALLOC_N(char *, index_size);
         sti->index_term_lens = ALLOC_N(int, index_size);
         sti->index_term_infos = ALLOC_N(TermInfo, index_size);
         sti->index_ptrs = ALLOC_N(off_t, index_size);
-        
+
         for (i = 0; NULL != ste_next(index_te); i++) {
 #ifdef DEBUG
             if (i >= index_size) {
@@ -2257,7 +2257,7 @@ static char *ste_scan_to(TermEnum *te, const char *term)
             /* if we are at the end of the index or before the next index
              * ptr then a simple scan suffices */
             if (sti->index_size == enum_offset ||
-                strcmp(term, sti->index_terms[enum_offset]) < 0) { 
+                strcmp(term, sti->index_terms[enum_offset]) < 0) {
                 return te_skip_to(te, term);
             }
         }
@@ -2657,7 +2657,7 @@ TermInfo *tir_get_ti_field(TermInfosReader *tir, int field_num,
 }
 
 char *tir_get_term(TermInfosReader *tir, int pos)
-{ 
+{
     if (pos < 0) {
         return NULL;
     }
@@ -2916,7 +2916,7 @@ static bool stde_next(TermDocEnum *tde)
     int doc_code;
     SegmentTermDocEnum *stde = STDE(tde);
 
-    while (true) { 
+    while (true) {
         if (stde->count >= stde->doc_freq) {
             return false;
         }
@@ -3031,7 +3031,7 @@ static bool stde_skip_to(TermDocEnum *tde, int target_doc_num)
     }
 
     /* done skipping, now just scan */
-    do { 
+    do {
         if (!tde->next(tde)) {
             return false;
         }
@@ -3051,12 +3051,12 @@ static void stde_close(TermDocEnum *tde)
 }
 
 static void stde_skip_prox(SegmentTermDocEnum *stde)
-{ 
+{
     (void)stde;
 }
 
 static void stde_seek_prox(SegmentTermDocEnum *stde, off_t prx_ptr)
-{ 
+{
     (void)stde;
     (void)prx_ptr;
 }
@@ -3603,7 +3603,7 @@ static void file_name_filter_init()
     register_for_cleanup(fn_extensions, (free_ft)&h_destroy);
 }
 
-bool file_name_filter_is_index_file(char *file_name, bool include_locks)
+bool file_name_filter_is_index_file(const char *file_name, bool include_locks)
 {
     char *p = strrchr(file_name, '.');
     if (NULL == fn_extensions) file_name_filter_init();
@@ -3634,7 +3634,7 @@ bool file_name_filter_is_index_file(char *file_name, bool include_locks)
  * function should only be called on files that pass the above "accept" (ie,
  * are already known to be a Lucene index file).
  */
-static bool file_name_filter_is_cfs_file(char *file_name) {
+static bool file_name_filter_is_cfs_file(const char *file_name) {
     char *p = strrchr(file_name, '.');
     if (NULL != p) {
         char *extension = p + 1;
@@ -3675,7 +3675,7 @@ void deleter_destroy(Deleter *dlr)
     free(dlr);
 }
 
-void deleter_queue_file(Deleter *dlr, char *file_name)
+void deleter_queue_file(Deleter *dlr, const char *file_name)
 {
     hs_add(dlr->pending, estrdup(file_name));
 }
@@ -3717,7 +3717,7 @@ struct DelFilesArg {
     HashTable *current;
 };
 
-static void deleter_find_deletable_files_i(char *file_name, void *arg)
+static void deleter_find_deletable_files_i(const char *file_name, void *arg)
 {
     struct DelFilesArg *dfa = (struct DelFilesArg *)arg;
     Deleter *dlr = dfa->dlr;
@@ -4080,7 +4080,7 @@ void ir_commit_i(IndexReader *ir)
             mutex_lock(&ir->store->mutex);
 
             sis_curr_seg_file_name(curr_seg_fn, ir->store);
-            
+
             ir->commit_i(ir);
             sis_write(ir->sis, ir->store, ir->deleter);
 
@@ -4296,7 +4296,7 @@ static void sr_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar b)
     }
 }
 
-static void sr_delete_doc_i(IndexReader *ir, int doc_num) 
+static void sr_delete_doc_i(IndexReader *ir, int doc_num)
 {
     if (NULL == SR(ir)->deleted_docs) {
         SR(ir)->deleted_docs = bv_new();
@@ -5044,7 +5044,7 @@ IndexReader *mr_open(IndexReader **sub_readers, const int r_cnt)
                 mr->field_num_map[i][j] = fi_sub ? fi_sub->number : -1;
             }
         }
-        /* print out the field map 
+        /* print out the field map
         for (i = 0; i < r_cnt; i++) {
             for (j = 0; j < fis->size; j++) {
                 printf("%d ", mr->field_num_map[i][j]);
@@ -5304,7 +5304,7 @@ static void dw_write_norms(DocWriter *dw, FieldInverter *fld_inv)
     char file_name[SEGMENT_NAME_MAX_LENGTH];
     OutStream *norms_out;
     si_advance_norm_gen(dw->si, fld_inv->fi->number);
-    si_norm_file_name(dw->si, file_name, fld_inv->fi->number); 
+    si_norm_file_name(dw->si, file_name, fld_inv->fi->number);
     norms_out = dw->store->new_output(dw->store, file_name);
     os_write_bytes(norms_out, fld_inv->norms, dw->doc_num);
     os_close(norms_out);
@@ -5418,7 +5418,7 @@ static void dw_flush(DocWriter *dw)
     tiw_close(tiw);
     skip_buf_destroy(skip_buf);
     dw_flush_streams(dw);
-} 
+}
 
 DocWriter *dw_open(IndexWriter *iw, SegmentInfo *si)
 {
@@ -5443,7 +5443,7 @@ DocWriter *dw_open(IndexWriter *iw, SegmentInfo *si)
     dw->skip_interval       = iw->config.skip_interval;
     dw->max_field_length    = iw->config.max_field_length;
     dw->max_buffered_docs   = iw->config.max_buffered_docs;
-    
+
     dw->offsets             = ALLOC_AND_ZERO_N(Offset, DW_OFFSET_INIT_CAPA);
     dw->offsets_size        = 0;
     dw->offsets_capa        = DW_OFFSET_INIT_CAPA;
@@ -5460,7 +5460,7 @@ void dw_new_segment(DocWriter *dw, SegmentInfo *si)
 
 void dw_close(DocWriter *dw)
 {
-    if (dw->doc_num) { 
+    if (dw->doc_num) {
         dw_flush(dw);
     }
     if (dw->fw) {
@@ -6162,7 +6162,7 @@ int iw_doc_count(IndexWriter *iw)
 #define MOVE_TO_COMPOUND_DIR(file_name)\
     deleter_queue_file(dlr, file_name);\
     cw_add_file(cw, file_name)
-    
+
 static void iw_create_compound_file(Store *store, FieldInfos *fis,
                                     SegmentInfo *si, char *cfs_file_name,
                                     Deleter *dlr)
@@ -6422,7 +6422,7 @@ void iw_optimize(IndexWriter *iw)
     mutex_lock(&iw->mutex);
     iw_optimize_i(iw);
     mutex_unlock(&iw->mutex);
-} 
+}
 
 void iw_close(IndexWriter *iw)
 {
@@ -6593,7 +6593,7 @@ static void iw_cp_terms(IndexWriter *iw, SegmentReader *sr,
     tix_out = store_out->new_output(store_out, file_name);
     sprintf(file_name, "%s.tix", sr_segment);
     tix_in = store_in->open_input(store_in, file_name);
-    
+
     sprintf(file_name, "%s.tis", segment);
     tis_out = store_out->new_output(store_out, file_name);
     sprintf(file_name, "%s.tis", sr_segment);

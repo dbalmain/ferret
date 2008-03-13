@@ -36,8 +36,8 @@ extern Store *store_new();
 extern void store_destroy(Store *store);
 extern OutStream *os_new();
 extern InStream *is_new();
-extern int file_is_lock(char *filename);
-extern bool file_name_filter_is_index_file(char *file_name, bool include_locks);
+extern int file_is_lock(const char *filename);
+extern bool file_name_filter_is_index_file(const char *file_name, bool include_locks);
 
 
 /**
@@ -50,7 +50,7 @@ static char *join_path(char *buf, const char *base, const char *filename)
   return buf;
 }
 
-static void fs_touch(Store *store, char *filename)
+static void fs_touch(Store *store, const char *filename)
 {
     int f;
     char path[MAX_FILE_PATH];
@@ -62,7 +62,7 @@ static void fs_touch(Store *store, char *filename)
     close(f);
 }
 
-static int fs_exists(Store *store, char *filename)
+static int fs_exists(Store *store, const char *filename)
 {
     int fd;
     char path[MAX_FILE_PATH];
@@ -79,13 +79,13 @@ static int fs_exists(Store *store, char *filename)
     return true;
 }
 
-static int fs_remove(Store *store, char *filename)
+static int fs_remove(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
     return remove(join_path(path, store->dir.path, filename));
 }
 
-static void fs_rename(Store *store, char *from, char *to)
+static void fs_rename(Store *store, const char *from, const char *to)
 {
     char path1[MAX_FILE_PATH], path2[MAX_FILE_PATH];
 
@@ -121,7 +121,7 @@ static int fs_count(Store *store)
     return cnt;
 }
 
-static void fs_each(Store *store, void (*func)(char *fname, void *arg), void *arg)
+static void fs_each(Store *store, void (*func)(const char *fname, void *arg), void *arg)
 {
     struct dirent *de;
     DIR *d = opendir(store->dir.path);
@@ -223,7 +223,7 @@ static void fs_destroy(Store *store)
     store_destroy(store);
 }
 
-static off_t fs_length(Store *store, char *filename)
+static off_t fs_length(Store *store, const char *filename)
 {
     char path[MAX_FILE_PATH];
     struct stat stt;
@@ -236,7 +236,7 @@ static off_t fs_length(Store *store, char *filename)
     return stt.st_size;
 }
 
-static void fso_flush_i(OutStream *os, uchar *src, int len)
+static void fso_flush_i(OutStream *os, const uchar *src, int len)
 {
     if (len != write(os->file.fd, src, len)) {
         RAISE(IO_ERROR, "flushing src of length %d, <%s>", len,
@@ -394,7 +394,7 @@ void fs_lock_release(Lock *lock)
     remove(lock->name);
 }
 
-static Lock *fs_open_lock_i(Store *store, char *lockname)
+static Lock *fs_open_lock_i(Store *store, const char *lockname)
 {
     Lock *lock = ALLOC(Lock);
     char lname[100];

@@ -19,7 +19,7 @@ void with_lock(Lock *lock, void (*func)(void *arg), void *arg)
 /*
  * TODO: add try finally
  */
-void with_lock_name(Store *store, char *lock_name,
+void with_lock_name(Store *store, const char *lock_name,
                     void (*func)(void *arg), void *arg)
 {
     Lock *lock = store->open_lock_i(store, lock_name);
@@ -42,7 +42,7 @@ void store_deref(Store *store)
     }
 }
 
-Lock *open_lock(Store *store, char *lockname)
+Lock *open_lock(Store *store, const char *lockname)
 {
     Lock *lock = store->open_lock_i(store, lockname);
     hs_add(store->locks, lock);
@@ -151,7 +151,7 @@ INLINE void os_write_byte(OutStream *os, uchar b)
     write_byte(os, b);
 }
 
-void os_write_bytes(OutStream *os, uchar *buf, int len)
+void os_write_bytes(OutStream *os, const uchar *buf, int len)
 {
     if (os->buf.pos > 0) {      /* flush buffer */
         os_flush(os);
@@ -442,7 +442,7 @@ INLINE void is_skip_vints(InStream *is, register int cnt)
 }
 
 INLINE void is_read_chars(InStream *is, char *buffer,
-                                  int off, int len)
+                          int off, int len)
 {
     int end, i;
 
@@ -594,7 +594,7 @@ INLINE void os_write_vll(OutStream *os, register f_u64 num)
     }
 }
 
-void os_write_string(OutStream *os, char *str)
+void os_write_string(OutStream *os, const char *str)
 {
     int len = (int)strlen(str);
     os_write_vint(os, len);
@@ -609,7 +609,7 @@ void os_write_string(OutStream *os, char *str)
  * @param filename the name of the file to check
  * @return 1 (true) if the file is a lock file, 0 (false) otherwise
  */
-int file_is_lock(char *filename)
+int file_is_lock(const char *filename)
 {
     int start = (int) strlen(filename) - 4;
     return ((start > 0) && (strcmp(LOCK_EXT, &filename[start]) == 0));
@@ -652,7 +652,7 @@ struct FileNameListArg
 /**
  * Test function used to test store->each function
  */
-static void add_file_name(char *fname, void *arg)
+static void add_file_name(const char *fname, void *arg)
 {
     struct FileNameListArg *fnl = (struct FileNameListArg *)arg;
     if (fnl->count >= fnl->size) {

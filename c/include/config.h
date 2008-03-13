@@ -12,7 +12,9 @@
 #define true  1
 #endif
 
+#ifndef __cplusplus
 typedef unsigned int        bool;
+#endif
 typedef unsigned char       uchar;
 
 typedef posh_u16_t f_u16;

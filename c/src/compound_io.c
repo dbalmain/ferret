@@ -1,5 +1,5 @@
-#include "index.h" 
-#include "array.h" 
+#include "index.h"
+#include "array.h"
 
 extern void store_destroy(Store *store);
 extern InStream *is_new();
@@ -16,12 +16,12 @@ typedef struct FileEntry {
     off_t length;
 } FileEntry;
 
-static void cmpd_touch(Store *store, char *file_name)
+static void cmpd_touch(Store *store, const char *file_name)
 {
     store->dir.cmpd->store->touch(store->dir.cmpd->store, file_name);
 }
 
-static int cmpd_exists(Store *store, char *file_name)
+static int cmpd_exists(Store *store, const char *file_name)
 {
     if (h_get(store->dir.cmpd->entries, file_name) != NULL) {
         return true;
@@ -34,7 +34,7 @@ static int cmpd_exists(Store *store, char *file_name)
 /**
  * @throws UNSUPPORTED_ERROR
  */
-static int cmpd_remove(Store *store, char *file_name)
+static int cmpd_remove(Store *store, const char *file_name)
 {
     (void)store;
     (void)file_name;
@@ -45,7 +45,7 @@ static int cmpd_remove(Store *store, char *file_name)
 /**
  * @throws UNSUPPORTED_ERROR
  */
-static void cmpd_rename(Store *store, char *from, char *to)
+static void cmpd_rename(Store *store, const char *from, const char *to)
 {
     (void)store;
     (void)from;
@@ -59,7 +59,7 @@ static int cmpd_count(Store *store)
 }
 
 static void cmpd_each(Store *store,
-                     void (*func)(char *fname, void *arg), void *arg)
+                     void (*func)(const char *fname, void *arg), void *arg)
 {
     HashTable *ht = store->dir.cmpd->entries;
     int i;
@@ -96,7 +96,7 @@ static void cmpd_close_i(Store *store)
     store_destroy(store);
 }
 
-static off_t cmpd_length(Store *store, char *file_name)
+static off_t cmpd_length(Store *store, const char *file_name)
 {
     FileEntry *fe = h_get(store->dir.cmpd->entries, file_name);
     if (fe != NULL) {
@@ -195,7 +195,7 @@ static OutStream *cmpd_new_output(Store *store, const char *file_name)
     return NULL;
 }
 
-static Lock *cmpd_open_lock_i(Store *store, char *lock_name)
+static Lock *cmpd_open_lock_i(Store *store, const char *lock_name)
 {
     (void)store;
     (void)lock_name;

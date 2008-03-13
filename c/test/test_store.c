@@ -69,7 +69,7 @@ struct EachArg
 /**
  * Test function used to test store->each function
  */
-static void concat_filenames(char *fname, struct EachArg *ea)
+static void concat_filenames(const char *fname, struct EachArg *ea)
 {
     strcpy(ea->p, fname);
     ea->p += strlen(fname);
@@ -90,7 +90,7 @@ static void test_each(tst_case *tc, void *data)
     store->touch(store, "_1.f2");
     store->touch(store, "_1.f3");
     store->touch(store, "_1.f4");
-    store->each(store, (void(*)(char *fname, void *arg))&concat_filenames, &ea);
+    store->each(store, (void(*)(const char *fname, void *arg))&concat_filenames, &ea);
     *(ea.p) = 0;
     Assert(strstr(ea.str, "_1.f1") != NULL, "should contain this file");
     Assert(strstr(ea.str, "_1.f2") != NULL, "should contain this file");
