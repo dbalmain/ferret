@@ -46,8 +46,8 @@ Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
     mutex_init(&self->mutex, NULL);
     self->has_writes = false;
     if (store) {
-        self->store = store;
         REF(store);
+        self->store = store;
     } else {
         self->store = open_ram_store();
         create = true;
@@ -62,7 +62,7 @@ Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
     if (create) {
         FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                                   TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-        index_create(store, fis);
+        index_create(self->store, fis);
         fis_deref(fis);
     }
 
