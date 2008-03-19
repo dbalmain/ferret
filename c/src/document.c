@@ -129,21 +129,21 @@ DocField *doc_get_field(Document *doc, const char *name)
 char *doc_to_s(Document *doc)
 {
     int i;
-    int len = 100;
+    int len = 0;
     char **fields = ALLOC_N(char *, doc->size);
     char *buf, *s;
+
     for (i = 0; i < doc->size; i++) {
         fields[i] = df_to_s(doc->fields[i]);
-        len += strlen(fields[i]) + 10;
+        len += strlen(fields[i]) + 5;
     }
-    s = buf = ALLOC_N(char, len);
-    sprintf(buf, "Document [\n");
-    s += strlen(buf);
+    s = buf = ALLOC_N(char, len + 12);
+    s += sprintf(buf, "Document [\n");
     for (i = 0; i < doc->size; i++) {
-        sprintf(s, "  =>%s\n", fields[i]);
+        s += sprintf(s, "  =>%s\n", fields[i]);
         free(fields[i]);
-        s += strlen(s);
     }
+    free(fields);
     return buf;
 }
 
