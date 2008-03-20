@@ -1593,7 +1593,7 @@ Query *spantq_new(const char *field, const char *term)
 static char *spanmtq_to_s(Query *self, const char *field)
 {
     char *terms = NULL, *p;
-    int len = 2, i;
+    int len = 3, i;
     SpanMultiTermQuery *smtq = SpMTQ(self);
     for (i = 0; i < smtq->term_cnt; i++) {
         len += strlen(smtq->terms[i]) + 2;
@@ -1601,11 +1601,10 @@ static char *spanmtq_to_s(Query *self, const char *field)
     p = terms = ALLOC_N(char, len);
     *(p++) = '[';
     for (i = 0; i < smtq->term_cnt; i++) {
+        if (i != 0) *(p++) = ',';
         strcpy(p, smtq->terms[i]);
         p += strlen(smtq->terms[i]);
-        *(p++) = ',';
     }
-    if (p > terms) p--;
     *(p++) = ']';
     *p = '\0';
 
@@ -1822,14 +1821,16 @@ static char *spanoq_to_s(Query *self, const char *field)
     }
 
     res_p = res = ALLOC_N(char, len);
-    res_p += sprintf(res_p, "span_or[ ");
+    res_p += sprintf(res_p, "span_or[");
     for (i = 0; i < soq->c_cnt; i++) {
-        res_p += sprintf(res_p, "%s, ", q_strs[i]);
+        if (i != 0) *(res_p++) = ',';
+        res_p += sprintf(res_p, "%s", q_strs[i]);
         free(q_strs[i]);
     }
     free(q_strs);
 
-    sprintf(res_p - 2, " ]");
+    *(res_p)++ = ']';
+    *res_p = 0;
     return res;
 }
 
@@ -2006,14 +2007,16 @@ static char *spannq_to_s(Query *self, const char *field)
     }
 
     res_p = res = ALLOC_N(char, len);
-    res_p += sprintf(res_p, "span_near[ ");
+    res_p += sprintf(res_p, "span_near[");
     for (i = 0; i < snq->c_cnt; i++) {
-        res_p += sprintf(res_p, "%s, ", q_strs[i]);
+        if (i != 0) *(res_p)++ = ',';
+        res_p += sprintf(res_p, "%s", q_strs[i]);
         free(q_strs[i]);
     }
     free(q_strs);
 
-    sprintf(res_p - 2, " ]");
+    *(res_p++) = ']';
+    *res_p = 0;
     return res;
 }
 

@@ -6,6 +6,7 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -
 #  -DDEBUG					// some error checking only occurs in DEBUG mode
 #  -DBZ_NO_STDIO			// There really is no need for bzlib to use stdio
 #  -DUSE_ZLIB              	// use zlib instead of bzlib
+#  -fprofile-arcs -ftest-coverage // for gcov
 
 LFLAGS = -lm -lpthread -lz
 
@@ -24,6 +25,7 @@ vpath %.h test include lib/libstemmer_c/include lib/bzlib/
 all: $(OBJS)
 
 runtests: testall
+	@rm -f *.gcda
 	./testall -v -f -q
 
 testall: $(OBJS) $(TEST_OBJS)
@@ -62,7 +64,7 @@ src/q_parser.c: src/q_parser.y
 
 .PHONY: clean all
 clean:
-	rm -f *.o testall gmon.out bench search_bench
+	rm -f *.o *.gcda *.gcov *.gcno testall gmon.out bench search_bench
 testhelper.o: except.h posh.h testhelper.h global.h lang.h config.h
 
 except.o: threading.h except.h posh.h global.h lang.h config.h

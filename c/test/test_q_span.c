@@ -2,6 +2,13 @@
 #include "search.h"
 
 #define ARRAY_SIZE 20
+#define TEST_SE(query, ir, expected) do { \
+    SpanEnum * __se = ((SpanQuery *)query)->get_spans(query, ir); \
+    char * __tmp = __se->to_s(__se);                              \
+    Asequal(expected, __tmp);                                     \
+    __se->destroy(__se);                                          \
+    free(__tmp);                                                  \
+} while(0)
 
 static const char *field = "field";
 
@@ -55,7 +62,7 @@ static void span_test_setup(Store *store)
     };
     index_create(store, fis);
     fis_deref(fis);
-    
+
     iw = iw_open(store, whitespace_analyzer_new(false), NULL);
 
     for (d = data; *d != NULL; d++) {
@@ -79,14 +86,17 @@ static void test_span_term(tst_case *tc, void *data)
 
     tq = spantq_new("notafield", "nine");
     check_hits(tc, sea, tq, "", -1);
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(nine))@START");
     q_deref(tq);
 
     tq = spantq_new(field, "nine");
     check_hits(tc, sea, tq, "7,23", -1);
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(nine))@START");
     q_deref(tq);
 
     tq = spantq_new(field, "eight");
     check_hits(tc, sea, tq, "6,7,8,22,23,24", -1);
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(eight))@START");
     q_deref(tq);
 
     searcher_close(sea);
@@ -130,20 +140,32 @@ static void test_span_multi_term(tst_case *tc, void *data)
 
     mtq = spanmtq_new("notafield");
     check_hits(tc, sea, mtq, "", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([]))@START");
+
     spanmtq_add_term(mtq, "nine");
     check_hits(tc, sea, mtq, "", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine]))@START");
+
     spanmtq_add_term(mtq, "finish");
     check_hits(tc, sea, mtq, "", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,finish]))@START");
     q_deref(mtq);
 
     mtq = spanmtq_new_conf(field, 4);
     check_hits(tc, sea, mtq, "", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([]))@START");
+
     spanmtq_add_term(mtq, "nine");
     check_hits(tc, sea, mtq, "7, 23", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine]))@START");
+
     spanmtq_add_term(mtq, "flop");
     check_hits(tc, sea, mtq, "7, 12, 16, 21, 23, 27", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,flop]))@START");
+
     spanmtq_add_term(mtq, "toot");
     check_hits(tc, sea, mtq, "7, 12, 14, 16, 21, 23, 27", -1);
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,flop,toot]))@START");
     q_deref(mtq);
 
     searcher_close(sea);
@@ -185,15 +207,25 @@ static void test_span_prefix(tst_case *tc, void *data)
     IndexReader *ir;
     Searcher *sea;
     Query *prq;
+    char * tmp;
 
     ir = ir_open(store);
     sea = isea_new(ir);
 
     prq = spanprq_new("notafield", "fl");
+    tmp = prq->to_s(prq, "notafield");
+    Asequal("fl*", tmp);
+    free(tmp);
+    tmp = prq->to_s(prq, "foo");
+    Asequal("notafield:fl*", tmp);
+    free(tmp);
     check_hits(tc, sea, prq, "", -1);
     q_deref(prq);
 
     prq = spanprq_new(field, "fl");
+    tmp = prq->to_s(prq, "field");
+    Asequal("fl*", tmp);
+    free(tmp);
     check_hits(tc, sea, prq, "2, 4, 12, 16, 19, 21, 27, 29", -1);
     q_deref(prq);
 
@@ -237,11 +269,13 @@ static void test_span_first(tst_case *tc, void *data)
 
     q = spanfq_new_nr(spantq_new(field, "finish"), 1);
     check_hits(tc, sea, q, "16,17,18,19,20,21,22,23,24,25,26,27,28,29,30", -1);
+    TEST_SE(q, ir, "SpanFirstEnum(span_first(span_terms(field:finish), 1))");
     q_deref(q);
 
     q = spanfq_new_nr(spantq_new(field, "finish"), 5);
     check_hits(tc, sea, q, "0,1,2,3,11,12,13,14,16,17,18,19,20,21,22,23,24,25,"
                "26,27,28,29,30", -1);
+    TEST_SE(q, ir, "SpanFirstEnum(span_first(span_terms(field:finish), 5))");
     q_deref(q);
 
     searcher_close(sea);
@@ -285,12 +319,15 @@ static void test_span_or(tst_case *tc, void *data)
 
     q = spanoq_new();
     check_hits(tc, sea, q, "", -1);
+    TEST_SE(q, ir, "SpanOrEnum(span_or[])@START");
 
     spanoq_add_clause_nr(q, spantq_new(field, "flip"));
     check_hits(tc, sea, q, "2, 4, 16, 19, 21, 29", -1);
+    TEST_SE(q, ir, "SpanTermEnum(span_terms(flip))@START");
 
     spanoq_add_clause_nr(q, spantq_new(field, "flop"));
     check_hits(tc, sea, q, "2, 4, 12, 16, 19, 21, 27, 29", -1);
+    TEST_SE(q, ir, "SpanOrEnum(span_or[span_terms(field:flip),span_terms(field:flop)])@START");
     q_deref(q);
 
     searcher_close(sea);
@@ -339,8 +376,11 @@ static void test_span_near(tst_case *tc, void *data)
     sea = isea_new(ir);
 
     q = spannq_new(0, true);
+    TEST_SE(q, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(q, spantq_new(field, "start"));
+    TEST_SE(q, ir, "SpanTermEnum(span_terms(start))@START");
     spannq_add_clause_nr(q, spantq_new(field, "finish"));
+    TEST_SE(q, ir, "SpanNearEnum(span_near[span_terms(field:start),span_terms(field:finish)])@START");
     check_hits(tc, sea, q, "0, 14", -1);
 
     ((SpanNearQuery *)q)->in_order = false;
@@ -398,7 +438,7 @@ static void test_span_near_hash(tst_case *tc, void *data)
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     Assert(q_eq(q1, q1), "Queries are same");
-    
+
     ((SpanNearQuery *)q1)->in_order = true;
     Assert(q_hash(q1) != q_hash(q2), "%d == %d, in_order differs",
            q_hash(q1), q_hash(q2));
@@ -437,15 +477,22 @@ static void test_span_not(tst_case *tc, void *data)
     sea = isea_new(ir);
 
     nearq0 = spannq_new(4, true);
+    TEST_SE(nearq0, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(nearq0, spantq_new(field, "start"));
+    TEST_SE(nearq0, ir, "SpanTermEnum(span_terms(start))@START");
     spannq_add_clause_nr(nearq0, spantq_new(field, "finish"));
+    TEST_SE(nearq0, ir, "SpanNearEnum(span_near[span_terms(field:start),span_terms(field:finish)])@START");
 
     nearq1 = spannq_new(4, true);
+    TEST_SE(nearq1, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(nearq1, spantq_new(field, "two"));
+    TEST_SE(nearq1, ir, "SpanTermEnum(span_terms(two))@START");
     spannq_add_clause_nr(nearq1, spantq_new(field, "five"));
+    TEST_SE(nearq1, ir, "SpanNearEnum(span_near[span_terms(field:two),span_terms(field:five)])@START");
 
 
     q = spanxq_new(nearq0, nearq1);
+    TEST_SE(q, ir, "SpanNotEnum(span_not(inc:<span_near[span_terms(field:start),span_terms(field:finish)]>, exc:<span_near[span_terms(field:two),span_terms(field:five)]>))");
     check_hits(tc, sea, q, "0,1,13,14", -1);
     q_deref(q);
     q_deref(nearq0);
