@@ -176,7 +176,7 @@ static bool multi_tsc_next(Scorer *self)
         }
         mtsc->tdew_pq = tdew_pq;
     }
-    
+
     tdew = (TermDocEnumWrapper *)pq_top(tdew_pq);
     if (tdew == NULL) {
         return false;
@@ -394,7 +394,7 @@ Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
     if (field_num < 0) {
         return expl_new(0.0, "field \"%s\" does not exist in the index", field);
     }
-    
+
     query_str = self->query->to_s(self->query, "");
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
@@ -407,8 +407,7 @@ Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
     for (i = bt_pq->size; i > 0; i--) {
         char *term = ((BoostedTerm *)bt_pq->heap[i])->term;
         int doc_freq = ir->doc_freq(ir, field_num, term);
-        sprintf(doc_freqs + pos, "(%s=%d) + ", term, doc_freq);
-        pos += strlen(doc_freqs + pos);
+        pos += sprintf(doc_freqs + pos, "(%s=%d) + ", term, doc_freq);
         total_doc_freqs += doc_freq;
     }
     pos -= 2; /* remove " + " from the end */
@@ -502,7 +501,7 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
  * MultiTermQuery
  ***************************************************************************/
 
-static char *multi_tq_to_s(Query *self, const char *curr_field) 
+static char *multi_tq_to_s(Query *self, const char *curr_field)
 {
     int i;
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms, *bt_pq_clone;
@@ -520,15 +519,13 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
     bptr = buffer = ALLOC_N(char, tlen + flen + 35);
 
     if (strcmp(curr_field, field) != 0) {
-        sprintf(bptr, "%s:", field);
-        bptr += flen + 1;
+        bptr += sprintf(bptr, "%s:", field);
     }
 
     *(bptr++) = '"';
     bt_pq_clone = pq_clone(boosted_terms);
     while ((bt = (BoostedTerm *)pq_pop(bt_pq_clone)) != NULL) {
-        sprintf(bptr, "%s", bt->term);
-        bptr += (int)strlen(bptr);
+        bptr += sprintf(bptr, "%s", bt->term);
 
         if (bt->boost != 1.0) {
             *bptr = '^';
@@ -545,7 +542,7 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
     }
     bptr[-1] =  '"'; /* delete last '|' char */
     bptr[ 0] = '\0';
-    
+
     if (self->boost != 1.0) {
         *bptr = '^';
         dbl_to_s(++bptr, self->boost);

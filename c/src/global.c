@@ -304,8 +304,7 @@ char *vstrfmt(const char *fmt, va_list args)
                     *q = 0;
                     REALLOC_N(string, char, len);
                     q = string + strlen(string);
-                    sprintf(q, s);
-                    q += slen;
+                    q += sprintf(q, "%s", s);
                 }
                 continue;
             case 'f':
@@ -325,8 +324,7 @@ char *vstrfmt(const char *fmt, va_list args)
                 REALLOC_N(string, char, len);
                 q = string + strlen(string);
                 i = va_arg(args, long);
-                sprintf(q, "%ld", i);
-                q += strlen(q);
+                q += sprintf(q, "%ld", i);
                 continue;
             default:
                 break;

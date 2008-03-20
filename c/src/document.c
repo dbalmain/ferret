@@ -52,40 +52,42 @@ void df_destroy(DocField *df)
     free(df);
 }
 
+/*
+ * Format for one item is: name: "data"
+ *        for more items : name: ["data", "data", "data"]
+ */
 char *df_to_s(DocField *df)
 {
-    int i;
-    int len = strlen(df->name) + 10;
+#define APPEND(dst, src) ((dst)[0] = (src)[0], 1)
+#define APPEND2(dst, src) (APPEND(dst, src), APPEND(dst+1, src+1), 2)
+
+    int i, len = 0, namelen = strlen(df->name);
     char *str, *s;
     for (i = 0; i < df->size; i++) {
-        len += df->lengths[i] + 5;
+        len += df->lengths[i] + 4;
     }
-    s = str = ALLOC_N(char, len);
-    sprintf(str, "%s: ", df->name);
-    s += strlen(str);
-    if (df->size == 1) {
-        *(s++) = '"';
-        strncpy(s, df->data[0], df->lengths[0]);
-        s += df->lengths[0];
-        *(s++) = '"';
-        *(s++) = '\0';
+    s = str = ALLOC_N(char, namelen + len + 5);
+    memcpy(s, df->name, namelen);
+    s += namelen;
+    s += APPEND2(s, ": ");
+
+    if (df->size > 1) {
+        s += APPEND(s, "[");
     }
-    else {
-        *(s++) = '[';
-        *(s++) = '"';
-        strncpy(s, df->data[0], df->lengths[0]);
-        s += df->lengths[0];
-        *(s++) = '"';
-        for (i = 1; i < df->size; i++) {
-            *(s++) = ',';
-            *(s++) = ' ';
-            *(s++) = '"';
-            strncpy(s, df->data[i], df->lengths[i]);
-            s += df->lengths[i];
-            *(s++) = '"';
+    for (i = 0; i < df->size; i++) {
+        if (i != 0) {
+            s += APPEND2(s, ", ");
         }
-        sprintf(s, "]");
+        s += APPEND(s, "\"");
+        memcpy(s, df->data[i], df->lengths[i]);
+        s += df->lengths[i];
+        s += APPEND(s, "\"");
     }
+
+    if (df->size > 1) {
+        s += APPEND(s, "]");
+    }
+    *s = 0;
     return str;
 }
 

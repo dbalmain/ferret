@@ -9,21 +9,17 @@
 
 #define WCQ(query) ((WildCardQuery *)(query))
 
-static char *wcq_to_s(Query *self, const char *current_field) 
+static char *wcq_to_s(Query *self, const char *current_field)
 {
     char *buffer, *bptr;
     const char *field = WCQ(self)->field;
     const char *pattern = WCQ(self)->pattern;
-    size_t flen = strlen(field);
-    size_t plen = strlen(pattern);
-    bptr = buffer = ALLOC_N(char, plen + flen + 35);
+    bptr = buffer = ALLOC_N(char, strlen(pattern) + strlen(field) + 35);
 
     if (strcmp(field, current_field) != 0) {
-        sprintf(bptr, "%s:", field);
-        bptr += flen + 1;
+        bptr += sprintf(bptr, "%s:", field);
     }
-    sprintf(bptr, "%s", pattern);
-    bptr += plen;
+    bptr += sprintf(bptr, "%s", pattern);
 
     if (self->boost != 1.0) {
         *bptr = '^';
@@ -35,7 +31,7 @@ static char *wcq_to_s(Query *self, const char *current_field)
 
 bool wc_match(const char *pattern, const char *text)
 {
-    const char *p = pattern, *t = text, *xt; 
+    const char *p = pattern, *t = text, *xt;
 
     /* include '\0' as we need to match empty string */
     const char *text_last = t + strlen(t);
@@ -116,7 +112,7 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
             if (te != NULL) {
                 const char *term = te->curr_term;
                 const char *pat_term = term + prefix_len;
-                do { 
+                do {
                     if (prefix && strncmp(term, prefix, prefix_len) != 0) {
                         break;
                     }
@@ -147,7 +143,7 @@ static unsigned long wcq_hash(Query *self)
 
 static int wcq_eq(Query *self, Query *o)
 {
-    return (strcmp(WCQ(self)->pattern, WCQ(o)->pattern) == 0) 
+    return (strcmp(WCQ(self)->pattern, WCQ(o)->pattern) == 0)
         && (strcmp(WCQ(self)->field,   WCQ(o)->field) == 0);
 }
 

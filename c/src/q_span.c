@@ -143,7 +143,7 @@ static TermDocEnum *spanq_ir_term_positions(IndexReader *ir)
     tde->skip_to        = &tv_tde_skip_to;
     tde->next_position  = &tv_tde_next_position;
     tde->close          = (void (*)(TermDocEnum *tde))&free;
-    
+
     return tde;
 }
 
@@ -166,7 +166,7 @@ static MatchVector *spanq_get_matchv_i(Query *self, MatchVector *mv,
                        sp_enum->end(sp_enum) - 1);
         }
         sp_enum->destroy(sp_enum);
-        
+
         fis_deref(ir->fis);
         free(ir);
 
@@ -382,7 +382,7 @@ static int spante_end(SpanEnum *self)
     return SpTEn(self)->position + 1;
 }
 
-static char *spante_to_s(SpanEnum *self) 
+static char *spante_to_s(SpanEnum *self)
 {
     char *field = SpQ(self->query)->field;
     char *query_str = self->query->to_s(self->query, field);
@@ -403,7 +403,7 @@ static char *spante_to_s(SpanEnum *self)
             sprintf(pos_str, "%d", self->doc(self) - pos);
         }
     }
-    sprintf("SpanTermEnum(%s)@%s", query_str, pos_str);
+    sprintf(str, "SpanTermEnum(%s)@%s", query_str, pos_str);
     free(query_str);
     return str;
 }
@@ -531,7 +531,7 @@ static bool spanmte_next(SpanEnum *self)
         }
         mte->tpew_pq = tpew_pq;
     }
-    
+
     tpew = (TermPosEnumWrapper *)pq_top(tpew_pq);
     if (tpew == NULL) {
         return false;
@@ -702,7 +702,7 @@ static int spanfe_end(SpanEnum *self)
     return sub_enum->end(sub_enum);
 }
 
-static char *spanfe_to_s(SpanEnum *self) 
+static char *spanfe_to_s(SpanEnum *self)
 {
     char *field = SpQ(self->query)->field;
     char *query_str = self->query->to_s(self->query, field);
@@ -855,7 +855,7 @@ static int spanoe_end(SpanEnum *self)
     return se->end(se);
 }
 
-static char *spanoe_to_s(SpanEnum *self) 
+static char *spanoe_to_s(SpanEnum *self)
 {
     SpanOrEnum *soe = SpOEn(self);
     char *field = SpQ(self->query)->field;
@@ -876,7 +876,7 @@ static char *spanoe_to_s(SpanEnum *self)
                     self->start(self), self->end(self));
         }
     }
-    sprintf("SpanOrEnum(%s)@%s", query_str, doc_str);
+    sprintf(str, "SpanOrEnum(%s)@%s", query_str, doc_str);
     free(query_str);
     return str;
 }
@@ -1168,7 +1168,7 @@ static int spanne_end(SpanEnum *self)
     return SpNEn(self)->end;
 }
 
-static char *spanne_to_s(SpanEnum *self) 
+static char *spanne_to_s(SpanEnum *self)
 {
     SpanNearEnum *sne = SpNEn(self);
     char *field = SpQ(self->query)->field;
@@ -1184,7 +1184,7 @@ static char *spanne_to_s(SpanEnum *self)
         sprintf(doc_str, "%d:%d-%d", self->doc(self),
                 self->start(self), self->end(self));
     }
-    sprintf("SpanNearEnum(%s)@%s", query_str, doc_str);
+    sprintf(str, "SpanNearEnum(%s)@%s", query_str, doc_str);
     free(query_str);
     return str;
 }
@@ -1333,7 +1333,7 @@ static int spanxe_end(SpanEnum *self)
     return inc->end(inc);
 }
 
-static char *spanxe_to_s(SpanEnum *self) 
+static char *spanxe_to_s(SpanEnum *self)
 {
     char *field = SpQ(self->query)->field;
     char *query_str = self->query->to_s(self->query, field);
@@ -1417,9 +1417,8 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
     for (i = 0; i < terms->size; i++) {
         char *term = (char *)terms->elems[i];
         REALLOC_N(doc_freqs, char, df_i + strlen(term) + 23);
-        sprintf(doc_freqs + df_i, "%s=%d, ", term,
-                ir->doc_freq(ir, field_num, term));
-        df_i = strlen(doc_freqs);
+        df_i += sprintf(doc_freqs + df_i, "%s=%d, ", term,
+                        ir->doc_freq(ir, field_num, term));
     }
     /* remove the ',' at the end of the string if it exists */
     if (terms->size > 0) {
@@ -1468,8 +1467,8 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
     expl_add_detail(field_expl, idf_expl2);
 
     field_norms = ir->get_norms(ir, field_num);
-    field_norm = (field_norms 
-                  ? sim_decode_norm(self->similarity, field_norms[target]) 
+    field_norm = (field_norms
+                  ? sim_decode_norm(self->similarity, field_norms[target])
                   : (float)0.0);
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
                                field, target);
@@ -1515,9 +1514,9 @@ static Weight *spanw_new(Query *query, Searcher *searcher)
     self->similarity    = query->get_similarity(query, searcher);
 
     self->idf           = 0.0;
-    
+
     for (i = terms->size - 1; i >= 0; i--) {
-        self->idf += sim_idf_term(self->similarity, SpQ(query)->field, 
+        self->idf += sim_idf_term(self->similarity, SpQ(query)->field,
                                   (char *)terms->elems[i], searcher);
     }
 
@@ -1823,12 +1822,10 @@ static char *spanoq_to_s(Query *self, const char *field)
     }
 
     res_p = res = ALLOC_N(char, len);
-    sprintf(res_p, "span_or[ ");
-    res_p += strlen(res_p);
+    res_p += sprintf(res_p, "span_or[ ");
     for (i = 0; i < soq->c_cnt; i++) {
-        sprintf(res_p, "%s, ", q_strs[i]);
+        res_p += sprintf(res_p, "%s, ", q_strs[i]);
         free(q_strs[i]);
-        res_p += strlen(res_p);
     }
     free(q_strs);
 
@@ -2009,12 +2006,10 @@ static char *spannq_to_s(Query *self, const char *field)
     }
 
     res_p = res = ALLOC_N(char, len);
-    sprintf(res_p, "span_near[ ");
-    res_p += strlen(res_p);
+    res_p += sprintf(res_p, "span_near[ ");
     for (i = 0; i < snq->c_cnt; i++) {
-        sprintf(res_p, "%s, ", q_strs[i]);
+        res_p += sprintf(res_p, "%s, ", q_strs[i]);
         free(q_strs[i]);
-        res_p += strlen(res_p);
     }
     free(q_strs);
 
@@ -2311,7 +2306,7 @@ Query *spanxq_new(Query *inc, Query *exc)
 
 #define SpPfxQ(query) ((SpanPrefixQuery *)(query))
 
-static char *spanprq_to_s(Query *self, const char *current_field) 
+static char *spanprq_to_s(Query *self, const char *current_field)
 {
     char *buffer, *bptr;
     const char *prefix = SpPfxQ(self)->prefix;
@@ -2322,12 +2317,10 @@ static char *spanprq_to_s(Query *self, const char *current_field)
     bptr = buffer = ALLOC_N(char, plen + flen + 35);
 
     if (strcmp(field, current_field) != 0) {
-        sprintf(bptr, "%s:", field);
-        bptr += flen + 1;
+        bptr += sprintf(bptr, "%s:", field);
     }
 
-    sprintf(bptr, "%s*", prefix);
-    bptr += plen + 1;
+    bptr += sprintf(bptr, "%s*", prefix);
     if (self->boost != 1.0) {
         *bptr = '^';
         dbl_to_s(++bptr, self->boost);
@@ -2350,7 +2343,7 @@ static Query *spanprq_rewrite(Query *self, IndexReader *ir)
         size_t prefix_len = strlen(prefix);
 
         TRY
-            do { 
+            do {
                 if (strncmp(term, prefix, prefix_len) != 0) {
                     break;
                 }
@@ -2378,7 +2371,7 @@ static unsigned long spanprq_hash(Query *self)
 
 static int spanprq_eq(Query *self, Query *o)
 {
-    return (strcmp(SpPfxQ(self)->prefix, SpPfxQ(o)->prefix) == 0) 
+    return (strcmp(SpPfxQ(self)->prefix, SpPfxQ(o)->prefix) == 0)
         && (strcmp(SpQ(self)->field,  SpQ(o)->field) == 0);
 }
 

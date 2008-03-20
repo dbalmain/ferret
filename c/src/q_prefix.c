@@ -9,7 +9,7 @@
 
 #define PfxQ(query) ((PrefixQuery *)(query))
 
-static char *prq_to_s(Query *self, const char *current_field) 
+static char *prq_to_s(Query *self, const char *current_field)
 {
     char *buffer, *bptr;
     const char *prefix = PfxQ(self)->prefix;
@@ -20,12 +20,10 @@ static char *prq_to_s(Query *self, const char *current_field)
     bptr = buffer = ALLOC_N(char, plen + flen + 35);
 
     if (strcmp(field, current_field) != 0) {
-        sprintf(bptr, "%s:", field);
-        bptr += flen + 1;
+        bptr += sprintf(bptr, "%s:", field);
     }
 
-    sprintf(bptr, "%s*", prefix);
-    bptr += plen + 1;
+    bptr += sprintf(bptr, "%s*", prefix);
     if (self->boost != 1.0) {
         *bptr = '^';
         dbl_to_s(++bptr, self->boost);
@@ -48,7 +46,7 @@ static Query *prq_rewrite(Query *self, IndexReader *ir)
         size_t prefix_len = strlen(prefix);
 
         TRY
-            do { 
+            do {
                 if (strncmp(term, prefix, prefix_len) != 0) {
                     break;
                 }
@@ -76,7 +74,7 @@ static unsigned long prq_hash(Query *self)
 
 static int prq_eq(Query *self, Query *o)
 {
-    return (strcmp(PfxQ(self)->prefix, PfxQ(o)->prefix) == 0) 
+    return (strcmp(PfxQ(self)->prefix, PfxQ(o)->prefix) == 0)
         && (strcmp(PfxQ(self)->field,  PfxQ(o)->field) == 0);
 }
 

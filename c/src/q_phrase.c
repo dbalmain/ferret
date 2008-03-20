@@ -277,7 +277,7 @@ static Explanation *phsc_explain(Scorer *self, int doc_num)
     phsc_skip_to(self, doc_num);
 
     phrase_freq = (self->doc == doc_num) ? phsc->freq : (float)0.0;
-    return expl_new(sim_tf(self->similarity, phrase_freq), 
+    return expl_new(sim_tf(self->similarity, phrase_freq),
                     "tf(phrase_freq=%f)", phrase_freq);
 }
 
@@ -363,7 +363,7 @@ static float ephsc_phrase_freq(Scorer *self)
         freq += 1.0; /* all equal: a match */
     } while (pp_next_position(last));
 
-    /* maintain first position */ 
+    /* maintain first position */
     phsc->pp_first_idx = pp_first_idx;
     return freq;
 }
@@ -467,7 +467,7 @@ static Scorer *phw_scorer(Weight *self, IndexReader *ir)
     PhrasePosition *positions = phq->positions;
     const int pos_cnt = phq->pos_cnt;
     const int field_num = fis_get_field_num(ir->fis, phq->field);
-    
+
     if (pos_cnt == 0 || field_num < 0) {
         return NULL;
     }
@@ -534,7 +534,7 @@ Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     if (field_num < 0) {
         return expl_new(0.0, "field \"%s\" does not exist in the index", phq->field);
     }
-    
+
     query_str = self->query->to_s(self->query, "");
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
@@ -554,9 +554,8 @@ Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
         const int t_cnt = ary_size(terms);
         for (j = 0; j < t_cnt; j++) {
             char *term = terms[j];
-            sprintf(doc_freqs + pos, "%s=%d, ",
-                    term, ir->doc_freq(ir, field_num, term));
-            pos += strlen(doc_freqs + pos);
+            pos += sprintf(doc_freqs + pos, "%s=%d, ",
+                           term, ir->doc_freq(ir, field_num, term));
         }
     }
     pos -= 2; /* remove ", " from the end */
@@ -840,7 +839,7 @@ static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
 
             first = tvpe_a[0];
             last = tvpe_a[pos_cnt - 1];
-            
+
             while (!done) {
                 while (first->pos < last->pos) {
                     if (tvpe_skip_to(first, last->pos)) {
@@ -855,7 +854,7 @@ static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
                 }
                 if (!done) {
                     matchv_add(mv, tvpe_a[0]->pos + tvpe_a[0]->offset,
-                               tvpe_a[pos_cnt-1]->pos + tvpe_a[pos_cnt-1]->offset); 
+                               tvpe_a[pos_cnt-1]->pos + tvpe_a[pos_cnt-1]->offset);
                 }
                 if (!tvpe_next(last)) {
                     done = true;
@@ -968,8 +967,7 @@ static char *phq_to_s(Query *self, const char *field)
     buffer[buf_index] = 0;
 
     if (phq->slop != 0) {
-        sprintf(buffer + buf_index, "~%d", phq->slop);
-        buf_index += strlen(buffer + buf_index);
+        buf_index += sprintf(buffer + buf_index, "~%d", phq->slop);
     }
 
     if (self->boost != 1.0) {
@@ -1049,7 +1047,7 @@ static int phq_eq(Query *self, Query *o)
         char **terms1 = phq1->positions[i].terms;
         char **terms2 = phq2->positions[i].terms;
         const int t_cnt = ary_size(terms1);
-        if (t_cnt != ary_size(terms2) 
+        if (t_cnt != ary_size(terms2)
             || phq1->positions[i].pos != phq2->positions[i].pos) {
             return false;
         }
@@ -1105,7 +1103,7 @@ void phq_add_term(Query *self, const char *term, int pos_inc)
     int position;
     if (phq->pos_cnt == 0) {
         position = 0;
-    } 
+    }
     else {
         position = phq->positions[phq->pos_cnt - 1].pos + pos_inc;
     }

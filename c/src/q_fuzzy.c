@@ -11,7 +11,7 @@
  *
  ****************************************************************************/
 
-static INLINE int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m) 
+static INLINE int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m)
 {
     return (int)((1.0 - fuzq->min_sim) * (MIN(fuzq->text_len, m) + fuzq->pre_len));
 }
@@ -121,22 +121,18 @@ float fuzq_score(FuzzyQuery *fuzq, const char *target)
 
 #define FzQ(query) ((FuzzyQuery *)(query))
 
-static char *fuzq_to_s(Query *self, const char *curr_field) 
+static char *fuzq_to_s(Query *self, const char *curr_field)
 {
     char *buffer, *bptr;
     char *term = FzQ(self)->term;
     char *field = FzQ(self)->field;
-    int tlen = (int)strlen(term);
-    int flen = (int)strlen(field);
-    bptr = buffer = ALLOC_N(char, tlen + flen + 70);
+    bptr = buffer = ALLOC_N(char, strlen(term) + strlen(field) + 70);
 
     if (strcmp(curr_field, field) != 0) {
-        sprintf(bptr, "%s:", field);
-        bptr += flen + 1;
+        bptr += sprintf(bptr, "%s:", field);
     }
 
-    sprintf(bptr, "%s~", term);
-    bptr += tlen + 1;
+    bptr += sprintf(bptr, "%s~", term);
     if (FzQ(self)->min_sim != 0.5) {
         dbl_to_s(bptr, FzQ(self)->min_sim);
         bptr += strlen(bptr);
@@ -194,7 +190,7 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
             float score = 0.0;
 
 
-            do { 
+            do {
                 if ((prefix && strncmp(curr_term, prefix, pre_len) != 0)) {
                     break;
                 }

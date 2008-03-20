@@ -21,7 +21,7 @@ vpath %.c test src
 
 vpath %.h test include lib/libstemmer_c/include lib/bzlib/
 
-all: runtests
+all: $(OBJS)
 
 runtests: testall
 	./testall -v -f -q

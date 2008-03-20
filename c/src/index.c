@@ -306,19 +306,20 @@ char *fi_to_s(FieldInfo *fi)
 {
     char *str = ALLOC_N(char, strlen(fi->name) + 200);
     char *s = str;
-    sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", fi->name,
-            fi_is_stored(fi) ? "is_stored, " : "",
-            fi_is_compressed(fi) ? "is_compressed, " : "",
-            fi_is_indexed(fi) ? "is_indexed, " : "",
-            fi_is_tokenized(fi) ? "is_tokenized, " : "",
-            fi_omit_norms(fi) ? "omit_norms, " : "",
-            fi_store_term_vector(fi) ? "store_term_vector, " : "",
-            fi_store_positions(fi) ? "store_positions, " : "",
-            fi_store_offsets(fi) ? "store_offsets, " : "");
-    s += (int)strlen(str) - 2;
+    s += sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", fi->name,
+                 fi_is_stored(fi) ? "is_stored, " : "",
+                 fi_is_compressed(fi) ? "is_compressed, " : "",
+                 fi_is_indexed(fi) ? "is_indexed, " : "",
+                 fi_is_tokenized(fi) ? "is_tokenized, " : "",
+                 fi_omit_norms(fi) ? "omit_norms, " : "",
+                 fi_store_term_vector(fi) ? "store_term_vector, " : "",
+                 fi_store_positions(fi) ? "store_positions, " : "",
+                 fi_store_offsets(fi) ? "store_offsets, " : "");
+    s -= 2;
     if (*s != ',') {
         s += 2;
     }
+
     sprintf(s, ")]");
     return str;
 }
@@ -503,27 +504,25 @@ char *fis_to_s(FieldInfos *fis)
     FieldInfo *fi;
     const int fis_size = fis->size;
 
-    sprintf(buf,
-            "default:\n"
-            "  store: %s\n"
-            "  index: %s\n"
-            "  term_vector: %s\n"
-            "fields:\n",
-            store_str[fis->store], index_str[fis->index],
-            term_vector_str[fis->term_vector]);
-    pos = (int)strlen(buf);
+    pos = sprintf(buf,
+                  "default:\n"
+                  "  store: %s\n"
+                  "  index: %s\n"
+                  "  term_vector: %s\n"
+                  "fields:\n",
+                  store_str[fis->store],
+                  index_str[fis->index],
+                  term_vector_str[fis->term_vector]);
     for (i = 0; i < fis_size; i++) {
         fi = fis->fields[i];
-        sprintf(buf + pos,
-                "  %s:\n"
-                "    boost: %f\n"
-                "    store: %s\n"
-                "    index: %s\n"
-                "    term_vector: %s\n",
-                fi->name, fi->boost, fi_store_str(fi),
-                fi_index_str(fi), fi_term_vector_str(fi));
-
-        pos += strlen(buf + pos);
+        pos += sprintf(buf + pos,
+                       "  %s:\n"
+                       "    boost: %f\n"
+                       "    store: %s\n"
+                       "    index: %s\n"
+                       "    term_vector: %s\n",
+                       fi->name, fi->boost, fi_store_str(fi),
+                       fi_index_str(fi), fi_term_vector_str(fi));
     }
 
     return buf;

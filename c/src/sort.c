@@ -969,8 +969,7 @@ char *sort_to_s(Sort *self)
 
     s = str + len;
     for (i = 0; i < self->size; i++) {
-        sprintf(s, "%s, ", sf_strs[i]);
-        s += (int)strlen(s);
+        s += sprintf(s, "%s, ", sf_strs[i]);
         free(sf_strs[i]);
     }
     free(sf_strs);
