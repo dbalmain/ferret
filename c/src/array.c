@@ -19,7 +19,7 @@ void **ary_new_i(int type_size, int init_capa)
 INLINE void ary_resize_i(void ***ary, int size)
 {
     size++;
-    if (size >= ary_sz(*ary)) {
+    if (size > ary_sz(*ary)) {
         int capa = ary_capa(*ary);
         if (size >= capa) {
             int *ary_start = &((int *)*ary)[-META_CNT];
@@ -81,7 +81,7 @@ void ary_unshift_i(void ***ary, void *value)
 {
     int size = ary_sz(*ary);
     ary_resize_i(ary, size);
-    memmove(*ary, *ary + 1, size * sizeof(void *));
+    memmove(*ary + 1, *ary, size * sizeof(void *));
     (*ary)[0] = value;
 }
 

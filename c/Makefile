@@ -73,6 +73,7 @@ libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
 	$(AR) -cru $@ $^
 
 test: testall
+	@rm -f *.gcda
 	@./testall
 
 testall: $(TEST_OBJS) libferret.a
@@ -151,4 +152,4 @@ load_bench bench search_bench sort_bench: libferret.a
 # Etc
 ###
 
-.PHONY: clean all test
+.PHONY: clean all test gcov gprof valgrind gen_valsupp

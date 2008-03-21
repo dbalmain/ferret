@@ -11,12 +11,31 @@ static void ary_free_mock(void *p)
 static void test_ary(tst_case *tc, void *data)
 {
     int i;
+    int raised = 0;
     char *tmp;
     void **ary = ary_new();
     (void)data;
 
     Aiequal(0, ary_sz(ary));
     Aiequal(ARY_INIT_CAPA, ary_capa(ary));
+    ary_free(ary);
+
+    ary = ary_new();
+    ary_push(ary, "one");
+    Aiequal(1, ary_sz(ary));
+    ary_unshift(ary, "zero");
+    Aiequal(2, ary_sz(ary));
+    Asequal("zero", ary[0]);
+    Asequal("one", ary[1]);
+    Apnull(ary_remove(ary, 2));
+
+    TRY
+        ary_set(ary, -3, "minusone");
+    XCATCHALL
+        HANDLED();
+        raised = 1;
+    XENDTRY
+    Aiequal(1, raised);
     ary_free(ary);
 
     ary = ary_new_capa(10);
@@ -99,7 +118,7 @@ static void test_ary(tst_case *tc, void *data)
     ary[5] = "five";
     ary[6] = "six";
     ary[7] = "seven";
-    
+
     Asequal("five", ary_get(ary, 5));
     Asequal("six", ary_get(ary, 6));
     Asequal("seven", ary_get(ary, 7));
