@@ -1,213 +1,132 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -Iinclude -Ilib/libstemmer_c/include -Ilib/bzlib -fno-common -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -g -DDEBUG
-# common options
-#  -D_FILE_OFFSET_BITS=64	// set this option for large-file support
-#  -g						// set -g for debugging purposes
-#  -pg						// use this option if you want to use gprof
-#  -DDEBUG					// some error checking only occurs in DEBUG mode
-#  -DBZ_NO_STDIO			// There really is no need for bzlib to use stdio
-#  -DUSE_ZLIB              	// use zlib instead of bzlib
+###
+# Ferret Makefile
+#
+# Common CFLAGS options
+#  -D_FILE_OFFSET_BITS=64     // set this option for large-file support
+#  -g                         // set -g for debugging purposes
+#  -pg                        // use this option if you want to use gprof
+#  -DDEBUG                    // some error checking only occurs in DEBUG mode
+#  -DBZ_NO_STDIO              // There really is no need for bzlib to use stdio
+#  -DUSE_ZLIB                 // use zlib instead of bzlib
 #  -fprofile-arcs -ftest-coverage // for gcov
+###
 
-LFLAGS = -lm -lpthread -lz
+STEMMER_DIR = lib/libstemmer_c
+STEMMER_INC = $(STEMMER_DIR)/include
 
-include lib/libstemmer_c/mkinc.mak
+BZLIB_DIR = lib/bzlib
+BZLIB_INC = $(BZLIB_DIR)
 
-BZLIB_SRCS = bzlib.c blocksort.c compress.c crctable.c decompress.c huffman.c randtable.c
+CC      = gcc
+CINCS   = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
+DEFS    = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG
+CFLAGS  = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
+LDFLAGS = -lm -lpthread -lz
+DEP_DIR = .deps
+VPATH   = test:src
 
-TEST_OBJS = test_multimapper.o test_q_const_score.o test_threading.o test_q_fuzzy.o test_term.o test_q_filtered.o testhelper.o test_hash.o test_fs_store.o test_segments.o test_similarity.o test_except.o test_store.o test_highlighter.o test_hashset.o test_global.o test_bitvector.o test_search.o test_fields.o test_index.o test_mempool.o test_compound_io.o test_q_parser.o test_term_vectors.o test_array.o test_document.o test_helper.o test_test.o test.o test_q_span.o test_analysis.o test_filter.o test_priorityqueue.o test_sort.o test_ram_store.o test_file_deleter.o
+###
+# Objects
+###
 
-OBJS = q_multi_term.o hashset.o q_match_all.o bitvector.o mempool.o index.o compound_io.o q_wildcard.o ind.o priorityqueue.o q_range.o q_prefix.o array.o hash.o fs_store.o multimapper.o similarity.o except.o ram_store.o q_boolean.o q_phrase.o global.o q_filtered_query.o q_const_score.o term_vectors.o stopwords.o search.o q_fuzzy.o posh.o q_parser.o document.o helper.o q_span.o analysis.o filter.o q_term.o sort.o store.o libstemmer.o bzlib.o
+OBJS = \
+analysis.o          array.o              bitvector.o        compound_io.o     \
+document.o          except.o             filter.o           fs_store.o        \
+global.o            hash.o               hashset.o          helper.o          \
+ind.o               index.o              mempool.o          multimapper.o     \
+posh.o              priorityqueue.o      q_boolean.o        q_const_score.o   \
+q_filtered_query.o  q_fuzzy.o            q_match_all.o      q_multi_term.o    \
+q_parser.o          q_phrase.o           q_prefix.o         q_range.o         \
+q_span.o            q_term.o             q_wildcard.o       ram_store.o       \
+search.o            similarity.o         sort.o             stopwords.o       \
+store.o             term_vectors.o
 
-vpath %.c test src
+TEST_OBJS = \
+test_multimapper.o       test_q_const_score.o     test_threading.o     \
+test_q_fuzzy.o           test_term.o              test_q_filtered.o    \
+testhelper.o             test_hash.o              test_fs_store.o      \
+test_segments.o          test_similarity.o        test_except.o        \
+test_store.o             test_highlighter.o       test_hashset.o       \
+test_global.o            test_bitvector.o         test_search.o        \
+test_fields.o            test_index.o             test_mempool.o       \
+test_compound_io.o       test_q_parser.o          test_term_vectors.o  \
+test_array.o             test_document.o          test_helper.o        \
+test_test.o              test.o                   test_q_span.o        \
+test_analysis.o          test_filter.o            test_priorityqueue.o \
+test_sort.o              test_ram_store.o         test_file_deleter.o
 
-vpath %.h test include lib/libstemmer_c/include lib/bzlib/
+BZLIB_SRCS = \
+bzlib.c blocksort.c compress.c crctable.c decompress.c huffman.c randtable.c
+BZLIB_OBJS = $(BZLIB_SRCS:%.c=$(BZLIB_DIR)/%.o)
 
-all: $(OBJS)
+include $(STEMMER_DIR)/mkinc.mak
+STEMMER_OBJS = $(snowball_sources:%.c=$(STEMMER_DIR)/%.o)
 
-runtests: testall
-	@rm -f *.gcda
-	./testall -v -f -q
+###
+# Common Targets
+###
 
-testall: $(OBJS) $(TEST_OBJS)
-	$(CC) $(CFLAGS) $(LFLAGS) $(OBJS) $(TEST_OBJS) -o testall
+all: libferret.a
+
+libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
+	$(AR) -cru $@ $^
+
+test: testall
+	./testall
+
+testall: $(TEST_OBJS) libferret.a
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+clean:
+	@rm -rf *.o *.a *.gcda *.gcov *.gcno testall gmon.out \
+                load_bench bench search_bench sort_bench $(DEP_DIR)
+
+###
+# Profiling + coverage
+###
+
+gcov: CFLAGS += -fprofile-arcs -ftest-coverage
+gcov: clean test
+
+gprof: CFLAGS += -pg
+gprof: clean test
 
 valgrind: testall
-	valgrind --suppressions=valgrind.supp --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
+	valgrind --suppressions=valgrind.supp \
+                 --leak-check=yes             \
+                 --show-reachable=yes         \
+                 --workaround-gcc296-bugs=yes -v ./testall -q
 
 gen_valsupp: testall
-	valgrind --suppressions=valgrind.supp --gen-suppressions=yes --leak-check=yes --show-reachable=yes --workaround-gcc296-bugs=yes -v ./testall -q
-b: load_bench
-	./load_bench
-
-load_bench: load_bench.c $(OBJS)
-	$(CC) $(CFLAGS) -lpthread load_bench.c $(OBJS) $(LFLAGS) -o load_bench
-
-bench: bench.c $(OBJS)
-	$(CC) $(CFLAGS) -lpthread bench.c $(OBJS) $(LFLAGS) -o bench
-
-search_bench: search_bench.c $(OBJS)
-	$(CC) $(CFLAGS) search_bench.c $(OBJS) $(LFLAGS) -o search_bench
-
-sort_bench: sort_bench.c $(OBJS)
-	$(CC) $(CFLAGS) sort_bench.c $(OBJS) $(LFLAGS) -o sort_bench
-
-bzlib.o: $(BZLIB_SRCS:%.c=lib/bzlib/%.o)
-	$(AR) -cru $@ $^
-
-libstemmer.o: $(snowball_sources:%.c=lib/libstemmer_c/%.o)
-	$(AR) -cru $@ $^
-
-q_parser.o: src/q_parser.c
-	$(CC) $(CFLAGS) src/q_parser.c -c
-
-src/q_parser.c: src/q_parser.y
-
-.PHONY: clean all
-clean:
-	rm -f *.o *.gcda *.gcov *.gcno testall gmon.out bench search_bench
-testhelper.o: except.h posh.h testhelper.h global.h lang.h config.h
-
-except.o: threading.h except.h posh.h global.h lang.h config.h
-
-priorityqueue.o: priorityqueue.h except.h posh.h global.h lang.h config.h
-
-q_term.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-q_phrase.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h array.h store.h bitvector.h config.h document.h
-
-test_hash.o: except.h hash.h posh.h test.h global.h lang.h config.h
-
-q_multi_term.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h search.h similarity.h hashset.h global.h lang.h helper.h store.h bitvector.h document.h config.h
-
-similarity.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h global.h hashset.h similarity.h lang.h array.h helper.h store.h bitvector.h config.h document.h
-
-test_term_vectors.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-q_prefix.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-test_multimapper.o: hash.h except.h multimapper.h posh.h testhelper.h test.h global.h lang.h config.h
-
-test_similarity.o: except.h posh.h test.h global.h similarity.h lang.h config.h
-
-bitvector.o: except.h posh.h global.h lang.h config.h bitvector.h
-
-test_document.o: hash.h except.h posh.h test.h global.h lang.h config.h document.h
-
-test_q_filtered.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_q_const_score.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_filter.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h testhelper.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-store.o: threading.h hash.h except.h posh.h hashset.h global.h lang.h store.h config.h
-
-ram_store.o: threading.h hash.h except.h posh.h hashset.h global.h lang.h store.h config.h
-
-q_parser.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h array.h store.h bitvector.h config.h document.h
-
-test_file_deleter.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h testhelper.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_search.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h testhelper.h test.h search.h similarity.h hashset.h global.h lang.h array.h helper.h store.h bitvector.h document.h config.h
-
-mempool.o: except.h posh.h mempool.h global.h lang.h config.h
-
-q_fuzzy.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h helper.h store.h bitvector.h config.h document.h
-
-hash.o: except.h hash.h posh.h global.h lang.h config.h
-
-compound_io.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h similarity.h hashset.h global.h lang.h array.h store.h bitvector.h document.h config.h
-
-test_q_span.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_compound_io.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h testhelper.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_hashset.o: hash.h except.h posh.h test.h global.h hashset.h lang.h config.h
-
-filter.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-q_const_score.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-search.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h array.h store.h bitvector.h config.h document.h
-
-test_test.o: except.h posh.h test.h global.h lang.h config.h
-
-multimapper.o: hash.h except.h multimapper.h posh.h global.h lang.h array.h config.h bitvector.h
-
-q_span.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-test_sort.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h testhelper.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_fields.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_bitvector.o: except.h posh.h testhelper.h test.h global.h lang.h config.h bitvector.h
-
-test_store.o: threading.h hash.h except.h posh.h test.h hashset.h global.h lang.h store.h config.h
-
-posh.o: posh.h
-
-term_vectors.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h similarity.h hashset.h global.h lang.h array.h helper.h store.h bitvector.h document.h config.h
-
-fs_store.o: threading.h hash.h except.h posh.h hashset.h global.h lang.h store.h config.h
-
-index.o: analysis.h threading.h priorityqueue.h hash.h except.h index.h multimapper.h posh.h mempool.h hashset.h global.h similarity.h lang.h helper.h array.h store.h bitvector.h document.h config.h
-
-test_threading.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h ind.h mempool.h testhelper.h test.h search.h global.h hashset.h similarity.h lang.h store.h config.h document.h bitvector.h
-
-test_ram_store.o: threading.h hash.h except.h posh.h test.h hashset.h global.h test_store.h lang.h store.h config.h
-
-test.o: all_tests.h except.h posh.h test.h global.h lang.h config.h
-
-ind.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h ind.h mempool.h search.h global.h hashset.h similarity.h lang.h array.h store.h config.h document.h bitvector.h
-
-q_range.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-sort.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-q_match_all.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-test_fs_store.o: threading.h hash.h except.h posh.h test.h hashset.h global.h test_store.h lang.h store.h config.h
-
-test_segments.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_q_parser.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-test_global.o: except.h posh.h test.h global.h lang.h config.h
-
-q_boolean.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h array.h store.h bitvector.h config.h document.h
-
-array.o: except.h posh.h global.h lang.h array.h config.h
-
-test_term.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-global.o: except.h posh.h global.h lang.h config.h
-
-analysis.o: analysis.h except.h hash.h multimapper.h posh.h global.h lang.h config.h
-
-test_priorityqueue.o: priorityqueue.h except.h posh.h test.h global.h lang.h config.h
-
-test_helper.o: except.h posh.h test.h global.h lang.h helper.h config.h
-
-test_mempool.o: except.h posh.h mempool.h test.h global.h lang.h config.h
-
-test_index.o: priorityqueue.h analysis.h threading.h hash.h except.h index.h multimapper.h posh.h mempool.h testhelper.h test.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-document.o: hash.h except.h posh.h global.h lang.h config.h document.h
-
-test_analysis.o: analysis.h hash.h except.h multimapper.h posh.h test.h global.h lang.h config.h
-
-test_highlighter.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h testhelper.h test.h search.h similarity.h hashset.h global.h lang.h array.h store.h bitvector.h document.h config.h
-
-test_q_fuzzy.o: threading.h analysis.h priorityqueue.h index.h hash.h except.h multimapper.h posh.h mempool.h test.h search.h similarity.h hashset.h global.h lang.h store.h bitvector.h document.h config.h
-
-q_filtered_query.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
-test_except.o: except.h posh.h test.h global.h lang.h config.h
-
-helper.o: posh.h helper.h config.h
-
-test_array.o: except.h posh.h test.h global.h lang.h array.h config.h
-
-hashset.o: hash.h except.h posh.h global.h hashset.h lang.h config.h
-
-q_wildcard.o: threading.h analysis.h priorityqueue.h index.h except.h hash.h multimapper.h posh.h mempool.h search.h similarity.h global.h hashset.h lang.h store.h bitvector.h config.h document.h
-
+	valgrind --suppressions=valgrind.supp \
+                 --leak-check=yes             \
+                 --show-reachable=yes         \
+                 --gen-suppressions=yes       \
+                 --workaround-gcc296-bugs=yes -v ./testall -q
+
+###
+# Benchmarking
+###
+
+load_bench bench search_bench sort_bench: libferret.a
+
+###
+# Dependency build
+# Ref: http://make.paulandlesley.org/autodep.html
+###
+
+%.o : %.c
+	@mkdir -p $(DEP_DIR)
+	$(COMPILE.c) -MD -o $@ $<
+	@cp $*.d $(DEP_DIR)/$*.P; \
+            sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+                -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(DEP_DIR)/$*.P; \
+            rm -f $*.d
+
+-include $(OBJS:%.o=$(DEP_DIR)/%.P)
+
+###
+# Etc
+###
+
+.PHONY: clean all test
