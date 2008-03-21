@@ -17,13 +17,14 @@ STEMMER_INC = $(STEMMER_DIR)/include
 BZLIB_DIR = lib/bzlib
 BZLIB_INC = $(BZLIB_DIR)
 
-CC      = gcc
-CINCS   = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
-DEFS    = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG
-CFLAGS  = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
-LDFLAGS = -lm -lpthread -lz
-DEP_DIR = .deps
-VPATH   = test:src
+CC       = gcc
+CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
+DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG
+CFLAGS   = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
+LDFLAGS  = -lm -lpthread -lz
+DEP_DIR  = .deps
+GCOV_DIR = .gcov
+VPATH    = test:src
 
 ###
 # Objects
@@ -72,24 +73,28 @@ libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
 	$(AR) -cru $@ $^
 
 test: testall
-	./testall
+	@./testall
 
 testall: $(TEST_OBJS) libferret.a
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
 	@rm -rf *.o *.a *.gcda *.gcov *.gcno testall gmon.out \
-                load_bench bench search_bench sort_bench $(DEP_DIR)
+                load_bench bench search_bench sort_bench $(DEP_DIR) $(GCOV_DIR)
 
 ###
 # Profiling + coverage
+# Note: Make clean before using these for the first time.
 ###
 
 gcov: CFLAGS += -fprofile-arcs -ftest-coverage
-gcov: clean test
+gcov: test $(OBJS:%.o=%.c.gcov)
+	@head -1 $(OBJS:%.o=$(GCOV_DIR)/%.c.gcov.out) \
+             | grep -v '==>' | egrep -v '^[ ]*$$' | sort -rn -k 2
+	@rm -f test*gcda test*gcno
 
 gprof: CFLAGS += -pg
-gprof: clean test
+gprof: test
 
 valgrind: testall
 	valgrind --suppressions=valgrind.supp \
@@ -124,6 +129,23 @@ load_bench bench search_bench sort_bench: libferret.a
             rm -f $*.d
 
 -include $(OBJS:%.o=$(DEP_DIR)/%.P)
+
+###
+# Generate gcov stats
+###
+
+%.c.gcov : %.o
+	@mkdir -p $(GCOV_DIR)
+	@if [ -e $(*F).gcda ]; then mv $(*F).gcda $(GCOV_DIR); fi
+	@if [ -e $(*F).gcno ]; then mv $(*F).gcno $(GCOV_DIR); fi
+	@echo Generating coverage for: $< ...
+	@-if [ -e $< ] ; then \
+             echo -n $<: " " > $(GCOV_DIR)/$@.out ;                          \
+             gcov -o $(GCOV_DIR) $<                                          \
+                 | head -2         | tail -1                                 \
+                 | cut -d ':' -f 2 | cut -d '%' -f 1 >> $(GCOV_DIR)/$@.out ; \
+             if [ -e $@ ] ; then mv $@ $(GCOV_DIR) ; fi ;                    \
+         fi
 
 ###
 # Etc
