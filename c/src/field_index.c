@@ -172,6 +172,15 @@ const FieldIndexClass INTEGER_FIELD_INDEX_CLASS = {
     &integer_handle_term
 };
 
+long get_integer_value(FieldIndex *field_index, long doc_num)
+{
+    if (field_index->klass == &INTEGER_FIELD_INDEX_CLASS && doc_num >= 0) {
+        return ((long *)field_index->index)[doc_num];
+    }
+    return 0l;
+}
+
+
 /******************************************************************************
  * FloatFieldIndex < FieldIndex
  ******************************************************************************/
@@ -199,6 +208,14 @@ const FieldIndexClass FLOAT_FIELD_INDEX_CLASS = {
     &free,
     &float_handle_term
 };
+
+float get_float_value(FieldIndex *field_index, long doc_num)
+{
+    if (field_index->klass == &FLOAT_FIELD_INDEX_CLASS && doc_num >= 0) {
+        return ((float *)field_index->index)[doc_num];
+    }
+    return 0.0f;
+}
 
 /******************************************************************************
  * StringFieldIndex < FieldIndex
@@ -249,3 +266,14 @@ const FieldIndexClass STRING_FIELD_INDEX_CLASS = {
     &string_destroy_index,
     &string_handle_term
 };
+
+const char *get_string_value(FieldIndex *field_index, long doc_num)
+{
+    if (field_index->klass == &STRING_FIELD_INDEX_CLASS) {
+        StringIndex *string_index = field_index->index;
+        if (doc_num >= 0 && doc_num < string_index->size) {
+            return string_index->values[string_index->index[doc_num]];
+        }
+    }
+    return NULL;
+}
