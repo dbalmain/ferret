@@ -82,6 +82,11 @@ static void test_mp_alloc(tst_case *tc, void *data)
     t = mp_memdup(mp, "012345678901234", 10);
     Asnequal("012345678901234", t, 10);
     Aiequal(30, mp_used(mp));
+
+    t = mp_strndup(mp, "012345678", 9);
+    Asequal("012345678", t);
+    Aiequal(40, mp_used(mp)); /* Stays in the same chunk */
+
     mp_destroy(mp);
 }
 
