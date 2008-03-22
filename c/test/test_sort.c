@@ -122,9 +122,9 @@ static void do_test_top_docs(tst_case *tc, Searcher *searcher, Query *query,
                     case SORT_TYPE_FLOAT:
                         printf("f:%f ", fd->comparables[j].val.f); break;
                     case SORT_TYPE_DOC:
-                        printf("d:%d ", fd->comparables[j].val.i); break;
+                        printf("d:%ld ", fd->comparables[j].val.l); break;
                     case SORT_TYPE_INTEGER:
-                        printf("i:%d ", fd->comparables[j].val.i); break;
+                        printf("i:%ld ", fd->comparables[j].val.l); break;
                     case SORT_TYPE_STRING:
                         printf("s:%s ", fd->comparables[j].val.s); break;
                     default:

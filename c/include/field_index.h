@@ -1,0 +1,40 @@
+#ifndef FRT_FIELD_INDEX_H
+#define FRT_FIELD_INDEX_H
+
+#include "index.h"
+
+/***************************************************************************
+ *
+ * FieldIndex
+ *
+ ***************************************************************************/
+
+typedef struct StringIndex {
+    int size;
+    long *index;
+    char **values;
+    int v_size;
+    int v_capa;
+} StringIndex;
+
+typedef struct FieldIndexClass {
+    const char *type;
+    void *(*create_index)(int size);
+    void  (*destroy_index)(void *p);
+    void  (*handle_term)(void *index, TermDocEnum *tde, const char *text);
+} FieldIndexClass;
+
+typedef struct FieldIndex {
+    const char *field;
+    const FieldIndexClass *klass;
+    void *index;
+} FieldIndex;
+
+extern const FieldIndexClass INTEGER_FIELD_INDEX_CLASS;
+extern const FieldIndexClass   FLOAT_FIELD_INDEX_CLASS;
+extern const FieldIndexClass  STRING_FIELD_INDEX_CLASS;
+extern const FieldIndexClass    BYTE_FIELD_INDEX_CLASS;
+
+extern FieldIndex *field_index_new(IndexReader *ir, const char *field,
+                                   const FieldIndexClass *klass);
+#endif

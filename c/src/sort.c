@@ -1,6 +1,7 @@
 #include <string.h>
 #include "search.h"
 #include "index.h"
+#include "field_index.h"
 
 /***************************************************************************
  *
@@ -8,53 +9,24 @@
  *
  ***************************************************************************/
 
-unsigned long sort_field_hash(const void *p)
+static INLINE SortField *sort_field_alloc(const char *field,
+    enum SORT_TYPE type,
+    bool reverse,
+    int (*compare)(void *index_ptr, Hit *hit1, Hit *hit2),
+    void (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable),
+    const FieldIndexClass *field_index_class)
 {
-    SortField *self = (SortField *)p;
-    return str_hash(self->field) ^ (self->type*37);
-}
-
-int sort_field_eq(const void *p1, const void *p2)
-{
-    SortField *key1 = (SortField *)p1;
-    SortField *key2 = (SortField *)p2;
-    return (strcmp(key1->field, key2->field) == 0)
-        && key1->type == key2->type;
-}
-
-static int sort_field_cache_eq(const void *p1, const void *p2)
-{
-    SortField *key1 = (SortField *)p1;
-    SortField *key2 = (SortField *)p2;
-    int equal = (strcmp(key1->field, key2->field) == 0)
-        && key1->type == key2->type;
-
-    return equal;
-}
-
-static SortField *sort_field_clone(SortField *self)
-{
-    SortField *clone = ALLOC(SortField);
-    memcpy(clone, self, sizeof(SortField));
-    mutex_init(&clone->mutex, NULL);
-    clone->field = estrdup(self->field);
-    return clone;
-}
-
-static SortField *sort_field_alloc(char *field, int type, bool reverse)
-{
-    SortField *self = ALLOC(SortField);
-    mutex_init(&self->mutex, NULL);
-    self->field         = field ? estrdup(field) : NULL;
-    self->type          = type;
-    self->reverse       = reverse;
-    self->index         = NULL;
-    self->destroy_index = &free;
-    self->compare       = NULL;
+    SortField *self         = ALLOC(SortField);
+    self->field             = field ? estrdup(field) : NULL;
+    self->type              = type;
+    self->reverse           = reverse;
+    self->field_index_class = field_index_class;
+    self->compare           = compare;
+    self->get_val           = get_val;
     return self;
 }
 
-SortField *sort_field_new(char *field, enum SORT_TYPE type, bool reverse)
+SortField *sort_field_new(const char *field, enum SORT_TYPE type, bool reverse)
 {
     SortField *sf = NULL;
     switch (type) {
@@ -86,11 +58,7 @@ SortField *sort_field_new(char *field, enum SORT_TYPE type, bool reverse)
 void sort_field_destroy(void *p)
 {
     SortField *self = (SortField *)p;
-    if (self->index) {
-        self->destroy_index(self->index);
-    }
     free(self->field);
-    mutex_destroy(&self->mutex);
     free(p);
 }
 
@@ -125,10 +93,11 @@ char *sort_field_to_s(SortField *self)
             break;
     }
     if (self->field) {
-        str = ALLOC_N(char, 10 + strlen(self->field) + strlen(type));
+        str = ALLOC_N(char, 3 + strlen(self->field) + strlen(type));
         sprintf(str, "%s:%s%s", self->field, type, (self->reverse ? "!" : ""));
-    } else {
-        str = ALLOC_N(char, 10 + strlen(type));
+    }
+    else {
+        str = ALLOC_N(char, 2 + strlen(type));
         sprintf(str, "%s%s", type, (self->reverse ? "!" : ""));
     }
     return str;
@@ -138,13 +107,13 @@ char *sort_field_to_s(SortField *self)
  * ScoreSortField
  ***************************************************************************/
 
-void sf_score_get_val(void *index, Hit *hit, Comparable *comparable)
+static void sf_score_get_val(void *index, Hit *hit, Comparable *comparable)
 {
     (void)index;
     comparable->val.f = hit->score;
 }
 
-int sf_score_compare(void *index_ptr, Hit *hit2, Hit *hit1)
+static int sf_score_compare(void *index_ptr, Hit *hit2, Hit *hit1)
 {
     float val1 = hit1->score;
     float val2 = hit2->score;
@@ -157,49 +126,39 @@ int sf_score_compare(void *index_ptr, Hit *hit2, Hit *hit1)
 
 SortField *sort_field_score_new(bool reverse)
 {
-    SortField *self = sort_field_alloc(NULL, SORT_TYPE_SCORE, reverse);
-    self->compare   = &sf_score_compare;
-    self->get_val   = &sf_score_get_val;
-    return self;
+    return sort_field_alloc(NULL, SORT_TYPE_SCORE, reverse,
+                            &sf_score_compare, &sf_score_get_val, NULL);
 }
 
 const SortField SORT_FIELD_SCORE = {
-    MUTEX_INITIALIZER,
     NULL,               /* field */
     SORT_TYPE_SCORE,    /* type */
     false,              /* reverse */
-    NULL,               /* index */
+    NULL,               /* field_index_class */
     &sf_score_compare,  /* compare */
     &sf_score_get_val,  /* get_val */
-    NULL,               /* create_index */
-    NULL,               /* destroy_index */
-    NULL,               /* handle_term */
 };
 
 const SortField SORT_FIELD_SCORE_REV = {
-    MUTEX_INITIALIZER,
     NULL,               /* field */
     SORT_TYPE_SCORE,    /* type */
     true,               /* reverse */
-    NULL,               /* index */
+    NULL,               /* field_index_class */
     &sf_score_compare,  /* compare */
     &sf_score_get_val,  /* get_val */
-    NULL,               /* create_index */
-    NULL,               /* destroy_index */
-    NULL,               /* handle_term */
 };
 
 /**************************************************************************
  * DocSortField
  ***************************************************************************/
 
-void sf_doc_get_val(void *index, Hit *hit, Comparable *comparable)
+static void sf_doc_get_val(void *index, Hit *hit, Comparable *comparable)
 {
     (void)index;
-    comparable->val.i = hit->doc;
+    comparable->val.l = hit->doc;
 }
 
-int sf_doc_compare(void *index_ptr, Hit *hit1, Hit *hit2)
+static int sf_doc_compare(void *index_ptr, Hit *hit1, Hit *hit2)
 {
     int val1 = hit1->doc;
     int val2 = hit2->doc;
@@ -212,36 +171,26 @@ int sf_doc_compare(void *index_ptr, Hit *hit1, Hit *hit2)
 
 SortField *sort_field_doc_new(bool reverse)
 {
-    SortField *self = sort_field_alloc(NULL, SORT_TYPE_DOC, reverse);
-    self->compare   = &sf_doc_compare;
-    self->get_val   = &sf_doc_get_val;
-    return self;
+    return sort_field_alloc(NULL, SORT_TYPE_DOC, reverse,
+                            &sf_doc_compare, &sf_doc_get_val, NULL);
 }
 
 const SortField SORT_FIELD_DOC = {
-    MUTEX_INITIALIZER,
     NULL,               /* field */
     SORT_TYPE_DOC,      /* type */
     false,              /* reverse */
-    NULL,               /* index */
+    NULL,               /* field_index_class */
     &sf_doc_compare,    /* compare */
     &sf_doc_get_val,    /* get_val */
-    NULL,               /* create_index */
-    NULL,               /* destroy_index */
-    NULL,               /* handle_term */
 };
 
 const SortField SORT_FIELD_DOC_REV = {
-    MUTEX_INITIALIZER,
     NULL,               /* field */
     SORT_TYPE_DOC,      /* type */
     true,               /* reverse */
-    NULL,               /* index */
+    NULL,               /* field_index_class */
     &sf_doc_compare,    /* compare */
     &sf_doc_get_val,    /* get_val */
-    NULL,               /* create_index */
-    NULL,               /* destroy_index */
-    NULL,               /* handle_term */
 };
 
 /***************************************************************************
@@ -250,117 +199,60 @@ const SortField SORT_FIELD_DOC_REV = {
 
 static void sf_byte_get_val(void *index, Hit *hit, Comparable *comparable)
 {
-    comparable->val.i = ((int *)index)[hit->doc];
+    comparable->val.l = ((long *)index)[hit->doc];
 }
 
 static int sf_byte_compare(void *index, Hit *hit1, Hit *hit2)
 {
-    int val1 = ((int *)index)[hit1->doc];
-    int val2 = ((int *)index)[hit2->doc];
+    long val1 = ((long *)index)[hit1->doc];
+    long val2 = ((long *)index)[hit2->doc];
     if (val1 > val2) return 1;
     else if (val1 < val2) return -1;
     else return 0;
 }
 
-static void *sf_byte_create_index(int size)
+SortField *sort_field_byte_new(const char *field, bool reverse)
 {
-    int *index = ALLOC_AND_ZERO_N(int, size + 1);
-    index[0]++;
-    return &index[1];
-}
-
-static void sf_byte_destroy_index(void *p)
-{
-    int *index = (int *)p;
-    free(&index[-1]);
-}
-
-static void sf_byte_handle_term(void *index_ptr, TermDocEnum *tde, char *text)
-{
-    int *index = (int *)index_ptr;
-    int val = index[-1]++;
-    (void)text;
-    while (tde->next(tde)) {
-        index[tde->doc_num(tde)] = val;
-    }
-}
-
-static void sort_field_byte_methods(SortField *self)
-{
-    self->type          = SORT_TYPE_BYTE;
-    self->compare       = &sf_byte_compare;
-    self->get_val       = &sf_byte_get_val;
-    self->create_index  = &sf_byte_create_index;
-    self->destroy_index = &sf_byte_destroy_index;
-    self->handle_term   = &sf_byte_handle_term;
-}
-
-SortField *sort_field_byte_new(char *field, bool reverse)
-{
-    SortField *self = sort_field_alloc(field, SORT_TYPE_BYTE, reverse);
-    sort_field_byte_methods(self);
-    return self;
+    return sort_field_alloc(field, SORT_TYPE_BYTE, reverse,
+                            &sf_byte_compare, &sf_byte_get_val,
+                            &BYTE_FIELD_INDEX_CLASS);
 }
 
 /***************************************************************************
  * IntegerSortField
  ***************************************************************************/
 
-void sf_int_get_val(void *index, Hit *hit, Comparable *comparable)
+static void sf_int_get_val(void *index, Hit *hit, Comparable *comparable)
 {
-    comparable->val.i = ((int *)index)[hit->doc];
+    comparable->val.l = ((long *)index)[hit->doc];
 }
 
-int sf_int_compare(void *index, Hit *hit1, Hit *hit2)
+static int sf_int_compare(void *index, Hit *hit1, Hit *hit2)
 {
-    int val1 = ((int *)index)[hit1->doc];
-    int val2 = ((int *)index)[hit2->doc];
+    long val1 = ((long *)index)[hit1->doc];
+    long val2 = ((long *)index)[hit2->doc];
     if (val1 > val2) return 1;
     else if (val1 < val2) return -1;
     else return 0;
 }
 
-void *sf_int_create_index(int size)
+SortField *sort_field_int_new(const char *field, bool reverse)
 {
-    return ALLOC_AND_ZERO_N(int, size);
-}
-
-void sf_int_handle_term(void *index_ptr, TermDocEnum *tde, char *text)
-{
-    int *index = (int *)index_ptr;
-    int val;
-    sscanf(text, "%d", &val);
-    while (tde->next(tde)) {
-        index[tde->doc_num(tde)] = val;
-    }
-}
-
-void sort_field_int_methods(SortField *self)
-{
-    self->type          = SORT_TYPE_INTEGER;
-    self->compare       = &sf_int_compare;
-    self->get_val       = &sf_int_get_val;
-    self->create_index  = &sf_int_create_index;
-    self->handle_term   = &sf_int_handle_term;
-}
-
-SortField *sort_field_int_new(char *field, bool reverse)
-{
-    SortField *self = sort_field_alloc(field, SORT_TYPE_INTEGER, reverse);
-    sort_field_int_methods(self);
-    return self;
+    return sort_field_alloc(field, SORT_TYPE_INTEGER, reverse,
+                            &sf_int_compare, &sf_int_get_val,
+                            &INTEGER_FIELD_INDEX_CLASS);
 }
 
 /***************************************************************************
  * FloatSortField
  ***************************************************************************/
 
-void sf_float_get_val(void *index, Hit *hit, Comparable *comparable)
+static void sf_float_get_val(void *index, Hit *hit, Comparable *comparable)
 {
     comparable->val.f = ((float *)index)[hit->doc];
 }
 
-int sf_float_compare(void *index, Hit *hit1, Hit *hit2)
+static int sf_float_compare(void *index, Hit *hit1, Hit *hit2)
 {
     float val1 = ((float *)index)[hit1->doc];
     float val2 = ((float *)index)[hit2->doc];
@@ -369,58 +261,25 @@ int sf_float_compare(void *index, Hit *hit1, Hit *hit2)
     else return 0;
 }
 
-void *sf_float_create_index(int size)
+SortField *sort_field_float_new(const char *field, bool reverse)
 {
-    return ALLOC_AND_ZERO_N(float, size);
-}
-
-void sf_float_handle_term(void *index_ptr, TermDocEnum *tde, char *text)
-{
-    float *index = (float *)index_ptr;
-    float val;
-    sscanf(text, "%g", &val);
-    while (tde->next(tde)) {
-        index[tde->doc_num(tde)] = val;
-    }
-}
-
-void sort_field_float_methods(SortField *self)
-{
-    self->type          = SORT_TYPE_FLOAT;
-    self->compare       = &sf_float_compare;
-    self->get_val       = &sf_float_get_val;
-    self->create_index  = &sf_float_create_index;
-    self->handle_term   = &sf_float_handle_term;
-}
-
-SortField *sort_field_float_new(char *field, bool reverse)
-{
-    SortField *self = sort_field_alloc(field, SORT_TYPE_FLOAT, reverse);
-    sort_field_float_methods(self);
-    return self;
+    return sort_field_alloc(field, SORT_TYPE_FLOAT, reverse,
+                            &sf_float_compare, &sf_float_get_val,
+                            &FLOAT_FIELD_INDEX_CLASS);
 }
 
 /***************************************************************************
  * StringSortField
  ***************************************************************************/
 
-#define VALUES_ARRAY_START_SIZE 8
-typedef struct StringIndex {
-    int size;
-    int *index;
-    char **values;
-    int v_size;
-    int v_capa;
-} StringIndex;
-
-void sf_string_get_val(void *index, Hit *hit, Comparable *comparable)
+static void sf_string_get_val(void *index, Hit *hit, Comparable *comparable)
 {
     comparable->val.s
         = ((StringIndex *)index)->values[
         ((StringIndex *)index)->index[hit->doc]];
 }
 
-int sf_string_compare(void *index, Hit *hit1, Hit *hit2)
+static int sf_string_compare(void *index, Hit *hit1, Hit *hit2)
 {
     char *s1 = ((StringIndex *)index)->values[
         ((StringIndex *)index)->index[hit1->doc]];
@@ -447,151 +306,20 @@ int sf_string_compare(void *index, Hit *hit1, Hit *hit2)
     */
 }
 
-void *sf_string_create_index(int size)
+SortField *sort_field_string_new(const char *field, bool reverse)
 {
-    StringIndex *self = ALLOC_AND_ZERO(StringIndex);
-    self->size = size;
-    self->index = ALLOC_AND_ZERO_N(int, size);
-    self->v_capa = VALUES_ARRAY_START_SIZE;
-    self->v_size = 1; /* leave the first value as NULL */
-    self->values = ALLOC_AND_ZERO_N(char *, VALUES_ARRAY_START_SIZE);
-    return self;
-}
-
-void sf_string_destroy_index(void *p)
-{
-    StringIndex *self = (StringIndex *)p;
-    int i;
-    free(self->index);
-    for (i = 0; i < self->v_size; i++) {
-        free(self->values[i]);
-    }
-    free(self->values);
-    free(self);
-}
-
-void sf_string_handle_term(void *index_ptr, TermDocEnum *tde, char *text)
-{
-    StringIndex *index = (StringIndex *)index_ptr;
-    if (index->v_size >= index->v_capa) {
-        index->v_capa *= 2;
-        index->values = REALLOC_N(index->values, char *, index->v_capa);
-    }
-    index->values[index->v_size] = estrdup(text);
-    while (tde->next(tde)) {
-        index->index[tde->doc_num(tde)] = index->v_size;
-    }
-    index->v_size++;
-}
-
-void sort_field_string_methods(SortField *self)
-{
-    self->type          = SORT_TYPE_STRING;
-    self->compare       = &sf_string_compare;
-    self->get_val       = &sf_string_get_val;
-    self->create_index  = &sf_string_create_index;
-    self->destroy_index = &sf_string_destroy_index;
-    self->handle_term   = &sf_string_handle_term;
-}
-
-SortField *sort_field_string_new(char *field, bool reverse)
-{
-    SortField *self = sort_field_alloc(field, SORT_TYPE_STRING, reverse);
-    sort_field_string_methods(self);
-    return self;
+    return sort_field_alloc(field, SORT_TYPE_STRING, reverse,
+                            &sf_string_compare, &sf_string_get_val,
+                            &STRING_FIELD_INDEX_CLASS);
 }
 
 /***************************************************************************
  * AutoSortField
  ***************************************************************************/
 
-void sort_field_auto_evaluate(SortField *sf, char *text)
+SortField *sort_field_auto_new(const char *field, bool reverse)
 {
-    int int_val;
-    float float_val;
-    int text_len = 0, scan_len = 0;
-
-    text_len = (int)strlen(text);
-    sscanf(text, "%d%n", &int_val, &scan_len);
-    if (scan_len == text_len) {
-        sort_field_int_methods(sf);
-    } else {
-        sscanf(text, "%f%n", &float_val, &scan_len);
-        if (scan_len == text_len) {
-            sort_field_float_methods(sf);
-        } else {
-            sort_field_string_methods(sf);
-        }
-    }
-}
-
-SortField *sort_field_auto_new(char *field, bool reverse)
-{
-    return sort_field_alloc(field, SORT_TYPE_AUTO, reverse);
-}
-
-/***************************************************************************
- *
- * FieldCache
- *
- ***************************************************************************/
-
-void *field_cache_get_index(IndexReader *ir, SortField *sf)
-{
-    void *volatile index = NULL;
-    int length = 0;
-    TermEnum *volatile te = NULL;
-    TermDocEnum *volatile tde = NULL;
-    SortField *sf_clone;
-    const int field_num = fis_get_field_num(ir->fis, sf->field);
-
-    if (field_num < 0) {
-        RAISE(ARG_ERROR,
-              "Cannot sort by field \"%s\". It doesn't exist in the index.",
-              sf->field);
-    }
-
-    mutex_lock(&sf->mutex);
-    if (!ir->sort_cache) {
-        ir->sort_cache = h_new(&sort_field_hash, &sort_field_cache_eq,
-                               &sort_field_destroy, NULL);
-    }
-
-    if (sf->type == SORT_TYPE_AUTO) {
-        te = ir->terms(ir, field_num);
-        if (!te->next(te) && (ir->num_docs(ir) > 0)) {
-            RAISE(ARG_ERROR,
-                  "Cannot sort by field \"%s\" as there are no terms "
-                  "in that field in the index.", sf->field);
-        }
-        sort_field_auto_evaluate(sf, te->curr_term);
-        te->close(te);
-    }
-
-    index = h_get(ir->sort_cache, sf);
-
-    if (index == NULL) {
-        length = ir->max_doc(ir);
-        if (length > 0) {
-            TRY
-                tde = ir->term_docs(ir);
-                te = ir->terms(ir, field_num);
-                index = sf->create_index(length);
-                while (te->next(te)) {
-                    tde->seek_te(tde, te);
-                    sf->handle_term(index, tde, te->curr_term);
-                }
-            XFINALLY
-                tde->close(tde);
-            te->close(te);
-            XENDTRY
-        }
-        sf_clone = sort_field_clone(sf);
-        sf_clone->index = index;
-        h_set(ir->sort_cache, sf_clone, index);
-    }
-    mutex_unlock(&sf->mutex);
-    return index;
+    return sort_field_alloc(field, SORT_TYPE_AUTO, reverse, NULL, NULL, NULL);
 }
 
 /***************************************************************************
@@ -630,12 +358,88 @@ typedef struct Sorter {
     Sort *sort;
 } Sorter;
 
+#define SET_AUTO(upper_type, lower_type) \
+    sf->type = SORT_TYPE_ ## upper_type;\
+    sf->field_index_class = &upper_type ## _FIELD_INDEX_CLASS;\
+    sf->compare = sf_ ## lower_type ## _compare;\
+    sf->get_val = sf_ ## lower_type ## _get_val
+
+static void sort_field_auto_evaluate(SortField *sf, char *text)
+{
+    int int_val;
+    float float_val;
+    int text_len = 0, scan_len = 0;
+
+    text_len = (int)strlen(text);
+    sscanf(text, "%d%n", &int_val, &scan_len);
+    if (scan_len == text_len) {
+        SET_AUTO(INTEGER, int);
+    } else {
+        sscanf(text, "%f%n", &float_val, &scan_len);
+        if (scan_len == text_len) {
+            SET_AUTO(FLOAT, float);
+        } else {
+            SET_AUTO(STRING, string);
+        }
+    }
+}
+/*
+static INLINE void set_auto(SortField *sf,
+    enum SORT_TYPE type,
+    const FieldIndexClass *field_index_class,
+    int  (*compare)(void *index_ptr, Hit *hit1, Hit *hit2),
+    void (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable))
+{
+    sf->type = type;
+    sf->field_index_class = field_index_class;
+    sf->compare = compare;
+    sf->get_val = get_val;
+}
+
+static void sort_field_auto_evaluate(SortField *sf, char *text)
+{
+    int int_val;
+    float float_val;
+    int text_len = 0, scan_len = 0;
+
+    text_len = (int)strlen(text);
+    sscanf(text, "%d%n", &int_val, &scan_len);
+    if (scan_len == text_len) {
+        set_auto(sf, SORT_TYPE_INTEGER, &INTEGER_FIELD_INDEX_CLASS,
+                 sf_int_compare, sf_int_get_val);
+    } else {
+        sscanf(text, "%f%n", &float_val, &scan_len);
+        if (scan_len == text_len) {
+            set_auto(sf, SORT_TYPE_FLOAT, &FLOAT_FIELD_INDEX_CLASS,
+                     sf_float_compare, sf_float_get_val);
+        } else {
+            set_auto(sf, SORT_TYPE_STRING, &STRING_FIELD_INDEX_CLASS,
+                     sf_string_compare, sf_string_get_val);
+        }
+    }
+}
+*/
+
 Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
 {
     void *index = NULL;
 
     if (sf->type > SORT_TYPE_DOC) {
-        index = field_cache_get_index(ir, sf);
+        FieldIndex *field_index = NULL;
+        if (sf->type == SORT_TYPE_AUTO) {
+            TermEnum *te = ir_terms(ir, sf->field);
+            if (!te->next(te) && (ir->num_docs(ir) > 0)) {
+                RAISE(ARG_ERROR,
+                      "Cannot sort by field \"%s\" as there are no terms "
+                      "in that field in the index.", sf->field);
+            }
+            sort_field_auto_evaluate(sf, te->curr_term);
+            te->close(te);
+        }
+        mutex_lock(&ir->field_index_mutex);
+        field_index = field_index_new(ir, sf->field, sf->field_index_class);
+        mutex_unlock(&ir->field_index_mutex);
+        index = field_index->index;
     }
     return comparator_new(index, sf->reverse, sf->compare);
 }
@@ -864,12 +668,12 @@ bool fdshq_lt(FieldDoc *fd1, FieldDoc *fd2)
                 if (fd1->hit.doc < fd2->hit.doc) c = -1;
                 break;
             case SORT_TYPE_INTEGER:
-                if (cmps1[i].val.i > cmps2[i].val.i) c =  1;
-                if (cmps1[i].val.i < cmps2[i].val.i) c = -1;
+                if (cmps1[i].val.l > cmps2[i].val.l) c =  1;
+                if (cmps1[i].val.l < cmps2[i].val.l) c = -1;
                 break;
             case SORT_TYPE_BYTE:
-                if (cmps1[i].val.i > cmps2[i].val.i) c =  1;
-                if (cmps1[i].val.i < cmps2[i].val.i) c = -1;
+                if (cmps1[i].val.l > cmps2[i].val.l) c =  1;
+                if (cmps1[i].val.l < cmps2[i].val.l) c = -1;
                 break;
             case SORT_TYPE_STRING:
                 do {

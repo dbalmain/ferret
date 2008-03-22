@@ -772,7 +772,8 @@ struct IndexReader
     SegmentInfos *sis;
     FieldInfos   *fis;
     HashTable    *cache;
-    HashTable    *sort_cache;
+    HashTable    *field_index_cache;
+    mutex_t       field_index_mutex;
     uchar        *fake_norms;
     mutex_t       mutex;
     bool          has_changes : 1;

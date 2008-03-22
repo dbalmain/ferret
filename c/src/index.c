@@ -3893,6 +3893,7 @@ IndexReader *ir_setup(IndexReader *ir, Store *store, SegmentInfos *sis,
                       FieldInfos *fis, int is_owner)
 {
     mutex_init(&ir->mutex, NULL);
+    mutex_init(&ir->field_index_mutex, NULL);
 
     if (store) {
         ir->store = store;
@@ -4123,8 +4124,8 @@ void ir_close(IndexReader *ir)
         if (ir->cache) {
             h_destroy(ir->cache);
         }
-        if (ir->sort_cache) {
-            h_destroy(ir->sort_cache);
+        if (ir->field_index_cache) {
+            h_destroy(ir->field_index_cache);
         }
         if (ir->deleter && ir->is_owner) {
             deleter_destroy(ir->deleter);
@@ -4132,6 +4133,7 @@ void ir_close(IndexReader *ir)
         free(ir->fake_norms);
 
         mutex_destroy(&ir->mutex);
+        mutex_destroy(&ir->field_index_mutex);
         free(ir);
     }
     else {

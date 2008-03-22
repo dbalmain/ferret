@@ -1,5 +1,6 @@
-These wonderful documentation standards were taken from merb. 
-Every method should have documentation above the method definition that fits this basic model...
+These excellent documentation standards were taken from merb. 
+Every Ruby method should have documentation above the method definition that
+fits this basic model...
 
 # Render the specified item, with the specified options.
 #
@@ -21,7 +22,7 @@ Every method should have documentation above the method definition that fits thi
 #   be either the controller_name or application. If you
 #   want to use an alternative content-type than the one
 #   that the base template was rendered as, you will need
-#   to do :layout => “foo.#{content_type}” (i.e. “foo.json”)
+#   to do :layout => +foo.#{content_type}+ (i.e. +foo.json+)
 #
 # ==== Returns
 # String:: The rendered template, including layout, if appropriate.
@@ -32,9 +33,8 @@ Every method should have documentation above the method definition that fits thi
 #
 # ==== Alternatives
 # If you pass a Hash as the first parameter, it will be moved to
-# opts and “thing” will be the current action
+# opts and +thing+ will be the current action
 #
-#—
 # @public
 def render(thing = nil, opts = {})
   <snip>

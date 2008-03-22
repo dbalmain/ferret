@@ -8,6 +8,7 @@ typedef struct Scorer Scorer;
 #include "index.h"
 #include "bitvector.h"
 #include "similarity.h"
+#include "field_index.h"
 
 /***************************************************************************
  *
@@ -633,6 +634,22 @@ extern bool scorer_doc_less_than(const Scorer *s1, const Scorer *s2);
 extern int scorer_doc_cmp(const void *p1, const void *p2);
 
 /***************************************************************************
+ * Comparable
+ ***************************************************************************/
+
+typedef struct Comparable
+{
+    int type;
+    union {
+        long  l;
+        float f;
+        char *s;
+        void *p;
+    } val;
+    bool reverse : 1;
+} Comparable;
+
+/***************************************************************************
  *
  * Sort
  *
@@ -650,47 +667,27 @@ enum SORT_TYPE
 };
 
 /***************************************************************************
- * Comparable
- ***************************************************************************/
-
-typedef struct Comparable
-{
-    int type;
-    union {
-        int i;
-        float f;
-        char *s;
-        void *p;
-    } val;
-    bool reverse : 1;
-} Comparable;
-
-/***************************************************************************
  * SortField
  ***************************************************************************/
 
 typedef struct SortField
 {
-    mutex_t         mutex;
-    char           *field;
-    enum SORT_TYPE  type;
-    bool            reverse : 1;
-    void           *index;
-    int             (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
-    void            (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable);
-    void           *(*create_index)(int size);
-    void            (*destroy_index)(void *p);
-    void            (*handle_term)(void *index, TermDocEnum *tde, char *text);
+    char                  *field;
+    enum SORT_TYPE         type;
+    bool                   reverse : 1;
+    const FieldIndexClass *field_index_class;
+    int         (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
+    void        (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable);
 } SortField;
 
-extern SortField *sort_field_new(char *field, enum SORT_TYPE type, bool reverse);
+extern SortField *sort_field_new(const char *field, enum SORT_TYPE type, bool reverse);
 extern SortField *sort_field_score_new(bool reverse);
 extern SortField *sort_field_doc_new(bool reverse);
-extern SortField *sort_field_int_new(char *field, bool reverse);
-extern SortField *sort_field_byte_new(char *field, bool reverse);
-extern SortField *sort_field_float_new(char *field, bool reverse);
-extern SortField *sort_field_string_new(char *field, bool reverse);
-extern SortField *sort_field_auto_new(char *field, bool reverse);
+extern SortField *sort_field_int_new(const char *field, bool reverse);
+extern SortField *sort_field_byte_new(const char *field, bool reverse);
+extern SortField *sort_field_float_new(const char *field, bool reverse);
+extern SortField *sort_field_string_new(const char *field, bool reverse);
+extern SortField *sort_field_auto_new(const char *field, bool reverse);
 extern void sort_field_destroy(void *p);
 extern char *sort_field_to_s(SortField *self);
 
