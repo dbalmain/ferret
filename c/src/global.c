@@ -284,9 +284,9 @@ char *vstrfmt(const char *fmt, va_list args)
     char *string;
     char *p = (char *) fmt, *q;
     int len = (int) strlen(fmt) + 1;
-    int slen;
+    int slen, curlen;
     char *s;
-    long i;
+    long l;
     double d;
 
     q = string = ALLOC_N(char, len);
@@ -298,14 +298,17 @@ char *vstrfmt(const char *fmt, va_list args)
             case 's':
                 p++;
                 s = va_arg(args, char *);
-                if (s) {
-                    slen = (int) strlen(s);
-                    len += slen;
-                    *q = 0;
-                    REALLOC_N(string, char, len);
-                    q = string + strlen(string);
-                    q += sprintf(q, "%s", s);
+                /* to be consistent with printf print (null) for NULL */
+                if (!s) {
+                    s = "(null)";
                 }
+                slen = (int) strlen(s);
+                len += slen;
+                curlen = q - string;
+                REALLOC_N(string, char, len);
+                q = string + curlen;
+                memcpy(q, s, slen);
+                q += slen;
                 continue;
             case 'f':
                 p++;
@@ -323,8 +326,8 @@ char *vstrfmt(const char *fmt, va_list args)
                 *q = 0;
                 REALLOC_N(string, char, len);
                 q = string + strlen(string);
-                i = va_arg(args, long);
-                q += sprintf(q, "%ld", i);
+                l = va_arg(args, long);
+                q += sprintf(q, "%ld", l);
                 continue;
             default:
                 break;
