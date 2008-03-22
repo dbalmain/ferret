@@ -40,6 +40,11 @@ int ptr_eq(const void *q1, const void *q2)
     return q1 == q2;
 }
 
+static int str_eq(const void *q1, const void *q2)
+{
+    return strcmp(q1, q2) == 0;
+}
+
 static int int_eq(const void *q1, const void *q2)
 {
     (void)q1;
@@ -122,51 +127,6 @@ HashEntry *h_lookup_int(HashTable *ht, const void *key)
     }
 }
 
-HashEntry *h_lookup_str(HashTable *ht, register const char *key)
-{
-    register unsigned long hash = str_hash(key);
-    register unsigned long perturb;
-    register int mask = ht->mask;
-    register HashEntry *he0 = ht->table;
-    register int i = hash & mask;
-    register HashEntry *he = &he0[i];
-    register HashEntry *freeslot;
-
-    if (he->key == NULL || he->key == key) {
-        he->hash = hash;
-        return he;
-    }
-    if (he->key == dummy_key) {
-        freeslot = he;
-    }
-    else {
-        if ((he->hash == hash) && (strcmp(he->key, key) == 0)) {
-            return he;
-        }
-        freeslot = NULL;
-    }
-
-    for (perturb = hash;; perturb >>= PERTURB_SHIFT) {
-        i = (i << 2) + i + perturb + 1;
-        he = &he0[i & mask];
-        if (he->key == NULL) {
-            if (freeslot != NULL) {
-                he = freeslot;
-            }
-            he->hash = hash;
-            return he;
-        }
-        if (he->key == key
-            || (he->hash == hash
-                && he->key != dummy_key && strcmp(he->key, key) == 0)) {
-            return he;
-        }
-        if (he->key == dummy_key && freeslot == NULL) {
-            freeslot = he;
-        }
-    }
-}
-
 HashEntry *h_lookup(HashTable *ht, register const void *key)
 {
     register unsigned int hash = ht->hash_i(key);
@@ -175,7 +135,7 @@ HashEntry *h_lookup(HashTable *ht, register const void *key)
     register HashEntry *he0 = ht->table;
     register int i = hash & mask;
     register HashEntry *he = &he0[i];
-    register HashEntry *freeslot;
+    register HashEntry *freeslot = NULL;
     eq_ft eq = ht->eq_i;
 
     if (he->key == NULL || he->key == key) {
@@ -189,7 +149,6 @@ HashEntry *h_lookup(HashTable *ht, register const void *key)
         if ((he->hash == hash) && eq(he->key, key)) {
             return he;
         }
-        freeslot = NULL;
     }
 
     for (perturb = hash;; perturb >>= PERTURB_SHIFT) {
@@ -227,7 +186,9 @@ HashTable *h_new_str(free_ft free_key, free_ft free_value)
     ht->mask = HASH_MINSIZE - 1;
     ht->table = ht->smalltable;
     memset(ht->smalltable, 0, sizeof(ht->smalltable));
-    ht->lookup_i = (lookup_ft)&h_lookup_str;
+    ht->lookup_i = (lookup_ft)&h_lookup;
+    ht->eq_i = str_eq;
+    ht->hash_i = (hash_ft)str_hash;
 
     ht->free_key_i = free_key != NULL ? free_key : &dummy_free;
     ht->free_value_i = free_value != NULL ? free_value : &dummy_free;
@@ -535,12 +496,7 @@ HashTable *h_clone(HashTable *ht,
     int i = ht->size;
     HashTable *ht_clone;
 
-    if (ht->lookup_i == (lookup_ft)&h_lookup_str) {
-        ht_clone = h_new_str(ht->free_key_i, ht->free_value_i);
-    }
-    else {
-        ht_clone = h_new(ht->hash_i, ht->eq_i, ht->free_key_i, ht->free_value_i);
-    }
+    ht_clone = h_new(ht->hash_i, ht->eq_i, ht->free_key_i, ht->free_value_i);
 
     for (he = ht->table; i > 0; he++) {
         if (he->key && he->key != dummy_key) {        /* active entry */

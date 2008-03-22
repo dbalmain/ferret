@@ -415,19 +415,7 @@ static void fs_close_lock_i(Lock *lock)
     free(lock);
 }
 
-static HashTable stores = {
-    /* fill */       0,
-    /* used */       0,
-    /* mask */       HASH_MINSIZE - 1,
-    /* ref_cnt */    1,
-    /* table */      stores.smalltable,
-    /* smalltable */ {{0, NULL, NULL}},
-    /* lookup */     (h_lookup_ft)&h_lookup_str,
-    /* hash */       NULL,
-    /* eq */         NULL,
-    /* free_key */   (free_ft)&dummy_free,
-    /* free_value */ (free_ft)&fs_destroy
-};
+static HashTable * stores = NULL;
 
 #ifndef UNTHREADED
 static mutex_t stores_mutex = MUTEX_INITIALIZER;
@@ -436,7 +424,7 @@ static mutex_t stores_mutex = MUTEX_INITIALIZER;
 static void fs_close_i(Store *store)
 {
     mutex_lock(&stores_mutex);
-    h_del(&stores, store->dir.path);
+    h_del(stores, store->dir.path);
     mutex_unlock(&stores_mutex);
 }
 
@@ -478,8 +466,13 @@ Store *open_fs_store(const char *pathname)
 {
     Store *store = NULL;
 
+    if (!stores) {
+        stores = h_new_str(NULL, (free_ft)fs_destroy);
+        register_for_cleanup(stores, (free_ft)h_destroy);
+    }
+
     mutex_lock(&stores_mutex);
-    store = h_get(&stores, pathname);
+    store = h_get(stores, pathname);
     if (store) {
         mutex_lock(&store->mutex);
         store->ref_cnt++;
@@ -487,7 +480,7 @@ Store *open_fs_store(const char *pathname)
     }
     else {
         store = fs_store_new(pathname);
-        h_set(&stores, store->dir.path, store);
+        h_set(stores, store->dir.path, store);
     }
     mutex_unlock(&stores_mutex);
 

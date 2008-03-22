@@ -39,7 +39,7 @@ typedef struct
  * elements and +fill+ is the number of active elements together with the
  * number of dummy elements. +fill+ is basically just kept around so that we
  * know when to resize. The HashTable is resized when more than two thirds of
- * the HashTable is Filled. 
+ * the HashTable is Filled.
  */
 typedef struct HashTable
 {
@@ -186,7 +186,7 @@ extern void *h_get(HashTable *self, const void *key);
  * Delete the value in HashTable referenced by the key +key+. When the value
  * is deleted it is also destroyed along with the key depending on how
  * free_key and free_value where set when the HashTable was created. If you
- * don't want to destroy the value use h_rem. 
+ * don't want to destroy the value use h_rem.
  *
  * This functions returns +true+ if the value was deleted successfully or
  * false if the key was not found.
@@ -296,7 +296,7 @@ extern void *h_get_int(HashTable *self, const unsigned long key);
 /**
  * Delete the value in HashTable referenced by the integer key +key+. When the
  * value is deleted it is also destroyed using the free_value function. If you
- * don't want to destroy the value use h_rem. 
+ * don't want to destroy the value use h_rem.
  *
  * This functions returns +true+ if the value was deleted successfully or
  * false if the key was not found.
@@ -441,19 +441,6 @@ extern HashTable *h_clone(HashTable *self,
  * The following functions should only be used in static HashTable
  * declarations
  */
-/**
- * This is the lookup function for a hash table keyed with strings. Since it
- * is so common for hash tables to be keyed with strings it gets it's own
- * lookup function. This method will always return a HashEntry. If there is no
- * entry with the given key then an empty entry will be returned with the key
- * set to the key that was passed.
- *
- * @param ht the hash table to look in
- * @param key the key to lookup
- * @return the HashEntry that was found
- */
-extern HashEntry *h_lookup_str(HashTable *ht, register const char *key);
-
 /**
  * This is the lookup function for a hash table with non-string keys. The
  * hash() and eq() methods used are stored in the hash table. This method will
