@@ -5,6 +5,10 @@
 #include "global.h"
 
 #define HS_MIN_SIZE 4
+typedef struct HashSetEntry {
+    void *value;
+    int index;
+} HashSetEntry;
 
 typedef struct HashSet
 {
@@ -91,7 +95,7 @@ extern void hs_destroy(HashSet *self);
  *                              free_elem was set
  *   </pre>
  */
-extern int hs_add(HashSet *self, void *elem);
+extern enum HashKeyStatus hs_add(HashSet *self, void *elem);
 
 /**
  * Add element to the HashSet. If the element already existed in the HashSet
@@ -144,7 +148,7 @@ extern void *hs_rem(HashSet *self, void *elem);
  *                              free_elem was set
  *   </pre>
  */
-extern int hs_exists(HashSet *self, void *elem);
+extern enum HashKeyStatus hs_exists(HashSet *self, void *elem);
 
 /**
  * Merge two HashSets. When a merge is done the merger (self) HashTable is

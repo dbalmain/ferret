@@ -350,9 +350,9 @@ static int h_resize(HashTable *ht, int min_newsize)
     return 0;
 }
 
-int h_set(HashTable *ht, const void *key, void *value)
+enum HashKeyStatus h_set(HashTable *ht, const void *key, void *value)
 {
-    int ret_val = HASH_KEY_DOES_NOT_EXIST;
+    enum HashKeyStatus ret_val = HASH_KEY_DOES_NOT_EXIST;
     HashEntry *he = ht->lookup_i(ht, key);
     if (he->key == NULL) {
         if (ht->fill * 3 > ht->mask * 2) {
@@ -431,7 +431,7 @@ int h_set_safe(HashTable *ht, const void *key, void *value)
     return true;
 }
 
-int h_has_key(HashTable *ht, const void *key)
+enum HashKeyStatus h_has_key(HashTable *ht, const void *key)
 {
     HashEntry *he = ht->lookup_i(ht, key);
     if (he->key == NULL || he->key == dummy_key) {
@@ -440,9 +440,7 @@ int h_has_key(HashTable *ht, const void *key)
     else if (he->key == key) {
         return HASH_KEY_SAME;
     }
-    else {
-        return HASH_KEY_EQUAL;
-    }
+    return HASH_KEY_EQUAL;
 }
 
 void *h_get_int(HashTable *self, const unsigned long key)
@@ -460,7 +458,9 @@ void *h_rem_int(HashTable *self, const unsigned long key)
   return h_rem(self, &key, false);
 }
 
-int h_set_int(HashTable *self, const unsigned long key, void *value)
+enum HashKeyStatus h_set_int(HashTable *self,
+                             const unsigned long key,
+                             void *value)
 {
   return h_set(self, &key, value);
 }

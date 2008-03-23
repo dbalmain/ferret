@@ -16,7 +16,7 @@
 /**
  * Return values for h_set
  */
-enum HashSetValues
+enum HashKeyStatus
 {
     HASH_KEY_DOES_NOT_EXIST = 0,
     HASH_KEY_EQUAL = 1,
@@ -246,7 +246,7 @@ extern void *h_rem(HashTable *self, const void *key, bool del_key);
  *                              the existing key so no key was freed
  *   </pre>
  */
-extern int h_set(HashTable *self, const void *key, void *value);
+extern enum HashKeyStatus h_set(HashTable *self, const void *key, void *value);
 
 /**
  * Add the value +value+ to the HashTable referencing it with key +key+. If
@@ -279,9 +279,19 @@ extern HashEntry *h_set_ext(HashTable *ht, const void *key);
  *
  * @param self the HashTable to check in
  * @param key the key to check for in the HashTable
- * @return true if the key exists in the HashTable, false otherwise.
+ * @return one of three values;
+ *   <pre>
+ *     0 - HASH_KEY_DOES_NOT_EXIST  there was no value stored with that key
+ *     1 - HASH_KEY_EQUAL           the key existed and was seperately
+ *                                  allocated.
+ *     2 - HASH_KEY_SAME            the key was identical (same memory
+ *                                  pointer) to the existing key so no key was
+ *                                  freed
+ *   </pre>
+ *   Note: the return value can be treated as a true/false value, ie 0 if the
+ *   key doesn't exist, non-zero if it does.
  */
-extern int h_has_key(HashTable *self, const void *key);
+extern enum HashKeyStatus h_has_key(HashTable *self, const void *key);
 
 /**
  * Get the value in the HashTable referenced by an integer key +key+.
@@ -352,7 +362,9 @@ extern void *h_rem_int(HashTable *self, const unsigned long key);
  *                              the existing key so no key was freed
  *   </pre>
  */
-extern int h_set_int(HashTable *self, const unsigned long key, void *value);
+extern enum HashKeyStatus h_set_int(HashTable *self,
+                                    const unsigned long key,
+                                    void *value);
 
 /**
  * Add the value +value+ to the HashTable referencing it with integer key
@@ -364,7 +376,9 @@ extern int h_set_int(HashTable *self, const unsigned long key, void *value);
  * @param value the value to add to the HashTable
  * @return true if the value was successfully added or false otherwise
  */
-extern int h_set_safe_int(HashTable *self, const unsigned long key, void *value);
+extern int h_set_safe_int(HashTable *self,
+                          const unsigned long key,
+                          void *value);
 /**
  * Check whether integer key +key+ exists in the HashTable.
  *

@@ -59,9 +59,9 @@ void hs_destroy(HashSet *hs)
     free(hs);
 }
 
-int hs_add(HashSet *hs, void *elem)
+enum HashKeyStatus hs_add(HashSet *hs, void *elem)
 {
-    int has_elem = h_has_key(hs->ht, elem);
+    enum HashKeyStatus has_elem = h_has_key(hs->ht, elem);
     switch (has_elem)
     {
         /* We don't want to keep two of the same elem so free if necessary */
@@ -72,9 +72,13 @@ int hs_add(HashSet *hs, void *elem)
         /* No need to do anything */
         case HASH_KEY_SAME:
             return has_elem;
+
+        /* add the elem to the array, resizing if necessary */
+        case HASH_KEY_DOES_NOT_EXIST:
+            break;
+
     }
 
-    /* add the elem to the array, resizing if necessary */
     if (hs->size >= hs->capa) {
         hs->capa *= 2;
         REALLOC_N(hs->elems, void *, hs->capa);
@@ -94,9 +98,11 @@ int hs_add_safe(HashSet *hs, void *elem)
 
         /* the exact same element has already been added */
         case HASH_KEY_SAME : return true;
+
+        /* add the elem to the array, resizing if necessary */
+        case HASH_KEY_DOES_NOT_EXIST : break;
     }
 
-    /* add the elem to the array, resizing if necessary */
     if (hs->size >= hs->capa) {
         hs->capa *= 2;
         REALLOC_N(hs->elems, void *, hs->capa);
@@ -137,7 +143,7 @@ void *hs_rem(HashSet *hs, void *elem)
     return ret_elem;
 }
 
-int hs_exists(HashSet *hs, void *elem)
+enum HashKeyStatus hs_exists(HashSet *hs, void *elem)
 {
     return h_has_key(hs->ht, elem);
 }
