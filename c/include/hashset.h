@@ -15,14 +15,14 @@ typedef struct HashSet
     int size;
 
     /* the elements in the HashSet. The elements will be found in the order
-     * they were added and can be iterated over from 0 to .size */ 
+     * they were added and can be iterated over from 0 to .size */
     void **elems;
 
     /* HashTable used internally */
     HashTable *ht;
 
     /* Internal: Frees elements added to the HashSet. Should never be NULL */
-    void (*free_elem_i)(void *p);
+    free_ft free_elem_i;
 } HashSet;
 
 /**
@@ -36,9 +36,7 @@ typedef struct HashSet
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_new(unsigned long (*hash)(const void *p),
-                       int (*eq)(const void *p1, const void *p2),
-                       void (*free_elem)(void *p));
+extern HashSet *hs_new(hash_ft hash_func, eq_ft eq_func, free_ft free_func);
 
 /**
  * Create a new HashSet specifically for strings. This will create a HashSet
@@ -48,7 +46,7 @@ extern HashSet *hs_new(unsigned long (*hash)(const void *p),
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_new_str(void (*free_elem) (void *p));
+extern HashSet *hs_new_str(free_ft free_func);
 
 /**
  * Free the memory allocated by the HashSet, but don't free the elements added
@@ -153,14 +151,14 @@ extern int hs_exists(HashSet *self, void *elem);
  * returned and the mergee is destroyed. All elements from mergee that were
  * not found in merger (self) will be added to self, otherwise they will be
  * destroyed.
- * 
+ *
  * @param self the HashSet to merge into
  * @param other HastSet to be merged into self
  * @return the merged HashSet
  */
 extern HashSet *hs_merge(HashSet *self, HashSet *other);
 
-/** 
+/**
  * Return the original version of +elem+. So if you allocate two elements
  * which are equal and add the first to the HashSet, calling this function
  * with the second element will return the first element from the HashSet.

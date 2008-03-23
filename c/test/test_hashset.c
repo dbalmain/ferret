@@ -48,6 +48,45 @@ static void test_hs(tst_case *tc, void *data)
     Asequal("one", hs->elems[0]);
     Asequal("three", hs->elems[1]);
 
+    hs_clear(hs);
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "one"));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "two"));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "three"));
+    Aiequal(0, hs->size);
+
+    hs_destroy(hs);
+}
+
+/**
+ * Test hs_add_safe
+ */
+
+static void test_hs_add_safe(tst_case *tc, void *data)
+{
+    char *str = estrdup("one");
+    HashSet *hs = hs_new_str(&free);
+    (void)data; /* suppress unused argument warning */
+
+    Atrue(hs_add_safe(hs, str));
+    Atrue(hs_add_safe(hs, str));
+    Atrue(!hs_add_safe(hs, "one"));
+
+    /* Force a reallocation - */
+    int to_add = hs->capa;
+    int idx = 0;
+    for (to_add = hs->capa; to_add >= 0; --to_add)
+    {
+        snprintf(str, sizeof(str), "%d", idx);
+        Atrue(hs_add_safe(hs, estrdup(str)));
+        ++idx;
+    }
+
+    for (idx = 0; idx <= to_add; ++idx)
+    {
+        snprintf(str, sizeof(str), "%d", idx);
+        Aiequal(HASH_KEY_EQUAL, hs_exists(hs, str));
+    }
+
     hs_destroy(hs);
 }
 
@@ -191,6 +230,7 @@ tst_suite *ts_hashset(tst_suite *suite)
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_hs, NULL);
+    tst_run_test(suite, test_hs_add_safe, NULL);
     tst_run_test(suite, test_hs_merge, NULL);
     tst_run_test(suite, test_hs_free, NULL);
     tst_run_test(suite, stress_hs, NULL);
