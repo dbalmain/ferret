@@ -3,26 +3,20 @@
 #include "except.h"
 #include "threading.h"
 
-/**
- * Set this to false if you don't want to print the error location when an
- * exception occurs.
- */
-bool except_show_pos = true;
-
 const char *const FRT_ERROR_TYPES[] = {
-  "Body",
-  "Finally",
-  "Exception",
-  "IO Error",
-  "File Not Found Error",
-  "Argument Error",
-  "End-of-File Error",
-  "Unsupported Function Error",
-  "State Error",
-  "Parse Error",
-  "Memory Error",
-  "Index Error",
-  "Lock Error"
+    "Body",
+    "Finally",
+    "Exception",
+    "IO Error",
+    "File Not Found Error",
+    "Argument Error",
+    "End-of-File Error",
+    "Unsupported Function Error",
+    "State Error",
+    "Parse Error",
+    "Memory Error",
+    "Index Error",
+    "Lock Error"
 };
 
 char *const UNSUPPORTED_ERROR_MSG = "Unsupported operation";
@@ -37,19 +31,6 @@ static void exception_stack_alloc(void)
 {
     thread_key_create(&exception_stack_key, NULL);
 }
-
-/*
-static void put_stack(char *inst, xcontext_t *top)
-{
-    int x = 10;
-    fprintf(stderr, "( %s )", inst);
-    while (top && x--) {
-        fprintf(stderr, "=> %x ", top);
-        top = top->next;
-    }
-    fprintf(stderr, "\n");
-}
-*/
 
 void xpush_context(xcontext_t *context)
 {

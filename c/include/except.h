@@ -30,7 +30,7 @@
  *
  * Basically exception handling uses the following macros;
  *
- * TRY 
+ * TRY
  *   Sets up the exception handler and need be placed before any expected
  *   exceptions would be raised.
  *
@@ -90,7 +90,6 @@
 
 extern char *const UNSUPPORTED_ERROR_MSG;
 extern char *const EOF_ERROR_MSG;
-extern bool except_show_pos;
 
 typedef struct xcontext_t
 {

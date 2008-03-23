@@ -232,15 +232,10 @@ tst_suite *ts_except(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 
-    except_show_pos = false;
-
     tst_run_test(suite, test_simple_except, NULL);
     tst_run_test(suite, test_function_except, NULL);
     tst_run_test(suite, test_nested_except, NULL);
     tst_run_test(suite, test_xfinally, NULL);
     tst_run_test(suite, test_uncaught_except, NULL);
-
-    except_show_pos = true;
-
     return suite;
 }
