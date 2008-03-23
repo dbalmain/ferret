@@ -729,7 +729,7 @@ int main(int argc, const char *const argv[])
     tst_suite *suite = NULL;
     sub_suite *subsuite;
 
-    setprogname("Ferret Test");
+    setprogname(argv[0]);
 
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-v")) {

@@ -45,6 +45,8 @@ typedef void (*free_ft)(void *key);
 #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
 #define MAX3(a, b, c) ((a) > (b) ? ((a) > (c) ? (a) : (c)) : ((b) > (c) ? (b) : (c)))
 
+#define ABS(n) ((n >= 0) ? n : -n)
+
 #define RECAPA(self, len, capa, ptr, type) \
   do {\
     if (self->len >= self->capa) {\
@@ -95,6 +97,9 @@ extern char *strfmt(const char *fmt, ...);
 extern char *vstrfmt(const char *fmt, va_list args);
 
 extern void micro_sleep(const int micro_seconds);
+
+extern char *get_stacktrace();
+extern void  print_stacktrace();
 
 extern void register_for_cleanup(void *p, free_ft free_func);
 extern void do_clean_up();

@@ -43,11 +43,28 @@ static void test_strfmt(tst_case *tc, void *data)
     free(s);
 }
 
+/**
+ * Generate a stacktrace, make sure it does something
+ */
+static void test_stacktrace(tst_case *tc, void *data)
+{
+    FILE *old_stream = x_exception_stream;
+    (void)data; /* suppress warning */
+
+    x_exception_stream = tmpfile();
+    print_stacktrace();
+
+    Assert(ftell(x_exception_stream), "Stream position should not be 0");
+    fclose(x_exception_stream);
+    x_exception_stream = old_stream;
+}
+
 tst_suite *ts_global(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_strfmt, NULL);
+    tst_run_test(suite, test_stacktrace, NULL);
 
     return suite;
 }

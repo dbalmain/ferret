@@ -6,7 +6,9 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+#include <sys/types.h>
 
+const unsigned int BUFFER_SIZE = 1024;
 const char *EMPTY_STRING = "";
 
 bool  x_do_logging = false;
@@ -97,10 +99,7 @@ void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
 # endif
 {
     fflush(stdout);
-    fprintf(x_exception_stream, "\n");
-    if (progname() != NULL) {
-        fprintf(x_exception_stream, "%s: ", progname());
-    }
+    fprintf(x_exception_stream, "\n%s: ", progname());
 
 # ifdef FRT_HAS_VARARGS
     fprintf(x_exception_stream, "%s occured at <%s>:%d in %s\n",
@@ -149,8 +148,7 @@ void weprintf(const char *fmt, ...)
     va_list args;
 
     fflush(stdout);
-    if (progname() != NULL)
-        fprintf(stderr, "%s: ", progname());
+    fprintf(stderr, "%s: ", progname());
 
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
@@ -367,6 +365,8 @@ void dummy_free(void *p)
 
 #ifdef FRT_IS_C99
 extern void usleep(unsigned long usec);
+extern int unlink(const char *path);
+extern pid_t getpid(void);
 #else
 # ifdef RUBY_BINDINGS
 struct timeval rb_time_interval _((VALUE));
@@ -388,6 +388,78 @@ extern void micro_sleep(const int micro_seconds)
 #endif
 }
 
+static char * build_gdb_commandfile()
+{
+    const char * commands = "bt\nquit\n";
+    char * tempfilename = tmpnam(0); /* Static buffer, no need to free */
+    FILE * tempfile = fopen(tempfilename, "w");
+    if (!tempfile)
+        return NULL;
+    fwrite(commands, strlen(commands), 1, tempfile);
+    fclose(tempfile);
+    return tempfilename;
+}
+
+static char * build_shell_command()
+{
+    int   pid = getpid();
+    char *buf = ALLOC_N(char, BUFFER_SIZE);
+    char *gdbfile = build_gdb_commandfile();
+    char *command = "gdb -quiet -command=%s %s %d 2>/dev/null | grep '^#'";
+
+    if (!gdbfile) {
+        free(buf);
+        return NULL;
+    }
+
+    snprintf (buf, BUFFER_SIZE, command, gdbfile, progname(), pid);
+    return buf;
+}
+
+/**
+ * Call out to gdb to get our stacktrace.
+ */
+extern char * get_stacktrace()
+{
+#ifdef POSH_OS_WIN32
+    return NULL;
+#else
+    FILE *stream;
+    char *buf = NULL, *stack = NULL;
+    int   offset = -BUFFER_SIZE;
+
+    if ( !(buf = build_shell_command()) ) {
+        fprintf(x_exception_stream,
+                "Unable to build stacktrace shell command\n");
+        return NULL;
+    }
+
+    if ( !(stream = popen(buf, "r")) ) {
+        fprintf(x_exception_stream,
+                "Unable to exec stacktrace shell command: '%s'\n", buf);
+        free(buf);
+        return NULL;
+    }
+
+    do {
+        offset += BUFFER_SIZE;
+        REALLOC_N(stack, char, offset + BUFFER_SIZE);
+        ZEROSET_N(stack + offset, char, BUFFER_SIZE);
+    } while(fread(stack + offset, 1, BUFFER_SIZE, stream) == BUFFER_SIZE);
+
+    pclose(stream);
+    free(buf);
+    return stack;
+#endif
+}
+
+extern void print_stacktrace()
+{
+    char * stack = get_stacktrace();
+    fprintf(x_exception_stream, "Stack trace:\n%s",
+            stack ? stack : "Not available\n");
+    if (stack) free(stack);
+}
 typedef struct FreeMe
 {
     void *p;
