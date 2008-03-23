@@ -70,14 +70,16 @@ STEMMER_OBJS = $(snowball_sources:%.c=$(STEMMER_DIR)/%.o)
 all: libferret.a
 
 libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
-	$(AR) -cru $@ $^
+	@echo Generating library: $@ ...
+	@$(AR) -cru $@ $^
 
 test: testall
 	@rm -f *.gcda
 	@./testall
 
 testall: $(TEST_OBJS) libferret.a
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	@echo Building task: $@ ...
+	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
 	@rm -rf *.o *.a *.gcda *.gcov *.gcno testall gmon.out \
@@ -123,7 +125,8 @@ load_bench bench search_bench sort_bench: libferret.a
 
 %.o : %.c
 	@mkdir -p $(DEP_DIR)
-	$(COMPILE.c) -MD -o $@ $<
+	@echo Compiling: $< ...
+	@$(COMPILE.c) -MD -o $@ $<
 	@cp $*.d $(DEP_DIR)/$*.P; \
             sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
                 -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(DEP_DIR)/$*.P; \
