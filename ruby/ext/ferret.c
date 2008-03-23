@@ -145,10 +145,11 @@ void frt_create_dir(VALUE rpath)
 
 VALUE frt_hs_to_rb_ary(HashSet *hs)
 {
-    int i;
+    HashSetEntry *hse;
     VALUE ary = rb_ary_new();
-    for (i = 0; i < hs->size; i++) {
-        rb_ary_push(ary, rb_str_new2(hs->elems[i]));
+
+    for (hse = hs->first; hse; hse = hse->next) {
+        rb_ary_push(ary, rb_str_new2(hse->elem));
     }
     return ary;
 }

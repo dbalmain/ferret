@@ -261,12 +261,12 @@ static VALUE
 frt_qp_get_fields(VALUE self)
 {
     GET_QP;
-    int i;
     HashSet *fields = qp->all_fields;
+    HashSetEntry *hse;
     VALUE rfields = rb_ary_new();
 
-    for (i = 0; i < fields->size; i++) {
-        rb_ary_push(rfields, ID2SYM(rb_intern((char *)fields->elems[i])));
+    for (hse = fields->first; hse; hse = hse->next) {
+        rb_ary_push(rfields, ID2SYM(rb_intern((char *)hse->elem)));
     } 
 
     return rfields;
@@ -309,13 +309,13 @@ static VALUE
 frt_qp_get_tkz_fields(VALUE self)
 {
     GET_QP;
-    int i;
     HashSet *fields = qp->tokenized_fields;
     if (fields) {
         VALUE rfields = rb_ary_new();
+        HashSetEntry *hse;
 
-        for (i = 0; i < fields->size; i++) {
-            rb_ary_push(rfields, ID2SYM(rb_intern((char *)fields->elems[i])));
+        for (hse = fields->first; hse; hse = hse->next) {
+            rb_ary_push(rfields, ID2SYM(rb_intern((char *)hse->elem)));
         } 
 
         return rfields;

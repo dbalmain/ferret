@@ -17,9 +17,9 @@ VALUE cFSDirectory;
 void
 frt_unwrap_locks(Store *store)
 {
-    int i;
-    for (i = 0; i < store->locks->size; i++) {
-        void *lock = store->locks->elems[i];
+    HashSetEntry *hse = store->locks->first;
+    for (; hse; hse = hse->next) {
+        void *lock = hse->elem;
         VALUE rlock = object_get(lock);
         if (rlock != Qnil) {
             object_del(lock);

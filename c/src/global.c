@@ -14,7 +14,7 @@ const char *EMPTY_STRING = "";
 bool  x_do_logging = false;
 bool  x_abort_on_exception = true;
 bool  x_has_aborted = false;
-FILE *x_exception_stream = stderr;
+FILE *x_exception_stream = NULL;
 
 INLINE int min3(int a, int b, int c)
 {
@@ -98,6 +98,7 @@ void vfrt_exit(const char *file, int line_num, const char *func,
 void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
 # endif
 {
+    if (!x_exception_stream) x_exception_stream = stderr;
     fflush(stdout);
     fprintf(x_exception_stream, "\n%s: ", progname());
 
@@ -366,7 +367,6 @@ void dummy_free(void *p)
 #ifdef FRT_IS_C99
 extern void usleep(unsigned long usec);
 extern int unlink(const char *path);
-extern pid_t getpid(void);
 #else
 # ifdef RUBY_BINDINGS
 struct timeval rb_time_interval _((VALUE));
@@ -387,6 +387,7 @@ extern void micro_sleep(const int micro_seconds)
 # endif
 #endif
 }
+extern pid_t getpid(void);
 
 static char * build_gdb_commandfile()
 {
@@ -427,6 +428,7 @@ extern char * get_stacktrace()
     FILE *stream;
     char *buf = NULL, *stack = NULL;
     int   offset = -BUFFER_SIZE;
+    if (!x_exception_stream) x_exception_stream = stderr;
 
     if ( !(buf = build_shell_command()) ) {
         fprintf(x_exception_stream,
@@ -456,10 +458,13 @@ extern char * get_stacktrace()
 extern void print_stacktrace()
 {
     char * stack = get_stacktrace();
+    if (!x_exception_stream) x_exception_stream = stderr;
+
     fprintf(x_exception_stream, "Stack trace:\n%s",
             stack ? stack : "Not available\n");
     if (stack) free(stack);
 }
+
 typedef struct FreeMe
 {
     void *p;

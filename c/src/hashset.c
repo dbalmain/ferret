@@ -132,9 +132,11 @@ void *hs_rem(HashSet *hs, void *elem)
     }
     else if (hs->first == entry) {
         hs->first = entry->next;
+        hs->first->prev = NULL;
     }
     else if (hs->last == entry) {
         hs->last = entry->prev;
+        hs->last->next = NULL;
     }
     else {
         entry->prev->next = entry->next;

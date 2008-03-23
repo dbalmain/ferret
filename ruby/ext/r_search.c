@@ -486,16 +486,17 @@ frt_q_eql(VALUE self, VALUE other)
 static VALUE
 frt_q_get_terms(VALUE self, VALUE searcher)
 {
-    int i;
     VALUE rterms = rb_ary_new();
     HashSet *terms = term_set_new();
+    HashSetEntry *hse;
     GET_Q();
     Searcher *sea = (Searcher *)DATA_PTR(searcher);
     Query *rq = sea->rewrite(sea, q);
     rq->extract_terms(rq, terms);
     q_deref(rq);
-    for (i = 0; i < terms->size; i++) {
-        Term *term = (Term *)terms->elems[i];
+
+    for (hse = terms->first; hse; hse = hse->next) {
+        Term *term = (Term *)hse->elem;
         rb_ary_push(rterms, frt_get_term(term->field, term->text));
     }
     hs_destroy(terms);
