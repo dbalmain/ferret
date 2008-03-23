@@ -11,8 +11,7 @@ static HashSet *hs_alloc(free_ft free_func)
 {
     HashSet *hs = ALLOC(HashSet);
     hs->size = 0;
-    hs->capa = HS_MIN_SIZE;
-    hs->elems = ALLOC_N(void *, HS_MIN_SIZE);
+    hs->first = hs->last = NULL;
     hs->free_elem_i = free_func ? free_func : &dummy_free;
     return hs;
 }
@@ -20,43 +19,65 @@ static HashSet *hs_alloc(free_ft free_func)
 HashSet *hs_new(hash_ft hash_func, eq_ft eq_func, free_ft free_func)
 {
     HashSet *hs = hs_alloc(free_func);
-    hs->ht = h_new(hash_func, eq_func, NULL, &free);
+    hs->ht = h_new(hash_func, eq_func, NULL, NULL);
     return hs;
 }
 
 HashSet *hs_new_str(free_ft free_func)
 {
     HashSet *hs = hs_alloc(free_func);
-    hs->ht = h_new_str((free_ft) NULL, &free);
+    hs->ht = h_new_str((free_ft) NULL, NULL);
     return hs;
 }
 
-void hs_free(HashSet *hs)
+static INLINE void clear(HashSet *hs, bool destroy)
 {
-    h_destroy(hs->ht);
-    free(hs->elems);
-    free(hs);
+    HashSetEntry *curr, *next = hs->first;
+    free_ft do_free = destroy ? hs->free_elem_i : &dummy_free;
+    while (NULL != (curr = next)) {
+        next = curr->next;
+        do_free(curr->elem);
+        free(curr);
+    }
+    hs->first = hs->last = NULL;
+    hs->size = 0;
 }
 
 void hs_clear(HashSet *hs)
 {
-    int i;
-    for (i = hs->size - 1; i >= 0; i--) {
-        hs_del(hs, hs->elems[i]);
-    }
+    clear(hs, true);
+    h_clear(hs->ht);
+}
+
+void hs_free(HashSet *hs)
+{
+    clear(hs, false);
+    h_destroy(hs->ht);
+    free(hs);
 }
 
 void hs_destroy(HashSet *hs)
 {
-    int i;
-    if (hs->free_elem_i != &dummy_free) {
-        for (i = 0; i < hs->size; i++) {
-            hs->free_elem_i(hs->elems[i]);
-        }
-    }
+    clear(hs, true);
     h_destroy(hs->ht);
-    free(hs->elems);
     free(hs);
+}
+
+static INLINE void append(HashSet *hs, void *elem)
+{
+    HashSetEntry *entry = ALLOC(HashSetEntry);
+    entry->elem = elem;
+    entry->prev = hs->last;
+    entry->next = NULL;
+    if (!hs->first) {
+        hs->first = hs->last = entry;
+    }
+    else {
+        hs->last->next = entry;
+        hs->last = entry;
+    }
+    h_set(hs->ht, elem, entry);
+    hs->size++;
 }
 
 enum HashKeyStatus hs_add(HashSet *hs, void *elem)
@@ -79,13 +100,7 @@ enum HashKeyStatus hs_add(HashSet *hs, void *elem)
 
     }
 
-    if (hs->size >= hs->capa) {
-        hs->capa *= 2;
-        REALLOC_N(hs->elems, void *, hs->capa);
-    }
-    hs->elems[hs->size] = elem;
-    h_set(hs->ht, elem, imalloc(hs->size));
-    hs->size++;
+    append(hs, elem);
     return has_elem;
 }
 
@@ -102,16 +117,34 @@ int hs_add_safe(HashSet *hs, void *elem)
         /* add the elem to the array, resizing if necessary */
         case HASH_KEY_DOES_NOT_EXIST : break;
     }
-
-    if (hs->size >= hs->capa) {
-        hs->capa *= 2;
-        REALLOC_N(hs->elems, void *, hs->capa);
-    }
-
-    hs->elems[hs->size] = elem;
-    h_set(hs->ht, elem, imalloc(hs->size));
-    hs->size++;
+    append(hs, elem);
     return true;
+}
+
+void *hs_rem(HashSet *hs, void *elem)
+{
+    void *return_elem;
+    HashSetEntry *entry = (HashSetEntry *)h_get(hs->ht, elem);
+    if (entry == NULL) return NULL;
+
+    if (hs->first == hs->last) {
+        hs->first = hs->last = NULL;
+    }
+    else if (hs->first == entry) {
+        hs->first = entry->next;
+    }
+    else if (hs->last == entry) {
+        hs->last = entry->prev;
+    }
+    else {
+        entry->prev->next = entry->next;
+        entry->next->prev = entry->prev;
+    }
+    return_elem = entry->elem;
+    h_del(hs->ht, return_elem);
+    free(entry);
+    hs->size--;
+    return return_elem;
 }
 
 int hs_del(HashSet *hs, void *elem)
@@ -124,25 +157,6 @@ int hs_del(HashSet *hs, void *elem)
     return 0;
 }
 
-void *hs_rem(HashSet *hs, void *elem)
-{
-    void *ret_elem;
-    int i, *index = (int *)h_get(hs->ht, elem);
-    if (index == NULL) {
-        return NULL;
-    }
-
-    i = *index;
-    ret_elem = hs->elems[i];
-    h_del(hs->ht, elem);
-    hs->size--;
-    for (; i < hs->size; ++i) {
-        hs->elems[i] = hs->elems[i+1];
-        h_set(hs->ht, hs->elems[i], imalloc(i));
-    }
-    return ret_elem;
-}
-
 enum HashKeyStatus hs_exists(HashSet *hs, void *elem)
 {
     return h_has_key(hs->ht, elem);
@@ -150,18 +164,19 @@ enum HashKeyStatus hs_exists(HashSet *hs, void *elem)
 
 HashSet *hs_merge(HashSet *hs, HashSet * other)
 {
-    int i;
-    for (i = 0; i < other->size; i++) {
-        hs_add(hs, other->elems[i]);
+    HashSetEntry *entry = other->first;
+    for (; entry != NULL; entry = entry->next) {
+        hs_add(hs, entry->elem);
     }
-    /* Now free the other hashset. It is no longer needed. No need, however, to
-     * delete the elements as they're either destroyed or in the new hashset */
+    /* Now free the other hashset. It is no longer needed. No need, however,
+     * to delete the elements as they were either destroyed or added to the
+     * new hashset.  */
     hs_free(other);
     return hs;
 }
 
 void *hs_orig(HashSet *hs, void *elem)
 {
-    int *index = h_get(hs->ht, elem);
-    return index ? hs->elems[*index] : NULL;
+    HashSetEntry *entry = h_get(hs->ht, elem);
+    return entry ? entry->elem : NULL;
 }

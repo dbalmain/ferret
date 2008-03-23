@@ -191,12 +191,11 @@ static INLINE void index_add_doc_i(Index *self, Document *doc)
 {
     /* If there is a key specified delete the document with the same key */
     if (self->key) {
-        int i;
         char *field;
         DocField *df;
         if (self->key->size == 1) {
             ensure_writer_open(self);
-            field = self->key->elems[0];
+            field = self->key->first->elem;
             df = doc_get_field(doc, field);
             if (df) {
                 iw_delete_term(self->iw, field, df->data[0]);
@@ -204,9 +203,11 @@ static INLINE void index_add_doc_i(Index *self, Document *doc)
         } else {
             Query *q = bq_new(false);
             TopDocs *td;
+            HashSetEntry *hse;
             ensure_searcher_open(self);
-            for (i = 0; i < self->key->size; i++) {
-                field = self->key->elems[i];
+
+            for (hse = self->key->first; hse; hse = hse->next) {
+                field = hse->elem;
                 df = doc_get_field(doc, field);
                 if (!df) continue;
                 bq_add_query(q, tq_new(field, df->data[0]), BC_MUST);

@@ -6,21 +6,24 @@
 
 #define HS_MIN_SIZE 4
 typedef struct HashSetEntry {
-    void *value;
-    int index;
+    void *elem;
+    struct HashSetEntry *next;
+    struct HashSetEntry *prev;
 } HashSetEntry;
 
 typedef struct HashSet
 {
-    /* used internally to allocate space to elems */
-    int capa;
-
     /* the number of elements in the HashSet */
     int size;
 
-    /* the elements in the HashSet. The elements will be found in the order
-     * they were added and can be iterated over from 0 to .size */
-    void **elems;
+    /* the first element in the list of elements in the HashSet. The elements
+     * will be listed in the order they were added and can be iterated over by
+     * following the ->next pointer */
+    HashSetEntry *first;
+
+    /* the last element in the list of elements in the HashSet. This is used
+     * internally to add elements to the list. */
+    HashSetEntry *last;
 
     /* HashTable used internally */
     HashTable *ht;

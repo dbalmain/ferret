@@ -3694,10 +3694,10 @@ void deleter_delete_file(Deleter *dlr, char *file_name)
 
 void deleter_commit_pending_deletions(Deleter *dlr)
 {
-    int i;
-    char **pending = (char **)dlr->pending->elems;
-    for (i = dlr->pending->size - 1; i >= 0; i--) {
-        deleter_delete_file(dlr, pending[i]);
+    HashSetEntry *hse, *hse_next = dlr->pending->first;
+    while ((hse = hse_next) != NULL) {
+        hse_next = hse->next;
+        deleter_delete_file(dlr, (char *)hse->elem);
     }
 }
 

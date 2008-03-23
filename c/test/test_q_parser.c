@@ -88,13 +88,15 @@ static void test_q_parser(tst_case *tc, void *data)
         {"field:(one AND (two OR t\\=h\\=r\\=e\\=e))",
             "+field:one +(field:two field:t=h=r=e=e)"},
         {"one AND (two OR [aaa vvv})", "+one +(two [aaa vvv})"},
-        {"one AND (f1:two OR f2:three) AND four", "+one +(f1:two f2:three) +four"},
+        {"one AND (f1:two OR f2:three) AND four",
+            "+one +(f1:two f2:three) +four"},
         {"one^1.2300", "one^1.23"},
         {"(one AND two)^100.23", "(+one +two)^100.23"},
         {"field:(one AND two)^100.23", "(+field:one +field:two)^100.23"},
         {"field:(one AND [aaa bbb]^23.300)^100.23",
             "(+field:one +field:[aaa bbb]^23.3)^100.23"},
-        {"(REQ field:\"one two three\")^23.000", "field:\"one two three\"^23.0"},
+        {"(REQ field:\"one two three\")^23.000",
+            "field:\"one two three\"^23.0"},
         {"asdf~0.2", "asdf~0.2"},
         {"field:asdf~0.2", "field:asdf~0.2"},
         {"asdf~0.2^100.00", "asdf~0.2^100.0"},
@@ -134,10 +136,10 @@ static void test_q_parser(tst_case *tc, void *data)
         {"ASDF?*?asd*dsf?ASFD*asdf?^20.0", "asdf?*?asd*dsf?asfd*asdf?^20.0"},
         {"ASDFasdAasAasASD~", "asdfasdaasaasasd~"},
         {"\"onewordphrase\"", "onewordphrase"},
-        {"one billion eight hundred and thirty three million four hundred and "
-         "eighty eight thousand two hundred and sixty three",
-            "one billion eight hundred and thirty three million four hundred and "
-            "eighty eight thousand two hundred and sixty three"},
+        {"one billion eight hundred and thirty three million four hundred "
+         "and eighty eight thousand two hundred and sixty three",
+            "one billion eight hundred and thirty three million four hundred "
+            "and eighty eight thousand two hundred and sixty three"},
         {"f1:*", "*"},
         {"f1:*^100.0", "*^100.0"},
         {"f1:?*", "f1:?*"},

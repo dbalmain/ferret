@@ -45,8 +45,8 @@ static void test_hs(tst_case *tc, void *data)
     Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "two"));
     Aiequal(HASH_KEY_EQUAL, hs_exists(hs, "three"));
     Aiequal(2, hs->size);
-    Asequal("one", hs->elems[0]);
-    Asequal("three", hs->elems[1]);
+    Asequal("one", hs->first->elem);
+    Asequal("three", hs->first->next->elem);
 
     hs_clear(hs);
     Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "one"));
@@ -71,10 +71,9 @@ static void test_hs_add_safe(tst_case *tc, void *data)
     Atrue(hs_add_safe(hs, str));
     Atrue(!hs_add_safe(hs, "one"));
 
-    /* Force a reallocation - */
-    int to_add = hs->capa;
+    int to_add = 100;
     int idx = 0;
-    for (to_add = hs->capa; to_add >= 0; --to_add)
+    for (; to_add >= 0; --to_add)
     {
         snprintf(str, sizeof(str), "%d", idx);
         Atrue(hs_add_safe(hs, estrdup(str)));
@@ -99,6 +98,7 @@ static void test_hs_merge(tst_case *tc, void *data)
 {
     HashSet *hs1 = hs_new_str(&free);
     HashSet *hs2 = hs_new_str(&free);
+    HashSetEntry *hse;
     (void)data; /* suppress unused argument warning */
 
     hs_add(hs1, estrdup("one"));
@@ -111,10 +111,16 @@ static void test_hs_merge(tst_case *tc, void *data)
     Aiequal(3, hs2->size);
     hs_merge(hs1, hs2);
     Aiequal(4, hs1->size);
-    Asequal("one", hs1->elems[0]);
-    Asequal("two", hs1->elems[1]);
-    Asequal("three", hs1->elems[2]);
-    Asequal("four", hs1->elems[3]);
+    hse = hs1->first;
+    Asequal("one", hse->elem);
+    hse = hse->next;
+    Asequal("two", hse->elem);
+    hse = hse->next;
+    Asequal("three", hse->elem);
+    hse = hse->next;
+    Asequal("four", hse->elem);
+    hse = hse->next;
+    Apnull(hse);
     hs_destroy(hs1);
 }
 
@@ -138,6 +144,7 @@ static void test_hs_free(tst_case *tc, void *data)
     char str1[10], str2[10], str3[10], str4[10], str5[10];
     HashSet *hs1 = hs_new_str(&hs_free_mock);
     HashSet *hs2 = hs_new_str(&hs_free_mock);
+    HashSetEntry *hse;
     (void)data; /* suppress unused argument warning */
 
     strcpy(str1, "one");
@@ -173,10 +180,16 @@ static void test_hs_free(tst_case *tc, void *data)
     hs_merge(hs1, hs2);
     Aiequal(4, hs1->size);
     Asequal("free", str4);
-    Apequal(str1, hs1->elems[0]);
-    Apequal(str2, hs1->elems[1]);
-    Apequal(str3, hs1->elems[2]);
-    Apequal(str5, hs1->elems[3]);
+    hse = hs1->first;
+    Apequal(str1, hse->elem);
+    hse = hse->next;
+    Apequal(str2, hse->elem);
+    hse = hse->next;
+    Apequal(str3, hse->elem);
+    hse = hse->next;
+    Apequal(str5, hse->elem);
+    hse = hse->next;
+    Apnull(hse);
     Asequal("one", str1);
     Asequal("two", str2);
     Asequal("three", str3);

@@ -402,13 +402,14 @@ Query *q_combine(Query **queries, int q_cnt)
         }
     }
     if (uniques->size == 1) {
-        ret_q = (Query *)uniques->elems[0]; 
+        ret_q = (Query *)uniques->first->elem; 
         REF(ret_q);
     }
     else {
+        HashSetEntry *hse;
         ret_q = bq_new(true);
-        for (i = 0; i < uniques->size; i++) {
-            q = (Query *)uniques->elems[i];
+        for (hse = uniques->first; hse; hse = hse->next) {
+            q = (Query *)hse->elem;
             bq_add_query(ret_q, q, BC_SHOULD);
         }
     }
@@ -1459,10 +1460,10 @@ static int msea_max_doc(Searcher *self)
 static int *msea_get_doc_freqs(Searcher *self, HashSet *terms)
 {
     int i;
-    const int num_terms = terms->size;
-    int *doc_freqs = ALLOC_N(int, num_terms);
-    for (i = 0; i < num_terms; i++) {
-        Term *t = (Term *)terms->elems[i];
+    HashSetEntry *hse;
+    int *doc_freqs = ALLOC_N(int, terms->size);
+    for (i = 0, hse = terms->first; hse; ++i, hse = hse->next) {
+        Term *t = (Term *)hse->elem;
         doc_freqs[i] = msea_doc_freq(self, t->field, t->text);
     }
     return doc_freqs;
@@ -1470,6 +1471,7 @@ static int *msea_get_doc_freqs(Searcher *self, HashSet *terms)
 
 static Weight *msea_create_weight(Searcher *self, Query *query)
 {
+    Jx
     int i, *doc_freqs;
     Searcher *cdfsea;
     Weight *w;
@@ -1477,12 +1479,13 @@ static Weight *msea_create_weight(Searcher *self, Query *query)
                              (free_ft)NULL, free);
     Query *rewritten_query = self->rewrite(self, query);
     HashSet *terms = term_set_new();
+    HashSetEntry *hse;
 
     rewritten_query->extract_terms(rewritten_query, terms);
     doc_freqs = msea_get_doc_freqs(self, terms);
 
-    for (i = 0; i < terms->size; i++) {
-        h_set(df_map, terms->elems[i], imalloc(doc_freqs[i])); 
+    for (hse = terms->first, i = 0; hse; ++i, hse = hse->next) {
+        h_set(df_map, hse->elem, imalloc(doc_freqs[i])); 
     }
     hs_destroy(terms);
     free(doc_freqs);

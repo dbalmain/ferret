@@ -35,15 +35,14 @@ static void spanq_destroy_i(Query *self)
 static MatchVector *mv_to_term_mv(MatchVector *term_mv, MatchVector *full_mv,
                                   HashSet *terms, TermVector *tv)
 {
-    int i;
-    for (i = 0; i < terms->size; i++) {
-        char *term = (char *)terms->elems[i];
+    HashSetEntry *hse;
+    for (hse = terms->first; hse; hse = hse->next) {
+        char *term = (char *)hse->elem;
         TVTerm *tv_term = tv_get_tv_term(tv, term);
         if (tv_term) {
-            int j;
-            int m_idx = 0;
-            for (j = 0; j < tv_term->freq; j++) {
-                int pos = tv_term->positions[j];
+            int i, m_idx = 0;
+            for (i = 0; i < tv_term->freq; i++) {
+                int pos = tv_term->positions[i];
                 for (; m_idx < full_mv->size; m_idx++) {
                     if (pos <= full_mv->matches[m_idx].end) {
                         if (pos >= full_mv->matches[m_idx].start) {
@@ -1406,7 +1405,7 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
     const int field_num = fis_get_field_num(ir->fis, field);
     char *doc_freqs = NULL;
     size_t df_i = 0;
-    int i;
+    HashSetEntry *hse;
 
     if (field_num < 0) {
         return expl_new(0.0, "field \"%s\" does not exist in the index", field);
@@ -1414,8 +1413,8 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
 
     query_str = self->query->to_s(self->query, "");
 
-    for (i = 0; i < terms->size; i++) {
-        char *term = (char *)terms->elems[i];
+    for (hse = terms->first; hse; hse = hse->next) {
+        char *term = (char *)hse->elem;
         REALLOC_N(doc_freqs, char, df_i + strlen(term) + 23);
         df_i += sprintf(doc_freqs + df_i, "%s=%d, ", term,
                         ir->doc_freq(ir, field_num, term));
@@ -1501,7 +1500,7 @@ static void spanw_destroy(Weight *self)
 
 static Weight *spanw_new(Query *query, Searcher *searcher)
 {
-    int i;
+    HashSetEntry *hse;
     Weight *self        = w_new(SpanWeight, query);
     HashSet *terms      = SpQ(query)->get_terms(query);
 
@@ -1515,9 +1514,9 @@ static Weight *spanw_new(Query *query, Searcher *searcher)
 
     self->idf           = 0.0;
 
-    for (i = terms->size - 1; i >= 0; i--) {
+    for (hse = terms->first; hse; hse = hse->next) {
         self->idf += sim_idf_term(self->similarity, SpQ(query)->field,
-                                  (char *)terms->elems[i], searcher);
+                                  (char *)hse->elem, searcher);
     }
 
     return self;

@@ -197,13 +197,13 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
         if (qp->fields->size == 0) {\
             q = NULL;\
         } else if (qp->fields->size == 1) {\
-            field = (char *)qp->fields->elems[0];\
+            field = (char *)qp->fields->first->elem;\
             q = func;\
         } else {\
-            int i;Query *sq;\
+            Query *sq;HashSetEntry *hse;\
             q = bq_new_max(false, qp->max_clauses);\
-            for (i = 0; i < qp->fields->size; i++) {\
-                field = (char *)qp->fields->elems[i];\
+            for (hse = qp->fields->first; hse; hse = hse->next) {\
+                field = (char *)hse->elem;\
                 sq = func;\
                 TRY\
                   if (sq) bq_add_query_nr(q, sq, BC_SHOULD);\
@@ -2409,8 +2409,7 @@ static HashSet *add_field(QParser *qp, char *field)
 static HashSet *first_field(QParser *qp, char *field)
 {
     qp->fields = qp->fields_buf;
-    qp->fields->size = 0;
-    h_clear(qp->fields->ht);
+    hs_clear(qp->fields);
     return add_field(qp, field);
 }
 
@@ -2644,8 +2643,8 @@ void qp_destroy(QParser *self)
 QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
                 HashSet *tokenized_fields, Analyzer *analyzer)
 {
-    int i;
     QParser *self = ALLOC(QParser);
+    HashSetEntry *hse;
     self->or_default = true;
     self->wild_lower = true;
     self->clean_str = false;
@@ -2659,10 +2658,11 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->all_fields = all_fields;
     self->tokenized_fields = tokenized_fields;
     if (def_fields) {
+        HashSetEntry *hse;
         self->def_fields = def_fields;
-        for (i = 0; i < self->def_fields->size; i++) {
-            if (!hs_exists(self->all_fields, self->def_fields->elems[i])) {
-                hs_add(self->all_fields, estrdup(self->def_fields->elems[i]));
+        for (hse = def_fields->first; hse; hse = hse->next) {
+            if (!hs_exists(self->all_fields, hse->elem)) {
+                hs_add(self->all_fields, estrdup(hse->elem));
             }
         }
         self->close_def_fields = true;
@@ -2672,8 +2672,8 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->close_def_fields = false;
     }
     self->field_cache = h_new_str((free_ft)NULL, &free);
-    for (i = 0; i < self->all_fields->size; i++) {
-        char *field = estrdup(self->all_fields->elems[i]);
+    for (hse = self->all_fields->first; hse; hse = hse->next) {
+        char *field = estrdup(hse->elem);
         h_set(self->field_cache, field, field);
     }
     self->fields = self->def_fields;
