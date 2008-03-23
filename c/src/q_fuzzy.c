@@ -26,8 +26,65 @@ static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
 
 static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
 {
-    return (m < TYPICAL_LONGEST_WORD) ? fuzq->max_distances[m]
-        : fuzq_calculate_max_distance(fuzq, m);
+    if (m < TYPICAL_LONGEST_WORD)
+        return fuzq->max_distances[m];
+    return fuzq_calculate_max_distance(fuzq, m);
+}
+
+static INLINE float fuzq_score_mn(FuzzyQuery *fuzq,
+                                  const char *target,
+                                  const int m, const int n)
+{
+    int i, j, prune;
+    int *d_curr, *d_prev;
+    const char *text = fuzq->text;
+    const int max_distance = fuzq_get_max_distance(fuzq, m);
+
+    /* Just adding the characters of m to n or vice-versa results in
+     * too many edits for example "pre" length is 3 and "prefixes"
+     * length is 8. We can see that given this optimal circumstance,
+     * the edit distance cannot be less than 5 which is 8-3 or more
+     * precisesly Math.abs(3-8). If our maximum edit distance is 4,
+     * then we can discard this word without looking at it. */
+    if (max_distance < ABS(m-n)) {
+        return 0.0f;
+    }
+
+    d_curr = fuzq->da;
+    d_prev = d_curr + n + 1;
+
+    /* init array */
+    for (j = 0; j <= n; j++) {
+        d_curr[j] = j;
+    }
+
+    /* start computing edit distance */
+    for (i = 0; i < m;) {
+        char s_i = target[i];
+        /* swap d_current into d_prev */
+        int *d_tmp = d_prev;
+        d_prev = d_curr;
+        d_curr = d_tmp;
+        prune = (d_curr[0] = ++i) > max_distance;
+
+        for (j = 0; j < n; j++) {
+            d_curr[j + 1] = (s_i == text[j])
+                ? min3(d_prev[j + 1] + 1, d_curr[j] + 1, d_prev[j])
+                : min3(d_prev[j + 1], d_curr[j], d_prev[j]) + 1;
+            if (prune && d_curr[j + 1] <= max_distance) {
+                prune = false;
+            }
+        }
+        if (prune) {
+            return 0.0f;
+        }
+    }
+
+    /* this will return less than 0.0 when the edit distance is greater
+     * than the number of characters in the shorter word.  but this was
+     * the formula that was previously used in FuzzyTermEnum, so it has
+     * not been changed (even though min_sim must be greater than 0.0) */
+    return 1.0f - ((float)d_curr[n] / (float) (fuzq->pre_len + min2(n, m)));
 }
 
 /**
@@ -41,76 +98,15 @@ float fuzq_score(FuzzyQuery *fuzq, const char *target)
     const int m = (int)strlen(target);
     const int n = fuzq->text_len;
 
-    if (n == 0)  {
-        /* we don't have anything to compare.  That means if we just add
-         * the letters for m we get the new word */
-        return fuzq->pre_len == 0 ? 0.0f : 1.0f - ((float) m / fuzq->pre_len);
-    }
-    else if (m == 0) {
-        return fuzq->pre_len == 0 ? 0.0f : 1.0f - ((float) n / fuzq->pre_len);
-    }
-    else {
-        int i, j, prune;
-        int *d_curr, *d_prev;
-        const char *text = fuzq->text;
-        const int max_distance = fuzq_get_max_distance(fuzq, m);
-
-        /*
-         printf("n%dm%dmd%ddiff%d<%s><%s>\n", n, m, max_distance, m-n,
-               fuzq->text, target);
-         */
-        if (max_distance < ((m > n) ? (m-n) : (n-m))) { /* abs */
-            /* Just adding the characters of m to n or vice-versa results in
-             * too many edits for example "pre" length is 3 and "prefixes"
-             * length is 8. We can see that given this optimal circumstance,
-             * the edit distance cannot be less than 5 which is 8-3 or more
-             * precisesly Math.abs(3-8). If our maximum edit distance is 4,
-             * then we can discard this word without looking at it. */
+    /* we don't have anything to compare.  That means if we just add
+     * the letters for m we get the new word */
+    if (m == 0 || n == 0) {
+        if (fuzq->pre_len == 0)
             return 0.0f;
-        }
-
-        d_curr = fuzq->da;
-        d_prev = d_curr + n + 1;
-
-        /* init array */
-        for (j = 0; j <= n; j++) {
-            d_curr[j] = j;
-        }
-
-        /* start computing edit distance */
-        for (i = 0; i < m;) {
-           char s_i = target[i];
-           /* swap d_current into d_prev */
-           int *d_tmp = d_prev;
-           d_prev = d_curr;
-           d_curr = d_tmp;
-           prune = (d_curr[0] = ++i) > max_distance;
-
-           for (j = 0; j < n; j++) {
-               d_curr[j + 1] = (s_i == text[j])
-                   ? min3(d_prev[j + 1] + 1, d_curr[j] + 1, d_prev[j])
-                   : min3(d_prev[j + 1], d_curr[j], d_prev[j]) + 1;
-               if (prune && d_curr[j + 1] <= max_distance) {
-                   prune = false;
-               }
-           }
-           if (prune) {
-               return 0.0f;
-           }
-        }
-
-        /*
-        printf("<%f, d_curr[n] = %d min_len = %d>",
-               1.0f - ((float)d_curr[m] / (float) (fuzq->pre_len + min2(n, m))),
-               d_curr[m], fuzq->pre_len + min2(n, m));
-               */
-
-        /* this will return less than 0.0 when the edit distance is greater
-         * than the number of characters in the shorter word.  but this was
-         * the formula that was previously used in FuzzyTermEnum, so it has
-         * not been changed (even though min_sim must be greater than 0.0) */
-        return 1.0f - ((float)d_curr[n] / (float) (fuzq->pre_len + min2(n, m)));
+        return 1.0f - ((float) (m+n) / fuzq->pre_len);
     }
+
+    return fuzq_score_mn(fuzq, target, m, n);
 }
 
 /****************************************************************************
@@ -151,63 +147,56 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
     Query *q;
     FuzzyQuery *fuzq = FzQ(self);
 
+    int pre_len = fuzq->pre_len;
+    char *prefix = NULL;
     const char *term = fuzq->term;
     const char *field = fuzq->field;
     const int field_num = fis_get_field_num(ir->fis, field);
+    TermEnum *te;
 
     if (field_num < 0) {
-        q = bq_new(true);
+        return bq_new(true);
     }
-    else if (fuzq->pre_len >= (int)strlen(term)) {
-        q = tq_new(field, term);
+    if (fuzq->pre_len >= (int)strlen(term)) {
+        return tq_new(field, term);
+    }
+
+    q = multi_tq_new_conf(fuzq->field, MTQMaxTerms(self), fuzq->min_sim);
+    if (pre_len > 0) {
+        prefix = ALLOC_N(char, pre_len + 1);
+        strncpy(prefix, term, pre_len);
+        prefix[pre_len] = '\0';
+        te = ir->terms_from(ir, field_num, prefix);
     }
     else {
-        TermEnum *te;
-        char *prefix = NULL;
-        int pre_len = fuzq->pre_len;
-
-        q = multi_tq_new_conf(fuzq->field, MTQMaxTerms(self), fuzq->min_sim);
-
-        if (pre_len > 0) {
-            prefix = ALLOC_N(char, pre_len + 1);
-            strncpy(prefix, term, pre_len);
-            prefix[pre_len] = '\0';
-            te = ir->terms_from(ir, field_num, prefix);
-        }
-        else {
-            te = ir->terms(ir, field_num);
-        }
-
-        fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
-        fuzq->text = term + pre_len;
-        fuzq->text_len = (int)strlen(fuzq->text);
-        fuzq->da = REALLOC_N(fuzq->da, int, fuzq->text_len * 2 + 2);
-        fuzq_initialize_max_distances(fuzq);
-
-        if (te) {
-            const char *curr_term = te->curr_term;
-            const char *curr_suffix = curr_term + pre_len;
-            float score = 0.0;
-
-
-            do {
-                if ((prefix && strncmp(curr_term, prefix, pre_len) != 0)) {
-                    break;
-                }
-
-                score = fuzq_score(fuzq, curr_suffix);
-                /*
-                 printf("%s:%s:%f < %f\n", curr_term, term, score, min_score);
-                 */
-                multi_tq_add_term_boost(q, curr_term, score);
-
-            } while (te->next(te) != NULL);
-
-            te->close(te);
-        }
-        free(prefix);
+        te = ir->terms(ir, field_num);
     }
 
+    if (te == NULL) {
+        if (prefix) free(prefix);
+        return q;
+    }
+
+    fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
+    fuzq->text = term + pre_len;
+    fuzq->text_len = (int)strlen(fuzq->text);
+    fuzq->da = REALLOC_N(fuzq->da, int, fuzq->text_len * 2 + 2);
+    fuzq_initialize_max_distances(fuzq);
+
+    do {
+        const char *curr_term = te->curr_term;
+        const char *curr_suffix = curr_term + pre_len;
+        float score = 0.0;
+
+        if (prefix && strncmp(curr_term, prefix, pre_len) != 0)
+            break;
+
+        score = fuzq_score(fuzq, curr_suffix);
+        multi_tq_add_term_boost(q, curr_term, score);
+    } while (te->next(te) != NULL);
+
+    te->close(te);
+    if (prefix) free(prefix);
     return q;
 }
 

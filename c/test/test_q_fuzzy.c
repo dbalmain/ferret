@@ -49,11 +49,14 @@ static void test_fuzziness(tst_case *tc, void *data)
     add_doc("aaaaaaaaaaaaaaaaaaaaaaa", iw); /* test max_distances problem */
     iw_close(iw);
 
-
     ir = ir_open(store);
     sea = isea_new(ir);
 
     q = fuzq_new_conf(field, "aaaaa", 0.0, 5, 10);
+    q_deref(q);
+
+    q = fuzq_new(field, "aaaaa");
+    check_hits(tc, sea, q, "0,1,2", -1);
     q_deref(q);
 
     do_prefix_test(tc, sea, "aaaaaaaaaaaaaaaaaaaaaa", "8", 1, 0.0);
