@@ -31,9 +31,7 @@ typedef struct PriorityQueue
  *   when it is destroyed or there is insertion overflow
  * @return a newly allocated PriorityQueue
  */
-extern PriorityQueue *pq_new(int capa,
-                             bool (*less_than)(const void *p1, const void *p2),
-                             void (*free_elem)(void *elem));
+extern PriorityQueue *pq_new(int capa, lt_ft less_than, free_ft free_elem);
 
 /**
  * Allocate a clone of the PriorityQueue. This can be used if you want to scan

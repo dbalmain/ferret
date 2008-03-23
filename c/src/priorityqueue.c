@@ -3,9 +3,7 @@
 
 #define START_CAPA 127
 
-PriorityQueue *pq_new(int capa,
-                      bool (*less_than)(const void *p1, const void *p2),
-                      void (*free_elem)(void *elem))
+PriorityQueue *pq_new(int capa, lt_ft less_than, free_ft free_elem)
 {
     PriorityQueue *pq = ALLOC(PriorityQueue);
     pq->size = 0;
@@ -117,16 +115,16 @@ int pq_insert(PriorityQueue *pq, void *elem)
         pq_push(pq, elem);
         return PQ_ADDED;
     }
-    else if (pq->size > 0 && pq->less_than_i(pq->heap[1], elem)) {
+
+    if (pq->size > 0 && pq->less_than_i(pq->heap[1], elem)) {
         pq->free_elem_i(pq->heap[1]);
         pq->heap[1] = elem;
         pq_down(pq);
         return PQ_INSERTED;
     }
-    else {
-        pq->free_elem_i(elem);
-        return PQ_DROPPED;
-    }
+
+    pq->free_elem_i(elem);
+    return PQ_DROPPED;
 }
 
 void *pq_top(PriorityQueue *pq)
@@ -144,8 +142,6 @@ void *pq_pop(PriorityQueue *pq)
         pq_down(pq);                      /* adjust heap */
         return result;
     }
-    else {
-        return NULL;
-    }
+    return NULL;
 }
 
