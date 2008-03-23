@@ -288,8 +288,8 @@ void check_hits(tst_case *tc, Searcher *searcher, Query *query,
         Hit *hit = top_docs->hits[i];
         float normalized_score = hit->score / top_docs->max_score;
         Assert(0.0 < normalized_score && normalized_score <= 1.0,
-               "hit->score <%f> is out of range (0.0..1.0]", normalized_score); 
-        Assert(ary_includes(num_array, total_hits, hit->doc), 
+               "hit->score <%f> is out of range (0.0..1.0]", normalized_score);
+        Assert(ary_includes(num_array, total_hits, hit->doc),
                "doc %d was found unexpectedly", hit->doc);
         /* only check the explanation if we got the correct docs. Obviously we
          * might want to remove this to visually check the explanations */
@@ -668,7 +668,7 @@ static void test_multi_phrase_query(tst_case *tc, void *data)
     phq_append_multi_term(phq, "THE");
     check_hits(tc, searcher, phq, "", -1);
     q_deref(phq);
-    
+
     phq = phq_new(field);
     phq_add_term(phq, "word2", 1);
     phq_append_multi_term(phq, "word3");
@@ -771,7 +771,7 @@ static void test_multi_term_query(tst_case *tc, void *data)
     check_to_s(tc, mtq, field, "\"fox^0.6|brown|fast^50.0\"");
     check_to_s(tc, mtq, "", "field:\"fox^0.6|brown|fast^50.0\"");
 
-  
+
     mtq->boost = 80.1f;
     check_to_s(tc, mtq, "", "field:\"fox^0.6|brown|fast^50.0\"^80.1");
     multi_tq_add_term(mtq, "word1");
@@ -1119,6 +1119,7 @@ static void test_typed_range_query_hash(tst_case *tc, void *data)
 static void test_wildcard_match(tst_case *tc, void *data)
 {
     (void)data;
+    Assert(!wc_match("", "abc"), "Empty pattern matches nothing");
     Assert(wc_match("*", "asdasdg"), "Star matches everything");
     Assert(wc_match("asd*", "asdasdg"), "Star matches everything after");
     Assert(wc_match("*dg", "asdasdg"), "Star matches everything before");
