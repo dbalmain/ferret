@@ -202,6 +202,32 @@ static void test_xfinally(tst_case *tc, void *data)
     Assert(finally_handled, "Finally wasn't handled");
 }
 
+static void test_uncaught_except(tst_case *tc, void *data)
+{
+    bool old_abort_setting = x_abort_on_exception;
+    FILE *old_stream_setting = x_exception_stream;
+    FILE *exception_output = tmpfile();
+    (void)data; /* suppress warning */
+
+
+    x_abort_on_exception = false;
+    x_exception_stream = exception_output;
+
+    /* Unhandled exception in try block */
+    TRY
+        raise_exception();
+    ENDTRY
+    Assert(x_has_aborted, "Unhandled exception in try block didn't abort");
+
+    /* Unhandled exception outside of try block */
+    x_has_aborted = false;
+    raise_exception();
+    Assert(x_has_aborted, "Unhandled exception didn't cause an abort");
+
+    x_abort_on_exception = old_abort_setting;
+    x_exception_stream = old_stream_setting;
+}
+
 tst_suite *ts_except(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
@@ -212,6 +238,7 @@ tst_suite *ts_except(tst_suite *suite)
     tst_run_test(suite, test_function_except, NULL);
     tst_run_test(suite, test_nested_except, NULL);
     tst_run_test(suite, test_xfinally, NULL);
+    tst_run_test(suite, test_uncaught_except, NULL);
 
     except_show_pos = true;
 

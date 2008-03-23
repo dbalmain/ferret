@@ -108,6 +108,18 @@ extern void do_clean_up();
  */
 extern void dummy_free(void *p);
 
+/**
+ * For coverage, we don't want FRT_EXIT to actually exit on uncaught
+ * exceptions.  +x_abort_on_exception+ is +true+ by default, set it to
+ * +false+, and +x_has_aborted+ will be set as appropriate.  We also
+ * don't want spurious errors to be printed out to stderr, so we give
+ * the option to set where errors go to with +x_exception_stream+.
+ */
+
+extern bool  x_abort_on_exception;
+extern bool  x_has_aborted;
+extern FILE *x_exception_stream;
+
 #ifdef DEBUG
 extern bool x_do_logging;
 #define xlog if (x_do_logging) printf

@@ -9,7 +9,10 @@
 
 const char *EMPTY_STRING = "";
 
-bool x_do_logging = false;
+bool  x_do_logging = false;
+bool  x_abort_on_exception = true;
+bool  x_has_aborted = false;
+FILE *x_exception_stream = stderr;
 
 INLINE int min3(int a, int b, int c)
 {
@@ -94,25 +97,30 @@ void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
 # endif
 {
     fflush(stdout);
-    fprintf(stderr, "\n");
+    fprintf(x_exception_stream, "\n");
     if (progname() != NULL) {
-        fprintf(stderr, "%s: ", progname());
+        fprintf(x_exception_stream, "%s: ", progname());
     }
 
 # ifdef FRT_HAS_VARARGS
-    fprintf(stderr, "%s occured at <%s>:%d in %s\n",
+    fprintf(x_exception_stream, "%s occured at <%s>:%d in %s\n",
             err_type, file, line_num, func);
 # else
-    fprintf(stderr, "%s occured:\n", err_type);
+    fprintf(x_exception_stream, "%s occured:\n", err_type);
 # endif
-    vfprintf(stderr, fmt, args);
+    vfprintf(x_exception_stream, fmt, args);
 
     if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':') {
-        fprintf(stderr, " %s", strerror(errno));
+        fprintf(x_exception_stream, " %s", strerror(errno));
     }
 
-    fprintf(stderr, "\n");
-    exit(2);                    /* conventional value for failed execution */
+    fprintf(x_exception_stream, "\n");
+    if (x_abort_on_exception) {
+        exit(2);                 /* conventional value for failed execution */
+    }
+    else {
+        x_has_aborted = true;
+    }
 }
 
 
