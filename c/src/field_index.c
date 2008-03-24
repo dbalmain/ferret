@@ -30,27 +30,7 @@ static void field_index_destroy(void *p)
     free(self);
 }
 
-const FieldIndexClass *evaluate_class(char *text)
-{
-    int int_val;
-    float float_val;
-    int text_len = 0, scan_len = 0;
-
-    text_len = (int)strlen(text);
-    sscanf(text, "%d%n", &int_val, &scan_len);
-    if (scan_len == text_len) {
-        return &INTEGER_FIELD_INDEX_CLASS;
-    } else {
-        sscanf(text, "%f%n", &float_val, &scan_len);
-        if (scan_len == text_len) {
-            return &FLOAT_FIELD_INDEX_CLASS;
-        } else {
-            return &STRING_FIELD_INDEX_CLASS;
-        }
-    }
-}
-
-FieldIndex *field_index_new(IndexReader *ir, const char *field,
+FieldIndex *field_index_get(IndexReader *ir, const char *field,
                             const FieldIndexClass *klass)
 {
     int length = 0;

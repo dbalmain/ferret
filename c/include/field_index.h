@@ -35,7 +35,7 @@ extern const FieldIndexClass   FLOAT_FIELD_INDEX_CLASS;
 extern const FieldIndexClass  STRING_FIELD_INDEX_CLASS;
 extern const FieldIndexClass    BYTE_FIELD_INDEX_CLASS;
 
-extern FieldIndex *field_index_new(IndexReader *ir, const char *field,
+extern FieldIndex *field_index_get(IndexReader *ir, const char *field,
                                    const FieldIndexClass *klass);
 extern const char *get_string_value(FieldIndex *field_index, long doc_num);
 extern float get_float_value(FieldIndex *field_index, long doc_num);

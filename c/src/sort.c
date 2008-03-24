@@ -437,7 +437,7 @@ Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
             te->close(te);
         }
         mutex_lock(&ir->field_index_mutex);
-        field_index = field_index_new(ir, sf->field, sf->field_index_class);
+        field_index = field_index_get(ir, sf->field, sf->field_index_class);
         mutex_unlock(&ir->field_index_mutex);
         index = field_index->index;
     }

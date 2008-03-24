@@ -41,6 +41,7 @@ TODO
 
 Someday Maybe
 =============
+* apply for Google Summer of Code 2009
 * optimize read and write vint
   - test the following outside of ferret before implementing
   - perform a binary scan using bit-wise or to find out how many bytes need
