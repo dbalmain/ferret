@@ -40,4 +40,6 @@ extern void FRT_EXIT(const char *err_type, const char *fmt, ...);
 extern void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args);
 #endif
 
+extern void micro_sleep(const int micro_seconds);
+
 #endif

@@ -8,6 +8,7 @@
 #  -DDEBUG                    // some error checking only occurs in DEBUG mode
 #  -DBZ_NO_STDIO              // There really is no need for bzlib to use stdio
 #  -DUSE_ZLIB                 // use zlib instead of bzlib
+#  -D_POSIX_C_SOURCE=2        // for popen which is used to print stacktraces
 #  -fprofile-arcs -ftest-coverage // for gcov
 ###
 
@@ -19,7 +20,7 @@ BZLIB_INC = $(BZLIB_DIR)
 
 CC       = gcc
 CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
-DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG
+DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2
 CFLAGS   = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
 LDFLAGS  = -lm -lpthread -lz
 DEP_DIR  = .deps
@@ -40,7 +41,7 @@ q_filtered_query.o  q_fuzzy.o            q_match_all.o      q_multi_term.o    \
 q_parser.o          q_phrase.o           q_prefix.o         q_range.o         \
 q_span.o            q_term.o             q_wildcard.o       ram_store.o       \
 search.o            similarity.o         sort.o             stopwords.o       \
-store.o             term_vectors.o       field_index.o
+store.o             term_vectors.o       field_index.o      lang.o
 
 TEST_OBJS = \
 test_multimapper.o       test_q_const_score.o     test_threading.o     \

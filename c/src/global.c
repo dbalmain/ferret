@@ -89,59 +89,6 @@ f_u64 *u64malloc(f_u64 value)
 }
 
 
-#ifndef RUBY_BINDINGS
-/* frt_exit: print error message and exit */
-# ifdef FRT_HAS_VARARGS
-void vfrt_exit(const char *file, int line_num, const char *func,
-               const char *err_type, const char *fmt, va_list args)
-# else
-void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
-# endif
-{
-    if (!x_exception_stream) x_exception_stream = stderr;
-    fflush(stdout);
-    fprintf(x_exception_stream, "\n%s: ", progname());
-
-# ifdef FRT_HAS_VARARGS
-    fprintf(x_exception_stream, "%s occured at <%s>:%d in %s\n",
-            err_type, file, line_num, func);
-# else
-    fprintf(x_exception_stream, "%s occured:\n", err_type);
-# endif
-    vfprintf(x_exception_stream, fmt, args);
-
-    if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':') {
-        fprintf(x_exception_stream, " %s", strerror(errno));
-    }
-
-    fprintf(x_exception_stream, "\n");
-    if (x_abort_on_exception) {
-        exit(2);                 /* conventional value for failed execution */
-    }
-    else {
-        x_has_aborted = true;
-    }
-}
-
-
-# ifdef FRT_HAS_VARARGS
-void frt_exit(const char *file, int line_num, const char *func,
-              const char *err_type, const char *fmt, ...)
-# else
-void FRT_EXIT(const char *err_type, const char *fmt, ...)
-# endif
-{
-    va_list args;
-    va_start(args, fmt);
-# ifdef FRT_HAS_VARARGS
-    vfrt_exit(file, line_num, func, err_type, fmt, args);
-# else
-    V_FRT_EXIT(err_type, fmt, args);
-# endif
-    va_end(args);
-}
-#endif
-
 
 /* weprintf: print error message and don't exit */
 void weprintf(const char *fmt, ...)
@@ -203,50 +150,9 @@ char *epstrdup(const char *fmt, int len, ...)
 /* estrdup: duplicate a string, report if error */
 char *estrdup(const char *s)
 {
-    char *t = (char *)malloc(strlen(s) + 1);
-
-    if (t == NULL) {
-        RAISE(MEM_ERROR, "failed to allocate %d bytes", (int)strlen(s) + 1);
-    }
-
+    char *t = ALLOC_N(char, strlen(s) + 1);
     strcpy(t, s);
     return t;
-}
-
-/* emalloc: malloc and report if error */
-void *emalloc(size_t size)
-{
-    void *p = malloc(size);
-
-    if (p == NULL) {
-        RAISE(MEM_ERROR, "failed to allocate %d bytes", (int)size);
-    }
-
-    return p;
-}
-
-/* ecalloc: malloc, zeroset and report if error */
-void *ecalloc(size_t size)
-{
-    void *p = calloc(1, size);
-
-    if (p == NULL) {
-        RAISE(MEM_ERROR, "failed to allocate %d bytes", (int)size);
-    }
-
-    return p;
-}
-
-/* erealloc: realloc and report if error */
-void *erealloc(void *ptr, size_t size)
-{
-    void *p = realloc(ptr, size);
-
-    if (p == NULL) {
-        RAISE(MEM_ERROR, "failed to reallocate %d bytes", (int)size);
-    }
-
-    return p;
 }
 
 /* Pretty print a float to the buffer. The buffer should have at least 32
@@ -364,29 +270,6 @@ void dummy_free(void *p)
     (void)p; /* suppress unused argument warning */
 }
 
-#ifdef FRT_IS_C99
-extern void usleep(unsigned long usec);
-extern int unlink(const char *path);
-#else
-# ifdef RUBY_BINDINGS
-struct timeval rb_time_interval _((VALUE));
-# else
-#  include <unistd.h>
-# endif
-#endif
-
-extern void micro_sleep(const int micro_seconds)
-{
-#ifdef RUBY_BINDINGS
-    rb_thread_wait_for(rb_time_interval(rb_float_new((double)micro_seconds/1000000.0)));
-#else
-# ifdef POSH_OS_WIN32
-    Sleep(micro_seconds / 1000);
-# else
-    usleep(micro_seconds);
-# endif
-#endif
-}
 extern pid_t getpid(void);
 
 static char * build_gdb_commandfile()

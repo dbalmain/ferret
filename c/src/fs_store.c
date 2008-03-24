@@ -349,10 +349,6 @@ static InStream *fs_open_input(Store *store, const char *filename)
 
 #define LOCK_OBTAIN_TIMEOUT 10
 
-#ifdef RUBY_BINDINGS
-struct timeval rb_time_interval _((VALUE));
-#endif
-
 static int fs_lock_obtain(Lock *lock)
 {
     int f;

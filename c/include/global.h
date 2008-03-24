@@ -96,8 +96,6 @@ extern char *dbl_to_s(char *buf, double num);
 extern char *strfmt(const char *fmt, ...);
 extern char *vstrfmt(const char *fmt, va_list args);
 
-extern void micro_sleep(const int micro_seconds);
-
 extern char *get_stacktrace();
 extern void  print_stacktrace();
 
