@@ -37,6 +37,7 @@ extern tst_suite *ts_sort(tst_suite *suite);
 extern tst_suite *ts_q_parser(tst_suite *suite);
 extern tst_suite *ts_highlighter(tst_suite *suite);
 extern tst_suite *ts_threading(tst_suite *suite);
+extern tst_suite *ts_lang(tst_suite *suite);
 
 const struct test_list
 {
@@ -75,7 +76,8 @@ const struct test_list
     {ts_sort},
     {ts_q_parser},
     {ts_highlighter},
-    {ts_threading}
+    {ts_threading},
+    {ts_lang}
 };
 
 #endif

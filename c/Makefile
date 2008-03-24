@@ -55,7 +55,8 @@ test_compound_io.o       test_q_parser.o          test_term_vectors.o  \
 test_array.o             test_document.o          test_helper.o        \
 test_test.o              test.o                   test_q_span.o        \
 test_analysis.o          test_filter.o            test_priorityqueue.o \
-test_sort.o              test_ram_store.o         test_file_deleter.o
+test_sort.o              test_ram_store.o         test_file_deleter.o  \
+test_lang.o
 
 BZLIB_SRCS = \
 bzlib.c blocksort.c compress.c crctable.c decompress.c huffman.c randtable.c
