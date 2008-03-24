@@ -226,6 +226,7 @@ static void test_uncaught_except(tst_case *tc, void *data)
 
     x_abort_on_exception = old_abort_setting;
     x_exception_stream = old_stream_setting;
+    fclose(exception_output);
 }
 
 tst_suite *ts_except(tst_suite *suite)
