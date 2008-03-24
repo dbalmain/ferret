@@ -3,38 +3,43 @@
 #include <string.h>
 
 
-static char * const NON_UNIQUE_KEY_ERROR_MSG = "Tried to use a key that was not unique";
+static const char * NON_UNIQUE_KEY_ERROR_MSG = "Tried to use a key that was not unique";
 
 static const char *ID_STRING = "id";
 
-#define INDEX_CLOSE_READER(self) do {\
-    if (self->sea) {\
-        searcher_close(self->sea);\
-        self->sea = NULL;\
-        self->ir = NULL;\
-    } else if (self->ir) {\
-        ir_close(self->ir);\
-        self->ir = NULL;\
-    }\
+#define INDEX_CLOSE_READER(self) do { \
+    if (self->sea) {                  \
+        searcher_close(self->sea);    \
+        self->sea = NULL;             \
+        self->ir = NULL;              \
+    } else if (self->ir) {            \
+        ir_close(self->ir);           \
+        self->ir = NULL;              \
+    }                                 \
 } while (0)
 
-#define AUTOFLUSH_IR if (self->auto_flush) ir_commit(self->ir);\
-    else self->has_writes = true
+#define AUTOFLUSH_IR(self) do {                 \
+     if (self->auto_flush) ir_commit(self->ir); \
+    else self->has_writes = true;               \
+} while(0)
 
-#define AUTOFLUSH_IW \
-    if (self->auto_flush) {\
-        iw_close(self->iw);\
-        self->iw = NULL;\
-    } else self->has_writes = true
+#define AUTOFLUSH_IW(self) do {  \
+    if (self->auto_flush) {      \
+        iw_close(self->iw);      \
+        self->iw = NULL;         \
+    } else {                     \
+        self->has_writes = true; \
+    }                            \
+} while (0)
 
 void index_auto_flush_ir(Index *self)
 {
-    AUTOFLUSH_IR;
+    AUTOFLUSH_IR(self);
 }
 
 void index_auto_flush_iw(Index *self)
 {
-    AUTOFLUSH_IW;
+    AUTOFLUSH_IW(self);
 }
 
 Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
@@ -117,10 +122,6 @@ INLINE void ensure_writer_open(Index *self)
         REF(self->analyzer);
         self->iw = iw_open(self->store, self->analyzer, false);
         self->iw->config.use_compound_file = self->config.use_compound_file;
-    } else if (self->analyzer != self->iw->analyzer) {
-        a_deref(self->iw->analyzer);
-        REF(self->analyzer);
-        self->iw->analyzer = self->analyzer; /* in case it has changed */
     }
 }
 
@@ -131,13 +132,13 @@ INLINE void ensure_reader_open(Index *self)
             INDEX_CLOSE_READER(self);
             self->ir = ir_open(self->store);
         }
-    } else {
-        if (self->iw) {
-            iw_close(self->iw);
-            self->iw = NULL;
-        }
-        self->ir = ir_open(self->store);
+        return;
     }
+    if (self->iw) {
+        iw_close(self->iw);
+        self->iw = NULL;
+    }
+    self->ir = ir_open(self->store);
 }
 
 INLINE void ensure_searcher_open(Index *self)
@@ -152,8 +153,10 @@ int index_size(Index *self)
 {
     int size;
     mutex_lock(&self->mutex);
-    ensure_reader_open(self);
-    size = self->ir->num_docs(self->ir);
+    {
+        ensure_reader_open(self);
+        size = self->ir->num_docs(self->ir);
+    }
     mutex_unlock(&self->mutex);
     return size;
 }
@@ -161,9 +164,11 @@ int index_size(Index *self)
 void index_optimize(Index *self)
 {
     mutex_lock(&self->mutex);
-    ensure_writer_open(self);
-    iw_optimize(self->iw);
-    AUTOFLUSH_IW;
+    {
+        ensure_writer_open(self);
+        iw_optimize(self->iw);
+        AUTOFLUSH_IW(self);
+    }
     mutex_unlock(&self->mutex);
 }
 
@@ -171,8 +176,10 @@ bool index_has_del(Index *self)
 {
     bool has_del;
     mutex_lock(&self->mutex);
-    ensure_reader_open(self);
-    has_del = self->ir->has_deletions(self->ir);
+    {
+        ensure_reader_open(self);
+        has_del = self->ir->has_deletions(self->ir);
+    }
     mutex_unlock(&self->mutex);
     return has_del;
 }
@@ -181,87 +188,79 @@ bool index_is_deleted(Index *self, int doc_num)
 {
     bool is_del;
     mutex_lock(&self->mutex);
-    ensure_reader_open(self);
-    is_del = self->ir->is_deleted(self->ir, doc_num);
+    {
+        ensure_reader_open(self);
+        is_del = self->ir->is_deleted(self->ir, doc_num);
+    }
     mutex_unlock(&self->mutex);
     return is_del;
 }
 
+static INLINE void index_del_doc_with_key_i(Index *self, Document *doc, HashSet *key)
+{
+    Query *q;
+    TopDocs *td;
+    DocField *df;
+    HashSetEntry *hse;
+
+    if (key->size == 1) {
+        char *field = key->first->elem;
+        ensure_writer_open(self);
+        df = doc_get_field(doc, field);
+        if (df) {
+            iw_delete_term(self->iw, field, df->data[0]);
+        }
+        return;
+    }
+
+    q = bq_new(false);
+    ensure_searcher_open(self);
+
+    for (hse = key->first; hse; hse = hse->next) {
+        char *field = hse->elem;
+        df = doc_get_field(doc, field);
+        if (!df) continue;
+        bq_add_query(q, tq_new(field, df->data[0]), BC_MUST);
+    }
+    td = searcher_search(self->sea, q, 0, 1, NULL, NULL, NULL);
+    if (td->total_hits > 1) {
+        td_destroy(td);
+        RAISE(ARG_ERROR, NON_UNIQUE_KEY_ERROR_MSG);
+    } else if (td->total_hits == 1) {
+        ir_delete_doc(self->ir, td->hits[0]->doc);
+    }
+    q_deref(q);
+    td_destroy(td);
+}
+
 static INLINE void index_add_doc_i(Index *self, Document *doc)
 {
-    /* If there is a key specified delete the document with the same key */
     if (self->key) {
-        char *field;
-        DocField *df;
-        if (self->key->size == 1) {
-            ensure_writer_open(self);
-            field = self->key->first->elem;
-            df = doc_get_field(doc, field);
-            if (df) {
-                iw_delete_term(self->iw, field, df->data[0]);
-            }
-        } else {
-            Query *q = bq_new(false);
-            TopDocs *td;
-            HashSetEntry *hse;
-            ensure_searcher_open(self);
-
-            for (hse = self->key->first; hse; hse = hse->next) {
-                field = hse->elem;
-                df = doc_get_field(doc, field);
-                if (!df) continue;
-                bq_add_query(q, tq_new(field, df->data[0]), BC_MUST);
-            }
-            td = searcher_search(self->sea, q, 0, 1, NULL, NULL, NULL);
-            if (td->total_hits > 1) {
-                td_destroy(td);
-                RAISE(ARG_ERROR, NON_UNIQUE_KEY_ERROR_MSG);
-            } else if (td->total_hits == 1) {
-                ir_delete_doc(self->ir, td->hits[0]->doc);
-            }
-            q_deref(q);
-            td_destroy(td);
-        }
+        index_del_doc_with_key_i(self, doc, self->key);
     }
     ensure_writer_open(self);
     iw_add_doc(self->iw, doc);
-    AUTOFLUSH_IW;
-}
-
-void index_add_doc_a(Index *self, Document *doc, Analyzer *analyzer)
-{
-    Analyzer *tmp_analyzer;
-    mutex_lock(&self->mutex);
-    if (analyzer != self->analyzer) {
-        REF(analyzer);
-        tmp_analyzer = self->analyzer;
-        self->analyzer = analyzer;
-        index_add_doc_i(self, doc);
-        self->analyzer = tmp_analyzer;
-        a_deref(analyzer);
-    } else {
-        index_add_doc_i(self, doc);
-    }
-    mutex_unlock(&self->mutex);
+    AUTOFLUSH_IW(self);
 }
 
 void index_add_doc(Index *self, Document *doc)
 {
     mutex_lock(&self->mutex);
-    index_add_doc_i(self, doc);
+    {
+        index_add_doc_i(self, doc);
+    }
     mutex_unlock(&self->mutex);
 }
 
-void index_add_string(Index *self, char *str, Analyzer *analyzer)
+void index_add_string(Index *self, char *str)
 {
     Document *doc = doc_new();
     doc_add_field(doc, df_add_data(df_new(self->def_field), estrdup(str)));
-    if (analyzer) index_add_doc_a(self, doc, analyzer);
-    else index_add_doc(self, doc);
+    index_add_doc(self, doc);
     doc_destroy(doc);
 }
 
-void index_add_array(Index *self, char **fields, Analyzer *analyzer)
+void index_add_array(Index *self, char **fields)
 {
     int i;
     Document *doc = doc_new();
@@ -269,8 +268,7 @@ void index_add_array(Index *self, char **fields, Analyzer *analyzer)
         doc_add_field(doc, df_add_data(df_new(self->def_field),
                                        estrdup(fields[i])));
     }
-    if (analyzer) index_add_doc_a(self, doc, analyzer);
-    else index_add_doc(self, doc);
+    index_add_doc(self, doc);
     doc_destroy(doc);
 }
 
@@ -312,7 +310,9 @@ Document *index_get_doc_ts(Index *self, int doc_num)
 {
     Document *doc;
     mutex_lock(&self->mutex);
-    doc = index_get_doc(self, doc_num);
+    {
+        doc = index_get_doc(self, doc_num);
+    }
     mutex_unlock(&self->mutex);
     return doc;
 }
@@ -336,12 +336,14 @@ Document *index_get_doc_term(Index *self, const char *field,
     Document *doc = NULL;
     TermDocEnum *tde;
     mutex_lock(&self->mutex);
-    ensure_reader_open(self);
-    tde = ir_term_docs_for(self->ir, field, term);
-    if (tde->next(tde)) {
-        doc = index_get_doc(self, tde->doc_num(tde));
+    {
+        ensure_reader_open(self);
+        tde = ir_term_docs_for(self->ir, field, term);
+        if (tde->next(tde)) {
+            doc = index_get_doc(self, tde->doc_num(tde));
+        }
+        tde->close(tde);
     }
-    tde->close(tde);
     mutex_unlock(&self->mutex);
     return doc;
 }
@@ -354,9 +356,11 @@ Document *index_get_doc_id(Index *self, const char *id)
 void index_delete(Index *self, int doc_num)
 {
     mutex_lock(&self->mutex);
-    ensure_reader_open(self);
-    ir_delete_doc(self->ir, doc_num);
-    AUTOFLUSH_IR;
+    {
+        ensure_reader_open(self);
+        ir_delete_doc(self->ir, doc_num);
+        AUTOFLUSH_IR(self);
+    }
     mutex_unlock(&self->mutex);
 }
 
@@ -364,19 +368,21 @@ void index_delete_term(Index *self, const char *field, const char *term)
 {
     TermDocEnum *tde;
     mutex_lock(&self->mutex);
-    if (self->ir) {
-        tde = ir_term_docs_for(self->ir, field, term);
-        TRY
-            while (tde->next(tde)) {
-                ir_delete_doc(self->ir, tde->doc_num(tde));
-                AUTOFLUSH_IR;
-            }
-        XFINALLY
-            tde->close(tde);
-        XENDTRY
-    } else {
-        ensure_writer_open(self);
-        iw_delete_term(self->iw, field, term);
+    {
+        if (self->ir) {
+            tde = ir_term_docs_for(self->ir, field, term);
+            TRY
+                while (tde->next(tde)) {
+                    ir_delete_doc(self->ir, tde->doc_num(tde));
+                    AUTOFLUSH_IR(self);
+                }
+            XFINALLY
+                tde->close(tde);
+            XENDTRY
+        } else {
+            ensure_writer_open(self);
+            iw_delete_term(self->iw, field, term);
+        }
     }
     mutex_unlock(&self->mutex);
 }
@@ -396,9 +402,11 @@ void index_delete_query(Index *self, Query *q, Filter *f,
                         PostFilter *post_filter)
 {
     mutex_lock(&self->mutex);
-    ensure_searcher_open(self);
-    searcher_search_each(self->sea, q, f, post_filter, &index_qdel_i, NULL);
-    AUTOFLUSH_IR;
+    {
+        ensure_searcher_open(self);
+        searcher_search_each(self->sea, q, f, post_filter, &index_qdel_i, 0);
+        AUTOFLUSH_IR(self);
+    }
     mutex_unlock(&self->mutex);
 }
 
@@ -414,8 +422,10 @@ Explanation *index_explain(Index *self, Query *q, int doc_num)
 {
     Explanation *expl;
     mutex_lock(&self->mutex);
-    ensure_searcher_open(self);
-    expl = searcher_explain(self->sea, q, doc_num);
+    {
+        ensure_searcher_open(self);
+        expl = searcher_explain(self->sea, q, doc_num);
+    }
     mutex_unlock(&self->mutex);
     return expl;
 }

@@ -38,9 +38,8 @@ extern void index_optimize(Index *self);
 extern bool index_has_del(Index *self);
 extern bool index_is_deleted(Index *self, int doc_num);
 extern void index_add_doc(Index *self, Document *doc);
-extern void index_add_doc_a(Index *self, Document *doc, Analyzer *analyzer);
-extern void index_add_string(Index *self, char *str, Analyzer *analyzer);
-extern void index_add_array(Index *self, char **ary, Analyzer *analyzer);
+extern void index_add_string(Index *self, char *str);
+extern void index_add_array(Index *self, char **ary);
 extern TopDocs *index_search_str(Index *self, char *query, int first_doc,
                                  int num_docs, Filter *filter,
                                  Sort *sort, PostFilter *post_filter);
