@@ -311,16 +311,15 @@ extern char * get_stacktrace()
     FILE *stream;
     char *buf = NULL, *stack = NULL;
     int   offset = -BUFFER_SIZE;
-    if (!x_exception_stream) x_exception_stream = stderr;
 
     if ( !(buf = build_shell_command()) ) {
-        fprintf(x_exception_stream,
+        fprintf(EXCEPTION_STREAM,
                 "Unable to build stacktrace shell command\n");
         return NULL;
     }
 
     if ( !(stream = popen(buf, "r")) ) {
-        fprintf(x_exception_stream,
+        fprintf(EXCEPTION_STREAM,
                 "Unable to exec stacktrace shell command: '%s'\n", buf);
         free(buf);
         return NULL;
@@ -341,9 +340,8 @@ extern char * get_stacktrace()
 extern void print_stacktrace()
 {
     char * stack = get_stacktrace();
-    if (!x_exception_stream) x_exception_stream = stderr;
 
-    fprintf(x_exception_stream, "Stack trace:\n%s",
+    fprintf(EXCEPTION_STREAM, "Stack trace:\n%s",
             stack ? stack : "Not available\n");
     if (stack) free(stack);
 }

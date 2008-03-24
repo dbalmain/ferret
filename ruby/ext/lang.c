@@ -67,23 +67,22 @@ void vfrt_exit(const char *file, int line_num, const char *func,
 void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
 # endif
 {
-    if (!x_exception_stream) x_exception_stream = stderr;
     fflush(stdout);
-    fprintf(x_exception_stream, "\n%s: ", progname());
+    fprintf(EXCEPTION_STREAM, "\n%s: ", progname());
 
 # ifdef FRT_HAS_VARARGS
-    fprintf(x_exception_stream, "%s occured at <%s>:%d in %s\n",
+    fprintf(EXCEPTION_STREAM, "%s occured at <%s>:%d in %s\n",
             err_type, file, line_num, func);
 # else
-    fprintf(x_exception_stream, "%s occured:\n", err_type);
+    fprintf(EXCEPTION_STREAM, "%s occured:\n", err_type);
 # endif
-    vfprintf(x_exception_stream, fmt, args);
+    vfprintf(EXCEPTION_STREAM, fmt, args);
 
     if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':') {
-        fprintf(x_exception_stream, " %s", strerror(errno));
+        fprintf(EXCEPTION_STREAM, " %s", strerror(errno));
     }
 
-    fprintf(x_exception_stream, "\n");
+    fprintf(EXCEPTION_STREAM, "\n");
     if (x_abort_on_exception) {
         exit(2);                 /* conventional value for failed execution */
     }

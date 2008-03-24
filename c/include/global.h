@@ -26,10 +26,6 @@ typedef void (*free_ft)(void *key);
 #define ZEROSET(ptr, type) memset(ptr, 0, sizeof(type))
 #define ZEROSET_N(ptr, type, n) memset(ptr, 0, sizeof(type)*(n))
 
-/*
-#define ALLOC_AND_ZERO(type) (type*)memset(emalloc(sizeof(type)), 0, sizeof(type))
-#define ALLOC_AND_ZERO_N(type,n) (type*)memset(emalloc(sizeof(type)*(n)), 0, sizeof(type)*(n))
-*/
 #define ALLOC_AND_ZERO(type) (type*)frt_calloc(sizeof(type))
 #define ALLOC_AND_ZERO_N(type,n) (type*)frt_calloc(sizeof(type)*(n))
 
@@ -122,6 +118,12 @@ extern void dummy_free(void *p);
 extern bool  x_abort_on_exception;
 extern bool  x_has_aborted;
 extern FILE *x_exception_stream;
+
+/**
+ * The convenience macro +EXCEPTION_STREAM+ returns stderr when
+ * +x_exception_stream+ isn't explicitely set.
+ */
+#define EXCEPTION_STREAM (x_exception_stream ? x_exception_stream : stderr)
 
 #ifdef DEBUG
 extern bool x_do_logging;
