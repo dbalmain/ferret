@@ -2,7 +2,7 @@
 #include "similarity.h"
 #include "helper.h"
 #include "array.h"
-#include "i_priorityqueue.h"
+#include "internal.h"
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>

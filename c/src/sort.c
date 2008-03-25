@@ -2,7 +2,7 @@
 #include "search.h"
 #include "index.h"
 #include "field_index.h"
-#include "i_priorityqueue.h"
+#include "internal.h"
 
 /***************************************************************************
  *
