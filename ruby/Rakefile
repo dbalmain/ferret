@@ -55,6 +55,7 @@ namespace :build do
                      "../c/lib/libstemmer_c/include/libstemmer.[h]"]
   EXT_SRC.exclude('../c/**/ind.[ch]',
                   '../c/include/threading.h',
+                  '../c/src/lang.c',
                   '../c/include/lang.h')
 
   EXT_SRC_MAP = {}

@@ -418,7 +418,7 @@ static SpanEnum *spante_new(Query *query, IndexReader *ir)
 {
     char *term = SpTQ(query)->term;
     char *field = SpQ(query)->field;
-    SpanEnum *self = (SpanEnum *)emalloc(sizeof(SpanTermEnum));
+    SpanEnum *self = (SpanEnum *)ALLOC(SpanTermEnum);
 
     SpTEn(self)->positions  = ir_term_positions_for(ir, field, term);
     SpTEn(self)->position   = -1;
@@ -612,7 +612,7 @@ static void spanmte_destroy(SpanEnum *self)
 static SpanEnum *spanmte_new(Query *query, IndexReader *ir)
 {
     char *field = SpQ(query)->field;
-    SpanEnum *self = (SpanEnum *)emalloc(sizeof(SpanMultiTermEnum));
+    SpanEnum *self = (SpanEnum *)ALLOC(SpanMultiTermEnum);
     SpanMultiTermEnum *smte = SpMTEn(self);
     SpanMultiTermQuery *smtq = SpMTQ(query);
     int i;
@@ -719,7 +719,7 @@ static void spanfe_destroy(SpanEnum *self)
 
 static SpanEnum *spanfe_new(Query *query, IndexReader *ir)
 {
-    SpanEnum *self          = (SpanEnum *)emalloc(sizeof(SpanFirstEnum));
+    SpanEnum *self          = (SpanEnum *)ALLOC(SpanFirstEnum);
     SpanFirstQuery *sfq     = SpFQ(query);
 
     SpFEn(self)->sub_enum   = SpQ(sfq->match)->get_spans(sfq->match, ir);
@@ -897,7 +897,7 @@ static void spanoe_destroy(SpanEnum *self)
 SpanEnum *spanoe_new(Query *query, IndexReader *ir)
 {
     Query *clause;
-    SpanEnum *self      = (SpanEnum *)emalloc(sizeof(SpanOrEnum));
+    SpanEnum *self      = (SpanEnum *)ALLOC(SpanOrEnum);
     SpanOrQuery *soq    = SpOQ(query);
     int i;
 
@@ -1205,7 +1205,7 @@ static SpanEnum *spanne_new(Query *query, IndexReader *ir)
 {
     int i;
     Query *clause;
-    SpanEnum *self          = (SpanEnum *)emalloc(sizeof(SpanNearEnum));
+    SpanEnum *self          = (SpanEnum *)ALLOC(SpanNearEnum);
     SpanNearQuery *snq      = SpNQ(query);
 
     SpNEn(self)->first_time = true;
@@ -1351,7 +1351,7 @@ static void spanxe_destroy(SpanEnum *self)
 
 static SpanEnum *spanxe_new(Query *query, IndexReader *ir)
 {
-    SpanEnum *self      = (SpanEnum *)emalloc(sizeof(SpanNotEnum));
+    SpanEnum *self      = (SpanEnum *)ALLOC(SpanNotEnum);
     SpanNotEnum *sxe    = SpXEn(self);
     SpanNotQuery *sxq   = SpXQ(query);
 

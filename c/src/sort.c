@@ -615,8 +615,7 @@ Hit *fshq_pq_pop_fd(PriorityQueue *pq)
         pq->size--;
         fshq_pq_down(pq);                   /* adjust heap */
 
-        field_doc = (FieldDoc *)emalloc(sizeof(FieldDoc)
-                                        + sizeof(Comparable)*cmp_cnt);
+        field_doc = frt_malloc(sizeof(FieldDoc) + sizeof(Comparable) * cmp_cnt);
         comparables = field_doc->comparables;
         memcpy(field_doc, hit, sizeof(Hit));
         field_doc->size = cmp_cnt;

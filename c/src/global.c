@@ -88,39 +88,6 @@ f_u64 *u64malloc(f_u64 value)
   return p;
 }
 
-
-
-/* weprintf: print error message and don't exit */
-void weprintf(const char *fmt, ...)
-{
-    va_list args;
-
-    fflush(stdout);
-    fprintf(stderr, "%s: ", progname());
-
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-
-    if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':')
-        fprintf(stderr, " %s", strerror(errno));
-    fprintf(stderr, "\n");
-}
-
-#define MAX_PROG_NAME 200
-static char name[MAX_PROG_NAME]; /* program name for error msgs */
-
-/* setprogname: set stored name of program */
-void setprogname(const char *str)
-{
-    strncpy(name, str, MAX_PROG_NAME - 1);
-}
-
-char *progname()
-{
-    return name;
-}
-
 /* concatenate two strings freeing the second */
 char *estrcat(char *str1, char *str2)
 {
@@ -272,11 +239,11 @@ void dummy_free(void *p)
 
 extern pid_t getpid(void);
 
-static char * build_gdb_commandfile()
+static char *build_gdb_commandfile()
 {
-    const char * commands = "bt\nquit\n";
-    char * tempfilename = tmpnam(0); /* Static buffer, no need to free */
-    FILE * tempfile = fopen(tempfilename, "w");
+    const char *commands = "bt\nquit\n";
+    char *tempfilename = tmpnam(0); /* Static buffer, no need to free */
+    FILE *tempfile = fopen(tempfilename, "w");
     if (!tempfile)
         return NULL;
     fwrite(commands, strlen(commands), 1, tempfile);
@@ -296,7 +263,7 @@ static char * build_shell_command()
         return NULL;
     }
 
-    snprintf (buf, BUFFER_SIZE, command, gdbfile, progname(), pid);
+    snprintf(buf, BUFFER_SIZE, command, gdbfile, frt_progname(), pid);
     return buf;
 }
 
@@ -372,7 +339,7 @@ void register_for_cleanup(void *p, free_ft free_func)
     free_me->free_func = free_func;
 }
 
-void do_clean_up()
+extern void frt_clean_up()
 {
     int i;
     for (i = 0; i < free_mes_size; i++) {
@@ -382,4 +349,35 @@ void do_clean_up()
     free(free_mes);
     free_mes = NULL;
     free_mes_size = free_mes_capa = 0;
+}
+
+/* weprintf: print error message and don't exit */
+extern void weprintf(const char *fmt, ...)
+{
+    va_list args;
+
+    fflush(stdout);
+    fprintf(stderr, "%s: ", frt_progname());
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+
+    if (fmt[0] != '\0' && fmt[strlen(fmt) - 1] == ':')
+        fprintf(stderr, " %s", strerror(errno));
+    fprintf(stderr, "\n");
+}
+
+#define MAX_PROG_NAME 200
+static char name[MAX_PROG_NAME]; /* program name for error msgs */
+
+/* frt_setprogname: set stored name of program */
+extern void frt_setprogname(const char *str)
+{
+    strncpy(name, str, MAX_PROG_NAME - 1);
+}
+
+extern const char *frt_progname()
+{
+    return name;
 }

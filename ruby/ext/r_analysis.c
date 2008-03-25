@@ -1164,7 +1164,7 @@ frt_get_cwrapped_analyzer(VALUE ranalyzer)
         REF(a);
     }
     else {
-        a = (Analyzer *)ecalloc(sizeof(CWrappedAnalyzer));
+        a = (Analyzer *)frt_calloc(sizeof(CWrappedAnalyzer));
         a->destroy_i = &cwa_destroy_i;
         a->get_ts    = &cwa_get_ts;
         a->ref_cnt   = 1;

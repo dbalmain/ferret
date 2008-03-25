@@ -878,7 +878,7 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                     break;
                 }
                 /* sleep for 50 milliseconds */
-                micro_sleep(50000);
+                frt_micro_sleep(50000);
             }
         }
 
@@ -912,7 +912,7 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                       listing_buffer);
             }
             else {
-                micro_sleep(50000);
+                frt_micro_sleep(50000);
                 retry = true;
             }
         }
@@ -3964,7 +3964,7 @@ uchar *ir_get_norms_i(IndexReader *ir, int field_num)
     }
     if (!norms) {
         if (NULL == ir->fake_norms) {
-            ir->fake_norms = (uchar *)ecalloc(ir->max_doc(ir));
+            ir->fake_norms = ALLOC_AND_ZERO_N(uchar, ir->max_doc(ir));
         }
         norms = ir->fake_norms;
     }

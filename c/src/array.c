@@ -10,7 +10,8 @@ void **ary_new_i(int type_size, int init_capa)
     if (init_capa <= 0) {
         init_capa = ARY_INIT_CAPA;
     }
-    ary = (void **)&(((int *)ecalloc(DATA_SZ + init_capa * type_size))[META_CNT]);
+    ary = (void **)&(((int *)frt_calloc(DATA_SZ +
+                                        init_capa * type_size))[META_CNT]);
     ary_type_size(ary) = type_size;
     ary_capa(ary) = init_capa;
     return ary;
@@ -27,8 +28,8 @@ INLINE void ary_resize_i(void ***ary, int size)
                 capa <<= 1;
             }
 
-            ary_start = (int *)erealloc(ary_start,
-                                        DATA_SZ + capa * ary_type_size(*ary));
+            ary_start = frt_realloc(ary_start,
+                                    DATA_SZ + capa * ary_type_size(*ary));
             *ary = (void **)&(ary_start[META_CNT]);
             memset(((char *)*ary) + ary_type_size(*ary) * ary_sz(*ary), 0,
                    (capa - ary_sz(*ary)) * ary_type_size(*ary));

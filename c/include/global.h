@@ -63,17 +63,11 @@ typedef void (*free_ft)(void *key);
 # define Xj fprintf(stdout,"%s, %d: %s\n", __FILE__, __LINE__, __func__);
 #endif
 
-extern char *progname();
-extern void setprogname(const char *str);
-
 extern unsigned int *imalloc(unsigned int value);
 extern unsigned long *lmalloc(unsigned long value);
 extern f_u32 *u32malloc(f_u32 value);
 extern f_u64 *u64malloc(f_u64 value);
 
-extern void *emalloc(size_t n);
-extern void *ecalloc(size_t n);
-extern void *erealloc(void *ptr, size_t n);
 extern char *estrdup(const char *s);
 extern char *estrcat(char *str, char *str_cat);
 
@@ -132,4 +126,9 @@ extern bool x_do_logging;
 #define xlog()
 #endif
 
+#define frt_init(progname) frt_setprogname(progname)
+extern void frt_setprogname(const char *str);
+extern const char *frt_progname();
+extern void frt_micro_sleep(const int micro_seconds);
+extern void frt_clean_up();
 #endif

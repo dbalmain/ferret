@@ -9,7 +9,7 @@ MemoryPool *mp_new_capa(int chuck_size, int init_buf_capa)
     mp->buf_capa = init_buf_capa;
     mp->buffers = ALLOC_N(char *, init_buf_capa);
 
-    mp->buffers[0] = mp->curr_buffer = emalloc(mp->chunk_size);
+    mp->buffers[0] = mp->curr_buffer = frt_malloc(mp->chunk_size);
     mp->buf_alloc = 1;
     mp->buf_pointer = 0;
     mp->pointer = 0;
@@ -38,7 +38,7 @@ INLINE void *mp_alloc(MemoryPool *mp, int size)
                 mp->buf_capa <<= 1;
                 REALLOC_N(mp->buffers, char *, mp->buf_capa);
             }
-            mp->buffers[mp->buf_pointer] = emalloc(mp->chunk_size);
+            mp->buffers[mp->buf_pointer] = frt_malloc(mp->chunk_size);
         }
         p = mp->curr_buffer = mp->buffers[mp->buf_pointer];
         mp->pointer = size;

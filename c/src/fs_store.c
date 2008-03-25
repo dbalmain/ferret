@@ -1,4 +1,5 @@
 #include "store.h"
+#include "lang.h"
 #include <time.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -358,7 +359,7 @@ static int fs_lock_obtain(Lock *lock)
                    S_IRUSR | S_IWUSR)) < 0) && (trys > 0)) {
 
         /* sleep for 10 milliseconds */
-        micro_sleep(10000);
+        frt_micro_sleep(10000);
         trys--;
     }
     if (f >= 0) {

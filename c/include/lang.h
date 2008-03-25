@@ -3,9 +3,9 @@
 
 #include <stdarg.h>
 
-#define frt_malloc emalloc
-#define frt_calloc ecalloc
-#define frt_realloc erealloc
+extern void *frt_malloc(size_t n);
+extern void *frt_calloc(size_t n);
+extern void *frt_realloc(void *ptr, size_t n);
 
 #define ALLOC(type) (type *)frt_malloc(sizeof(type))
 #define ALLOC_N(type,n) (type *)frt_malloc(sizeof(type)*(n))
@@ -19,9 +19,9 @@
 extern void frt_exit(const char *file, int line_num, const char *func,
                      const char *err_type, const char *fmt, ...);
 
-# define V_FRT_EXIT(err_type, fmt, args) \
-    vfrt_exit(__FILE__, __LINE__, __func__, err_type, fmt, args)
-extern void vfrt_exit(const char *file, int line_num, const char *func,
+# define FRT_VEXIT(err_type, fmt, args) \
+    frt_vexit(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void frt_vexit(const char *file, int line_num, const char *func,
                       const char *err_type, const char *fmt, va_list args);
 
 #elif defined(FRT_HAS_GNUC_VARARGS)
@@ -30,16 +30,13 @@ extern void vfrt_exit(const char *file, int line_num, const char *func,
 extern void frt_exit(const char *file, int line_num, const char *func,
                       const char *err_type, const char *fmt, ...);
 
-# define V_FRT_EXIT(err_type, fmt, args) \
-    vfrt_exit(__FILE__, __LINE__, __func__, err_type, fmt, args)
-extern void vfrt_exit(const char *file, int line_num, const char *func,
+# define FRT_VEXIT(err_type, fmt, args) \
+    frt_vexit(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void frt_vexit(const char *file, int line_num, const char *func,
                       const char *err_type, const char *fmt, va_list args);
 #else
   /* Can't do VARARGS */
 extern void FRT_EXIT(const char *err_type, const char *fmt, ...);
-extern void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args);
+extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args);
 #endif
-
-extern void micro_sleep(const int micro_seconds);
-
 #endif

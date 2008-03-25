@@ -729,7 +729,7 @@ int main(int argc, const char *const argv[])
     tst_suite *suite = NULL;
     sub_suite *subsuite;
 
-    setprogname(argv[0]);
+    frt_init(argv[0]);
 
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-v")) {
@@ -785,7 +785,7 @@ int main(int argc, const char *const argv[])
     }
     free(suite);
     free(testlist);
-    do_clean_up();
+    frt_clean_up();
 
     return rv;
 }

@@ -255,7 +255,7 @@ void w_destroy(Weight *self)
 
 Weight *w_create(size_t size, Query *query)
 {
-    Weight *self                    = (Weight *)ecalloc(size);
+    Weight *self                    = (Weight *)frt_calloc(size);
 #ifdef DEBUG
     if (size < sizeof(Weight)) {
         RAISE(FERRET_ERROR, "size of weight <%d> should be at least <%d>",
@@ -440,7 +440,7 @@ static MatchVector *q_get_matchv_i(Query *self, MatchVector *mv, TermVector *tv)
 
 Query *q_create(size_t size)
 {
-    Query *self = (Query *)ecalloc(size);
+    Query *self = (Query *)frt_calloc(size);
 #ifdef DEBUG
     if (size < sizeof(Query)) {
         RAISE(FERRET_ERROR, "Size of a query <%d> should never be smaller than "
@@ -470,7 +470,7 @@ void scorer_destroy_i(Scorer *scorer)
 
 Scorer *scorer_create(size_t size, Similarity *similarity)
 {
-    Scorer *self        = (Scorer *)ecalloc(size);
+    Scorer *self        = (Scorer *)frt_calloc(size);
 #ifdef DEBUG
     if (size < sizeof(Scorer)) {
         RAISE(FERRET_ERROR, "size of scorer <%d> should be at least <%d>",
@@ -1218,7 +1218,7 @@ static void isea_close(Searcher *self)
 
 Searcher *isea_new(IndexReader *ir)
 {
-    Searcher *self          = (Searcher *)ecalloc(sizeof(IndexSearcher));
+    Searcher *self          = (Searcher *)ALLOC(IndexSearcher);
 
     ISEA(self)->ir          = ir;
     ISEA(self)->close_ir    = true;
@@ -1367,7 +1367,7 @@ static void cdfsea_close(Searcher *self)
 
 static Searcher *cdfsea_new(HashTable *df_map, int max_doc)
 {
-    Searcher *self          = (Searcher *)ecalloc(sizeof(CachedDFSearcher));
+    Searcher *self          = (Searcher *)ALLOC(CachedDFSearcher);
 
     CDFSEA(self)->df_map    = df_map;
     CDFSEA(self)->max_doc   = max_doc;
@@ -1730,7 +1730,7 @@ static void msea_close(Searcher *self)
 Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs)
 {
     int i, max_doc = 0;
-    Searcher *self = (Searcher *)ecalloc(sizeof(MultiSearcher));
+    Searcher *self = (Searcher *)ALLOC(MultiSearcher);
     int *starts = ALLOC_N(int, s_cnt + 1);
     for (i = 0; i < s_cnt; i++) {
         starts[i] = max_doc;

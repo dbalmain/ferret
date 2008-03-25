@@ -46,7 +46,7 @@ static void raise_nothing(void *nothing)
 static void test_failures(tst_case *tc, void *data)
 {
     void *q = NULL;
-    void *p = emalloc(10);
+    void *p = frt_malloc(10);
 
     int ia1[3] = { 1, 2, 3 };
     int ia2[3] = { 1, 2, 4 };
