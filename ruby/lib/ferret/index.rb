@@ -83,7 +83,8 @@ module Ferret::Index
     #                         in the field in anyway to get correct results.
     #                         However, performance will be a lot slower for
     #                         large indexes, hence the default.
-    # Some examples;
+    #
+    # == Examples
     #
     #   index = Index::Index.new(:analyzer => WhiteSpaceAnalyzer.new())
     #
