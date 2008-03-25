@@ -1,6 +1,7 @@
 #include <string.h>
 #include "search.h"
 #include "array.h"
+#include "i_priorityqueue.h"
 
 #define BQ(query) ((BooleanQuery *)(query))
 #define BW(weight) ((BooleanWeight *)(weight))

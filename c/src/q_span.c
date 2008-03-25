@@ -2,6 +2,7 @@
 #include <limits.h>
 #include "search.h"
 #include "hashset.h"
+#include "i_priorityqueue.h"
 
 #define CLAUSE_INIT_CAPA 4
 

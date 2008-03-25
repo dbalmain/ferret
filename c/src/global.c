@@ -251,7 +251,7 @@ static char *build_gdb_commandfile()
     return tempfilename;
 }
 
-static char * build_shell_command()
+static char *build_shell_command()
 {
     int   pid = getpid();
     char *buf = ALLOC_N(char, BUFFER_SIZE);
@@ -270,7 +270,7 @@ static char * build_shell_command()
 /**
  * Call out to gdb to get our stacktrace.
  */
-extern char * get_stacktrace()
+char *get_stacktrace()
 {
 #ifdef POSH_OS_WIN32
     return NULL;
@@ -304,9 +304,9 @@ extern char * get_stacktrace()
 #endif
 }
 
-extern void print_stacktrace()
+void print_stacktrace()
 {
-    char * stack = get_stacktrace();
+    char *stack = get_stacktrace();
 
     fprintf(EXCEPTION_STREAM, "Stack trace:\n%s",
             stack ? stack : "Not available\n");
@@ -339,7 +339,7 @@ void register_for_cleanup(void *p, free_ft free_func)
     free_me->free_func = free_func;
 }
 
-extern void frt_clean_up()
+void frt_clean_up()
 {
     int i;
     for (i = 0; i < free_mes_size; i++) {
@@ -352,7 +352,7 @@ extern void frt_clean_up()
 }
 
 /* weprintf: print error message and don't exit */
-extern void weprintf(const char *fmt, ...)
+void weprintf(const char *fmt, ...)
 {
     va_list args;
 
@@ -372,12 +372,12 @@ extern void weprintf(const char *fmt, ...)
 static char name[MAX_PROG_NAME]; /* program name for error msgs */
 
 /* frt_setprogname: set stored name of program */
-extern void frt_setprogname(const char *str)
+void frt_setprogname(const char *str)
 {
     strncpy(name, str, MAX_PROG_NAME - 1);
 }
 
-extern const char *frt_progname()
+const char *frt_progname()
 {
     return name;
 }

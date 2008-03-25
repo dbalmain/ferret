@@ -2,6 +2,7 @@
 #include <limits.h>
 #include "search.h"
 #include "array.h"
+#include "i_priorityqueue.h"
 
 #define PhQ(query) ((PhraseQuery *)(query))
 

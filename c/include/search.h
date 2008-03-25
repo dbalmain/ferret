@@ -334,7 +334,7 @@ typedef struct MultiTermQuery
 {
     Query           super;
     char           *field;
-    PriorityQueue  *boosted_terms;
+    FerretPriorityQueue  *boosted_terms;
     float           min_boost;
 } MultiTermQuery;
 
@@ -680,7 +680,9 @@ typedef struct SortField
     void        (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable);
 } SortField;
 
-extern SortField *sort_field_new(const char *field, enum SORT_TYPE type, bool reverse);
+extern SortField *sort_field_new(const char *field,
+                                 enum SORT_TYPE type,
+                                 bool reverse);
 extern SortField *sort_field_score_new(bool reverse);
 extern SortField *sort_field_doc_new(bool reverse);
 extern SortField *sort_field_int_new(const char *field, bool reverse);
@@ -719,12 +721,12 @@ extern char *sort_to_s(Sort *self);
  * FieldSortedHitQueue
  ***************************************************************************/
 
-extern Hit *fshq_pq_pop(PriorityQueue *pq);
-extern void fshq_pq_down(PriorityQueue *pq);
-extern void fshq_pq_insert(PriorityQueue *pq, Hit *hit);
-extern void fshq_pq_destroy(PriorityQueue *pq);
-extern PriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
-extern Hit *fshq_pq_pop_fd(PriorityQueue *pq);
+extern Hit *fshq_pq_pop(FerretPriorityQueue *pq);
+extern void fshq_pq_down(FerretPriorityQueue *pq);
+extern void fshq_pq_insert(FerretPriorityQueue *pq, Hit *hit);
+extern void fshq_pq_destroy(FerretPriorityQueue *pq);
+extern FerretPriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
+extern Hit *fshq_pq_pop_fd(FerretPriorityQueue *pq);
 
 /***************************************************************************
  * FieldDoc

@@ -3,21 +3,21 @@
 
 #include "global.h"
 
-typedef bool(*lt_ft) (const void *p1, const void *p2);
+typedef bool (*frt_lt_ft)(const void *p1, const void *p2);
 
 /**
  * A PriorityQueue has a fixed size and contains a less_than function and a
  * free_elem function specific to the data type to be stored in the queue.
  */
-typedef struct PriorityQueue
+typedef struct FerretPriorityQueue
 {
     int size;
     int capa;
     int mem_capa;
     void **heap;
-    lt_ft less_than_i;
+    frt_lt_ft less_than_i;
     free_ft free_elem_i;
-} PriorityQueue;
+} FerretPriorityQueue;
 
 /**
  * Create a new PriorityQueue setting the less_than and free_elem for this
@@ -31,7 +31,9 @@ typedef struct PriorityQueue
  *   when it is destroyed or there is insertion overflow
  * @return a newly allocated PriorityQueue
  */
-extern PriorityQueue *pq_new(int capa, lt_ft less_than, free_ft free_elem);
+extern FerretPriorityQueue *frt_pq_new(int capa,
+                                       frt_lt_ft less_than,
+                                       free_ft free_elem);
 
 /**
  * Allocate a clone of the PriorityQueue. This can be used if you want to scan
@@ -41,7 +43,7 @@ extern PriorityQueue *pq_new(int capa, lt_ft less_than, free_ft free_elem);
  * @param pq the priority queue to clone
  * @return a clone of the original priority queue
  */
-extern PriorityQueue *pq_clone(PriorityQueue *pq);
+extern FerretPriorityQueue *frt_pq_clone(FerretPriorityQueue *pq);
 
 /**
  * Clear all elements from the PriorityQueue and reset the size to 0. When
@@ -50,7 +52,7 @@ extern PriorityQueue *pq_clone(PriorityQueue *pq);
  *
  * @param self the PriorityQueue to clear
  */
-extern void pq_clear(PriorityQueue *self);
+extern void frt_pq_clear(FerretPriorityQueue *self);
 
 /**
  * Free the memory allocated to the PriorityQueue. This function does nothing
@@ -59,7 +61,7 @@ extern void pq_clear(PriorityQueue *self);
  *
  * @param self the PriorityQueue to free
  */
-extern void pq_free(PriorityQueue *self);
+extern void frt_pq_free(FerretPriorityQueue *self);
 
 /**
  * Destroy the PriorityQueue, freeing all memory allocated to it and also
@@ -68,7 +70,7 @@ extern void pq_free(PriorityQueue *self);
  *
  * @param the PriorityQueue to destroy
  */
-extern void pq_destroy(PriorityQueue *self);
+extern void frt_pq_destroy(FerretPriorityQueue *self);
 
 /**
  * Reorder the PriorityQueue after the top element has been modified. This
@@ -78,7 +80,7 @@ extern void pq_destroy(PriorityQueue *self);
  *
  * @param self the PriorityQueue to reorder
  */
-extern void pq_down(PriorityQueue *self);
+extern void frt_pq_down(FerretPriorityQueue *self);
 
 /**
  * Add another element to the PriorityQueue. This method should only be used
@@ -90,8 +92,9 @@ extern void pq_down(PriorityQueue *self);
  * @param self the PriorityQueue to add the element to
  * @param elem the element to add to the PriorityQueue
  */
-extern void pq_push(PriorityQueue *self, void *elem);
+extern void frt_pq_push(FerretPriorityQueue *self, void *elem);
 
+/* FIXME to enum */
 #define PQ_DROPPED 0
 #define PQ_ADDED 1
 #define PQ_INSERTED 2
@@ -112,7 +115,7 @@ extern void pq_push(PriorityQueue *self, void *elem);
  *                      element was dropped and destroyed
  *   </pre>
  */
-extern int pq_insert(PriorityQueue *self, void *elem);
+extern int frt_pq_insert(FerretPriorityQueue *self, void *elem);
 
 /**
  * Get the top element in the PriorityQueue.
@@ -120,7 +123,7 @@ extern int pq_insert(PriorityQueue *self, void *elem);
  * @param self the PriorityQueue to get the top from
  * @return the top element in the PriorityQueue
  */
-extern void *pq_top(PriorityQueue *self);
+extern void *frt_pq_top(FerretPriorityQueue *self);
 
 /**
  * Remove and return the top element in the PriorityQueue.
@@ -128,7 +131,7 @@ extern void *pq_top(PriorityQueue *self);
  * @param self the PriorityQueue to get the top from
  * @return the top element in the PriorityQueue
  */
-extern void *pq_pop(PriorityQueue *self);
+extern void *frt_pq_pop(FerretPriorityQueue *self);
 
 /**
  * Return true if the PriorityQueue is full.
@@ -136,6 +139,6 @@ extern void *pq_pop(PriorityQueue *self);
  * @param self the PriorityQueue to test
  * @return true if the PriorityQueue is full.
  */
-#define pq_full(pq) ((pq)->size == (pq)->capa)
+#define frt_pq_full(pq) ((pq)->size == (pq)->capa)
 
 #endif

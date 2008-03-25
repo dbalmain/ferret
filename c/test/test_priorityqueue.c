@@ -1,4 +1,4 @@
-#include "priorityqueue.h"
+#include "i_priorityqueue.h"
 #include "test.h"
 #include "global.h"
 #include <string.h>

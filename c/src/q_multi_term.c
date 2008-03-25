@@ -1,6 +1,6 @@
 #include <string.h>
 #include "search.h"
-#include "priorityqueue.h"
+#include "i_priorityqueue.h"
 #include "helper.h"
 
 #define MTQ(query) ((MultiTermQuery *)(query))
