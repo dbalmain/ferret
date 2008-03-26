@@ -94,10 +94,12 @@ extern void frt_pq_down(FerretPriorityQueue *self);
  */
 extern void frt_pq_push(FerretPriorityQueue *self, void *elem);
 
-/* FIXME to enum */
-#define PQ_DROPPED 0
-#define PQ_ADDED 1
-#define PQ_INSERTED 2
+typedef enum {
+    FRT_PQ_DROPPED = 0,
+    FRT_PQ_ADDED,
+    FRT_PQ_INSERTED
+} FerretPriorityQueueInsertEnum;
+
 /**
  * Add another element to the PriorityQueue. Unlike pq_push, this method
  * handles insertion overflow. That is, when you insert more elements than the
@@ -115,7 +117,8 @@ extern void frt_pq_push(FerretPriorityQueue *self, void *elem);
  *                      element was dropped and destroyed
  *   </pre>
  */
-extern int frt_pq_insert(FerretPriorityQueue *self, void *elem);
+extern FerretPriorityQueueInsertEnum frt_pq_insert(FerretPriorityQueue *self,
+                                                   void *elem);
 
 /**
  * Get the top element in the PriorityQueue.

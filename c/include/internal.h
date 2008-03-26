@@ -4,13 +4,17 @@
 /* Constants */
 #define EXIT         FRT_EXIT
 #define HASH_MINSIZE FRT_HASH_MINSIZE
+#define PQ_ADDED     FRT_PQ_ADDED
+#define PQ_DROPPED   FRT_PQ_DROPPED
+#define PQ_INSERTED  FRT_PQ_INSERTED
 #define SLOW_DOWN    FRT_SLOW_DOWN
 
 /* Types */
-#define HashEntry     FerretHashEntry
-#define HashKeyStatus FerretHashKeyStatus
-#define HashTable     FerretHashTable
-#define PriorityQueue FerretPriorityQueue
+#define HashEntry               FerretHashEntry
+#define HashKeyStatus           FerretHashKeyStatus
+#define HashTable               FerretHashTable
+#define PriorityQueue           FerretPriorityQueue
+#define PriorityQueueInsertEnum FerretPriorityQueueInsertEnum
 
 /* Functions */
 #define calloc            frt_calloc

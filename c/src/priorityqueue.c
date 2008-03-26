@@ -110,7 +110,8 @@ void pq_push(PriorityQueue *pq, void *elem)
     pq_up(pq);
 }
 
-int pq_insert(PriorityQueue *pq, void *elem)
+PriorityQueueInsertEnum pq_insert(PriorityQueue *pq,
+                                  void *elem)
 {
     if (pq->size < pq->capa) {
         pq_push(pq, elem);
