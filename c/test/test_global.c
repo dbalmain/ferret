@@ -59,12 +59,37 @@ static void test_stacktrace(tst_case *tc, void *data)
     x_exception_stream = old_stream;
 }
 
+/**
+ * Generate a normally fatal signal, which gets caught
+ */
+static void test_sighandler(tst_case *tc, void *data)
+{
+/*     volatile char *ptr = NULL; */
+    bool  old_abort = x_abort_on_exception;
+    FILE *old_stream = x_exception_stream;
+    (void)data;
+    (void)tc;
+
+    x_abort_on_exception = false;
+    x_exception_stream = tmpfile();
+
+    /* *ptr; */
+
+    /* Assert(ftell(x_exception_stream), "Stream position should not be 0"); */
+    fclose(x_exception_stream);
+
+    x_exception_stream = old_stream;
+    x_abort_on_exception = old_abort;
+}
+
+
 tst_suite *ts_global(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_strfmt, NULL);
     tst_run_test(suite, test_stacktrace, NULL);
+    tst_run_test(suite, test_sighandler, NULL);
 
     return suite;
 }

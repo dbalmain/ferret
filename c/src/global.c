@@ -401,7 +401,7 @@ static void sighandler_crash(int signum)
 {
     print_stacktrace();
     FRT_EXIT("Exiting on signal %s (%d)",
-             sgnal_to_string(signum), signum);
+             signal_to_string(signum), signum);
 }
 
 #define SETSIG_IF_UNSET(sig, new) do {  \
@@ -414,7 +414,7 @@ static void sighandler_crash(int signum)
 
 void frt_init(int argc, const char *const argv[])
 {
-    struct sigaction old, action;
+    struct sigaction action;
 
     if (argc > 0) {
         frt_setprogname(argv[0]);
@@ -424,9 +424,9 @@ void frt_init(int argc, const char *const argv[])
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
 
-    SETSIG_IF_UNSET(SIGILL , &old, &action);
-    SETSIG_IF_UNSET(SIGABRT, &old, &action);
-    SETSIG_IF_UNSET(SIGFPE , &old, &action);
-    SETSIG_IF_UNSET(SIGBUS , &old, &action);
-    SETSIG_IF_UNSET(SIGSEGV, &old, &action);
+    SETSIG_IF_UNSET(SIGILL , action);
+    SETSIG_IF_UNSET(SIGABRT, action);
+    SETSIG_IF_UNSET(SIGFPE , action);
+    SETSIG_IF_UNSET(SIGBUS , action);
+    SETSIG_IF_UNSET(SIGSEGV, action);
 }
