@@ -2,6 +2,7 @@
 #include "array.h"
 #include "bitvector.h"
 #include <string.h>
+#include "internal.h"
 
 #define St(state) ((State *)(state))
 #define UCtoI(val) ((int)(unsigned char)(val))

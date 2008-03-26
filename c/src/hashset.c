@@ -1,5 +1,6 @@
 #include "hashset.h"
 #include <string.h>
+#include "internal.h"
 
 /*
  * The HashSet contains an array +elems+ of the elements that have been added.
@@ -80,9 +81,9 @@ static INLINE void append(HashSet *hs, void *elem)
     hs->size++;
 }
 
-enum HashKeyStatus hs_add(HashSet *hs, void *elem)
+HashKeyStatus hs_add(HashSet *hs, void *elem)
 {
-    enum HashKeyStatus has_elem = h_has_key(hs->ht, elem);
+    HashKeyStatus has_elem = h_has_key(hs->ht, elem);
     switch (has_elem)
     {
         /* We don't want to keep two of the same elem so free if necessary */
@@ -159,7 +160,7 @@ int hs_del(HashSet *hs, void *elem)
     return 0;
 }
 
-enum HashKeyStatus hs_exists(HashSet *hs, void *elem)
+HashKeyStatus hs_exists(HashSet *hs, void *elem)
 {
     return h_has_key(hs->ht, elem);
 }

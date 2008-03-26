@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <array.h>
 #include "search.h"
+#include "internal.h"
 
 VALUE mSearch;
 

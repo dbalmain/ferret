@@ -4,6 +4,7 @@
 #include "hash.h"
 #include "hashset.h"
 #include "threading.h"
+#include "internal.h"
 
 /* Object Map */
 static HashTable *object_map;

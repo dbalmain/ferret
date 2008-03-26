@@ -87,7 +87,7 @@ extern TokenStream *tf_new_i(size_t size, TokenStream *sub_ts);
 typedef struct StopFilter 
 {
     TokenFilter super;
-    HashTable  *words;
+    FerretHashTable  *words;
 } StopFilter;
 
 typedef struct MappingFilter 
@@ -210,7 +210,7 @@ extern Analyzer *mb_standard_analyzer_new_with_words_len(const char **words,
 typedef struct PerFieldAnalyzer
 {
     Analyzer    super;
-    HashTable  *dict;
+    FerretHashTable  *dict;
     Analyzer   *default_a;
 } PerFieldAnalyzer;
 

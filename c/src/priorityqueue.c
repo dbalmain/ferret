@@ -1,4 +1,5 @@
 #include <string.h>
+#include "priorityqueue.h"
 #include "internal.h"
 
 #define START_CAPA 127

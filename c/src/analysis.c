@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <wctype.h>
 #include <wchar.h>
+#include "internal.h"
 
 /****************************************************************************
  *

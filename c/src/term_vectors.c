@@ -2,6 +2,7 @@
 #include "index.h"
 #include "array.h"
 #include "helper.h"
+#include "internal.h"
 
 /****************************************************************************
  *

@@ -2,6 +2,7 @@
 #include "hash.h"
 #include "global.h"
 #include <stdlib.h>
+#include "internal.h"
 
 static int *malloc_int(int val)
 {

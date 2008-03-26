@@ -9,19 +9,19 @@
  *
  ****************************************************************************/
 
-#define HASH_MINSIZE 8
-#define SLOW_DOWN 50000         /* stop increasing the hash table so quickly to
+#define FRT_HASH_MINSIZE 8
+#define FRT_SLOW_DOWN 50000     /* stop increasing the hash table so quickly to
                                  * conserve memory */
 
 /**
  * Return values for h_set
  */
-enum HashKeyStatus
+typedef enum
 {
     HASH_KEY_DOES_NOT_EXIST = 0,
     HASH_KEY_EQUAL = 1,
     HASH_KEY_SAME = 2
-};
+} FerretHashKeyStatus;
 
 /**
  * struct used internally to store values in the HashTable
@@ -31,7 +31,7 @@ typedef struct
     unsigned long hash;
     void *key;
     void *value;
-} HashEntry;
+} FerretHashEntry;
 
 /**
  * As the hash table is filled and entries are deleted, Dummy HashEntries are
@@ -41,7 +41,7 @@ typedef struct
  * know when to resize. The HashTable is resized when more than two thirds of
  * the HashTable is Filled.
  */
-typedef struct HashTable
+typedef struct FerretHashTable
 {
     int fill;                   /* num Active + num Dummy */
     int size;                   /* num Active ie, num keys set */
@@ -50,21 +50,22 @@ typedef struct HashTable
 
     /* table points to smalltable initially. If the table grows beyond 2/3 of
      * HASH_MINSIZE it will point to newly malloced memory as it grows. */
-    HashEntry *table;
+    FerretHashEntry *table;
 
     /* When a HashTable is created it needs an initial table to start if off.
      * All HashTables will start with smalltable and then malloc a larger
      * table as the HashTable grows */
-    HashEntry smalltable[HASH_MINSIZE];
+    FerretHashEntry smalltable[FRT_HASH_MINSIZE];
 
     /* the following function pointers are used internally and should not be
      * used outside of the HashTable methods */
-    HashEntry    *(*lookup_i)(struct HashTable *self, register const void *key);
+    FerretHashEntry *(*lookup_i)(struct FerretHashTable *self,
+                                    register const void *key);
     unsigned long (*hash_i)(const void *key);
     int           (*eq_i)(const void *key1, const void *key2);
     void          (*free_key_i)(void *p);
     void          (*free_value_i)(void *p);
-} HashTable;
+} FerretHashTable;
 
 /**
  * Hashing function type used by HashTable. A function of this type must be
@@ -73,13 +74,13 @@ typedef struct HashTable
  * @param key object to hash
  * @return an unsigned 32-bit integer hash value
  */
-typedef unsigned long (*hash_ft)(const void *key);
+typedef unsigned long (*frt_hash_ft)(const void *key);
 
 /**
  * Equals function type used by HashTable. A function of this type must be
  * passed to create a new HashTable.
  */
-typedef int (*eq_ft)(const void *key1, const void *key2);
+typedef int (*frt_eq_ft)(const void *key1, const void *key2);
 
 /**
  * Determine a hash value for a string. The string must be null terminated
@@ -87,7 +88,7 @@ typedef int (*eq_ft)(const void *key1, const void *key2);
  * @param str string to hash
  * @return an unsigned long integer hash value
  */
-extern unsigned long str_hash(const char *const str);
+extern unsigned long frt_str_hash(const char *const str);
 
 /**
  * Determine a hash value for a pointer. Just cast the pointer to an unsigned
@@ -96,7 +97,7 @@ extern unsigned long str_hash(const char *const str);
  * @param ptr pointer to hash
  * @return an unsigned long integer hash value
  */
-extern unsigned long ptr_hash(const void *const ptr);
+extern unsigned long frt_ptr_hash(const void *const ptr);
 
 /**
  * Determine if two pointers point to the same point in memory.
@@ -105,7 +106,7 @@ extern unsigned long ptr_hash(const void *const ptr);
  * @param q2 second pointer
  * @return true if the pointers are equal
  */
-extern int ptr_eq(const void *q1, const void *q2);
+extern int frt_ptr_eq(const void *q1, const void *q2);
 
 /**
  * Create a new HashTable that uses any type of object as it's key. The
@@ -123,8 +124,10 @@ extern int ptr_eq(const void *q1, const void *q2);
  *    pass NULL in place of this parameter the value will not be destroyed.
  * @return A newly allocated HashTable
  */
-extern HashTable *h_new(hash_ft hash, eq_ft eq, free_ft free_key,
-                        free_ft free_value);
+extern FerretHashTable *frt_h_new(frt_hash_ft hash,
+                                  frt_eq_ft eq, 
+                                  frt_free_ft free_key,
+                                  frt_free_ft free_value);
 
 /**
  * Create a new HashTable that uses null-terminated strings as it's keys. The
@@ -140,7 +143,8 @@ extern HashTable *h_new(hash_ft hash, eq_ft eq, free_ft free_key,
  *    pass NULL in place of this parameter the value will not be destroyed.
  * @return A newly allocated HashTable
  */
-extern HashTable *h_new_str(free_ft free_key, free_ft free_value);
+extern FerretHashTable *frt_h_new_str(frt_free_ft free_key,
+                                      frt_free_ft free_value);
 
 /**
  * Create a new HashTable that uses integers as it's keys. The
@@ -153,7 +157,7 @@ extern HashTable *h_new_str(free_ft free_key, free_ft free_value);
  *    pass NULL in place of this parameter the value will not be destroyed.
  * @return A newly allocated HashTable
  */
-extern HashTable *h_new_int(free_ft free_value);
+extern FerretHashTable *frt_h_new_int(frt_free_ft free_value);
 
 /**
  * Destroy the HashTable. This function will also destroy all keys and values
@@ -161,7 +165,7 @@ extern HashTable *h_new_int(free_ft free_value);
  *
  * @param self the HashTable to destroy
  */
-extern void h_destroy(HashTable *self);
+extern void frt_h_destroy(FerretHashTable *self);
 
 /**
  * Clear the HashTable. This function will delete all keys and values from the
@@ -170,7 +174,7 @@ extern void h_destroy(HashTable *self);
  *
  * @param self the HashTable to clear
  */
-extern void h_clear(HashTable *self);
+extern void frt_h_clear(FerretHashTable *self);
 
 /**
  * Get the value in the HashTable referenced by the key +key+.
@@ -180,7 +184,7 @@ extern void h_clear(HashTable *self);
  * @return the value referenced by the key +key+. If there is no value
  *   referenced by that key, NULL is returned.
  */
-extern void *h_get(HashTable *self, const void *key);
+extern void *frt_h_get(FerretHashTable *self, const void *key);
 
 /**
  * Delete the value in HashTable referenced by the key +key+. When the value
@@ -198,7 +202,7 @@ extern void *h_get(HashTable *self, const void *key);
  * @return true if the object was successfully deleted or false if the key was
  *   not found
  */
-extern int h_del(HashTable *self, const void *key);
+extern int frt_h_del(FerretHashTable *self, const void *key);
 
 /**
  * Remove the value in HashTable referenced by the key +key+. When the value
@@ -216,7 +220,7 @@ extern int h_del(HashTable *self, const void *key);
  *   is removed from the HashTable
  * @return the value referenced by +key+ if it can be found or NULL otherwise
  */
-extern void *h_rem(HashTable *self, const void *key, bool del_key);
+extern void *frt_h_rem(FerretHashTable *self, const void *key, bool del_key);
 
 /**
  * WARNING: this function may destroy an old value or key if the key already
@@ -246,7 +250,8 @@ extern void *h_rem(HashTable *self, const void *key, bool del_key);
  *                              the existing key so no key was freed
  *   </pre>
  */
-extern enum HashKeyStatus h_set(HashTable *self, const void *key, void *value);
+extern FerretHashKeyStatus frt_h_set(FerretHashTable *self,
+                                     const void *key, void *value);
 
 /**
  * Add the value +value+ to the HashTable referencing it with key +key+. If
@@ -258,7 +263,7 @@ extern enum HashKeyStatus h_set(HashTable *self, const void *key, void *value);
  * @param value the value to add to the HashTable
  * @return true if the value was successfully added or false otherwise
  */
-extern int h_set_safe(HashTable *self, const void *key, void *value);
+extern int frt_h_set_safe(FerretHashTable *self, const void *key, void *value);
 
 /**
  * Return a hash entry object so you can handle the insert yourself. This can
@@ -272,7 +277,7 @@ extern int h_set_safe(HashTable *self, const void *key, void *value);
  * @return HashEntry a pointer to the hash entry object now reserved for this
  * value. Be sure to set both the *key* and the *value*
  */
-extern HashEntry *h_set_ext(HashTable *ht, const void *key);
+extern FerretHashEntry *frt_h_set_ext(FerretHashTable *ht, const void *key);
 
 /**
  * Check whether key +key+ exists in the HashTable.
@@ -291,7 +296,8 @@ extern HashEntry *h_set_ext(HashTable *ht, const void *key);
  *   Note: the return value can be treated as a true/false value, ie 0 if the
  *   key doesn't exist, non-zero if it does.
  */
-extern enum HashKeyStatus h_has_key(HashTable *self, const void *key);
+extern FerretHashKeyStatus frt_h_has_key(FerretHashTable *self,
+                                         const void *key);
 
 /**
  * Get the value in the HashTable referenced by an integer key +key+.
@@ -301,7 +307,7 @@ extern enum HashKeyStatus h_has_key(HashTable *self, const void *key);
  * @return the value referenced by the key +key+. If there is no value
  *   referenced by that key, NULL is returned.
  */
-extern void *h_get_int(HashTable *self, const unsigned long key);
+extern void *frt_h_get_int(FerretHashTable *self, const unsigned long key);
 
 /**
  * Delete the value in HashTable referenced by the integer key +key+. When the
@@ -318,7 +324,7 @@ extern void *h_get_int(HashTable *self, const unsigned long key);
  * @return true if the object was successfully deleted or false if the key was
  *   not found
  */
-extern int h_del_int(HashTable *self, const unsigned long key);
+extern int frt_h_del_int(FerretHashTable *self, const unsigned long key);
 
 /**
  * Remove the value in HashTable referenced by the integer key +key+. When the
@@ -332,7 +338,7 @@ extern int h_del_int(HashTable *self, const unsigned long key);
  * @param key the integer key to lookup
  * @return the value referenced by +key+ if it can be found or NULL otherwise
  */
-extern void *h_rem_int(HashTable *self, const unsigned long key);
+extern void *frt_h_rem_int(FerretHashTable *self, const unsigned long key);
 
 /**
  * WARNING: this function may destroy an old value if the key already exists
@@ -362,9 +368,9 @@ extern void *h_rem_int(HashTable *self, const unsigned long key);
  *                              the existing key so no key was freed
  *   </pre>
  */
-extern enum HashKeyStatus h_set_int(HashTable *self,
-                                    const unsigned long key,
-                                    void *value);
+extern FerretHashKeyStatus frt_h_set_int(FerretHashTable *self,
+                                         const unsigned long key,
+                                         void *value);
 
 /**
  * Add the value +value+ to the HashTable referencing it with integer key
@@ -376,9 +382,9 @@ extern enum HashKeyStatus h_set_int(HashTable *self,
  * @param value the value to add to the HashTable
  * @return true if the value was successfully added or false otherwise
  */
-extern int h_set_safe_int(HashTable *self,
-                          const unsigned long key,
-                          void *value);
+extern int frt_h_set_safe_int(FerretHashTable *self,
+                              const unsigned long key,
+                              void *value);
 /**
  * Check whether integer key +key+ exists in the HashTable.
  *
@@ -386,9 +392,9 @@ extern int h_set_safe_int(HashTable *self,
  * @param key the integer key to check for in the HashTable
  * @return true if the key exists in the HashTable, false otherwise.
  */
-extern int h_has_key_int(HashTable *self, const unsigned long key);
+extern int frt_h_has_key_int(FerretHashTable *self, const unsigned long key);
 
-typedef void (*h_each_key_val_ft)(void *key, void *value, void *arg);
+typedef void (*frt_h_each_key_val_ft)(void *key, void *value, void *arg);
 
 /**
  * Run function +each_key_val+ on each key and value in the HashTable. The third
@@ -432,11 +438,11 @@ typedef void (*h_each_key_val_ft)(void *key, void *value, void *arg);
  *   HashTable
  * @param arg an extra argument to pass to each_key_val each time it is called
  */
-extern void h_each(HashTable *self,
-                   void (*each_key_val)(void *key, void *value, void *arg),
-                   void *arg);
+extern void frt_h_each(FerretHashTable *self,
+                       void (*each_key_val)(void *key, void *value, void *arg),
+                       void *arg);
 
-typedef void *(*h_clone_func_t)(void *val);
+typedef void *(*frt_h_clone_func_t)(void *val);
 /**
  * Clone the HashTable as well as cloning each of the keys and values if you
  * want to do a deep clone. To do a deep clone you will need to pass a
@@ -447,9 +453,9 @@ typedef void *(*h_clone_func_t)(void *val);
  * @param clone_value the function to clone the value with
  * @return a clone of the original HashTable
  */
-extern HashTable *h_clone(HashTable *self,
-                          h_clone_func_t clone_key,
-                          h_clone_func_t clone_value);
+extern FerretHashTable *frt_h_clone(FerretHashTable *self,
+                                    frt_h_clone_func_t clone_key,
+                                    frt_h_clone_func_t clone_value);
 
 /*
  * The following functions should only be used in static HashTable
@@ -465,10 +471,12 @@ extern HashTable *h_clone(HashTable *self,
  * @param key the key to lookup
  * @return the HashEntry that was found
  */
-extern HashEntry *h_lookup(HashTable *ht, register const void *key);
+extern FerretHashEntry *frt_h_lookup(FerretHashTable *ht,
+                                     register const void *key);
 
-typedef HashEntry *(*h_lookup_ft)(HashTable *ht, register const void *key);
+typedef FerretHashEntry *(*frt_h_lookup_ft)(FerretHashTable *ht,
+                                            register const void *key);
 
-extern void h_str_print_keys(HashTable *ht);
+extern void frt_h_str_print_keys(FerretHashTable *ht);
 
 #endif

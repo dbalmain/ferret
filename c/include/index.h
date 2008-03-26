@@ -44,8 +44,8 @@ extern const Config default_config;
  ***************************************************************************/
 
 typedef struct CacheObject {
-    HashTable *ref_tab1;
-    HashTable *ref_tab2;
+    FerretHashTable *ref_tab1;
+    FerretHashTable *ref_tab2;
     void *ref1;
     void *ref2;
     void *obj;
@@ -53,9 +53,10 @@ typedef struct CacheObject {
 } CacheObject;
 
 extern void cache_destroy(CacheObject *co);
-extern CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
+extern CacheObject *co_create(FerretHashTable *ref_tab1,
+                              FerretHashTable *ref_tab2,
             void *ref1, void *ref2, void (*destroy)(void *p), void *obj);
-extern HashTable *co_hash_create();
+extern FerretHashTable *co_hash_create();
 
 /****************************************************************************
  *
@@ -140,7 +141,7 @@ typedef struct FieldInfos
     int size;
     int capa;
     FieldInfo **fields;
-    HashTable *field_dict;
+    FerretHashTable *field_dict;
     int ref_cnt;
 } FieldInfos;
 
@@ -294,7 +295,7 @@ typedef struct SegmentFieldIndex
     int         index_interval;
     off_t       index_ptr;
     TermEnum   *index_te;
-    HashTable  *field_dict;
+    FerretHashTable  *field_dict;
 } SegmentFieldIndex;
 
 extern SegmentFieldIndex *sfi_open(Store *store, const char *segment);
@@ -603,7 +604,7 @@ extern TermVectorsReader *tvr_open(Store *store,
                                    FieldInfos *fis);
 extern TermVectorsReader *tvr_clone(TermVectorsReader *orig);
 extern void tvr_close(TermVectorsReader *tvr);
-extern HashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num);
+extern FerretHashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num);
 extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
                                     int doc_num,
                                     int field_num);
@@ -640,7 +641,7 @@ extern void lazy_df_get_bytes(LazyDocField *self, char *buf,
 /* * * LazyDoc * * */
 struct LazyDoc
 {
-    HashTable *field_dict;
+    FerretHashTable *field_dict;
     int size;
     LazyDocField **fields;
     InStream *fields_in;
@@ -669,7 +670,7 @@ extern FieldsReader *fr_clone(FieldsReader *orig);
 extern void fr_close(FieldsReader *fr);
 extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
 extern LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num);
-extern HashTable *fr_get_tv(FieldsReader *fr, int doc_num);
+extern FerretHashTable *fr_get_tv(FieldsReader *fr, int doc_num);
 extern TermVector *fr_get_field_tv(FieldsReader *fr, int doc_num,
                                    int field_num);
 
@@ -737,48 +738,48 @@ extern void deleter_delete_files(Deleter *dlr, char **files, int file_cnt);
 
 struct IndexReader
 {
-    int           (*num_docs)(IndexReader *ir);
-    int           (*max_doc)(IndexReader *ir);
-    Document     *(*get_doc)(IndexReader *ir, int doc_num);
-    LazyDoc      *(*get_lazy_doc)(IndexReader *ir, int doc_num);
-    uchar        *(*get_norms)(IndexReader *ir, int field_num);
-    uchar        *(*get_norms_into)(IndexReader *ir, int field_num,
-                                    uchar *buf);
-    TermEnum     *(*terms)(IndexReader *ir, int field_num);
-    TermEnum     *(*terms_from)(IndexReader *ir, int field_num,
-                                const char *term);
-    int           (*doc_freq)(IndexReader *ir, int field_num,
-                              const char *term);
-    TermDocEnum  *(*term_docs)(IndexReader *ir);
-    TermDocEnum  *(*term_positions)(IndexReader *ir);
-    TermVector   *(*term_vector)(IndexReader *ir, int doc_num,
-                                 const char *field);
-    HashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
-    bool          (*is_deleted)(IndexReader *ir, int doc_num);
-    bool          (*has_deletions)(IndexReader *ir);
-    void          (*acquire_write_lock)(IndexReader *ir);
-    void          (*set_norm_i)(IndexReader *ir, int doc_num, int field_num,
-                        uchar val);
-    void          (*delete_doc_i)(IndexReader *ir, int doc_num);
-    void          (*undelete_all_i)(IndexReader *ir);
-    void          (*set_deleter_i)(IndexReader *ir, Deleter *dlr);
-    bool          (*is_latest_i)(IndexReader *ir);
-    void          (*commit_i)(IndexReader *ir);
-    void          (*close_i)(IndexReader *ir);
-    int           ref_cnt;
-    Deleter      *deleter;
-    Store        *store;
-    Lock         *write_lock;
-    SegmentInfos *sis;
-    FieldInfos   *fis;
-    HashTable    *cache;
-    HashTable    *field_index_cache;
-    mutex_t       field_index_mutex;
-    uchar        *fake_norms;
-    mutex_t       mutex;
-    bool          has_changes : 1;
-    bool          is_stale    : 1;
-    bool          is_owner    : 1;
+    int                 (*num_docs)(IndexReader *ir);
+    int                 (*max_doc)(IndexReader *ir);
+    Document           *(*get_doc)(IndexReader *ir, int doc_num);
+    LazyDoc            *(*get_lazy_doc)(IndexReader *ir, int doc_num);
+    uchar              *(*get_norms)(IndexReader *ir, int field_num);
+    uchar              *(*get_norms_into)(IndexReader *ir, int field_num,
+                                          uchar *buf);
+    TermEnum           *(*terms)(IndexReader *ir, int field_num);
+    TermEnum           *(*terms_from)(IndexReader *ir, int field_num,
+                                      const char *term);
+    int                 (*doc_freq)(IndexReader *ir, int field_num,
+                                    const char *term);
+    TermDocEnum        *(*term_docs)(IndexReader *ir);
+    TermDocEnum        *(*term_positions)(IndexReader *ir);
+    TermVector         *(*term_vector)(IndexReader *ir, int doc_num,
+                                       const char *field);
+    FerretHashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
+    bool                (*is_deleted)(IndexReader *ir, int doc_num);
+    bool                (*has_deletions)(IndexReader *ir);
+    void                (*acquire_write_lock)(IndexReader *ir);
+    void                (*set_norm_i)(IndexReader *ir, int doc_num,
+                                      int field_num, uchar val);
+    void                (*delete_doc_i)(IndexReader *ir, int doc_num);
+    void                (*undelete_all_i)(IndexReader *ir);
+    void                (*set_deleter_i)(IndexReader *ir, Deleter *dlr);
+    bool                (*is_latest_i)(IndexReader *ir);
+    void                (*commit_i)(IndexReader *ir);
+    void                (*close_i)(IndexReader *ir);
+    int                 ref_cnt;
+    Deleter            *deleter;
+    Store              *store;
+    Lock               *write_lock;
+    SegmentInfos       *sis;
+    FieldInfos         *fis;
+    FerretHashTable    *cache;
+    FerretHashTable    *field_index_cache;
+    mutex_t             field_index_mutex;
+    uchar              *fake_norms;
+    mutex_t             mutex;
+    bool                has_changes : 1;
+    bool                is_stale    : 1;
+    bool                is_owner    : 1;
 };
 
 extern IndexReader *ir_create(Store *store, SegmentInfos *sis, int is_owner);
@@ -819,7 +820,7 @@ struct MultiReader {
     int r_cnt;
     int *starts;
     IndexReader **sub_readers;
-    HashTable *norms_cache;
+    FerretHashTable *norms_cache;
     bool has_deletions : 1;
     int **field_num_map;
 };
@@ -849,7 +850,7 @@ typedef struct Boost
 
 typedef struct FieldInverter
 {
-    HashTable *plists;
+    FerretHashTable *plists;
     uchar *norms;
     FieldInfo *fi;
     int length;
@@ -877,8 +878,8 @@ typedef struct DocWriter
     FieldsWriter *fw;
     MemoryPool *mp;
     Analyzer *analyzer;
-    HashTable *curr_plists;
-    HashTable *fields;
+    FerretHashTable *curr_plists;
+    FerretHashTable *fields;
     Similarity *similarity;
     Offset *offsets;
     int offsets_size;

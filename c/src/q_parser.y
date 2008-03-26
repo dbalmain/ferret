@@ -5,6 +5,7 @@
 #include "except.h"
 #include "search.h"
 #include "array.h"
+#include "internal.h"
 
 typedef struct Phrase {
     int             size;

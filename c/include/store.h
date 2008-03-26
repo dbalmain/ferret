@@ -160,7 +160,7 @@ typedef struct CompoundStore
 {
     Store *store;
     const char *name;
-    HashTable *entries;
+    FerretHashTable *entries;
     InStream *stream;
 } CompoundStore;
 
@@ -172,7 +172,7 @@ struct Store
     union
     {
         char *path;             /* for fs_store only */
-        HashTable *ht;          /* for ram_store only */
+        FerretHashTable *ht;    /* for ram_store only */
         CompoundStore *cmpd;    /* for compound_store only */
     } dir;
 

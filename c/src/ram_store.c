@@ -1,5 +1,6 @@
 #include "store.h"
 #include <string.h>
+#include "internal.h"
 
 extern Store *store_new();
 extern void store_destroy(Store *store);

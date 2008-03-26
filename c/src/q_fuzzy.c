@@ -1,6 +1,7 @@
 #include <string.h>
 #include "search.h"
 #include "helper.h"
+#include "internal.h"
 
 /****************************************************************************
  *

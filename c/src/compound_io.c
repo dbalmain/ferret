@@ -1,5 +1,6 @@
 #include "index.h"
 #include "array.h"
+#include "internal.h"
 
 extern void store_destroy(Store *store);
 extern InStream *is_new();

@@ -1,6 +1,7 @@
 #include "index.h"
 #include "test.h"
 #include "testhelper.h"
+#include "internal.h"
 
 static char *body = "body";
 static char *title = "title";

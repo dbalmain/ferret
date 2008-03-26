@@ -1,5 +1,6 @@
 #include "test.h"
 #include "index.h"
+#include "internal.h"
 
 #define NUM_TERMS 100
 #define TERM_LEN 10

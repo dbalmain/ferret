@@ -100,14 +100,14 @@ extern char *td_to_s(TopDocs *td);
 
 typedef struct Filter
 {
-    char           *name;
-    HashTable      *cache;
-    BitVector      *(*get_bv_i)(struct Filter *self, IndexReader *ir);
-    char           *(*to_s)(struct Filter *self);
-    unsigned long   (*hash)(struct Filter *self);
-    int             (*eq)(struct Filter *self, struct Filter *o);
-    void            (*destroy_i)(struct Filter *self);
-    int             ref_cnt;
+    char                *name;
+    FerretHashTable     *cache;
+    BitVector           *(*get_bv_i)(struct Filter *self, IndexReader *ir);
+    char                *(*to_s)(struct Filter *self);
+    unsigned long        (*hash)(struct Filter *self);
+    int                  (*eq)(struct Filter *self, struct Filter *o);
+    void                 (*destroy_i)(struct Filter *self);
+    int                  ref_cnt;
 } Filter;
 
 #define filt_new(type) filt_create(sizeof(type), #type)
@@ -882,14 +882,14 @@ typedef struct QParser
     char buf[QP_CONC_WORDS][MAX_WORD_SIZE];
     char *dynbuf;
     int  buf_index;
-    HashTable *field_cache;
+    FerretHashTable *field_cache;
     HashSet *fields;
     HashSet *fields_buf;
     HashSet *def_fields;
     HashSet *all_fields;
     HashSet *tokenized_fields;
     Analyzer *analyzer;
-    HashTable *ts_cache;
+    FerretHashTable *ts_cache;
     Query *result;
     TokenStream *non_tokenizer;
     bool or_default : 1;

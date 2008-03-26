@@ -3,6 +3,7 @@
 #include <st.h>
 #include "ferret.h"
 #include "analysis.h"
+#include "internal.h"
 
 static char *frt_locale = NULL;
 

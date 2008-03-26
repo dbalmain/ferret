@@ -2,6 +2,7 @@
 #include "array.h"
 #include "test.h"
 #include "testhelper.h"
+#include "internal.h"
 
 #define ARRAY_SIZE 100
 

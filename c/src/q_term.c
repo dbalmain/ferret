@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "internal.h"
 
 #define TQ(query) ((TermQuery *)(query))
 #define TSc(scorer) ((TermScorer *)(scorer))

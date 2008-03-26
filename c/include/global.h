@@ -18,7 +18,7 @@
 # define INLINE
 #endif
 
-typedef void (*free_ft)(void *key);
+typedef void (*frt_free_ft)(void *key);
 
 #define NELEMS(array) ((int)(sizeof(array)/sizeof(array[0])))
 
@@ -89,7 +89,7 @@ extern char *vstrfmt(const char *fmt, va_list args);
 extern char *get_stacktrace();
 extern void  print_stacktrace();
 
-extern void register_for_cleanup(void *p, free_ft free_func);
+extern void register_for_cleanup(void *p, frt_free_ft free_func);
 extern void do_clean_up();
 
 /**

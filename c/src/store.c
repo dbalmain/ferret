@@ -1,5 +1,6 @@
 #include "store.h"
 #include <string.h>
+#include "internal.h"
 
 #define VINT_MAX_LEN 10
 #define VINT_END BUFFER_SIZE - VINT_MAX_LEN

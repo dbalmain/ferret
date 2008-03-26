@@ -1,5 +1,6 @@
 #include "document.h"
 #include <string.h>
+#include "internal.h"
 
 /****************************************************************************
  *

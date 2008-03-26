@@ -32,6 +32,7 @@
 #ifndef O_BINARY
 # define O_BINARY 0
 #endif
+#include "internal.h"
 
 extern Store *store_new();
 extern void store_destroy(Store *store);
@@ -412,7 +413,7 @@ static void fs_close_lock_i(Lock *lock)
     free(lock);
 }
 
-static HashTable * stores = NULL;
+static HashTable *stores = NULL;
 
 #ifndef UNTHREADED
 static mutex_t stores_mutex = MUTEX_INITIALIZER;

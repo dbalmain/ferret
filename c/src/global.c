@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <signal.h>
+#include "internal.h"
 
 const unsigned int BUFFER_SIZE = 1024;
 const char *EMPTY_STRING = "";

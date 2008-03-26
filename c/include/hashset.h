@@ -26,10 +26,10 @@ typedef struct HashSet
     HashSetEntry *last;
 
     /* HashTable used internally */
-    HashTable *ht;
+    FerretHashTable *ht;
 
     /* Internal: Frees elements added to the HashSet. Should never be NULL */
-    free_ft free_elem_i;
+    frt_free_ft free_elem_i;
 } HashSet;
 
 /**
@@ -43,7 +43,9 @@ typedef struct HashSet
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_new(hash_ft hash_func, eq_ft eq_func, free_ft free_func);
+extern HashSet *hs_new(frt_hash_ft hash_func,
+                             frt_eq_ft eq_func,
+                             frt_free_ft free_func);
 
 /**
  * Create a new HashSet specifically for strings. This will create a HashSet
@@ -53,7 +55,7 @@ extern HashSet *hs_new(hash_ft hash_func, eq_ft eq_func, free_ft free_func);
  *   when the HashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated HashSet structure
  */
-extern HashSet *hs_new_str(free_ft free_func);
+extern HashSet *hs_new_str(frt_free_ft free_func);
 
 /**
  * Free the memory allocated by the HashSet, but don't free the elements added
@@ -98,7 +100,7 @@ extern void hs_destroy(HashSet *self);
  *                              free_elem was set
  *   </pre>
  */
-extern enum HashKeyStatus hs_add(HashSet *self, void *elem);
+extern FerretHashKeyStatus hs_add(HashSet *self, void *elem);
 
 /**
  * Add element to the HashSet. If the element already existed in the HashSet
@@ -151,7 +153,7 @@ extern void *hs_rem(HashSet *self, void *elem);
  *                              free_elem was set
  *   </pre>
  */
-extern enum HashKeyStatus hs_exists(HashSet *self, void *elem);
+extern FerretHashKeyStatus hs_exists(HashSet *self, void *elem);
 
 /**
  * Merge two HashSets. When a merge is done the merger (self) HashTable is

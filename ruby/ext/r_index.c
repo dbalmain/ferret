@@ -1,6 +1,7 @@
 #include "ferret.h"
 #include "index.h"
 #include <st.h>
+#include "internal.h"
 
 VALUE mIndex;
 

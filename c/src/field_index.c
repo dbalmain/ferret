@@ -1,5 +1,6 @@
 #include <string.h>
 #include "field_index.h"
+#include "internal.h"
 
 /***************************************************************************
  *

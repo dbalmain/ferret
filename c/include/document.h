@@ -38,7 +38,7 @@ extern char *df_to_s(DocField *df);
 #define DOC_INIT_CAPA 8
 typedef struct Document
 {
-    HashTable *field_dict;
+    FerretHashTable *field_dict;
     int size;
     int capa;
     DocField **fields;

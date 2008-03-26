@@ -16,7 +16,7 @@ typedef struct FerretPriorityQueue
     int mem_capa;
     void **heap;
     frt_lt_ft less_than_i;
-    free_ft free_elem_i;
+    frt_free_ft free_elem_i;
 } FerretPriorityQueue;
 
 /**
@@ -33,7 +33,7 @@ typedef struct FerretPriorityQueue
  */
 extern FerretPriorityQueue *frt_pq_new(int capa,
                                        frt_lt_ft less_than,
-                                       free_ft free_elem);
+                                       frt_free_ft free_elem);
 
 /**
  * Allocate a clone of the PriorityQueue. This can be used if you want to scan

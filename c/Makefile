@@ -136,6 +136,8 @@ load_bench bench search_bench sort_bench: libferret.a
 
 -include $(OBJS:%.o=$(DEP_DIR)/%.P)
 
+src/q_parser.c: src/q_parser.y
+
 ###
 # Generate gcov stats
 ###
