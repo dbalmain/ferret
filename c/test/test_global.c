@@ -1,4 +1,5 @@
 #include "test.h"
+#include <signal.h>
 
 /**
  * Test the strfmt functions. This method is like sprintf except that it
@@ -64,7 +65,6 @@ static void test_stacktrace(tst_case *tc, void *data)
  */
 static void test_sighandler(tst_case *tc, void *data)
 {
-/*     volatile char *ptr = NULL; */
     bool  old_abort = x_abort_on_exception;
     FILE *old_stream = x_exception_stream;
     (void)data;
@@ -73,9 +73,9 @@ static void test_sighandler(tst_case *tc, void *data)
     x_abort_on_exception = false;
     x_exception_stream = tmpfile();
 
-    /* *ptr; */
+    raise(SIGSEGV);
 
-    /* Assert(ftell(x_exception_stream), "Stream position should not be 0"); */
+    Assert(ftell(x_exception_stream), "Stream position should not be 0");
     fclose(x_exception_stream);
 
     x_exception_stream = old_stream;
