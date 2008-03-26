@@ -729,7 +729,7 @@ int main(int argc, const char *const argv[])
     tst_suite *suite = NULL;
     sub_suite *subsuite;
 
-    frt_init(argv[0]);
+    frt_init(argc, argv);
 
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-v")) {

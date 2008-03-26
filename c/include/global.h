@@ -126,7 +126,7 @@ extern bool x_do_logging;
 #define xlog()
 #endif
 
-#define frt_init(progname) frt_setprogname(progname)
+extern void frt_init(int arc, const char *const argv[]);
 extern void frt_setprogname(const char *str);
 extern const char *frt_progname();
 extern void frt_micro_sleep(const int micro_seconds);

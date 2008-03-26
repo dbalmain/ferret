@@ -7,6 +7,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <signal.h>
 
 const unsigned int BUFFER_SIZE = 1024;
 const char *EMPTY_STRING = "";
@@ -374,10 +375,58 @@ static char name[MAX_PROG_NAME]; /* program name for error msgs */
 /* frt_setprogname: set stored name of program */
 void frt_setprogname(const char *str)
 {
-    strncpy(name, str, MAX_PROG_NAME - 1);
+    strncpy(name, str, sizeof(name) - 1);
 }
 
 const char *frt_progname()
 {
     return name;
+}
+
+static const char *signal_to_string(int signum)
+{
+    switch (signum)
+    {
+        case SIGILL:  return "SIGILL";
+        case SIGABRT: return "SIGABRT";
+        case SIGFPE:  return "SIGFPE";
+        case SIGBUS:  return "SIGBUS";
+        case SIGSEGV: return "SIGSEGV";
+    }
+
+    return "Unknown Signal";
+}
+
+static void sighandler_crash(int signum)
+{
+    print_stacktrace();
+    FRT_EXIT("Exiting on signal %s (%d)",
+             sgnal_to_string(signum), signum);
+}
+
+#define SETSIG_IF_UNSET(sig, new) do {  \
+    struct sigaction __old;             \
+    sigaction(sig, NULL, &__old);       \
+    if (__old.sa_handler != SIG_IGN) {  \
+        sigaction(sig, &new, NULL);     \
+    }                                   \
+} while(0)
+
+void frt_init(int argc, const char *const argv[])
+{
+    struct sigaction old, action;
+
+    if (argc > 0) {
+        frt_setprogname(argv[0]);
+    }
+
+    action.sa_handler = sighandler_crash;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    SETSIG_IF_UNSET(SIGILL , &old, &action);
+    SETSIG_IF_UNSET(SIGABRT, &old, &action);
+    SETSIG_IF_UNSET(SIGFPE , &old, &action);
+    SETSIG_IF_UNSET(SIGBUS , &old, &action);
+    SETSIG_IF_UNSET(SIGSEGV, &old, &action);
 }
