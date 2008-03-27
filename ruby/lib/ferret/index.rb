@@ -408,6 +408,50 @@ module Ferret::Index
       end
     end
 
+    # Run a query through the Searcher on the index, ignoring scoring and
+    # starting at +:start_doc+ and stopping when +:limit+ matches have been
+    # found. It returns an array of the matching document numbers.
+    #
+    # There is a big performance advange when using this search method on a
+    # very large index when there are potentially thousands of matching
+    # documents and you only want say 50 of them. The other search methods need
+    # to look at every single match to decide which one has the highest score.
+    # This search method just needs to find +:limit+ number of matches before
+    # it returns.
+    # 
+    # === Options
+    #
+    # :start_doc::    Default: 0. The start document to start the search from.
+    #                 NOTE very carefully that this is not the same as the
+    #                 +:offset+ parameter used in the other search methods
+    #                 which refers to the offset in the result-set. This is the
+    #                 document to start the scan from. So if you scanning
+    #                 through the index in increments of 50 documents at a time
+    #                 you need to use the last matched doc in the previous
+    #                 search to start your next search. See the example below.
+    # :limit::        Default: 50. This is the number of results you want
+    #                 returned, also called the page size. Set +:limit+ to
+    #                 +:all+ to return all results.
+    # TODO: add option to return loaded documents instead
+    #
+    # === Options
+    #
+    #   start_doc = 0
+    #   begin
+    #     results = @searcher.scan(query, :start_doc => start_doc)
+    #     yield results # or do something with them
+    #     start_doc = results.last
+    #     # start_doc will be nil now if results is empty, ie no more matches
+    #   end while start_doc
+    def scan(query, options = {})
+      @dir.synchronize do
+        ensure_searcher_open()
+        query = do_process_query(query)
+
+        @searcher.scan(query, options)
+      end
+    end
+
     # Retrieves a document/documents from the index. The method for retrieval
     # depends on the type of the argument passed.
     #
