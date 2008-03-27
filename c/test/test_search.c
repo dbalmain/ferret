@@ -5,7 +5,7 @@
 #include "helper.h"
 #include "testhelper.h"
 
-#define ARRAY_SIZE 20
+#define ARRAY_SIZE 40
 
 static void test_byte_float_conversion(tst_case *tc, void *data)
 {
@@ -262,7 +262,8 @@ void check_hits(tst_case *tc, Searcher *searcher, Query *query,
                 char *expected_hits, char top)
 {
     static int num_array[ARRAY_SIZE];
-    int i;
+    static int num_array2[ARRAY_SIZE];
+    int i, count;
     int total_hits = s2l(expected_hits, num_array);
     TopDocs *top_docs
         = searcher_search(searcher, query, 0, total_hits + 1, NULL, NULL, NULL);
@@ -279,6 +280,11 @@ void check_hits(tst_case *tc, Searcher *searcher, Query *query,
         Tmsg_nf("\n");
     }
     Aiequal(total_hits, top_docs->size);
+
+    /* FIXME add this code once search_unscored is working
+    searcher_search_unscored(searcher, query, buf, ARRAY_SIZE, 0);
+    Aaiequal(num_array, buf, total_hits);
+    */
 
     if ((top >= 0) && top_docs->size)
         Aiequal(top, top_docs->hits[0]->doc);
@@ -310,6 +316,15 @@ free(t);
         }
     }
     td_destroy(top_docs);
+    qsort(num_array, total_hits, sizeof(int), &icmp_risky);
+    count = searcher_search_unscored(searcher, query,
+                                     num_array2, ARRAY_SIZE, 0);
+    Aaiequal(num_array, num_array2, total_hits);
+    if (count > 3) {
+        count = searcher_search_unscored(searcher, query,
+                                         num_array2, ARRAY_SIZE, num_array2[3]);
+        Aaiequal(num_array + 3, num_array2, count);
+    }
 }
 
 static void test_term_query(tst_case *tc, void *data)
@@ -1231,6 +1246,56 @@ static void test_match_all_query_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
+static void test_search_unscored(tst_case *tc, void *data)
+{
+    Searcher *searcher = (Searcher *)data;
+    int buf[5], expected[5], count;
+    Query *tq = tq_new(field, "word1");
+    count = searcher_search_unscored(searcher, tq, buf, 5, 0);
+    Aiequal(s2l("0, 1, 2, 3, 4", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 1);
+    Aiequal(s2l("1, 2, 3, 4, 5", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 12);
+    Aiequal(s2l("12, 13, 14, 15, 16", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 15);
+    Aiequal(s2l("15, 16, 17", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 16);
+    Aiequal(s2l("16, 17", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 17);
+    Aiequal(s2l("17", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 5, 18);
+    Aiequal(s2l("", expected), count);
+    Aaiequal(expected, buf, count);
+    q_deref(tq);
+
+    tq = tq_new(field, "word3");
+    count = searcher_search_unscored(searcher, tq, buf, 3, 0);
+    Aiequal(s2l("2, 3, 6", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 3, 7);
+    Aiequal(s2l("8, 11, 14", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 3, 6);
+    Aiequal(s2l("6, 8, 11", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 3, 11);
+    Aiequal(s2l("11, 14", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 3, 14);
+    Aiequal(s2l("14", expected), count);
+    Aaiequal(expected, buf, count);
+    count = searcher_search_unscored(searcher, tq, buf, 3, 15);
+    Aiequal(s2l("", expected), count);
+    Aaiequal(expected, buf, count);
+    q_deref(tq);
+}
+
 tst_suite *ts_search(tst_suite *suite)
 {
     Store *store = open_ram_store();
@@ -1278,6 +1343,8 @@ tst_suite *ts_search(tst_suite *suite)
     tst_run_test(suite, test_wildcard_query_hash, NULL);
 
     tst_run_test(suite, test_match_all_query_hash, NULL);
+
+    tst_run_test(suite, test_search_unscored, (void *)searcher);
 
     store_deref(store);
     searcher_close(searcher);
@@ -1441,6 +1508,7 @@ tst_suite *ts_multi_search(tst_suite *suite)
     tst_run_test(suite, test_range_query, (void *)searcher);
     tst_run_test(suite, test_typed_range_query, (void *)searcher);
     tst_run_test(suite, test_wildcard_query, (void *)searcher);
+    tst_run_test(suite, test_search_unscored, (void *)searcher);
 
     tst_run_test(suite, test_query_combine, NULL);
 

@@ -1179,25 +1179,35 @@ static void isea_search_each(Searcher *self, Query *query, Filter *filter,
  *
  * Note: Unlike the offset_docnum in other search methods, this offset_docnum
  * refers to document number and not hit.
- *
- * FIXME: untested
  */
-int isea_unscored_search(IndexSearcher *searcher,
+int isea_search_unscored_w(Searcher *self,
+                           Weight *weight,
+                           int *buf,
+                           int limit,
+                           int offset_docnum)
+{
+    int count = 0;
+    Scorer *scorer = weight->scorer(weight, ISEA(self)->ir);
+    if (scorer) {
+        if (scorer->skip_to(scorer, offset_docnum)) {
+            do {
+                buf[count++] = scorer->doc;
+            } while (count < limit && scorer->next(scorer));
+        }
+        scorer->destroy(scorer);
+    }
+    return count;
+}
+
+int isea_search_unscored(Searcher *self,
                          Query *query,
                          int *buf,
                          int limit,
                          int offset_docnum)
 {
-    int count = 0;
-    Weight *weight = q_weight(query, (Searcher *)searcher);
-    Scorer *scorer = weight->scorer(weight, searcher->ir);
-    if (scorer) {
-        scorer->skip_to(scorer, offset_docnum);
-        while (count < limit && scorer->next(scorer)) {
-            buf[count++] = scorer->doc;
-        }
-        scorer->destroy(scorer);
-    }
+    int count;
+    Weight *weight = q_weight(query, self);
+    count = isea_search_unscored_w(self, weight, buf, limit, offset_docnum);
     weight->destroy(weight);
     return count;
 }
@@ -1264,6 +1274,8 @@ Searcher *isea_new(IndexReader *ir)
     self->search_w          = &isea_search_w;
     self->search_each       = &isea_search_each;
     self->search_each_w     = &isea_search_each_w;
+    self->search_unscored   = &isea_search_unscored;
+    self->search_unscored_w = &isea_search_unscored_w;
     self->rewrite           = &isea_rewrite;
     self->explain           = &isea_explain;
     self->explain_w         = &isea_explain_w;
@@ -1568,9 +1580,58 @@ static void msea_search_each(Searcher *self, Query *query, Filter *filter,
                              void (*fn)(Searcher *, int, float, void *),
                              void *arg)
 {
-    Weight *w = q_weight(query, self);
-    msea_search_each_w(self, w, filter, post_filter, fn, arg);
-    w->destroy(w);
+    Weight *weight = q_weight(query, self);
+    msea_search_each_w(self, weight, filter, post_filter, fn, arg);
+    weight->destroy(weight);
+}
+
+static int msea_search_unscored_w(Searcher *self,
+                                  Weight *w,
+                                  int *buf,
+                                  int limit,
+                                  int offset_docnum)
+{
+    int i, count = 0;
+    MultiSearcher *msea = MSEA(self);
+
+    for (i = 0; count < limit && i < msea->s_cnt; i++) {
+        /* if offset_docnum falls in this or previous indexes */
+        if (offset_docnum < msea->starts[i+1]) {
+            Searcher *searcher = msea->searchers[i];
+            const int index_offset = msea->starts[i];
+            int current_limit = limit - count;
+            /* if offset_docnum occurs in the current index then adjust,
+             * otherwise set it to zero as it occured in a previous index */
+            int current_offset_docnum = offset_docnum > index_offset
+                ? offset_docnum - index_offset
+                : 0;
+
+            /* record current count as we'll need to update docnums by the
+             * index's offset */
+            int j = count;
+            count += searcher->search_unscored_w(searcher, w, buf + count,
+                                                 current_limit,
+                                                 current_offset_docnum);
+            /* update doc nums with the current index's offsets */
+            for (; j < count; j++) {
+                buf[j] += index_offset;
+            }
+        }
+    }
+    return count;
+}
+
+int msea_search_unscored(Searcher *self,
+                         Query *query,
+                         int *buf,
+                         int limit,
+                         int offset_docnum)
+{
+    int count;
+    Weight *weight = q_weight(query, self);
+    count = msea_search_unscored_w(self, weight, buf, limit, offset_docnum);
+    weight->destroy(weight);
+    return count;
 }
 
 struct MultiSearchArg {
@@ -1785,6 +1846,8 @@ Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs)
     self->search_w              = &msea_search_w;
     self->search_each           = &msea_search_each;
     self->search_each_w         = &msea_search_each_w;
+    self->search_unscored       = &msea_search_unscored;
+    self->search_unscored_w     = &msea_search_unscored_w;
     self->rewrite               = &msea_rewrite;
     self->explain               = &msea_explain;
     self->explain_w             = &msea_explain_w;

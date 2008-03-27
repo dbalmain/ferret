@@ -226,11 +226,11 @@ static bool spansc_next(Scorer *self)
     spansc->freq = 0.0;
     self->doc = se->doc(se);
 
-    while (spansc->more && (self->doc == se->doc(se))) {
+    do {
         match_length = se->end(se) - se->start(se);
         spansc->freq += sim_sloppy_freq(spansc->sim, match_length);
         spansc->more = se->next(se);
-    }
+    } while (spansc->more && (self->doc == se->doc(se)));
 
     return (spansc->more || (spansc->freq != 0.0));
 }
@@ -241,7 +241,6 @@ static bool spansc_skip_to(Scorer *self, int target)
     SpanEnum *se = spansc->spans;
 
     spansc->more = se->skip_to(se, target);
-
     if (!spansc->more) {
         return false;
     }
@@ -252,6 +251,9 @@ static bool spansc_skip_to(Scorer *self, int target)
     while (spansc->more && (se->doc(se) == target)) {
         spansc->freq += sim_sloppy_freq(spansc->sim, se->end(se) - se->start(se));
         spansc->more = se->next(se);
+        if (spansc->first_time) {
+            spansc->first_time = false;
+        }
     }
 
     return (spansc->more || (spansc->freq != 0.0));
@@ -349,9 +351,12 @@ static bool spante_skip_to(SpanEnum *self, int target)
     TermDocEnum *tde = ste->positions;
 
     /* are we already at the correct position? */
+    /* FIXME: perhaps this the the better solution but currently it ->skip_to
+     * does a ->next not matter what
     if (ste->doc >= target) {
         return true;
     }
+    */
 
     if (! tde->skip_to(tde, target)) {
         ste->doc = INT_MAX;
@@ -681,7 +686,7 @@ static bool spanfe_skip_to(SpanEnum *self, int target)
         return true;
     }
 
-    return sub_enum->next(sub_enum);        /* scan to next match */
+    return spanfe_next(self);        /* scan to next match */
 }
 
 static int spanfe_doc(SpanEnum *self)

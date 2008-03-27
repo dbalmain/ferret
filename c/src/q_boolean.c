@@ -279,9 +279,20 @@ typedef struct ConjunctionScorer
     int             last_scored_doc;
 } ConjunctionScorer;
 
+/* qsort shouldn't be needed. Just loop through them once, skip_to'ing for
+ * each scorer whose doc is behind the previous one */
 static void csc_sort_scorers(ConjunctionScorer *csc)
 {
-    qsort(csc->sub_scorers, csc->ss_cnt, sizeof(Scorer *), &scorer_doc_cmp);
+    int i;
+    Scorer *current = csc->sub_scorers[0], *previous;
+    for (i = 1; i < csc->ss_cnt; i++) {
+        previous = current;
+        current = csc->sub_scorers[i];
+        if (previous->doc > current->doc) {
+            current->skip_to(current, previous->doc);
+        }
+    }
+    /*qsort(csc->sub_scorers, csc->ss_cnt, sizeof(Scorer *), &scorer_doc_cmp);*/
     csc->first_idx = 0;
 }
 
@@ -372,7 +383,7 @@ static bool csc_skip_to(Scorer *self, int doc_num)
     bool more = csc->more;
 
     if (csc->first_time) {
-        csc_init(self, true);
+        csc_init(self, false);
     }
 
     for (i = 0; i < sub_sc_cnt; i++) {

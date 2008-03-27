@@ -77,7 +77,7 @@ libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
 
 test: testall
 	@rm -f *.gcda
-	@./testall
+	@./testall -q -v
 
 testall: $(TEST_OBJS) libferret.a
 	@echo Building task: $@ ...

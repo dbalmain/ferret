@@ -39,9 +39,11 @@ bool fqsc_skip_to(Scorer *self, int doc_num)
     Scorer *sub_sc = FQSc(self)->sub_scorer;
     BitVector *bv = FQSc(self)->bv;
     if (sub_sc->skip_to(sub_sc, doc_num)) {
-        self->doc = sub_sc->doc;
         do {
-            if (bv_get(bv, self->doc)) return true;
+            self->doc = sub_sc->doc;
+            if (bv_get(bv, self->doc)) {
+                return true;
+            }
         } while (sub_sc->next(sub_sc));
     }
     return false;

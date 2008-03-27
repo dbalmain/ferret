@@ -787,6 +787,24 @@ struct Searcher
                                   PostFilter *post_filter,
                                   void (*fn)(Searcher *, int, float, void *),
                                   void *arg);
+    /*
+     * Scan the index for all documents that match a query and write the
+     * results to a buffer. It will stop scanning once the limit is reached
+     * and it starts scanning from offset_docnum. 
+     *
+     * Note: Unlike the offset_docnum in other search methods, this
+     * offset_docnum refers to document number and not hit.
+     */
+    int          (*search_unscored)(Searcher *searcher,
+                                    Query *query,
+                                    int *buf,
+                                    int limit,
+                                    int offset_docnum);
+    int          (*search_unscored_w)(Searcher *searcher,
+                                      Weight *weight,
+                                      int *buf,
+                                      int limit,
+                                      int offset_docnum);
     Query       *(*rewrite)(Searcher *self, Query *original);
     Explanation *(*explain)(Searcher *self, Query *query, int doc_num);
     Explanation *(*explain_w)(Searcher *self, Weight *weight, int doc_num);
@@ -811,8 +829,8 @@ struct Searcher
     s->search(s, q, fd, nd, filt, sort, ff, true)
 #define searcher_search_each(s, q, filt, ff, fn, arg)\
     s->search_each(s, q, filt, ff, fn, arg)
-#define searcher_search_each_w(s, q, filt, ff, fn, arg)\
-    s->search_each_w(s, q, filt, ff, fn, arg)
+#define searcher_search_unscored(s, q, buf, limit, offset_docnum)\
+    s->search_unscored(s, q, buf, limit, offset_docnum)
 
 
 extern MatchVector *searcher_get_match_vector(Searcher *self,
@@ -844,19 +862,6 @@ typedef struct IndexSearcher {
 extern Searcher *isea_new(IndexReader *ir);
 extern int isea_doc_freq(Searcher *self, const char *field, const char *term);
 
-/*
- * Scan the index for all documents that match a query and write the results
- * to a buffer. It will stop scanning once the limit is reached and it starts
- * scanning from offset_docnum. 
- *
- * Note: Unlike the offset_docnum in other search methods, this offset_docnum
- * refers to document number and not hit.
- */
-extern int isea_unscored_search(IndexSearcher *searcher,
-                                Query *query,
-                                int *buf,
-                                int limit,
-                                int offset_docnum);
 
 
 /***************************************************************************
