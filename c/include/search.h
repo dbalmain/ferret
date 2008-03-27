@@ -844,6 +844,21 @@ typedef struct IndexSearcher {
 extern Searcher *isea_new(IndexReader *ir);
 extern int isea_doc_freq(Searcher *self, const char *field, const char *term);
 
+/*
+ * Scan the index for all documents that match a query and write the results
+ * to a buffer. It will stop scanning once the limit is reached and it starts
+ * scanning from offset_docnum. 
+ *
+ * Note: Unlike the offset_docnum in other search methods, this offset_docnum
+ * refers to document number and not hit.
+ */
+extern int isea_unscored_search(IndexSearcher *searcher,
+                                Query *query,
+                                int *buf,
+                                int limit,
+                                int offset_docnum);
+
+
 /***************************************************************************
  *
  * MultiSearcher
