@@ -34,6 +34,9 @@ module SearcherTests
     docs.length.times do |i|
       assert_equal(expected[i], docs[i].doc)
     end
+    if options[:limit] == :all and options[:offset] == nil
+      assert_equal(expected.sort, @searcher.scan(query))
+    end
   end
 
   def test_offset

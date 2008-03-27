@@ -114,6 +114,7 @@ static ID id_searcher;
 /* Search */
 static VALUE sym_offset;
 static VALUE sym_limit;
+static VALUE sym_start_doc;
 static VALUE sym_all;
 static VALUE sym_sort;
 static VALUE sym_filter;
@@ -2645,11 +2646,14 @@ frt_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
         if (Qnil != (rval = rb_hash_aref(roptions, sym_limit))) {
             if (TYPE(rval) == T_FIXNUM) {
                 limit = FIX2INT(rval);
-                if (limit <= 0)
+                if (limit <= 0) {
                     rb_raise(rb_eArgError, ":limit must be > 0");
-            } else if (rval == sym_all) {
+                }
+            }
+            else if (rval == sym_all) {
                 limit = INT_MAX;
-            } else {
+            }
+            else {
                 rb_raise(rb_eArgError, "%s is not a sensible :limit value "
                          "Please use a positive integer or :all",
                          rb_obj_as_string(rval));
@@ -2809,6 +2813,100 @@ frt_sea_search_each(int argc, VALUE *argv, VALUE self)
     rb_thread_critical = 0;
 
     return rtotal_hits;
+}
+
+/*
+ *  call-seq:
+ *     searcher.scan(query, options = {}) -> Array (doc_nums)
+ *
+ *  Run a query through the Searcher on the index, ignoring scoring and
+ *  starting at +:start_doc+ and stopping when +:limit+ matches have been
+ *  found. It returns an array of the matching document numbers.
+ *
+ *  There is a big performance advange when using this search method on a very
+ *  large index when there are potentially thousands of matching documents and
+ *  you only want say 50 of them. The other search methods need to look at
+ *  every single match to decide which one has the highest score. This search
+ *  method just needs to find +:limit+ number of matches before it returns.
+ *  
+ *  === Options
+ *
+ *  :start_doc::    Default: 0. The start document to start the search from.
+ *                  NOTE very carefully that this is not the same as the
+ *                  +:offset+ parameter used in the other search methods which
+ *                  refers to the offset in the result-set. This is the
+ *                  document to start the scan from. So if you scanning
+ *                  through the index in increments of 50 documents at a time
+ *                  you need to use the last matched doc in the previous
+ *                  search to start your next search. See the example below.
+ *  :limit::        Default: 50. This is the number of results you want
+ *                  returned, also called the page size. Set +:limit+ to
+ *                  +:all+ to return all results.
+ *  TODO: add option to return loaded documents instead
+ *
+ *  === Options
+ *
+ *    start_doc = 0
+ *    begin
+ *      results = @searcher.scan(query, :start_doc => start_doc)
+ *      yield results # or do something with them
+ *      start_doc = results.last
+ *      # start_doc will be nil now if results is empty, ie no more matches
+ *    end while start_doc
+ */
+static VALUE
+frt_sea_scan(int argc, VALUE *argv, VALUE self)
+{
+    Query *q;
+    int i, count;
+    VALUE rval, rquery, roptions;
+    int *doc_array;
+    VALUE rdoc_array;
+    int start_doc = 0, limit = 50;
+    GET_SEA();
+    rb_scan_args(argc, argv, "11", &rquery, &roptions);
+    Data_Get_Struct(rquery, Query, q);
+
+    if (Qnil != roptions) {
+        Check_Type(roptions, T_HASH);
+        if (Qnil != (rval = rb_hash_aref(roptions, sym_start_doc))) {
+            Check_Type(rval, T_FIXNUM);
+            start_doc = FIX2INT(rval);
+            if (start_doc < 0) {
+                rb_raise(rb_eArgError, ":start_doc must be >= 0");
+            }
+        }
+        if (Qnil != (rval = rb_hash_aref(roptions, sym_limit))) {
+            if (TYPE(rval) == T_FIXNUM) {
+                limit = FIX2INT(rval);
+                if (limit <= 0) {
+                    rb_raise(rb_eArgError, ":limit must be > 0");
+                }
+            }
+            else if (rval == sym_all) {
+                limit = INT_MAX;
+            }
+            else {
+                rb_raise(rb_eArgError, "%s is not a sensible :limit value "
+                         "Please use a positive integer or :all",
+                         rb_obj_as_string(rval));
+            }
+        }
+    }
+
+    rb_thread_critical = Qtrue;
+
+    doc_array = ALLOC_N(int, limit);
+    count = searcher_search_unscored(sea, q, doc_array, limit, start_doc);
+    rdoc_array = rb_ary_new2(count);
+    for (i = 0; i < count; i++) {
+        RARRAY(rdoc_array)->ptr[i] = INT2FIX(doc_array[i]);
+        RARRAY(rdoc_array)->len++;
+    }
+    free(doc_array);
+
+    rb_thread_critical = 0;
+    return rdoc_array;
 }
 
 /*
@@ -4248,6 +4346,7 @@ Init_Searcher(void)
     /* option hash keys for Searcher#search */
     sym_offset          = ID2SYM(rb_intern("offset"));
     sym_limit           = ID2SYM(rb_intern("limit"));
+    sym_start_doc       = ID2SYM(rb_intern("start_doc"));
     sym_all             = ID2SYM(rb_intern("all"));
     sym_filter          = ID2SYM(rb_intern("filter"));
     sym_filter_proc     = ID2SYM(rb_intern("filter_proc"));
@@ -4273,6 +4372,7 @@ Init_Searcher(void)
     rb_define_method(cSearcher, "max_doc", frt_sea_max_doc, 0);
     rb_define_method(cSearcher, "search", frt_sea_search, -1);
     rb_define_method(cSearcher, "search_each", frt_sea_search_each, -1);
+    rb_define_method(cSearcher, "scan", frt_sea_scan, -1);
     rb_define_method(cSearcher, "explain", frt_sea_explain, 2);
     rb_define_method(cSearcher, "highlight", frt_sea_highlight, -1);
 }

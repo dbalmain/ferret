@@ -50,6 +50,12 @@ class SearcherTest < Test::Unit::TestCase
       assert(score_doc.score.approx_eql?(@searcher.explain(query, score_doc.doc).score), 
         "Scores(#{score_doc.score} != #{@searcher.explain(query, score_doc.doc).score})")
     end
+
+    assert_equal(expected.sort, @searcher.scan(query))
+    if expected.size > 5
+        assert_equal(expected[0...5], @searcher.scan(query, :limit => 5))
+        assert_equal(expected[5..-1], @searcher.scan(query, :start_doc => expected[5]))
+    end
   end
 
   def test_get_doc()
