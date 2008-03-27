@@ -1,0 +1,117 @@
+require 'rake'
+require 'rake/clean'
+
+class Path < String
+  def initialize(*path)
+    super(File.expand_path(File.join(*path)))
+  end
+  def /(path)
+    Path.new(self, path)
+  end
+end
+
+def obj_map(srcs)
+  srcs.map do |src|
+    obj = src.pathmap("%{.*,}p%n.o")
+    OBJ_MAP[obj] = src
+    obj
+  end
+end
+
+def qsh(script, msg)
+  puts "#{msg}..."
+  `#{script}`
+end
+
+def vsh(script, msg)
+  puts msg
+  sh script
+end
+
+
+###
+# Path Constants
+###
+HOME          = Path.new(File.dirname(__FILE__))
+TMP           = HOME / '.rake'
+OBJ_MAP       = {}
+
+STEMMER_DIR   = HOME / 'lib/libstemmer_c'
+STEMMER_INC   = STEMMER_DIR / 'include'
+STEMMER_SRCS  = FileList[STEMMER_DIR / 'src_c/*.c',
+                         STEMMER_DIR / 'runtime/api.c',
+                         STEMMER_DIR / 'runtime/utilities.c',
+                         STEMMER_DIR / 'libstemmer/libstemmer.c']
+STEMMER_OBJS  = obj_map(STEMMER_SRCS)
+
+BZLIB_DIR     = HOME / 'lib/bzlib'
+BZLIB_INC     = BZLIB_DIR
+BZLIB_SRCS    = FileList[BZLIB_DIR / '*.c']
+BZLIB_OBJS    = obj_map(BZLIB_SRCS)
+
+SRCS          = FileList['src/*.c']
+OBJS          = obj_map(SRCS)
+
+TEST_SRCS     = FileList['test/*.c']
+TEST_OBJS     = obj_map(TEST_SRCS)
+
+###
+# Dependency Tree
+###
+
+path          = TMP / 'deptree.dep'
+DEP_TREE      = File.exists?(path) ? File.read(path) : {}
+
+
+###
+# Compilation Constants
+###
+AR       = "ar"
+CC       = "gcc"
+CINCS    = "-Iinclude -I#{STEMMER_INC} -I#{BZLIB_INC}"
+DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2"
+CFLAGS   = "-std=c99 -pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS}"
+LDFLAGS  = "-lm -lpthread -lz"
+DEP_DIR  = HOME / ".deps"
+GCOV_DIR = HOME / ".gcov"
+
+
+###
+# Clean Constants
+###
+CLEAN  .include([ '*.o',
+                  '*.gcda',
+                  '*.gcov',
+                  '*.gcno',
+                  'gmon.out',
+                  '.dep',
+                  GCOV_DIR])
+
+CLOBBER.include([ '*.a',
+                  '**/*.o',
+                  'testall',
+                  'load_bench',
+                  'bench',
+                  'search_bench',
+                  'sort_bench'])
+
+task :default => ["testall"]
+
+rule '.o' => lambda {|obj| OBJ_MAP[obj]} do |t|
+  qsh "gcc #{CFLAGS} -c -o #{t.name} #{t.source}", "Compiling #{t.name}"
+end
+
+task :defaults => "libferret.a"
+
+file "libferret.a" => [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten do |t|
+  qsh "#{AR} -cru #{t.name} #{t.prerequisites}", "Generating library: #{t.name}"
+end
+
+file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
+  qsh "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall", "Building tests"
+  sh "./testall"
+end
+  
+# File dependencies go here ...
+file 'main.o' => ['main.c', 'greet.h']
+file 'greet.o' => ['greet.c']
