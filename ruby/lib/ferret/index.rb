@@ -435,6 +435,18 @@ module Ferret::Index
     end
     alias :[] :doc
 
+    # iterate through all documents in the index. This method preloads the
+    # documents so you don't need to call #load on the document to load all the
+    # fields.
+    def each
+      @dir.synchronize do
+        ensure_reader_open
+        (0...@reader.max_doc).each do |i|
+          yield @reader[i].load unless @reader.deleted?(i)
+        end
+      end
+    end
+
     # Deletes a document/documents from the index. The method for determining
     # the document to delete depends on the type of the argument passed.
     #

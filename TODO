@@ -20,6 +20,9 @@ TODO
   - Add Rakefile for development purposes
     + task to publish gcov and benchmark results to ferret wiki
   - Fix tmpname warning.
+  - Ranged, unordered searching. Ie search through the index until you have the
+    required number of documents and then break. This will require the ability
+    to start searches from a particular doc-num.
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
@@ -53,6 +56,7 @@ Someday Maybe
 * add portable stacktrace function. Perhaps implement as an external library.
   - See http://www.nongnu.org/libunwind/
   - See http://www.tlug.org.za/wiki/index.php/Obtaining_a_stack_trace_in_C_upon_SIGSEGV
+* investigate unscored searching
 
 Done
 ====

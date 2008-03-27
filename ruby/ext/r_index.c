@@ -480,7 +480,7 @@ frt_fis_get(VALUE self, VALUE ridx)
             if (index < 0) index += fis->size;
             if (index < 0 || index >= fis->size) {
                 rb_raise(rb_eArgError, "index of %d is out of range (0..%d)\n",
-                         index, fis->size);
+                         index, fis->size - 1);
             }
             rfi = frt_get_field_info(fis->fields[index]);
             break;
@@ -2424,19 +2424,19 @@ frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
             pos = FIX2INT(arg1);
             pos = (pos < 0) ? (max + pos) : pos;
             if (pos < 0 || pos >= max) {
-                rb_raise(rb_eArgError, ":%d is out of range [%d..%d] for "
-                         "IndexReader#[]", pos, 0, max,
-                         rb_id2name(SYM2ID(argv)));
+                rb_raise(rb_eArgError, "index %d is out of range [%d..%d] for "
+                         "IndexReader#[]", pos, 0, max, -1);
             }
             return frt_get_lazy_doc(ir->get_lazy_doc(ir, pos));
         }
 
         /* check if idx is Range */
+        /* FIXME: test this with dodgy values */
         switch (rb_range_beg_len(arg1, &pos, &len, max, 0)) {
             case Qfalse:
                 rb_raise(rb_eArgError, ":%s isn't a valid argument for "
                          "IndexReader.get_document(index)",
-                         rb_id2name(SYM2ID(argv)));
+                         rb_id2name(SYM2ID(arg1)));
             case Qnil:
                 return Qnil;
             default:
