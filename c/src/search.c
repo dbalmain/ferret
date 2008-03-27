@@ -1172,6 +1172,36 @@ static void isea_search_each(Searcher *self, Query *query, Filter *filter,
     weight->destroy(weight);
 }
 
+/*
+ * Scan the index for all documents that match a query and write the results
+ * to a buffer. It will stop scanning once the limit is reached and it starts
+ * scanning from offset_docnum. 
+ *
+ * Note: Unlike the offset_docnum in other search methods, this offset_docnum
+ * refers to document number and not hit.
+ *
+ * FIXME: untested
+ */
+int isea_unscored_search(IndexSearcher *searcher,
+                         Query *query,
+                         int *buf,
+                         int limit,
+                         int offset_docnum)
+{
+    int count = 0;
+    Weight *weight = q_weight(query, (Searcher *)searcher);
+    Scorer *scorer = weight->scorer(weight, searcher->ir);
+    if (scorer) {
+        scorer->skip_to(scorer, offset_docnum);
+        while (count < limit && scorer->next(scorer)) {
+            buf[count++] = scorer->doc;
+        }
+        scorer->destroy(scorer);
+    }
+    weight->destroy(weight);
+    return count;
+}
+
 static Query *isea_rewrite(Searcher *self, Query *original)
 {
     int q_is_destroyed = false;
