@@ -16,61 +16,18 @@
     goto ret;         \
 } while(0)
 
-#define PUTS(desc) do {           \
-    printf(desc);                 \
-    fwrite(ts, 1, te-ts, stdout); \
-    printf("\n");                 \
-} while(0)
-
 %%{
-    machine StdTokMb;
+    machine StdTok;
     alphtype unsigned int;
     include WChar "src/wchar.rl";
-    include Email "src/email.rl";
 
-    delim = space;
-    token = walpha walnum*;
-    punc  = [.\/_\-];
-    proto = 'http'[s]? | 'ftp' | 'file';
-    urlc  = walnum | punc | [\@\:];
+    frt_alpha = walpha;
+    frt_alnum = walnum;
+    frt_digit = wdigit;
 
-    main := |*
-        #// Email
-        email { RET; };
+    include StdTok "src/scanner.in";
 
-        #// Token, or token with possessive
-        token           { RET; };
-        token [\']      { trunc = 1; RET; };
-        token [\'][sS]? { trunc = 2; RET; };
-
-        #// contractions
-        walpha+ [\'] walpha+ { RET; };
-
-        #// Company name
-        token [\&\@] token* { RET; };
-
-        #// URL
-        proto [:][/]+ %{ skip = p - ts; } urlc+ [/] { trunc = 1; RET; };
-        proto [:][/]+ %{ skip = p - ts; } urlc+     { RET; };
-        walnum+[:][/]+ urlc+ [/] { trunc = 1; RET; };
-        walnum+[:][/]+ urlc+     { RET; };
-
-        #// Acronym
-        (walpha '.')+ walpha { STRIP('.'); };
-
-        #// Int+float
-        [\-\+]?wdigit+            { RET; };
-        [\-\+]?wdigit+ '.' wdigit+ { RET; };
-
-        #// URL without proto
-        walnum+ ([\-_] walnum+)* { RET; };
-
-        #// Ignore whitespace and other crap
-        0 { return; };
-        (any - walnum);
-
-
-        *|;
+    main := any @{ fhold; fcall frt_tokenizer; };
 }%%
 
 %% write data nofinal;
@@ -193,7 +150,8 @@ void frt_std_scan_mb(const char *in_mb,
                      const char **end_mb,
                      int *token_size)
 {
-    int cs, act;
+    int cs, act, top;
+    int stack[32];
     unsigned int *ts = 0, *te = 0;
 
     %% write init;
@@ -212,7 +170,7 @@ void frt_std_scan_mb(const char *in_mb,
 
     %% write exec;
 
-    if ( cs == StdTokMb_error )
+    if ( cs == StdTok_error )
                    fwprintf(stderr, L"PARSE ERROR\n");
     else if ( ts ) fwprintf(stderr, L"STUFF LEFT: '%ls'\n", ts);
     return;

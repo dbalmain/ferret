@@ -1,3 +1,4 @@
+#// email.rl -*-C-*-
 %%{
     machine Email;
 

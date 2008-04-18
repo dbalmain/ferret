@@ -1,0 +1,43 @@
+#// scanner.in -*-C-*-
+
+%%{
+    machine StdTok;
+    include URL "src/url.rl";
+    include Email "src/email.rl";
+
+    token = frt_alpha frt_alnum*;
+
+    frt_tokenizer := |*
+        #// Email
+        email { RET; };
+
+        #// Token, or token with possessive
+        token          { RET; };
+        token [\']     { trunc = 1; RET; };
+        token [\'][sS] { trunc = 2; RET; };
+
+        #// contractions
+        frt_alpha+ [\'] frt_alpha+ { RET; };
+
+        #// Token with hyphens
+        frt_alnum+ ([\-_] frt_alnum+)* { RET; };
+
+        #// Company name
+        token [\&\@] token* { RET; };
+
+        #// URL
+        url { RET; };
+
+        #// Acronym
+        (frt_alpha '.')+ frt_alpha { STRIP('.'); };
+
+        #// Int+float
+        [\-\+]?frt_digit+                { RET; };
+        [\-\+]?frt_digit+ '.' frt_digit+ { RET; };
+
+        #// Ignore whitespace and other crap
+        0 { return; };
+        (any - frt_alnum);
+
+        *|;
+}%%
