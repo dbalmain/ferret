@@ -14,7 +14,7 @@ void frt_std_scan(const char *in,
                   char **start, char **end,
                   int *token_length);
 
-void frt_std_scan_mb(const char *in,
+void frt_std_scan_mb(const char *in, size_t in_size,
                      char *out, size_t out_size,
                      char **start, char **end,
                      int *token_length);

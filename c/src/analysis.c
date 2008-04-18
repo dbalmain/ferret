@@ -832,7 +832,8 @@ static Token *std_next(TokenStream *ts)
         char *end = NULL;
         Token *tk = &(CTS(ts)->token);
 
-        frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
+        frt_std_scan_mb(ts->t, 256, /* XXX */
+                        tk->text, sizeof(tk->text) - 1, &start, &end, &len);
         if (len == 0)
             return NULL;
 
