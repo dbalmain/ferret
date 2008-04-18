@@ -72,10 +72,10 @@ if ENV['USE_ZLIB'] or ENV['USE_CPP']
   BZLIB_INC_DIR = nil
   BZLIB_OBJS    = nil
 else
-  BZLIB_DIR       = 'lib/bzlib'
-  BZLIB_INC_DIR   = BZLIB_DIR
-  BZLIB_SRCS      = FileList[BZLIB_DIR / '*.c']
-  BZLIB_OBJS      = obj_map(BZLIB_SRCS)
+  BZLIB_DIR     = 'lib/bzlib'
+  BZLIB_INC_DIR = BZLIB_DIR
+  BZLIB_SRCS    = FileList[BZLIB_DIR / '*.c']
+  BZLIB_OBJS    = obj_map(BZLIB_SRCS)
 end
 
 SRCS            = FileList['src/*.c']
@@ -139,18 +139,18 @@ end
 ###
 CC       = 'gcc'
 DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2"
-
-if ENV['USE_CPP']
-  CC[1,2] = '++'
-  DEFS << ' -DUSE_ZLIB'
-end
-
 AR       = "ar"
 CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
 CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS} -std=c99"
+
+if ENV['USE_CPP']
+  CC[1,2] = '++'
+  CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
+end
+
 
 ###
 # Clean Constants
