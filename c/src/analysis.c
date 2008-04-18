@@ -1072,7 +1072,7 @@ static TokenStream *sf_clone_i(TokenStream *orig_ts)
 static Token *sf_next(TokenStream *ts)
 {
     int pos_inc = 0;
-    HashTable *words = StopFilt(ts)->words;
+    Hash *words = StopFilt(ts)->words;
     TokenFilter *tf = TkFilt(ts);
     Token *tk = tf->sub_ts->next(tf->sub_ts);
 
@@ -1093,7 +1093,7 @@ TokenStream *stop_filter_new_with_words_len(TokenStream *sub_ts,
 {
     int i;
     char *word;
-    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
+    Hash *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     for (i = 0; i < len; i++) {
@@ -1111,7 +1111,7 @@ TokenStream *stop_filter_new_with_words(TokenStream *sub_ts,
                                         const char **words)
 {
     char *word;
-    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
+    Hash *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     while (*words) {

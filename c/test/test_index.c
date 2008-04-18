@@ -794,8 +794,8 @@ static void test_index_undelete_all_after_close(TestCase *tc, void *data)
 static void test_fld_inverter(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
-    HashTable *plists;
-    HashTable *curr_plists;
+    Hash *plists;
+    Hash *curr_plists;
     Posting *p;
     PostingList *pl;
     DocWriter *dw;
@@ -1016,7 +1016,7 @@ static void test_simulated_crashed_writer(TestCase *tc, void *data)
      * missing, to simulate a writer that crashed while
      * writing segments file: */
     sis_curr_seg_file_name(file_name_in, store);
-    fn_for_generation(file_name_out, SEGMENTS_FILE_NAME, "", 1 + gen);
+    fn_for_generation(file_name_out, SEGMENTS_FILE_NAME, NULL, 1 + gen);
     is = store->open_input(store, file_name_in);
     os = store->new_output(store, file_name_out);
     length = is_length(is);
@@ -1692,7 +1692,7 @@ static void test_ir_term_vectors(TestCase *tc, void *data)
     IndexReader *ir = (IndexReader *)data;
 
     TermVector *tv = ir->term_vector(ir, 3, "body");
-    HashTable *tvs;
+    Hash *tvs;
 
     Asequal("body", tv->field);
     Aiequal(4, tv->term_cnt);

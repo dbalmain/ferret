@@ -87,7 +87,7 @@ extern FrtTokenStream *frt_tf_new_i(size_t size, FrtTokenStream *sub_ts);
 typedef struct FrtStopFilter
 {
     FrtTokenFilter super;
-    FrtHashTable  *words;
+    FrtHash  *words;
 } FrtStopFilter;
 
 typedef struct FrtMappingFilter 
@@ -211,7 +211,7 @@ extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words_len(const char **wor
 typedef struct FrtPerFieldAnalyzer
 {
     FrtAnalyzer    super;
-    FrtHashTable  *dict;
+    FrtHash  *dict;
     FrtAnalyzer   *default_a;
 } FrtPerFieldAnalyzer;
 

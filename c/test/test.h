@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <internal.h>
+#include "internal.h"
 
 /**
  * A test suite is a linked-list of sub-suites that are made up of test cases

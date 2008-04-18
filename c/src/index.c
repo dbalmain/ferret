@@ -186,7 +186,7 @@ static void co_destroy(CacheObject *self)
     free(self);
 }
 
-CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
+CacheObject *co_create(Hash *ref_tab1, Hash *ref_tab2,
                        void *ref1, void *ref2, free_ft destroy, void *obj)
 {
     CacheObject *self = ALLOC(CacheObject);
@@ -201,7 +201,7 @@ CacheObject *co_create(HashTable *ref_tab1, HashTable *ref_tab2,
     return self;
 }
 
-HashTable *co_hash_create()
+Hash *co_hash_create()
 {
     return h_new(&co_hash, &co_eq, (free_ft)NULL, (free_ft)&co_destroy);
 }
@@ -406,7 +406,7 @@ FieldInfos *fis_read(InStream *is)
             StoreValue store_val;
             IndexValue index_val;
             TermVectorValue term_vector_val;
-            int i;
+            volatile int i;
             union { u32 i; float f; } tmp;
             FieldInfo *volatile fi;
 
@@ -829,12 +829,12 @@ static char *sis_next_seg_file_name(char *buf, Store *store)
 static void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                             void (*run)(Store *store, FindSegmentsFile *fsf))
 {
-    int i;
-    int gen_look_ahead_count = 0;
-    bool retry = false;
-    int method = 0;
-    i64 last_gen = -1;
-    i64 gen = 0;
+    volatile int i;
+    volatile int gen_look_ahead_count = 0;
+    volatile bool retry = false;
+    volatile int method = 0;
+    volatile i64 last_gen = -1;
+    volatile i64 gen = 0;
 
     /* Loop until we succeed in calling doBody() without hitting an
      * IOException.  An IOException most likely means a commit was in process
@@ -1126,7 +1126,7 @@ SegmentInfos *sis_read(Store *store)
 void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
 {
     int i;
-    OutStream *os = NULL;
+    OutStream *volatile os = NULL;
     const int sis_size = sis->size;
     char buf[SEGMENT_NAME_MAX_LENGTH];
     sis->generation++;
@@ -1714,9 +1714,9 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
     return tv;
 }
 
-HashTable *fr_get_tv(FieldsReader *fr, int doc_num)
+Hash *fr_get_tv(FieldsReader *fr, int doc_num)
 {
-    HashTable *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
+    Hash *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
     int i;
     InStream *fdx_in = fr->fdx_in;
     InStream *fdt_in = fr->fdt_in;
@@ -3606,7 +3606,7 @@ TermDocEnum *mtdpe_new(IndexReader *ir, int field_num, char **terms, int t_cnt)
  *
  ****************************************************************************/
 
-static HashTable *fn_extensions = NULL;
+static Hash *fn_extensions = NULL;
 static void file_name_filter_init()
 {
     int i;
@@ -3728,7 +3728,7 @@ void deleter_delete_files(Deleter *dlr, char **files, int file_cnt)
 struct DelFilesArg {
     char  curr_seg_file_name[SEGMENT_NAME_MAX_LENGTH];
     Deleter *dlr;
-    HashTable *current;
+    Hash *current;
 };
 
 static void deleter_find_deletable_files_i(const char *file_name, void *arg)
@@ -3823,7 +3823,7 @@ void deleter_find_deletable_files(Deleter *dlr)
     SegmentInfos *sis = dlr->sis;
     Store *store = dlr->store;
     struct DelFilesArg dfa;
-    HashTable *current = dfa.current
+    Hash *current = dfa.current
                        = h_new_str((free_ft)NULL, (free_ft)si_deref);
     dfa.dlr = dlr;
 
@@ -4241,7 +4241,7 @@ typedef struct SegmentReader {
     TermInfosReader *tir;
     thread_key_t thread_fr;
     void **fr_bucket;
-    HashTable *norms;
+    Hash *norms;
     Store *cfs_store;
     bool deleted_docs_dirty : 1;
     bool undelete_all : 1;
@@ -4553,7 +4553,7 @@ static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
     return fr_get_field_tv(fr, doc_num, fi->number);
 }
 
-static HashTable *sr_term_vectors(IndexReader *ir, int doc_num)
+static Hash *sr_term_vectors(IndexReader *ir, int doc_num)
 {
     FieldsReader *fr;
     if (!SR(ir)->fr || NULL == (fr = sr_fr(SR(ir)))) {
@@ -4598,7 +4598,7 @@ static void sr_open_norms(IndexReader *ir, Store *cfs_store)
 
 static IndexReader *sr_setup_i(SegmentReader *sr)
 {
-    Store *store = sr->si->store;
+    Store *volatile store = sr->si->store;
     IndexReader *ir = IR(sr);
     char file_name[SEGMENT_NAME_MAX_LENGTH];
     char *sr_segment = sr->si->name;
@@ -4847,7 +4847,7 @@ static TermVector *mr_term_vector(IndexReader *ir, int doc_num,
     return reader->term_vector(reader, doc_num - MR(ir)->starts[i], field);
 }
 
-static HashTable *mr_term_vectors(IndexReader *ir, int doc_num)
+static Hash *mr_term_vectors(IndexReader *ir, int doc_num)
 {
     GET_READER();
     return reader->term_vectors(reader, doc_num - MR(ir)->starts[i]);
@@ -5105,7 +5105,7 @@ static void ir_open_i(Store *store, FindSegmentsFile *fsf)
             ir = sr_open(sis, fis, 0, true);
         }
         else {
-            int i;
+            volatile int i;
             IndexReader **readers = ALLOC_N(IndexReader *, sis->size);
             int num_segments = sis->size;
             for (i = num_segments - 1; i >= 0; i--) {
@@ -5331,9 +5331,9 @@ static void dw_write_norms(DocWriter *dw, FieldInverter *fld_inv)
     os_close(norms_out);
 }
 
-/* we'll use the postings HashTable's table area to sort the postings as it is
+/* we'll use the postings Hash's table area to sort the postings as it is
  * going to be zeroset soon anyway */
-static PostingList **dw_sort_postings(HashTable *plists_ht)
+static PostingList **dw_sort_postings(Hash *plists_ht)
 {
     int i, j;
     HashEntry *he;
@@ -5506,8 +5506,8 @@ FieldInverter *dw_get_fld_inv(DocWriter *dw, FieldInfo *fi)
 }
 
 static void dw_add_posting(MemoryPool *mp,
-                           HashTable *curr_plists,
-                           HashTable *fld_plists,
+                           Hash *curr_plists,
+                           Hash *fld_plists,
                            int doc_num,
                            const char *text,
                            int len,
@@ -5548,14 +5548,14 @@ static INLINE void dw_add_offsets(DocWriter *dw, int pos, off_t start, off_t end
     dw->offsets_size = pos + 1;
 }
 
-HashTable *dw_invert_field(DocWriter *dw,
+Hash *dw_invert_field(DocWriter *dw,
                            FieldInverter *fld_inv,
                            DocField *df)
 {
     MemoryPool *mp = dw->mp;
     Analyzer *a = dw->analyzer;
-    HashTable *curr_plists = dw->curr_plists;
-    HashTable *fld_plists = fld_inv->plists;
+    Hash *curr_plists = dw->curr_plists;
+    Hash *fld_plists = fld_inv->plists;
     const bool store_offsets = fld_inv->store_offsets;
     int doc_num = dw->doc_num;
     int i;
@@ -5620,7 +5620,7 @@ HashTable *dw_invert_field(DocWriter *dw,
     return curr_plists;
 }
 
-void dw_reset_postings(HashTable *postings)
+void dw_reset_postings(Hash *postings)
 {
     ZEROSET_N(postings->table, HashEntry, postings->mask + 1);
     postings->fill = postings->size = 0;
@@ -5632,7 +5632,7 @@ void dw_add_doc(DocWriter *dw, Document *doc)
     float boost;
     DocField *df;
     FieldInverter *fld_inv;
-    HashTable *postings;
+    Hash *postings;
     FieldInfo *fi;
     const int doc_size = doc->size;
 
@@ -6467,7 +6467,7 @@ void iw_close(IndexWriter *iw)
     free(iw);
 }
 
-IndexWriter *iw_open(Store *store, Analyzer *analyzer,
+IndexWriter *iw_open(Store *store, Analyzer *volatile analyzer,
                      const Config *config)
 {
     IndexWriter *iw = ALLOC_AND_ZERO(IndexWriter);

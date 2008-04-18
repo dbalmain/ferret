@@ -1,5 +1,5 @@
-#ifndef ALL_TEST_H
-#define ALL_TEST_H
+#ifndef ALL_TESTS_H
+#define ALL_TESTS_H
 
 #include "test.h"
 

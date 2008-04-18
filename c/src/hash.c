@@ -5,7 +5,7 @@
 
 /****************************************************************************
  *
- * HashTable
+ * Hash
  *
  * This hash table is modeled after Python's dictobject and a description of
  * the algorithm can be found in the file dictobject.c in Python's src
@@ -16,13 +16,13 @@ static char *dummy_key = "";
 #define PERTURB_SHIFT 5
 #define MAX_FREE_HASH_TABLES 80
 
-static HashTable *free_hts[MAX_FREE_HASH_TABLES];
+static Hash *free_hts[MAX_FREE_HASH_TABLES];
 static int num_free_hts = 0;
 
 unsigned long str_hash(const char *const str)
 {
     register unsigned long h = 0;
-    register unsigned char *p = (unsigned char *) str;
+    register unsigned char *p = (unsigned char *)str;
 
     for (; *p; p++) {
         h = 37 * h + *p;
@@ -58,17 +58,17 @@ static unsigned long int_hash(const void *i)
     return *((unsigned long *)i);
 }
 
-typedef HashEntry *(*lookup_ft)(struct HashTable *ht, register const void *key);
+typedef HashEntry *(*lookup_ft)(struct Hash *ht, register const void *key);
 
 /**
  * Fast lookup function for resizing as we know there are no equal elements or
  * deletes to worry about.
  *
- * @param ht the HashTable to do the fast lookup in
+ * @param ht the Hash to do the fast lookup in
  * @param the hashkey we are looking for
  */
-static INLINE HashEntry *h_resize_lookup(HashTable *ht,
-                                           register const unsigned long hash)
+static INLINE HashEntry *h_resize_lookup(Hash *ht,
+                                         register const unsigned long hash)
 {
     register unsigned long perturb;
     register int mask = ht->mask;
@@ -91,9 +91,9 @@ static INLINE HashEntry *h_resize_lookup(HashTable *ht,
     }
 }
 
-static HashEntry *h_lookup_int(HashTable *ht, const void *key)
+static HashEntry *h_lookup_int(Hash *ht, const void *key)
 {
-    register unsigned long hash = *((int *)key);
+    register const unsigned long hash = *((int *)key);
     register unsigned long perturb;
     register int mask = ht->mask;
     register HashEntry *he0 = ht->table;
@@ -128,10 +128,10 @@ static HashEntry *h_lookup_int(HashTable *ht, const void *key)
     }
 }
 
-HashEntry *h_lookup(HashTable *ht, register const void *key)
+HashEntry *h_lookup(Hash *ht, register const void *key)
 {
-    register unsigned int hash = ht->hash_i(key);
-    register unsigned int perturb;
+    register const unsigned long hash = ht->hash_i(key);
+    register unsigned long perturb;
     register int mask = ht->mask;
     register HashEntry *he0 = ht->table;
     register int i = hash & mask;
@@ -173,14 +173,14 @@ HashEntry *h_lookup(HashTable *ht, register const void *key)
     }
 }
 
-HashTable *h_new_str(free_ft free_key, free_ft free_value)
+Hash *h_new_str(free_ft free_key, free_ft free_value)
 {
-    HashTable *ht;
+    Hash *ht;
     if (num_free_hts > 0) {
         ht = free_hts[--num_free_hts];
     }
     else {
-        ht = ALLOC(HashTable);
+        ht = ALLOC(Hash);
     }
     ht->fill = 0;
     ht->size = 0;
@@ -197,18 +197,18 @@ HashTable *h_new_str(free_ft free_key, free_ft free_value)
     return ht;
 }
 
-HashTable *h_new_int(free_ft free_value)
+Hash *h_new_int(free_ft free_value)
 {
-    HashTable *ht = h_new_str(NULL, free_value);
+    Hash *ht = h_new_str(NULL, free_value);
     ht->lookup_i = &h_lookup_int;
     ht->eq_i = int_eq;
     ht->hash_i = int_hash;
     return ht;
 }
 
-HashTable *h_new(hash_ft hash, eq_ft eq, free_ft free_key, free_ft free_value)
+Hash *h_new(hash_ft hash, eq_ft eq, free_ft free_key, free_ft free_value)
 {
-    HashTable *ht = h_new_str(free_key, free_value);
+    Hash *ht = h_new_str(free_key, free_value);
 
     ht->lookup_i = &h_lookup;
     ht->eq_i = eq;
@@ -216,7 +216,7 @@ HashTable *h_new(hash_ft hash, eq_ft eq, free_ft free_key, free_ft free_value)
     return ht;
 }
 
-void h_clear(HashTable *ht)
+void h_clear(Hash *ht)
 {
     int i;
     HashEntry *he;
@@ -239,7 +239,7 @@ void h_clear(HashTable *ht)
     ht->fill = 0;
 }
 
-void h_destroy(HashTable *ht)
+void h_destroy(Hash *ht)
 {
     if (--(ht->ref_cnt) <= 0) {
         h_clear(ht);
@@ -262,13 +262,13 @@ void h_destroy(HashTable *ht)
     }
 }
 
-void *h_get(HashTable *ht, const void *key)
+void *h_get(Hash *ht, const void *key)
 {
     /* Note: lookup_i will never return NULL. */
     return ht->lookup_i(ht, key)->value;
 }
 
-int h_del(HashTable *ht, const void *key)
+int h_del(Hash *ht, const void *key)
 {
     HashEntry *he = ht->lookup_i(ht, key);
 
@@ -285,7 +285,7 @@ int h_del(HashTable *ht, const void *key)
     }
 }
 
-void *h_rem(HashTable *ht, const void *key, bool destroy_key)
+void *h_rem(Hash *ht, const void *key, bool destroy_key)
 {
     void *val;
     HashEntry *he = ht->lookup_i(ht, key);
@@ -306,7 +306,7 @@ void *h_rem(HashTable *ht, const void *key, bool destroy_key)
     }
 }
 
-static int h_resize(HashTable *ht, int min_newsize)
+static int h_resize(Hash *ht, int min_newsize)
 {
     HashEntry smallcopy[HASH_MINSIZE];
     HashEntry *oldtable;
@@ -351,7 +351,7 @@ static int h_resize(HashTable *ht, int min_newsize)
     return 0;
 }
 
-HashKeyStatus h_set(HashTable *ht, const void *key, void *value)
+HashKeyStatus h_set(Hash *ht, const void *key, void *value)
 {
     HashKeyStatus ret_val = HASH_KEY_DOES_NOT_EXIST;
     HashEntry *he = ht->lookup_i(ht, key);
@@ -391,7 +391,7 @@ HashKeyStatus h_set(HashTable *ht, const void *key, void *value)
     return ret_val;
 }
 
-HashEntry *h_set_ext(HashTable *ht, const void *key)
+HashEntry *h_set_ext(Hash *ht, const void *key)
 {
     HashEntry *he = ht->lookup_i(ht, key);
     if (he->key == NULL) {
@@ -409,7 +409,7 @@ HashEntry *h_set_ext(HashTable *ht, const void *key)
     return he;
 }
 
-int h_set_safe(HashTable *ht, const void *key, void *value)
+int h_set_safe(Hash *ht, const void *key, void *value)
 {
     HashEntry *he = ht->lookup_i(ht, key);
     int fill = ht->fill;
@@ -432,7 +432,7 @@ int h_set_safe(HashTable *ht, const void *key, void *value)
     return true;
 }
 
-HashKeyStatus h_has_key(HashTable *ht, const void *key)
+HashKeyStatus h_has_key(Hash *ht, const void *key)
 {
     HashEntry *he = ht->lookup_i(ht, key);
     if (he->key == NULL || he->key == dummy_key) {
@@ -444,39 +444,39 @@ HashKeyStatus h_has_key(HashTable *ht, const void *key)
     return HASH_KEY_EQUAL;
 }
 
-void *h_get_int(HashTable *self, const unsigned long key)
+void *h_get_int(Hash *self, const unsigned long key)
 {
     return h_get(self, &key);
 }
 
-int h_del_int(HashTable *self, const unsigned long key)
+int h_del_int(Hash *self, const unsigned long key)
 {
     return h_del(self, &key);
 }
 
-void *h_rem_int(HashTable *self, const unsigned long key)
+void *h_rem_int(Hash *self, const unsigned long key)
 {
     return h_rem(self, &key, false);
 }
 
-HashKeyStatus h_set_int(HashTable *self,
+HashKeyStatus h_set_int(Hash *self,
                              const unsigned long key,
                              void *value)
 {
     return h_set(self, &key, value);
 }
 
-int h_set_safe_int(HashTable *self, const unsigned long key, void *value)
+int h_set_safe_int(Hash *self, const unsigned long key, void *value)
 {
     return h_set_safe(self, &key, value);
 }
 
-int h_has_key_int(HashTable *self, const unsigned long key)
+int h_has_key_int(Hash *self, const unsigned long key)
 {
     return h_has_key(self, &key);
 }
 
-void h_each(HashTable *ht,
+void h_each(Hash *ht,
             void (*each_kv) (void *key, void *value, void *arg), void *arg)
 {
     HashEntry *he;
@@ -489,13 +489,13 @@ void h_each(HashTable *ht,
     }
 }
 
-HashTable *h_clone(HashTable *ht,
+Hash *h_clone(Hash *ht,
                    h_clone_ft clone_key, h_clone_ft clone_value)
 {
     void *key, *value;
     HashEntry *he;
     int i = ht->size;
-    HashTable *ht_clone;
+    Hash *ht_clone;
 
     ht_clone = h_new(ht->hash_i, ht->eq_i, ht->free_key_i, ht->free_value_i);
 
@@ -510,7 +510,7 @@ HashTable *h_clone(HashTable *ht,
     return ht_clone;
 }
 
-void h_str_print_keys(HashTable *ht)
+void h_str_print_keys(Hash *ht)
 {
     HashEntry *he;
     int i = ht->size;

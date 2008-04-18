@@ -34,7 +34,7 @@ typedef struct FrtMultiMapper
     int d_capa;
     unsigned char alphabet[256];
     int a_size;
-    FrtHashTable *dstates_map;
+    FrtHash *dstates_map;
     FrtState **nstates;
     int nsize;
     int *next_states;

@@ -1296,7 +1296,7 @@ Searcher *isea_new(IndexReader *ir)
 typedef struct CachedDFSearcher
 {
     Searcher    super;
-    HashTable  *df_map;
+    Hash  *df_map;
     int         max_doc;
 } CachedDFSearcher;
 
@@ -1408,7 +1408,7 @@ static void cdfsea_close(Searcher *self)
     free(self);
 }
 
-static Searcher *cdfsea_new(HashTable *df_map, int max_doc)
+static Searcher *cdfsea_new(Hash *df_map, int max_doc)
 {
     Searcher *self          = (Searcher *)ALLOC(CachedDFSearcher);
 
@@ -1518,7 +1518,7 @@ static Weight *msea_create_weight(Searcher *self, Query *query)
     int i, *doc_freqs;
     Searcher *cdfsea;
     Weight *w;
-    HashTable *df_map = h_new((hash_ft)&term_hash, (eq_ft)&term_eq,
+    Hash *df_map = h_new((hash_ft)&term_hash, (eq_ft)&term_eq,
                              (free_ft)NULL, free);
     Query *rewritten_query = self->rewrite(self, query);
     HashSet *terms = term_set_new();

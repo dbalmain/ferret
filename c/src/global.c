@@ -246,7 +246,7 @@ static char *build_shell_command()
     int   pid = getpid();
     static char buf[CMD_BUF_SIZE];
     char *command = "echo \"bt\nq\n\" > .gdb-bt && "
-        "gdb -quiet -command=.gdb-bt %s %d 2>/dev/null | grep '^#'";
+        "gdb -quiet -command=.gdb-bt %s %d 2>/dev/null | grep '^[ #]'";
 
     snprintf(buf, CMD_BUF_SIZE, command, progname(), pid);
     return buf;

@@ -100,7 +100,7 @@ static void test_tv_single_doc(TestCase *tc, void *data)
     FieldsReader *fr; 
     FieldsWriter *fw;
     TermVector *tv;
-    HashTable *tvs;
+    Hash *tvs;
     FieldInfos *fis = create_tv_fis();
     char **terms = create_tv_terms(mp);
     PostingList **plists = create_tv_plists(mp, terms);
@@ -252,7 +252,7 @@ static void test_tv_multi_doc(TestCase *tc, void *data)
     FieldsReader *fr; 
     FieldsWriter *fw;
     TermVector *tv;
-    HashTable *tvs;
+    Hash *tvs;
     FieldInfos *fis = create_tv_fis();
     char **terms = create_tv_terms(mp);
     PostingList **plists = create_tv_plists(mp, terms);

@@ -86,11 +86,15 @@ INC_DIR         = 'include'
 TEST_SRCS       = FileList['test/*.c']
 TEST_OBJS       = obj_map(TEST_SRCS)
 
-INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR, 'test'].compact
+BENCHMARK_SRCS  = FileList['benchmark/*.c']
+BENCHMARK_OBJS  = obj_map(BENCHMARK_SRCS)
+
+INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR,
+                    'test', 'benchmark'].compact
 INC_FILES       = FileList[*INC_DIRS.map{|dir| File.join(dir, '*.h')}]
 INC_MAP         = INC_FILES.inject({}) {|h, f| h[File.basename(f)] = f;h}
 
-SRC_FILES       = SRCS + TEST_SRCS
+SRC_FILES       = SRCS + TEST_SRCS + BENCHMARK_SRCS
 ALL_BUILD_FILES = INC_FILES + SRC_FILES
 ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   basename = File.basename(src)
@@ -145,7 +149,7 @@ CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
-CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS}"
+CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS} -O2"
 
 if (File.exists?(`which gdb 2> /dev/null`.chomp))
   CFLAGS << " -DHAVE_GDB"
@@ -154,6 +158,7 @@ end
 if ENV['USE_CPP']
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
+  #CFLAGS << ' -lstlport -I/usr/include/stlport/'
 end
 
 
@@ -194,11 +199,17 @@ namespace :build do
   desc "Build the test binary 'testall'"
   task :tests => 'testall'
 
-  #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
   desc "Build the test runner"
   file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
+  #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
+  end
+
+  desc "Build the benchmark runner"
+  file "bench" => [LIB_FERRET_OBJS, BENCHMARK_OBJS].flatten do |t|
+    vsh "Building benchmarks",
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o bench"
   end
 
   file 'src/q_parser.c' => 'src/q_parser.y' do
@@ -210,10 +221,20 @@ namespace :build do
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
-    tests = []
-    t.prerequisites.each{|fn| tests += File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z]+)/)}
     File.open(t.name, 'w') do |f|
-      f.write(ERB.new(File.read('test/all_tests.erb')).result(x))
+      tests = t.prerequisites.map{|fn|
+        File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z]+)/)
+      }.flatten
+      f.write(ERB.new(File.read('test/all_tests.erb')).result(binding))
+    end
+  end
+
+  file 'benchmark/all_benchmarks.h' => FileList['benchmark/bm_*.c'] do |t|
+    File.open(t.name, 'w') do |f|
+      benchmarks = t.prerequisites.map{|fn|
+        File.read(fn).scan(/BENCH\((\w+)\)/)
+      }.flatten
+      f.write(ERB.new(File.read('benchmark/all_benchmarks.erb')).result(binding))
     end
   end
 
