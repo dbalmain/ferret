@@ -101,7 +101,7 @@ extern char *frt_td_to_s(FrtTopDocs *td);
 typedef struct FrtFilter
 {
     char                *name;
-    FrtHash     *cache;
+    FrtHashTable     *cache;
     FrtBitVector           *(*get_bv_i)(struct FrtFilter *self, FrtIndexReader *ir);
     char                *(*to_s)(struct FrtFilter *self);
     unsigned long        (*hash)(struct FrtFilter *self);
@@ -903,14 +903,14 @@ typedef struct FrtQParser
     char buf[FRT_QP_CONC_WORDS][FRT_MAX_WORD_SIZE];
     char *dynbuf;
     int  buf_index;
-    FrtHash *field_cache;
+    FrtHashTable *field_cache;
     FrtHashSet *fields;
     FrtHashSet *fields_buf;
     FrtHashSet *def_fields;
     FrtHashSet *all_fields;
     FrtHashSet *tokenized_fields;
     FrtAnalyzer *analyzer;
-    FrtHash *ts_cache;
+    FrtHashTable *ts_cache;
     FrtQuery *result;
     FrtTokenStream *non_tokenizer;
     bool or_default : 1;

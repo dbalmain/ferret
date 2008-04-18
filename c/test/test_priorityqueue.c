@@ -15,7 +15,7 @@ static bool str_lt(void *p1, void *p2)
 /**
  * Test basic PriorityQueue functions.
  */
-static void test_pq(TestCase *tc, void *data)
+static void test_pq(tst_case * tc, void *data)
 {
     char *tmp;
     PriorityQueue *pq = pq_new(4, (lt_ft)&str_lt, &free);
@@ -63,7 +63,7 @@ static void pq_free_mock(void *p)
 /**
  * Test pq_clear function
  */
-static void test_pq_clear(TestCase *tc, void *data)
+static void test_pq_clear(tst_case * tc, void *data)
 {
     char word1[10] = "word1";
     char word2[10] = "word2";
@@ -88,7 +88,7 @@ static void test_pq_clear(TestCase *tc, void *data)
  * insert more than the PriorityQueue's capacity, the extra elements that drop
  * off the bottom are destroyed.
  */
-static void test_pq_insert_overflow(TestCase *tc, void *data)
+static void test_pq_insert_overflow(tst_case * tc, void *data)
 {
     char word1[10] = "word1";
     char word2[10] = "word2";
@@ -125,7 +125,7 @@ static void test_pq_insert_overflow(TestCase *tc, void *data)
  * to really stress test PriorityQueue.
  */
 #define PQ_STRESS_SIZE 1000
-static void stress_pq(TestCase *tc, void *data)
+static void stress_pq(tst_case * tc, void *data)
 {
     int i;
     char buf[100], *prev, *curr;
@@ -156,7 +156,7 @@ static void stress_pq(TestCase *tc, void *data)
 /**
  * PriorityQueue's test suite
  */
-TestSuite *ts_priorityqueue(TestSuite *suite)
+tst_suite *ts_priorityqueue(tst_suite * suite)
 {
     suite = ADD_SUITE(suite);
 

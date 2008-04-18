@@ -2,7 +2,7 @@
 #include "multimapper.h"
 #include "test.h"
 
-static void test_multimapper(TestCase *tc, void *data)
+static void test_multimapper(tst_case * tc, void *data)
 {
     char text[] = "abc cabc abd cabcd";
     char dest[1000];
@@ -29,7 +29,7 @@ static void test_multimapper(TestCase *tc, void *data)
     mulmap_destroy(mapper);
 }
 
-static void test_multimapper_utf8(TestCase *tc, void *data)
+static void test_multimapper_utf8(tst_case * tc, void *data)
 {
     char text[] = "zàáâãäåāăz";
     char dest[1000];
@@ -53,7 +53,7 @@ static void test_multimapper_utf8(TestCase *tc, void *data)
     mulmap_destroy(mapper);
 }
 
-TestSuite *ts_multimapper(TestSuite *suite)
+tst_suite *ts_multimapper(tst_suite * suite)
 {
     suite = ADD_SUITE(suite);
 

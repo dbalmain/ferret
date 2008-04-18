@@ -8,7 +8,7 @@
   tt_token(mtk, mstr, mstart, mend, tc, __LINE__)
 
 void tt_token(Token *tk,
-              char *str, int start, int end, TestCase *tc, int line_num)
+              char *str, int start, int end, tst_case *tc, int line_num)
 {
     Token tk_exp;
     static char buf[3000];
@@ -31,7 +31,7 @@ void tt_token(Token *tk,
 
 void tt_token_pi(Token *tk,
                  char *str,
-                 int start, int end, int pi, TestCase *tc, int line_num)
+                 int start, int end, int pi, tst_case *tc, int line_num)
 {
     Token tk_exp;
     static char buf[3000];
@@ -49,7 +49,7 @@ void tt_token_pi(Token *tk,
     tst_int_equal(line_num, tc, strlen(tk->text), tk->len);
 }
 
-void test_tk(TestCase *tc, void *data)
+void test_tk(tst_case *tc, void *data)
 {
     Token *tk1 = tk_new();
     Token *tk2 = tk_new();
@@ -97,7 +97,7 @@ void test_tk(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-void test_non_tokenizer(TestCase *tc, void *data)
+void test_non_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = non_tokenizer_new();
@@ -115,7 +115,7 @@ void test_non_tokenizer(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_non_analyzer(TestCase *tc, void *data)
+void test_non_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = non_analyzer_new();
@@ -136,7 +136,7 @@ void test_non_analyzer(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-void test_whitespace_tokenizer(TestCase *tc, void *data)
+void test_whitespace_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = whitespace_tokenizer_new();
@@ -161,7 +161,7 @@ void test_whitespace_tokenizer(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
+void test_mb_whitespace_tokenizer(tst_case *tc, void *data)
 {
     Token *t, *tk = tk_new();
     TokenStream *ts = mb_whitespace_tokenizer_new(false);
@@ -213,7 +213,7 @@ void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
     tk_destroy(tk);
 }
 
-void test_whitespace_analyzer(TestCase *tc, void *data)
+void test_whitespace_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = whitespace_analyzer_new(false);
@@ -235,7 +235,7 @@ void test_whitespace_analyzer(TestCase *tc, void *data)
     a_deref(a);
 }
 
-void test_mb_whitespace_analyzer(TestCase *tc, void *data)
+void test_mb_whitespace_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = mb_whitespace_analyzer_new(false);
@@ -280,7 +280,7 @@ void test_mb_whitespace_analyzer(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-void test_letter_tokenizer(TestCase *tc, void *data)
+void test_letter_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = letter_tokenizer_new();
@@ -305,7 +305,7 @@ void test_letter_tokenizer(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_mb_letter_tokenizer(TestCase *tc, void *data)
+void test_mb_letter_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = mb_letter_tokenizer_new(false);
@@ -366,7 +366,7 @@ void test_mb_letter_tokenizer(TestCase *tc, void *data)
     tk_destroy(tk);
 }
 
-void test_letter_analyzer(TestCase *tc, void *data)
+void test_letter_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = letter_analyzer_new(true);
@@ -388,7 +388,7 @@ void test_letter_analyzer(TestCase *tc, void *data)
     a_deref(a);
 }
 
-void test_mb_letter_analyzer(TestCase *tc, void *data)
+void test_mb_letter_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = mb_letter_analyzer_new(false);
@@ -439,7 +439,7 @@ void test_mb_letter_analyzer(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-void test_standard_tokenizer(TestCase *tc, void *data)
+void test_standard_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = standard_tokenizer_new();
@@ -478,7 +478,7 @@ void test_standard_tokenizer(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_mb_standard_tokenizer(TestCase *tc, void *data)
+void test_mb_standard_tokenizer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = mb_standard_tokenizer_new();
@@ -522,7 +522,7 @@ void test_mb_standard_tokenizer(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_standard_analyzer(TestCase *tc, void *data)
+void test_standard_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a =
@@ -548,7 +548,7 @@ void test_standard_analyzer(TestCase *tc, void *data)
     a_deref(a);
 }
 
-void test_mb_standard_analyzer(TestCase *tc, void *data)
+void test_mb_standard_analyzer(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a =
@@ -644,7 +644,7 @@ void test_mb_standard_analyzer(TestCase *tc, void *data)
     tk_destroy(tk);
 }
 
-void test_long_word(TestCase *tc, void *data)
+void test_long_word(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a =
@@ -679,7 +679,7 @@ void test_long_word(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-void test_lowercase_filter(TestCase *tc, void *data)
+void test_lowercase_filter(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = lowercase_filter_new(standard_tokenizer_new());
@@ -707,7 +707,7 @@ void test_lowercase_filter(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_hyphen_filter(TestCase *tc, void *data)
+void test_hyphen_filter(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = hyphen_filter_new(lowercase_filter_new(standard_tokenizer_new()));
@@ -745,7 +745,7 @@ void test_hyphen_filter(TestCase *tc, void *data)
 }
 
 const char *words[] = { "one", "four", "five", "seven", NULL };
-void test_stop_filter(TestCase *tc, void *data)
+void test_stop_filter(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts =
@@ -770,7 +770,7 @@ void test_stop_filter(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_mapping_filter(TestCase *tc, void *data)
+void test_mapping_filter(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = mapping_filter_new(letter_tokenizer_new());
@@ -823,7 +823,7 @@ void test_mapping_filter(TestCase *tc, void *data)
     ts_deref(ts);
 }
 
-void test_stemmer(TestCase *tc, void *data)
+void test_stemmer(tst_case *tc, void *data)
 {
     int stemmer_cnt = 0;
     const char **stemmers = sb_stemmer_list();
@@ -844,7 +844,7 @@ void test_stemmer(TestCase *tc, void *data)
     Assert(stemmer_cnt >= 13, "There should be at least 10 stemmers");
 }
 
-void test_stem_filter(TestCase *tc, void *data)
+void test_stem_filter(tst_case *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = stem_filter_new(mb_letter_tokenizer_new(true),
@@ -884,7 +884,7 @@ void test_stem_filter(TestCase *tc, void *data)
     ts_deref(ts2);
 }
 
-void test_per_field_analyzer(TestCase *tc, void *data)
+void test_per_field_analyzer(tst_case *tc, void *data)
 {
     TokenStream *ts;
     Token *tk = tk_new();
@@ -955,7 +955,7 @@ void test_per_field_analyzer(TestCase *tc, void *data)
     a_deref(pfa);
 }
 
-TestSuite *ts_analysis(TestSuite *suite)
+tst_suite *ts_analysis(tst_suite *suite)
 {
     bool u = false;
     char *locale = setlocale(LC_ALL, "");

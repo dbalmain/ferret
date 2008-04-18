@@ -27,7 +27,7 @@ static FieldInfos dummy_fis = {
 };
 
 static int tst_si_eql(int line_num,
-                      TestCase *tc,
+                      tst_case *tc,
                       SegmentInfo *si,
                       const char *name,
                       int doc_cnt,
@@ -44,7 +44,7 @@ static int tst_si_eql(int line_num,
 
 }
 
-static void test_si(TestCase *tc, void *data)
+static void test_si(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     SegmentInfo *si = si_new(estrdup("_1"), 10, store);
@@ -75,7 +75,7 @@ static void test_si(TestCase *tc, void *data)
  ***************************************************************************/
 
 
-void test_sis_add_del(TestCase *tc, void *data)
+void test_sis_add_del(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     SegmentInfos *sis = sis_new(&dummy_fis);
@@ -106,7 +106,7 @@ void test_sis_add_del(TestCase *tc, void *data)
     sis_destroy(sis);
 }
 
-void test_sis_rw(TestCase *tc, void *data)
+void test_sis_rw(tst_case *tc, void *data)
 {
     u64 version;
     Store *store = (Store *)data;
@@ -152,7 +152,7 @@ void test_sis_rw(TestCase *tc, void *data)
     sis_destroy(sis3);
 }
 
-TestSuite *ts_segments(TestSuite *suite)
+tst_suite *ts_segments(tst_suite *suite)
 {
     Store *store = open_ram_store();
 

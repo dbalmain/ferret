@@ -1,5 +1,4 @@
 require 'set'
-require 'erb'
 require 'rake'
 require 'rake/clean'
 
@@ -18,9 +17,9 @@ def src2obj(src)
   src.pathmap("%{.*,}p%n.o")
 end
 
-def obj_map(srcs, prefix = '')
+def obj_map(srcs)
   srcs.map do |src|
-    obj = prefix + src2obj(src)
+    obj = src2obj(src)
     FILE2SRC[obj] = src
     obj
   end
@@ -67,7 +66,7 @@ STEMMER_SRCS    = FileList[STEMMER_DIR / 'src_c/*.c',
                            STEMMER_DIR / 'runtime/api.c',
                            STEMMER_DIR / 'runtime/utilities.c',
                            STEMMER_DIR / 'libstemmer/libstemmer.c']
-STEMMER_OBJS    = obj_map(STEMMER_SRCS, 'lib/')
+STEMMER_OBJS    = obj_map(STEMMER_SRCS)
 
 if ENV['USE_ZLIB'] or ENV['USE_CPP']
   BZLIB_INC_DIR = nil
@@ -76,7 +75,7 @@ else
   BZLIB_DIR     = 'lib/bzlib'
   BZLIB_INC_DIR = BZLIB_DIR
   BZLIB_SRCS    = FileList[BZLIB_DIR / '*.c']
-  BZLIB_OBJS    = obj_map(BZLIB_SRCS, 'lib/')
+  BZLIB_OBJS    = obj_map(BZLIB_SRCS)
 end
 
 SRCS            = FileList['src/*.c']
@@ -86,15 +85,11 @@ INC_DIR         = 'include'
 TEST_SRCS       = FileList['test/*.c']
 TEST_OBJS       = obj_map(TEST_SRCS)
 
-BENCHMARK_SRCS  = FileList['benchmark/*.c']
-BENCHMARK_OBJS  = obj_map(BENCHMARK_SRCS)
-
-INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR,
-                    'test', 'benchmark'].compact
+INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR, 'test'].compact
 INC_FILES       = FileList[*INC_DIRS.map{|dir| File.join(dir, '*.h')}]
 INC_MAP         = INC_FILES.inject({}) {|h, f| h[File.basename(f)] = f;h}
 
-SRC_FILES       = SRCS + TEST_SRCS + BENCHMARK_SRCS
+SRC_FILES       = SRCS + TEST_SRCS
 ALL_BUILD_FILES = INC_FILES + SRC_FILES
 ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   basename = File.basename(src)
@@ -149,16 +144,11 @@ CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
-CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS} -O2"
-
-if (File.exists?(`which gdb 2> /dev/null`.chomp))
-  CFLAGS << " -DHAVE_GDB"
-end
+CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS} -std=c99"
 
 if ENV['USE_CPP']
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
-  FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
 end
 
 
@@ -174,6 +164,10 @@ CLEAN  .include([ '*.o',
 CLOBBER.include([ '*.a',
                   '**/*.o',
                   'testall',
+                  'load_bench',
+                  'bench',
+                  'search_bench',
+                  'sort_bench',
                   '.rake/*',
                   'gmon.out',
                   DEP_DIR,
@@ -183,7 +177,7 @@ task :default => :test
 
 desc "Run all tests"
 task :test => 'testall' do
-  sh "./testall -q -v"
+    sh "./testall -q -v"
 end
 
 namespace :build do
@@ -199,43 +193,14 @@ namespace :build do
   desc "Build the test binary 'testall'"
   task :tests => 'testall'
 
-  desc "Build the test runner"
-  file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
   #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
+  file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
 
-  desc "Build the benchmark runner"
-  file "bench" => [LIB_FERRET_OBJS, BENCHMARK_OBJS].flatten do |t|
-    vsh "Building benchmarks",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o bench"
-  end
-
   file 'src/q_parser.c' => 'src/q_parser.y' do
     sh "yacc -o src/q_parser.c -p frt_ src/q_parser.y"
-  end
-
-  file 'src/scanner.c' => 'src/scanner.rl' do
-    sh "ragel src/scanner.rl -o src/scanner.c"
-  end
-
-  file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
-    File.open(t.name, 'w') do |f|
-      tests = t.prerequisites.map{|fn|
-        File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z]+)/)
-      }.flatten
-      f.write(ERB.new(File.read('test/all_tests.erb')).result(binding))
-    end
-  end
-
-  file 'benchmark/all_benchmarks.h' => FileList['benchmark/bm_*.c'] do |t|
-    File.open(t.name, 'w') do |f|
-      benchmarks = t.prerequisites.map{|fn|
-        File.read(fn).scan(/BENCH\((\w+)\)/)
-      }.flatten
-      f.write(ERB.new(File.read('benchmark/all_benchmarks.erb')).result(binding))
-    end
   end
 
   file 'include/internal.h' =>
@@ -269,32 +234,7 @@ namespace :build do
     qsh "Compiling #{t.name}",
         "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
   end
-
-  file '.rake/HAVE_SPARSE_HASH' => '.rake/have_sparse_hash.cpp' do |t|
-    begin
-      sh "g++ #{t.prerequisites}"
-      File.open(t.name, 'w') {|f| f.write(' -DHAVE_SPARSE_HASH')}
-    rescue
-      File.open(t.name, 'w') {|f|}
-    end
-  end
 end
-
-task :valgrind => 'testall' do
-	sh "valgrind --suppressions=valgrind.supp " +
-                "--leak-check=yes             " +
-                "--show-reachable=yes         " +
-                "--workaround-gcc296-bugs=yes -v ./testall -q"
-end
-
-task :gen_valgrind => 'build:testall' do
-	sh "valgrind --suppressions=valgrind.supp " +
-                "--leak-check=yes             " +
-                "--show-reachable=yes         " +
-                "--gen-suppressions=yes       " +
-                "--workaround-gcc296-bugs=yes -v ./testall -q"
-end
-
 
 namespace :show do
   task :dep, :src do |t, args|

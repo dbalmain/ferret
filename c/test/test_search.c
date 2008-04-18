@@ -7,7 +7,7 @@
 
 #define ARRAY_SIZE 40
 
-static void test_byte_float_conversion(TestCase *tc, void *data)
+static void test_byte_float_conversion(tst_case *tc, void *data)
 {
     int i;
     (void)data;
@@ -30,7 +30,7 @@ static int my_max_doc(Searcher *searcher)
     return 10;
 }
 
-static void test_explanation(TestCase *tc, void *data)
+static void test_explanation(tst_case *tc, void *data)
 {
     Explanation *expl = expl_new(1.6f, "short description");
     char *str = expl_to_s(expl);
@@ -54,7 +54,7 @@ static void test_explanation(TestCase *tc, void *data)
     free(str);
 }
 
-static void test_default_similarity(TestCase *tc, void *data)
+static void test_default_similarity(tst_case *tc, void *data)
 {
     PhrasePosition positions[4];
     Searcher searcher;
@@ -222,7 +222,7 @@ static void prepare_search_index(Store *store)
     iw_close(iw);
 }
 
-static void test_get_doc(TestCase *tc, void *data)
+static void test_get_doc(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Document *doc;
@@ -248,7 +248,7 @@ static void test_get_doc(TestCase *tc, void *data)
     doc_destroy(doc);
 }
 
-void check_to_s(TestCase *tc, Query *query, const char *field, char *q_str)
+void check_to_s(tst_case *tc, Query *query, const char *field, char *q_str)
 {
     char *q_res = query->to_s(query, field);
     Asequal(q_str, q_res);
@@ -258,7 +258,7 @@ void check_to_s(TestCase *tc, Query *query, const char *field, char *q_str)
     free(q_res);
 }
 
-void check_hits(TestCase *tc, Searcher *searcher, Query *query,
+void check_hits(tst_case *tc, Searcher *searcher, Query *query,
                 char *expected_hits, char top)
 {
     static int num_array[ARRAY_SIZE];
@@ -327,7 +327,7 @@ free(t);
     }
 }
 
-static void test_term_query(TestCase *tc, void *data)
+static void test_term_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     TopDocs *top_docs;
@@ -370,7 +370,7 @@ static void test_term_query(TestCase *tc, void *data)
     q_deref(tq);
 }
 
-static void test_term_query_hash(TestCase *tc, void *data)
+static void test_term_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -395,7 +395,7 @@ static void test_term_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_boolean_query(TestCase *tc, void *data)
+static void test_boolean_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *bq = bq_new(false);
@@ -453,7 +453,7 @@ static void test_boolean_query(TestCase *tc, void *data)
     q_deref(bq);
 }
 
-static void test_boolean_query_hash(TestCase *tc, void *data)
+static void test_boolean_query_hash(tst_case *tc, void *data)
 {
     Query *tq1, *tq2, *tq3, *q1, *q2;
     (void)data;
@@ -513,7 +513,7 @@ static void test_boolean_query_hash(TestCase *tc, void *data)
     q_deref(tq3);
 }
 
-static void test_phrase_query(TestCase *tc, void *data)
+static void test_phrase_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q;
@@ -587,7 +587,7 @@ static void test_phrase_query(TestCase *tc, void *data)
     q_deref(q);
 }
 
-static void test_phrase_query_hash(TestCase *tc, void *data)
+static void test_phrase_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -640,7 +640,7 @@ static void test_phrase_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_multi_phrase_query(TestCase *tc, void *data)
+static void test_multi_phrase_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *phq, *q;
@@ -695,7 +695,7 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
 
 }
 
-static void test_multi_phrase_query_hash(TestCase *tc, void *data)
+static void test_multi_phrase_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -758,7 +758,7 @@ static void test_multi_phrase_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_multi_term_query(TestCase *tc, void *data)
+static void test_multi_term_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *mtq = multi_tq_new_conf(field, 4, 0.5);
@@ -804,7 +804,7 @@ free(t);
     q_deref(mtq);
 }
 
-static void test_multi_term_query_hash(TestCase *tc, void *data)
+static void test_multi_term_query_hash(tst_case *tc, void *data)
 {
     Query *q1 = multi_tq_new_conf(field, 100, 0.4);
     Query *q2 = multi_tq_new(field);
@@ -836,7 +836,7 @@ static void test_multi_term_query_hash(TestCase *tc, void *data)
     q_deref(q2);
 }
 
-static void test_prefix_query(TestCase *tc, void *data)
+static void test_prefix_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *prq = prefixq_new(cat, "cat1");
@@ -865,7 +865,7 @@ static void test_prefix_query(TestCase *tc, void *data)
     q_deref(prq);
 }
 
-static void test_prefix_query_hash(TestCase *tc, void *data)
+static void test_prefix_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -890,7 +890,7 @@ static void test_prefix_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_range_query(TestCase *tc, void *data)
+static void test_range_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *rq;
@@ -957,7 +957,7 @@ static void test_range_query(TestCase *tc, void *data)
     q_deref(rq);
 }
 
-static void test_range_query_hash(TestCase *tc, void *data)
+static void test_range_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -1020,7 +1020,7 @@ static void test_range_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_typed_range_query(TestCase *tc, void *data)
+static void test_typed_range_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *trq;
@@ -1063,7 +1063,7 @@ static void test_typed_range_query(TestCase *tc, void *data)
     q_deref(trq);
 }
 
-static void test_typed_range_query_hash(TestCase *tc, void *data)
+static void test_typed_range_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -1133,7 +1133,7 @@ static void test_typed_range_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_wildcard_match(TestCase *tc, void *data)
+static void test_wildcard_match(tst_case *tc, void *data)
 {
     (void)data;
     (void)tc;
@@ -1166,7 +1166,7 @@ static void test_wildcard_match(TestCase *tc, void *data)
     Assert(!wc_match("cat1*", "cat2/sub1"), "Do not match");
 }
 
-static void test_wildcard_query(TestCase *tc, void *data)
+static void test_wildcard_query(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *wq = wcq_new(cat, "cat1*"), *bq;
@@ -1204,7 +1204,7 @@ static void test_wildcard_query(TestCase *tc, void *data)
     q_deref(bq);
 }
 
-static void test_wildcard_query_hash(TestCase *tc, void *data)
+static void test_wildcard_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -1229,7 +1229,7 @@ static void test_wildcard_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_match_all_query_hash(TestCase *tc, void *data)
+static void test_match_all_query_hash(tst_case *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -1249,7 +1249,7 @@ static void test_match_all_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
-static void test_search_unscored(TestCase *tc, void *data)
+static void test_search_unscored(tst_case *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     int buf[5], expected[5], count;
@@ -1299,7 +1299,7 @@ static void test_search_unscored(TestCase *tc, void *data)
     q_deref(tq);
 }
 
-TestSuite *ts_search(TestSuite *suite)
+tst_suite *ts_search(tst_suite *suite)
 {
     Store *store = open_ram_store();
     IndexReader *ir;
@@ -1379,7 +1379,7 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
     iw_close(iw);
 }
 
-static void test_query_combine(TestCase *tc, void *data)
+static void test_query_combine(tst_case *tc, void *data)
 {
     Query *q, *cq, **queries;
     BooleanQuery *bq;
@@ -1479,7 +1479,7 @@ static void test_query_combine(TestCase *tc, void *data)
     free(queries);
 }
 
-TestSuite *ts_multi_search(TestSuite *suite)
+tst_suite *ts_multi_search(tst_suite *suite)
 {
     Store *store0 = open_ram_store();
     Store *store1 = open_ram_store();

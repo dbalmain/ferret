@@ -1,43 +1,27 @@
 #line 1 "src/scanner.rl"
 /* scanner.rl -*-C-*- */
+#include <ctype.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
+#include "global.h"
+#include "internal.h"
 
-#define RET do {                                \
-    size_t __len = te - ts - skip - trunc;      \
-    if (__len > out_size)                       \
-        __len = out_size;                       \
-    *len     = __len;                           \
-    *start   = ts;                              \
-    *end     = te;                              \
-     memcpy(out, ts + skip, __len);             \
-     out[__len] = 0;                            \
-     return;                                    \
+#define RET goto ret;
+
+#define STRIP(c) do { \
+    strip_char = c;   \
+    goto ret;         \
 } while(0)
 
-#define STRIP(c) do {                           \
-    char *__p = ts;                             \
-    char *__o = out;                            \
-    char *__max = __p + out_size;               \
-    for (; __p <= te && __p < __max; ++__p) {   \
-        if (*__p != c)                          \
-            *__o++ = *__p;                      \
-    }                                           \
-    *__o = 0;                                   \
-                                                \
-    *start = ts;                                \
-    *end   = te;                                \
-    *len   = __o - out;                         \
-    return;                                     \
-} while(0)
-
-#line 79 "src/scanner.rl"
+#line 64 "src/scanner.rl"
 
 
 
-#line 41 "src/scanner.c"
+#line 25 "src/scanner.c"
 static const char _StdTok_actions[] = {
 	0, 1, 2, 1, 3, 1, 14, 1, 
 	15, 1, 16, 1, 17, 1, 18, 1, 
@@ -53,10 +37,10 @@ static const char _StdTok_actions[] = {
 
 static const short _StdTok_key_offsets[] = {
 	0, 2, 8, 9, 16, 22, 29, 33, 
-	37, 38, 46, 57, 59, 62, 64, 75, 
-	83, 91, 95, 105, 118, 122, 128, 130, 
-	131, 143, 149, 156, 171, 184, 197, 209, 
-	217, 225, 238, 252, 265, 278
+	37, 38, 46, 57, 59, 62, 64, 74, 
+	81, 89, 93, 102, 114, 118, 124, 126, 
+	127, 138, 144, 151, 165, 177, 189, 200, 
+	208, 216, 228, 241, 253, 265
 };
 
 static const char _StdTok_trans_keys[] = {
@@ -68,43 +52,41 @@ static const char _StdTok_trans_keys[] = {
 	44, 58, 64, 90, 97, 122, 0, 43, 
 	45, 102, 104, 48, 57, 65, 90, 97, 
 	122, 48, 57, 46, 48, 57, 48, 57, 
-	45, 46, 58, 64, 95, 48, 57, 65, 
-	90, 97, 122, 45, 95, 48, 57, 65, 
-	90, 97, 122, 47, 95, 44, 58, 64, 
-	90, 97, 122, 65, 90, 97, 122, 45, 
-	58, 64, 95, 48, 57, 65, 90, 97, 
-	122, 38, 39, 45, 46, 58, 64, 95, 
-	48, 57, 65, 90, 97, 122, 65, 90, 
+	45, 46, 58, 64, 48, 57, 65, 90, 
+	97, 122, 45, 48, 57, 65, 90, 97, 
+	122, 47, 95, 44, 58, 64, 90, 97, 
+	122, 65, 90, 97, 122, 45, 58, 64, 
+	48, 57, 65, 90, 97, 122, 38, 39, 
+	45, 46, 58, 64, 48, 57, 65, 90, 
+	97, 122, 65, 90, 97, 122, 48, 57, 
+	65, 90, 97, 122, 83, 115, 46, 38, 
+	39, 45, 58, 64, 48, 57, 65, 90, 
 	97, 122, 48, 57, 65, 90, 97, 122, 
-	83, 115, 46, 38, 39, 45, 58, 64, 
-	95, 48, 57, 65, 90, 97, 122, 48, 
-	57, 65, 90, 97, 122, 46, 48, 57, 
-	65, 90, 97, 122, 38, 39, 45, 46, 
-	58, 64, 95, 105, 116, 48, 57, 65, 
-	90, 97, 122, 38, 39, 45, 58, 64, 
-	95, 108, 48, 57, 65, 90, 97, 122, 
-	38, 39, 45, 58, 64, 95, 101, 48, 
+	46, 48, 57, 65, 90, 97, 122, 38, 
+	39, 45, 46, 58, 64, 105, 116, 48, 
 	57, 65, 90, 97, 122, 38, 39, 45, 
-	58, 64, 95, 48, 57, 65, 90, 97, 
-	122, 47, 95, 44, 58, 64, 90, 97, 
-	122, 47, 95, 44, 58, 64, 90, 97, 
-	122, 38, 39, 45, 58, 64, 95, 112, 
-	48, 57, 65, 90, 97, 122, 38, 39, 
-	45, 46, 58, 64, 95, 116, 48, 57, 
-	65, 90, 97, 122, 38, 39, 45, 58, 
-	64, 95, 116, 48, 57, 65, 90, 97, 
-	122, 38, 39, 45, 58, 64, 95, 112, 
-	48, 57, 65, 90, 97, 122, 38, 39, 
-	45, 58, 64, 95, 115, 48, 57, 65, 
-	90, 97, 122, 0
+	58, 64, 108, 48, 57, 65, 90, 97, 
+	122, 38, 39, 45, 58, 64, 101, 48, 
+	57, 65, 90, 97, 122, 38, 39, 45, 
+	58, 64, 48, 57, 65, 90, 97, 122, 
+	47, 95, 44, 58, 64, 90, 97, 122, 
+	47, 95, 44, 58, 64, 90, 97, 122, 
+	38, 39, 45, 58, 64, 112, 48, 57, 
+	65, 90, 97, 122, 38, 39, 45, 46, 
+	58, 64, 116, 48, 57, 65, 90, 97, 
+	122, 38, 39, 45, 58, 64, 116, 48, 
+	57, 65, 90, 97, 122, 38, 39, 45, 
+	58, 64, 112, 48, 57, 65, 90, 97, 
+	122, 38, 39, 45, 58, 64, 115, 48, 
+	57, 65, 90, 97, 122, 0
 };
 
 static const char _StdTok_single_lengths[] = {
 	0, 0, 1, 1, 0, 1, 0, 0, 
-	1, 2, 5, 0, 1, 0, 5, 2, 
-	2, 0, 4, 7, 0, 0, 2, 1, 
-	6, 0, 1, 9, 7, 7, 6, 2, 
-	2, 7, 8, 7, 7, 7
+	1, 2, 5, 0, 1, 0, 4, 1, 
+	2, 0, 3, 6, 0, 0, 2, 1, 
+	5, 0, 1, 8, 6, 6, 5, 2, 
+	2, 6, 7, 6, 6, 6
 };
 
 static const char _StdTok_range_lengths[] = {
@@ -117,10 +99,10 @@ static const char _StdTok_range_lengths[] = {
 
 static const unsigned char _StdTok_index_offsets[] = {
 	0, 2, 6, 8, 13, 17, 22, 25, 
-	28, 30, 36, 45, 47, 50, 52, 61, 
-	67, 73, 76, 84, 95, 98, 102, 105, 
-	107, 117, 121, 126, 139, 150, 161, 171, 
-	177, 183, 194, 206, 217, 228
+	28, 30, 36, 45, 47, 50, 52, 60, 
+	65, 71, 74, 81, 91, 94, 98, 101, 
+	103, 112, 116, 121, 133, 143, 153, 162, 
+	168, 174, 184, 195, 205, 215
 };
 
 static const char _StdTok_indicies[] = {
@@ -131,29 +113,28 @@ static const char _StdTok_indicies[] = {
 	12, 12, 12, 10, 15, 16, 16, 19, 
 	20, 17, 18, 18, 14, 22, 21, 24, 
 	22, 23, 1, 25, 27, 24, 28, 29, 
-	27, 17, 30, 30, 26, 27, 27, 2, 
-	2, 2, 26, 31, 4, 4, 4, 4, 
-	0, 8, 8, 32, 27, 28, 29, 27, 
-	30, 30, 30, 26, 34, 35, 27, 36, 
-	28, 38, 27, 37, 37, 37, 33, 40, 
-	40, 39, 40, 40, 40, 39, 42, 42, 
-	41, 36, 43, 34, 35, 27, 28, 38, 
-	27, 37, 37, 37, 33, 6, 44, 44, 
-	39, 7, 44, 44, 44, 39, 34, 35, 
-	27, 36, 28, 38, 27, 45, 46, 37, 
+	17, 30, 30, 26, 27, 2, 2, 2, 
+	26, 31, 4, 4, 4, 4, 0, 8, 
+	8, 32, 27, 28, 29, 30, 30, 30, 
+	26, 34, 35, 27, 36, 28, 38, 37, 
+	37, 37, 33, 40, 40, 39, 40, 40, 
+	40, 39, 42, 42, 41, 36, 43, 34, 
+	35, 27, 28, 38, 37, 37, 37, 33, 
+	6, 44, 44, 39, 7, 44, 44, 44, 
+	39, 34, 35, 27, 36, 28, 38, 45, 
+	46, 37, 37, 37, 33, 34, 35, 27, 
+	28, 38, 47, 37, 37, 37, 33, 34, 
+	35, 27, 28, 38, 48, 37, 37, 37, 
+	33, 34, 35, 27, 49, 38, 37, 37, 
+	37, 33, 51, 50, 50, 50, 50, 0, 
+	52, 12, 12, 12, 12, 0, 34, 35, 
+	27, 28, 38, 48, 37, 37, 37, 33, 
+	34, 35, 27, 36, 28, 38, 53, 37, 
 	37, 37, 33, 34, 35, 27, 28, 38, 
-	27, 47, 37, 37, 37, 33, 34, 35, 
-	27, 28, 38, 27, 48, 37, 37, 37, 
-	33, 34, 35, 27, 49, 38, 27, 37, 
-	37, 37, 33, 51, 50, 50, 50, 50, 
-	0, 52, 12, 12, 12, 12, 0, 34, 
-	35, 27, 28, 38, 27, 48, 37, 37, 
-	37, 33, 34, 35, 27, 36, 28, 38, 
-	27, 53, 37, 37, 37, 33, 34, 35, 
-	27, 28, 38, 27, 54, 37, 37, 37, 
-	33, 34, 35, 27, 28, 38, 27, 55, 
-	37, 37, 37, 33, 34, 35, 27, 49, 
-	38, 27, 48, 37, 37, 37, 33, 0
+	54, 37, 37, 37, 33, 34, 35, 27, 
+	28, 38, 55, 37, 37, 37, 33, 34, 
+	35, 27, 49, 38, 48, 37, 37, 37, 
+	33, 0
 };
 
 static const char _StdTok_trans_targs_wi[] = {
@@ -205,35 +186,38 @@ static const int StdTok_error = -1;
 
 static const int StdTok_en_main = 10;
 
-#line 82 "src/scanner.rl"
+#line 67 "src/scanner.rl"
 
-void frt_std_scan(const char *in,
-                  char *out, size_t out_size,
-                  char **start, char **end,
-                  int *len)
+void frt_scan(const char *in,
+              char *out, size_t out_size,
+              const char **start,
+              const char **end,
+              int *token_size)
 {
     int cs, act;
-    char *ts, *te = 0;
+    char *ts = 0, *te = 0;
 
     
-#line 220 "src/scanner.c"
+#line 202 "src/scanner.c"
 	{
 	cs = StdTok_start;
 	ts = 0;
 	te = 0;
 	act = 0;
 	}
-#line 92 "src/scanner.rl"
+#line 78 "src/scanner.rl"
 
-    char *p = (char *)in;
-    char *pe = 0;
-    char *eof = pe;
-    *len = 0;
+    char *p = (char *)in, *pe = 0, *eof = pe;
     int skip = 0;
     int trunc = 0;
+    char strip_char = 0;
+
+    *end = 0;
+    *start = 0;
+    *token_size = 0;
 
     
-#line 237 "src/scanner.c"
+#line 221 "src/scanner.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -252,7 +236,7 @@ _resume:
 #line 1 "src/scanner.rl"
 	{ts = p;}
 	break;
-#line 256 "src/scanner.c"
+#line 240 "src/scanner.c"
 		}
 	}
 
@@ -319,11 +303,11 @@ _eof_trans:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 59 "src/scanner.rl"
+#line 44 "src/scanner.rl"
 	{ skip = p - ts; }
 	break;
 	case 1:
-#line 60 "src/scanner.rl"
+#line 45 "src/scanner.rl"
 	{ skip = p - ts; }
 	break;
 	case 4:
@@ -331,95 +315,95 @@ _eof_trans:
 	{te = p+1;}
 	break;
 	case 5:
-#line 48 "src/scanner.rl"
+#line 33 "src/scanner.rl"
 	{act = 1;}
 	break;
 	case 6:
-#line 53 "src/scanner.rl"
+#line 38 "src/scanner.rl"
 	{act = 4;}
 	break;
 	case 7:
-#line 56 "src/scanner.rl"
+#line 41 "src/scanner.rl"
 	{act = 5;}
 	break;
 	case 8:
-#line 59 "src/scanner.rl"
+#line 44 "src/scanner.rl"
 	{act = 6;}
 	break;
 	case 9:
-#line 60 "src/scanner.rl"
+#line 45 "src/scanner.rl"
 	{act = 7;}
 	break;
 	case 10:
-#line 61 "src/scanner.rl"
+#line 46 "src/scanner.rl"
 	{act = 8;}
 	break;
 	case 11:
-#line 62 "src/scanner.rl"
+#line 47 "src/scanner.rl"
 	{act = 9;}
 	break;
 	case 12:
-#line 68 "src/scanner.rl"
+#line 53 "src/scanner.rl"
 	{act = 11;}
 	break;
 	case 13:
-#line 71 "src/scanner.rl"
+#line 56 "src/scanner.rl"
 	{act = 12;}
 	break;
 	case 14:
-#line 50 "src/scanner.rl"
+#line 35 "src/scanner.rl"
 	{te = p+1;{ trunc = 2; RET; }}
 	break;
 	case 15:
-#line 75 "src/scanner.rl"
+#line 60 "src/scanner.rl"
 	{te = p+1;{ return; }}
 	break;
 	case 16:
-#line 76 "src/scanner.rl"
+#line 61 "src/scanner.rl"
 	{te = p+1;}
 	break;
 	case 17:
-#line 48 "src/scanner.rl"
+#line 33 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 18:
-#line 49 "src/scanner.rl"
+#line 34 "src/scanner.rl"
 	{te = p;p--;{ trunc = 1; RET; }}
 	break;
 	case 19:
-#line 53 "src/scanner.rl"
+#line 38 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 20:
-#line 56 "src/scanner.rl"
+#line 41 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 21:
-#line 65 "src/scanner.rl"
+#line 50 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 22:
-#line 68 "src/scanner.rl"
+#line 53 "src/scanner.rl"
 	{te = p;p--;{ STRIP('.'); }}
 	break;
 	case 23:
-#line 71 "src/scanner.rl"
+#line 56 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 24:
-#line 72 "src/scanner.rl"
+#line 57 "src/scanner.rl"
 	{te = p;p--;{ RET; }}
 	break;
 	case 25:
-#line 76 "src/scanner.rl"
+#line 61 "src/scanner.rl"
 	{te = p;p--;}
 	break;
 	case 26:
-#line 48 "src/scanner.rl"
+#line 33 "src/scanner.rl"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 27:
-#line 53 "src/scanner.rl"
+#line 38 "src/scanner.rl"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 28:
@@ -456,7 +440,7 @@ _eof_trans:
 	}
 	}
 	break;
-#line 460 "src/scanner.c"
+#line 444 "src/scanner.c"
 		}
 	}
 
@@ -469,7 +453,7 @@ _again:
 #line 1 "src/scanner.rl"
 	{ts = 0;}
 	break;
-#line 473 "src/scanner.c"
+#line 457 "src/scanner.c"
 		}
 	}
 
@@ -485,16 +469,38 @@ _again:
 	}
 
 	}
-#line 101 "src/scanner.rl"
+#line 89 "src/scanner.rl"
 
     if ( cs == StdTok_error )
-    {
-        fprintf(stderr, "PARSE ERROR\n" );
-        return;
-    }
+                   fprintf(stderr, "PARSE ERROR\n" );
+    else if ( ts ) fprintf(stderr, "STUFF LEFT: '%s'\n", ts);
+    return;
 
-    if ( ts )
+ ret:
     {
-        fprintf(stderr, "STUFF LEFT: '%s'\n", ts);
+
+        size_t __len = te - ts - skip - trunc;
+        if (__len > out_size)
+            __len = out_size;
+
+        *start = ts;
+        *end   = te;
+
+        if (strip_char) {
+            char *__p = ts + skip;
+            char *__o = out;
+            for (; __p < (ts + skip + __len); ++__p) {
+                if (*__p != strip_char)
+                    *__o++ = *__p;
+            }
+            *token_size = __o - out;
+        }
+        else {
+            memcpy(out, ts + skip, __len);
+            *token_size = __len;
+        }
+
+
+        out[*token_size] = 0;
     }
 }

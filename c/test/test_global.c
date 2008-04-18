@@ -5,7 +5,7 @@
  * Test the strfmt functions. This method is like sprintf except that it
  * allocates the necessary space for the string and pretty prints floats.
  */
-static void test_strfmt(TestCase *tc, void *data)
+static void test_strfmt(tst_case *tc, void *data)
 {
     char *s;
     (void)data; /* suppress unused argument warning */
@@ -47,7 +47,7 @@ static void test_strfmt(TestCase *tc, void *data)
 /**
  * Generate a stacktrace, make sure it does something
  */
-static void test_stacktrace(TestCase *tc, void *data)
+static void test_stacktrace(tst_case *tc, void *data)
 {
     FILE *old_stream = x_exception_stream;
     (void)data; /* suppress warning */
@@ -64,7 +64,7 @@ static void test_stacktrace(TestCase *tc, void *data)
 /**
  * Generate a normally fatal signal, which gets caught
  */
-static void test_sighandler(TestCase *tc, void *data)
+static void test_sighandler(tst_case *tc, void *data)
 {
     bool  old_abort = x_abort_on_exception;
     FILE *old_stream = x_exception_stream;
@@ -84,7 +84,7 @@ static void test_sighandler(TestCase *tc, void *data)
 }
 
 
-TestSuite *ts_global(TestSuite *suite)
+tst_suite *ts_global(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

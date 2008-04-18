@@ -88,7 +88,7 @@ extern void frt_bv_set(FrtBitVector *bv, int index);
  * @param bv the FrtBitVector to set the bit in
  * @param index the index of the bit to set
  */
-extern FRT_INLINE void frt_bv_set_fast(FrtBitVector *bv, int bit);
+extern void frt_bv_set_fast(FrtBitVector *bv, int bit);
 
 /**
  * Return 1 if the bit at +index+ was set or 0 otherwise. If +index+ is out of

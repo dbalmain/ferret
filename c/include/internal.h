@@ -220,11 +220,11 @@
 #define Filter                  FrtFilter
 #define FilteredQuery           FrtFilteredQuery
 #define FuzzyQuery              FrtFuzzyQuery
-#define Hash                    FrtHash
 #define HashEntry               FrtHashEntry
 #define HashKeyStatus           FrtHashKeyStatus
 #define HashSet                 FrtHashSet
 #define HashSetEntry            FrtHashSetEntry
+#define HashTable               FrtHashTable
 #define Hit                     FrtHit
 #define HyphenFilter            FrtHyphenFilter
 #define InStream                FrtInStream

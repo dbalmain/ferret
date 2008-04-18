@@ -5,7 +5,7 @@
 /*
  * The HashSet contains an array +elems+ of the elements that have been added.
  * It always has +size+ elements so +size+ ane +elems+ can be used to iterate
- * over all alements in the HashSet. It also uses a Hash to keep track of
+ * over all alements in the HashSet. It also uses a HashTable to keep track of
  * which elements have been added and their index in the +elems+ array.
  */
 static HashSet *hs_alloc(free_ft free_func)

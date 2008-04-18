@@ -68,10 +68,7 @@ typedef struct FrtMultiByteTokenStream
 typedef struct FrtStandardTokenizer
 {
     FrtCachedTokenStream super;
-    bool        (*advance_to_start)(FrtTokenStream *ts);
-    bool        (*is_tok_char)(char *c);
-    int         (*get_alpha)(FrtTokenStream *ts, char *token);
-    int         (*get_apostrophe)(char *input);
+    bool is_ascii;
 } FrtStandardTokenizer;
 
 typedef struct FrtTokenFilter
@@ -87,16 +84,16 @@ extern FrtTokenStream *frt_tf_new_i(size_t size, FrtTokenStream *sub_ts);
 typedef struct FrtStopFilter
 {
     FrtTokenFilter super;
-    FrtHash  *words;
+    FrtHashTable  *words;
 } FrtStopFilter;
 
-typedef struct FrtMappingFilter 
+typedef struct FrtMappingFilter
 {
     FrtTokenFilter  super;
     FrtMultiMapper *mapper;
 } FrtMappingFilter;
 
-typedef struct FrtHyphenFilter 
+typedef struct FrtHyphenFilter
 {
     FrtTokenFilter super;
     char text[FRT_MAX_WORD_SIZE];
@@ -211,7 +208,7 @@ extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words_len(const char **wor
 typedef struct FrtPerFieldAnalyzer
 {
     FrtAnalyzer    super;
-    FrtHash  *dict;
+    FrtHashTable  *dict;
     FrtAnalyzer   *default_a;
 } FrtPerFieldAnalyzer;
 

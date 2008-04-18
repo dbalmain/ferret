@@ -62,7 +62,7 @@ static int cmpd_count(Store *store)
 static void cmpd_each(Store *store,
                      void (*func)(const char *fname, void *arg), void *arg)
 {
-    Hash *ht = store->dir.cmpd->entries;
+    HashTable *ht = store->dir.cmpd->entries;
     int i;
     for (i = 0; i <= ht->mask; i++) {
         char *fn = (char *)ht->table[i].key;

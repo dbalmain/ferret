@@ -537,7 +537,7 @@ static void prep_test_1seg_index(Store *store, Document **docs,
  *
  ****************************************************************************/
 
-static void test_segment_term_doc_enum(TestCase *tc, void *data)
+static void test_segment_term_doc_enum(tst_case *tc, void *data)
 {
     int i, j;
     Store *store = (Store *)data;
@@ -652,7 +652,7 @@ static void test_segment_term_doc_enum(TestCase *tc, void *data)
 const char *double_word = "word word";
 const char *triple_word = "word word word";
 
-static void test_segment_tde_deleted_docs(TestCase *tc, void *data)
+static void test_segment_tde_deleted_docs(tst_case *tc, void *data)
 {
     int i, doc_num_expected, skip_interval;
     Store *store = (Store *)data;
@@ -722,7 +722,7 @@ static void test_segment_tde_deleted_docs(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-static void test_index_create(TestCase *tc, void *data)
+static void test_index_create(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
@@ -737,7 +737,7 @@ static void test_index_create(TestCase *tc, void *data)
     fis_deref(fis);
 }
 
-static void test_index_version(TestCase *tc, void *data)
+static void test_index_version(tst_case *tc, void *data)
 {
     u64 version;
     Store *store = (Store *)data;
@@ -763,7 +763,7 @@ static void test_index_version(TestCase *tc, void *data)
     ir_close(ir);
 }
 
-static void test_index_undelete_all_after_close(TestCase *tc, void *data)
+static void test_index_undelete_all_after_close(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw = create_book_iw(store);
@@ -791,11 +791,11 @@ static void test_index_undelete_all_after_close(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-static void test_fld_inverter(TestCase *tc, void *data)
+static void test_fld_inverter(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
-    Hash *plists;
-    Hash *curr_plists;
+    HashTable *plists;
+    HashTable *curr_plists;
     Posting *p;
     PostingList *pl;
     DocWriter *dw;
@@ -890,7 +890,7 @@ static void test_fld_inverter(TestCase *tc, void *data)
 }
 
 #define NUM_POSTINGS TEST_WORD_LIST_SIZE
-static void test_postings_sorter(TestCase *tc, void *data)
+static void test_postings_sorter(tst_case *tc, void *data)
 {
     int i;
     PostingList plists[NUM_POSTINGS], *p_ptr[NUM_POSTINGS];
@@ -909,7 +909,7 @@ static void test_postings_sorter(TestCase *tc, void *data)
     }
 }
 
-static void test_iw_add_doc(TestCase *tc, void *data)
+static void test_iw_add_doc(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw = create_book_iw(store);
@@ -944,7 +944,7 @@ static void test_iw_add_doc(TestCase *tc, void *data)
  * reader holds it open (this fails pre lock-less
  * commits on windows):
  */
-static void test_create_with_reader(TestCase *tc, void *data)
+static void test_create_with_reader(tst_case *tc, void *data)
 {
     Store *store = open_fs_store(TEST_DIR);
     (void)data;
@@ -984,7 +984,7 @@ static void test_create_with_reader(TestCase *tc, void *data)
  * gracefully fallback to the previous segments file),
  * and that we can add to the index:
  */
-static void test_simulated_crashed_writer(TestCase *tc, void *data)
+static void test_simulated_crashed_writer(tst_case *tc, void *data)
 {
     int i;
     long gen;
@@ -1016,7 +1016,7 @@ static void test_simulated_crashed_writer(TestCase *tc, void *data)
      * missing, to simulate a writer that crashed while
      * writing segments file: */
     sis_curr_seg_file_name(file_name_in, store);
-    fn_for_generation(file_name_out, SEGMENTS_FILE_NAME, NULL, 1 + gen);
+    fn_for_generation(file_name_out, SEGMENTS_FILE_NAME, "", 1 + gen);
     is = store->open_input(store, file_name_in);
     os = store->new_output(store, file_name_out);
     length = is_length(is);
@@ -1045,7 +1045,7 @@ static void test_simulated_crashed_writer(TestCase *tc, void *data)
  * latest segments file and make sure we get an
  * IOException trying to open the index:
  */
-static void test_simulated_corrupt_index1(TestCase *tc, void *data)
+static void test_simulated_corrupt_index1(tst_case *tc, void *data)
 {
     int i;
     long gen;
@@ -1108,7 +1108,7 @@ static void test_simulated_corrupt_index1(TestCase *tc, void *data)
  * files and make sure we get an IOException trying to
  * open the index:
  */
-static void test_simulated_corrupt_index2(TestCase *tc, void *data)
+static void test_simulated_corrupt_index2(tst_case *tc, void *data)
 {
     int i;
     long gen;
@@ -1148,7 +1148,7 @@ static void test_simulated_corrupt_index2(TestCase *tc, void *data)
     destroy_docs(docs, BOOK_LIST_LENGTH);
 }
 
-static void test_iw_add_docs(TestCase *tc, void *data)
+static void test_iw_add_docs(tst_case *tc, void *data)
 {
     int i;
     Config config = default_config;
@@ -1174,7 +1174,7 @@ static void test_iw_add_docs(TestCase *tc, void *data)
     }
 }
 
-void test_iw_add_empty_tv(TestCase *tc, void *data)
+void test_iw_add_empty_tv(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw;
@@ -1197,7 +1197,7 @@ void test_iw_add_empty_tv(TestCase *tc, void *data)
     doc_destroy(doc);
 }
 
-static void test_iw_del_terms(TestCase *tc, void *data)
+static void test_iw_del_terms(tst_case *tc, void *data)
 { 
     int i;
     Config config = default_config;
@@ -1452,7 +1452,7 @@ static void write_ir_test_docs(Store *store)
     destroy_docs(docs, IR_TEST_DOC_CNT);
 }
 
-static void test_ir_open_empty_index(TestCase *tc, void *data)
+static void test_ir_open_empty_index(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     store->clear_all(store);
@@ -1469,7 +1469,7 @@ static void test_ir_open_empty_index(TestCase *tc, void *data)
     XENDTRY
 }
 
-static void test_ir_basic_ops(TestCase *tc, void *data)
+static void test_ir_basic_ops(tst_case *tc, void *data)
 {
     IndexReader *ir = (IndexReader *)data;
 
@@ -1480,7 +1480,7 @@ static void test_ir_basic_ops(TestCase *tc, void *data)
     Atrue(ir_is_latest(ir));
 }
 
-static void test_ir_term_docpos_enum_skip_to(TestCase *tc,
+static void test_ir_term_docpos_enum_skip_to(tst_case *tc,
                                              TermDocEnum *tde,
                                              int field_num)
 {
@@ -1517,7 +1517,7 @@ static void test_ir_term_docpos_enum_skip_to(TestCase *tc,
 
 #define AA3(x, a, b, c) x[0] = a; x[1] = b; x[2] = c;
 
-static void test_ir_term_enum(TestCase *tc, void *data)
+static void test_ir_term_enum(tst_case *tc, void *data)
 {
     IndexReader *ir = (IndexReader *)data;
     TermEnum *te = ir_terms(ir, author);
@@ -1566,7 +1566,7 @@ static void test_ir_term_enum(TestCase *tc, void *data)
     te->close(te);
 }
 
-static void test_ir_term_doc_enum(TestCase *tc, void *data)
+static void test_ir_term_doc_enum(tst_case *tc, void *data)
 {
     IndexReader *ir = (IndexReader *)data;
 
@@ -1687,12 +1687,12 @@ static void test_ir_term_doc_enum(TestCase *tc, void *data)
     tde->close(tde);
 }
 
-static void test_ir_term_vectors(TestCase *tc, void *data)
+static void test_ir_term_vectors(tst_case *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
 
     TermVector *tv = ir->term_vector(ir, 3, "body");
-    Hash *tvs;
+    HashTable *tvs;
 
     Asequal("body", tv->field);
     Aiequal(4, tv->term_cnt);
@@ -1767,7 +1767,7 @@ static void test_ir_term_vectors(TestCase *tc, void *data)
     h_destroy(tvs);
 }
 
-static void test_ir_get_doc(TestCase *tc, void *data)
+static void test_ir_get_doc(tst_case *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
     Document *doc = ir->get_doc(ir, 3);
@@ -1800,7 +1800,7 @@ static void test_ir_get_doc(TestCase *tc, void *data)
     doc_destroy(doc);
 }
 
-static void test_ir_compression(TestCase *tc, void *data)
+static void test_ir_compression(tst_case *tc, void *data)
 { 
     int i;
     IndexReader *ir = (IndexReader *)data;
@@ -1852,7 +1852,7 @@ static void test_ir_compression(TestCase *tc, void *data)
     lazy_doc_close(lz_doc);
 }
 
-static void test_ir_mtdpe(TestCase *tc, void *data)
+static void test_ir_mtdpe(tst_case *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
     char *terms[3] = {"Where", "is", "books."};
@@ -1874,7 +1874,7 @@ static void test_ir_mtdpe(TestCase *tc, void *data)
     tde->close(tde);
 }
 
-static void test_ir_norms(TestCase *tc, void *data)
+static void test_ir_norms(tst_case *tc, void *data)
 { 
     int i;
     uchar *norms;
@@ -1971,7 +1971,7 @@ static void test_ir_norms(TestCase *tc, void *data)
     free(norms);
 }
 
-static void test_ir_delete(TestCase *tc, void *data)
+static void test_ir_delete(tst_case *tc, void *data)
 {
     int i;
     Store *store = open_ram_store();
@@ -2088,7 +2088,7 @@ static void test_ir_delete(TestCase *tc, void *data)
     store_deref(store);
 }
 
-static void test_ir_read_while_optimizing(TestCase *tc, void *data)
+static void test_ir_read_while_optimizing(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -2109,7 +2109,7 @@ static void test_ir_read_while_optimizing(TestCase *tc, void *data)
     ir_close(ir);
 }
 
-static void test_ir_multivalue_fields(TestCase *tc, void *data)
+static void test_ir_multivalue_fields(tst_case *tc, void *data)
 { 
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -2185,7 +2185,7 @@ static void test_ir_multivalue_fields(TestCase *tc, void *data)
  * IndexSuite
  *
  ***************************************************************************/
-TestSuite *ts_index(TestSuite *suite)
+tst_suite *ts_index(tst_suite * suite)
 {
     IndexReader *ir;
     Store *fs_store, *store = open_ram_store();

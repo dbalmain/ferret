@@ -3,7 +3,7 @@
 #include "mempool.h"
 
 
-static void test_mp_default_capa(TestCase *tc, void *data)
+static void test_mp_default_capa(tst_case *tc, void *data)
 {
     MemoryPool *mp = mp_new();
     (void)data;
@@ -19,7 +19,7 @@ struct MemChecker {
 #define NUM_ALLOCS 10000
 #define MAX_SIZE 100
 
-static void do_mp_test(TestCase *tc, MemoryPool *mp)
+static void do_mp_test(tst_case *tc, MemoryPool *mp)
 {
     int i, j;
     int max_necessary;
@@ -57,7 +57,7 @@ static void do_mp_test(TestCase *tc, MemoryPool *mp)
     }
 }
 
-static void test_mp_dup(TestCase *tc, void *data)
+static void test_mp_dup(tst_case *tc, void *data)
 {
     MemoryPool *mp = mp_new_capa(2000, 16);
     (void)data;
@@ -68,7 +68,7 @@ static void test_mp_dup(TestCase *tc, void *data)
     mp_destroy(mp);
 }
 
-static void test_mp_alloc(TestCase *tc, void *data)
+static void test_mp_alloc(tst_case *tc, void *data)
 {
     MemoryPool *mp = mp_new_capa(20, 16);
     char *t;
@@ -90,7 +90,7 @@ static void test_mp_alloc(TestCase *tc, void *data)
     mp_destroy(mp);
 }
 
-TestSuite *ts_mem_pool(TestSuite *suite)
+tst_suite *ts_mem_pool(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

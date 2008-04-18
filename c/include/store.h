@@ -7,6 +7,7 @@
 #include "hashset.h"
 #include "threading.h"
 
+#define FRT_BUFFER_SIZE 1024
 #define FRT_LOCK_PREFIX "ferret-"
 #define FRT_LOCK_EXT ".lck"
 
@@ -156,7 +157,7 @@ typedef struct FrtCompoundStore
 {
     FrtStore *store;
     const char *name;
-    FrtHash *entries;
+    FrtHashTable *entries;
     FrtInStream *stream;
 } FrtCompoundStore;
 
@@ -168,7 +169,7 @@ struct FrtStore
     union
     {
         char *path;             /* for fs_store only */
-        FrtHash *ht;    /* for ram_store only */
+        FrtHashTable *ht;    /* for ram_store only */
         FrtCompoundStore *cmpd;    /* for compound_store only */
     } dir;
 

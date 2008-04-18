@@ -97,10 +97,10 @@ static void update_status(void)
 /*
  * Ends the test suite by writing SUCCESS or FAILED at the end of the test
  * results in the diagnostics. */
-static void end_suite(TestSuite *suite)
+static void end_suite(tst_suite * suite)
 {
     if (suite != NULL) {
-        TestSubSuite *last = suite->tail;
+        sub_suite *last = suite->tail;
         if (!quiet) {
             fprintf(stdout, "\b");
             fflush(stdout);
@@ -117,9 +117,9 @@ static void end_suite(TestSuite *suite)
     }
 }
 
-TestSuite *tst_add_suite(TestSuite *suite, const char *suite_name_full)
+tst_suite *tst_add_suite(tst_suite * suite, const char *suite_name_full)
 {
-    TestSubSuite *subsuite;
+    sub_suite *subsuite;
     char *p;
     const char *suite_name;
     curr_char = 0;
@@ -132,7 +132,7 @@ TestSuite *tst_add_suite(TestSuite *suite, const char *suite_name_full)
     }
 
     /* Create a new subsuite */
-    subsuite = (TestSubSuite *)malloc(sizeof(TestSubSuite));
+    subsuite = (sub_suite *)malloc(sizeof(sub_suite));
     subsuite->num_test = 0;
     subsuite->failed = 0;
     subsuite->next = NULL;
@@ -166,7 +166,7 @@ TestSuite *tst_add_suite(TestSuite *suite, const char *suite_name_full)
     if (suite == NULL) {
         /* This is the first call to tst_add_suite so we need to create the
          * suite */
-        suite = (TestSuite *)malloc(sizeof(*suite));
+        suite = (tst_suite *)malloc(sizeof(*suite));
         suite->head = subsuite;
         suite->tail = subsuite;
     }
@@ -190,11 +190,11 @@ TestSuite *tst_add_suite(TestSuite *suite, const char *suite_name_full)
     return suite;
 }
 
-void tst_run_test_with_name(TestSuite *ts, test_func f, void *value,
+void tst_run_test_with_name(tst_suite * ts, test_func f, void *value,
                             char *func_name)
 {
-    TestCase tc;
-    TestSubSuite *ss;
+    tst_case tc;
+    sub_suite *ss;
 
     t_cnt++;
 
@@ -232,10 +232,10 @@ void tst_run_test_with_name(TestSuite *ts, test_func f, void *value,
     update_status();
 }
 
-static int report(TestSuite *suite)
+static int report(tst_suite * suite)
 {
     int count = 0;
-    TestSubSuite *dptr;
+    sub_suite *dptr;
 
     if (suite && suite->tail && !suite->tail->not_run) {
         end_suite(suite);
@@ -280,7 +280,7 @@ static const char *curr_err_func = "";
 static void Tstack()
 {
     if (show_stack) {
-        char *stack = get_stacktrace();
+        char * stack = get_stacktrace();
         if (stack) {
             APPEND2(msg_buf, "\n\nStack trace:\n%s\n", stack);
             free(stack);
@@ -357,7 +357,7 @@ void tst_msg(const char *func, const char *fname, int line_num,
     }
 }
 
-bool tst_raise(int line_num, TestCase *tc, const int err_code,
+bool tst_raise(int line_num, tst_case *tc, const int err_code,
                void (*func)(void *args), void *args)
 {
     volatile bool was_raised = false;
@@ -398,7 +398,7 @@ bool tst_raise(int line_num, TestCase *tc, const int err_code,
 }
 
 #define I64_PFX POSH_I64_PRINTF_PREFIX
-bool tst_int_equal(int line_num, TestCase *tc, const u64 expected,
+bool tst_int_equal(int line_num, tst_case *tc, const u64 expected,
                    const u64 actual)
 {
     a_cnt++;
@@ -418,7 +418,7 @@ bool tst_int_equal(int line_num, TestCase *tc, const u64 expected,
     return false;
 }
 
-bool tst_flt_delta_equal(int line_num, TestCase *tc, const double expected,
+bool tst_flt_delta_equal(int line_num, tst_case *tc, const double expected,
                          const double actual, const double delta)
 {
     double diff;
@@ -444,13 +444,13 @@ bool tst_flt_delta_equal(int line_num, TestCase *tc, const double expected,
     return false;
 }
 
-bool tst_flt_equal(int line_num, TestCase *tc, const double expected,
+bool tst_flt_equal(int line_num, tst_case *tc, const double expected,
                    const double actual)
 {
     return tst_flt_delta_equal(line_num, tc, expected, actual, 0.00001);
 }
 
-bool tst_str_equal(int line_num, TestCase *tc, const char *expected,
+bool tst_str_equal(int line_num, tst_case *tc, const char *expected,
                    const char *actual)
 {
     a_cnt++;
@@ -472,7 +472,7 @@ bool tst_str_equal(int line_num, TestCase *tc, const char *expected,
     return false;
 }
 
-bool tst_strstr(int line_num, TestCase *tc, const char *haystack,
+bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
                    const char *needle)
 {
     a_cnt++;
@@ -494,7 +494,7 @@ bool tst_strstr(int line_num, TestCase *tc, const char *haystack,
     return false;
 }
 
-bool tst_arr_int_equal(int line_num, TestCase *tc, const int *expected,
+bool tst_arr_int_equal(int line_num, tst_case *tc, const int *expected,
                        const int *actual, int size)
 {
     a_cnt++;
@@ -521,7 +521,7 @@ bool tst_arr_int_equal(int line_num, TestCase *tc, const int *expected,
     return false;
 }
 
-bool tst_arr_str_equal(int line_num, TestCase *tc, const char **expected,
+bool tst_arr_str_equal(int line_num, tst_case *tc, const char **expected,
                        const char **actual, int size)
 {
     a_cnt++;
@@ -548,7 +548,7 @@ bool tst_arr_str_equal(int line_num, TestCase *tc, const char **expected,
     return false;
 }
 
-bool tst_str_nequal(int line_num, TestCase *tc, const char *expected,
+bool tst_str_nequal(int line_num, tst_case *tc, const char *expected,
                     const char *actual, size_t n)
 {
     char *buf1;
@@ -576,7 +576,7 @@ bool tst_str_nequal(int line_num, TestCase *tc, const char *expected,
     return false;
 }
 
-bool tst_ptr_null(int line_num, TestCase *tc, const void *ptr)
+bool tst_ptr_null(int line_num, tst_case *tc, const void *ptr)
 {
     a_cnt++;
     update_status();
@@ -593,7 +593,7 @@ bool tst_ptr_null(int line_num, TestCase *tc, const void *ptr)
     return false;
 }
 
-bool tst_ptr_notnull(int line_num, TestCase *tc, const void *ptr)
+bool tst_ptr_notnull(int line_num, tst_case *tc, const void *ptr)
 {
     a_cnt++;
     update_status();
@@ -610,7 +610,7 @@ bool tst_ptr_notnull(int line_num, TestCase *tc, const void *ptr)
     return false;
 }
 
-bool tst_ptr_equal(int line_num, TestCase *tc, const void *expected,
+bool tst_ptr_equal(int line_num, tst_case *tc, const void *expected,
                    const void *actual)
 {
     a_cnt++;
@@ -629,7 +629,7 @@ bool tst_ptr_equal(int line_num, TestCase *tc, const void *expected,
     return false;
 }
 
-bool tst_fail(int line_num, TestCase *tc, const char *fmt, ...)
+bool tst_fail(int line_num, tst_case *tc, const char *fmt, ...)
 {
     va_list args;
     a_cnt++;
@@ -645,7 +645,7 @@ bool tst_fail(int line_num, TestCase *tc, const char *fmt, ...)
     return false;
 }
 
-bool tst_assert(int line_num, TestCase *tc, int condition,
+bool tst_assert(int line_num, tst_case *tc, int condition,
                 const char *fmt, ...)
 {
     va_list args;
@@ -667,7 +667,7 @@ bool tst_assert(int line_num, TestCase *tc, int condition,
     return false;
 }
 
-bool tst_true(int line_num, TestCase *tc, int condition)
+bool tst_true(int line_num, tst_case *tc, int condition)
 {
     a_cnt++;
     update_status();
@@ -686,7 +686,7 @@ bool tst_true(int line_num, TestCase *tc, int condition)
     return false;
 }
 
-bool tst_not_impl(int line_num, TestCase *tc, const char *message)
+bool tst_not_impl(int line_num, tst_case *tc, const char *message)
 {
     a_cnt++;
     update_status();
@@ -728,8 +728,8 @@ int main(int argc, const char *const argv[])
     int i;
     int rv;
     int list_provided = 0;
-    TestSuite *suite = NULL;
-    TestSubSuite *subsuite;
+    tst_suite *suite = NULL;
+    sub_suite *subsuite;
 
     frt_init(argc, argv);
 

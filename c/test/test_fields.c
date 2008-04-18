@@ -10,7 +10,7 @@
 #define T 1
 #define F 0
 
-void field_prop_test(TestCase *tc,
+void field_prop_test(tst_case *tc,
                      int line_num,
                      FieldInfo *fi,
                      char *name,
@@ -42,7 +42,7 @@ void field_prop_test(TestCase *tc,
  *
  ****************************************************************************/
 
-static void test_fi_new(TestCase *tc, void *data)
+static void test_fi_new(tst_case *tc, void *data)
 {
     FieldInfo *fi;
     (void)data; /* suppress unused argument warning */
@@ -74,7 +74,7 @@ static void test_fi_new(TestCase *tc, void *data)
  *
  ****************************************************************************/
 
-static void test_fis_basic(TestCase *tc, void *data)
+static void test_fis_basic(tst_case *tc, void *data)
 {
     FieldInfos *fis;
     FieldInfo *fi;
@@ -143,7 +143,7 @@ static void test_fis_basic(TestCase *tc, void *data)
     fis_deref(fis);
 }
 
-static void test_fis_with_default(TestCase *tc, void *data)
+static void test_fis_with_default(tst_case *tc, void *data)
 {
     FieldInfos *fis;
     (void)data; /* suppress unused argument warning */
@@ -182,7 +182,7 @@ static void test_fis_with_default(TestCase *tc, void *data)
     fis_deref(fis);
 }
 
-static void test_fis_rw(TestCase *tc, void *data)
+static void test_fis_rw(tst_case *tc, void *data)
 {
     char *str;
     FieldInfos *fis;
@@ -366,7 +366,7 @@ static FieldInfos *prepare_fis()
     return fis;
 }
 
-static void test_fields_rw_single(TestCase *tc, void *data)
+static void test_fields_rw_single(tst_case *tc, void *data)
 {
     Store *store = open_ram_store();
     char *bin_data = prepare_bin_data(BIN_DATA_LEN);
@@ -431,7 +431,7 @@ static void test_fields_rw_single(TestCase *tc, void *data)
     fis_deref(fis);
 }
 
-static void test_fields_rw_multi(TestCase *tc, void *data)
+static void test_fields_rw_multi(tst_case *tc, void *data)
 {
     int i;
     Store *store = open_ram_store();
@@ -511,7 +511,7 @@ static void test_fields_rw_multi(TestCase *tc, void *data)
     fis_deref(fis);
 }
 
-static void test_lazy_field_loading(TestCase *tc, void *data)
+static void test_lazy_field_loading(tst_case *tc, void *data)
 {
     Store *store = open_ram_store();
     Document *doc;
@@ -570,7 +570,7 @@ static void test_lazy_field_loading(TestCase *tc, void *data)
     lazy_doc_close(lazy_doc);
 }
 
-TestSuite *ts_fields(TestSuite *suite)
+tst_suite *ts_fields(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

@@ -9,7 +9,7 @@ static void raise_exception()
     RAISE(EXCEPTION, msg1);
 }
 
-static void inner_try(TestCase *tc)
+static void inner_try(tst_case *tc)
 {
     volatile bool exception_handled = false;
     volatile bool ioerror_called = false;
@@ -38,7 +38,7 @@ static void inner_try(TestCase *tc)
     ENDTRY
 }
 
-static void test_nested_except(TestCase *tc, void *data)
+static void test_nested_except(tst_case *tc, void *data)
 {
     volatile bool ioerror_handled = false;
     bool finally_handled = false;
@@ -68,7 +68,7 @@ static void test_nested_except(TestCase *tc, void *data)
     Assert(finally_handled, "Finally wasn't handled");
 }
 
-static void test_function_except(TestCase *tc, void *data)
+static void test_function_except(tst_case *tc, void *data)
 {
     volatile bool exception_handled = false;
     bool finally_handled = false;
@@ -97,7 +97,7 @@ static void test_function_except(TestCase *tc, void *data)
     Assert(finally_handled, "Finally wasn't handled");
 }
 
-static void test_simple_except(TestCase *tc, void *data)
+static void test_simple_except(tst_case *tc, void *data)
 {
     volatile bool exception_handled = false;
     bool finally_handled = false;
@@ -129,7 +129,7 @@ static void test_simple_except(TestCase *tc, void *data)
     Assert(finally_handled, "Finally wasn't handled");
 }
 
-static void try_xfinally1(TestCase *tc)
+static void try_xfinally1(tst_case *tc)
 {
     bool finally_handled = false;
 
@@ -143,7 +143,7 @@ static void try_xfinally1(TestCase *tc)
     Atrue(finally_handled);
 }
 
-static void try_xfinally2(TestCase *tc)
+static void try_xfinally2(tst_case *tc)
 {
     bool finally_handled = false;
 
@@ -158,7 +158,7 @@ static void try_xfinally2(TestCase *tc)
     Atrue(finally_handled);
 }
 
-static void try_xcatchall(TestCase *tc)
+static void try_xcatchall(tst_case *tc)
 {
     bool catchall_handled = false;
 
@@ -174,7 +174,7 @@ static void try_xcatchall(TestCase *tc)
     Atrue(catchall_handled);
 }
 
-static void test_xfinally(TestCase *tc, void *data)
+static void test_xfinally(tst_case *tc, void *data)
 {
     volatile bool exception_handled = false;
     bool finally_handled = false;
@@ -202,7 +202,7 @@ static void test_xfinally(TestCase *tc, void *data)
     Assert(finally_handled, "Finally wasn't handled");
 }
 
-static void test_uncaught_except(TestCase *tc, void *data)
+static void test_uncaught_except(tst_case *tc, void *data)
 {
     bool old_abort_setting = x_abort_on_exception;
     FILE *old_stream_setting = x_exception_stream;
@@ -229,7 +229,7 @@ static void test_uncaught_except(TestCase *tc, void *data)
     fclose(exception_output);
 }
 
-TestSuite *ts_except(TestSuite *suite)
+tst_suite *ts_except(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

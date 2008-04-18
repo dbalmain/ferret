@@ -1,3 +1,3 @@
 #include "test.h"
 
-void create_test_store_suite(TestSuite *suite, Store *store);
+void create_test_store_suite(tst_suite *suite, Store *store);

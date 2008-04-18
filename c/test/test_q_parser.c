@@ -19,7 +19,7 @@ typedef struct QPTestPair {
     free(qres);\
 } while (0);
 
-static void test_q_parser(TestCase *tc, void *data)
+static void test_q_parser(tst_case *tc, void *data)
 {
     int i;
     HashSet *all_fields = hs_new_str(NULL);
@@ -201,7 +201,7 @@ static void test_q_parser(TestCase *tc, void *data)
     qp_destroy(parser);
 }
 
-static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
+static void test_q_parser_standard_analyzer(tst_case *tc, void *data)
 {
     int i;
     HashSet *all_fields = hs_new_str(NULL);
@@ -372,7 +372,7 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
     qp_destroy(parser);
 }
 
-static void test_qp_clean_str(TestCase *tc, void *data)
+static void test_qp_clean_str(tst_case *tc, void *data)
 {
     int i;
     QPTestPair pairs[] = {
@@ -402,7 +402,7 @@ static void test_qp_clean_str(TestCase *tc, void *data)
     }
 }
 
-static void test_qp_bad_queries(TestCase *tc, void *data)
+static void test_qp_bad_queries(tst_case *tc, void *data)
 {
     int i;
     HashSet *all_fields = hs_new_str(NULL);
@@ -435,7 +435,7 @@ static void test_qp_bad_queries(TestCase *tc, void *data)
     qp_destroy(parser);
 }
 
-static void test_qp_prefix_query(TestCase *tc, void *data)
+static void test_qp_prefix_query(tst_case *tc, void *data)
 {
     HashSet *all_fields = hs_new_str(NULL);
     HashSet *def_fields = hs_new_str(NULL);
@@ -462,7 +462,7 @@ static void test_qp_prefix_query(TestCase *tc, void *data)
     qp_destroy(parser);
 }
 
-static void test_qp_keyword_switch(TestCase *tc, void *data)
+static void test_qp_keyword_switch(tst_case *tc, void *data)
 {
     HashSet *all_fields = hs_new_str(NULL);
     HashSet *def_fields = hs_new_str(NULL);
@@ -481,7 +481,7 @@ static void test_qp_keyword_switch(TestCase *tc, void *data)
     qp_destroy(parser);
 }
 
-TestSuite *ts_q_parser(TestSuite *suite)
+tst_suite *ts_q_parser(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

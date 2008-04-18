@@ -1,43 +1,28 @@
 /* scanner.rl -*-C-*- */
+#include <ctype.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
+#include "global.h"
+#include "internal.h"
 
-#define RET do {                        \
-    size_t __len = te - ts - skip - trunc; \
-    if (__len > out_size)               \
-        __len = out_size;               \
-    *len     = __len;                   \
-    *start   = ts;                      \
-    *end     = te;                      \
-     memcpy(out, ts + skip, __len);     \
-     out[__len] = 0;                    \
-     return;                            \
-} while(0)
+#define RET goto ret;
 
-#define STRIP(c) do {                         \
-    char *__p = ts;                           \
-    char *__o = out;                          \
-    char *__max = __p + out_size;             \
-    for (; __p <= te && __p < __max; ++__p) { \
-        if (*__p != c)                        \
-            *__o++ = *__p;                    \
-    }                                         \
-    *__o = 0;                                 \
-                                              \
-    *start = ts;                              \
-    *end   = te;                              \
-    *len   = __o - out;                       \
-    return;                                   \
+#define STRIP(c) do { \
+    strip_char = c;   \
+    goto ret;         \
 } while(0)
 
 %%{
     machine StdTok;
 
-    word  = alnum;
+
+
     delim = space;
-    token = alpha word*;
+    token = alpha alnum*;
     punc  = [.,\/_\-];
     proto = 'http'[s]? | 'ftp' | 'file';
     urlc  = alnum | punc | [\@\:];
@@ -50,7 +35,7 @@
         token [\'][sS]? { trunc = 2; RET; };
 
         #// Token with hyphens
-        alnum+ ([\-_] alnum+)* { RET; };
+        alnum+ ('-' alnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };
@@ -80,33 +65,58 @@
 
 %% write data nofinal;
 
-void frt_std_scan(const char *in,
-                  char *out, size_t out_size,
-                  char **start, char **end,
-                  int *len)
+void frt_scan(const char *in,
+              char *out, size_t out_size,
+              const char **start,
+              const char **end,
+              int *token_size)
 {
     int cs, act;
-    char *ts, *te = 0;
+    char *ts = 0, *te = 0;
 
     %% write init;
 
-    char *p = (char *)in;
-    char *pe = 0;
-    char *eof = pe;
-    *len = 0;
+    char *p = (char *)in, *pe = 0, *eof = pe;
     int skip = 0;
     int trunc = 0;
+    char strip_char = 0;
+
+    *end = 0;
+    *start = 0;
+    *token_size = 0;
 
     %% write exec;
 
     if ( cs == StdTok_error )
-    {
-        fprintf(stderr, "PARSE ERROR\n" );
-        return;
-    }
+                   fprintf(stderr, "PARSE ERROR\n" );
+    else if ( ts ) fprintf(stderr, "STUFF LEFT: '%s'\n", ts);
+    return;
 
-    if ( ts )
+ ret:
     {
-        fprintf(stderr, "STUFF LEFT: '%s'\n", ts);
+
+        size_t __len = te - ts - skip - trunc;
+        if (__len > out_size)
+            __len = out_size;
+
+        *start = ts;
+        *end   = te;
+
+        if (strip_char) {
+            char *__p = ts + skip;
+            char *__o = out;
+            for (; __p < (ts + skip + __len); ++__p) {
+                if (*__p != strip_char)
+                    *__o++ = *__p;
+            }
+            *token_size = __o - out;
+        }
+        else {
+            memcpy(out, ts + skip, __len);
+            *token_size = __len;
+        }
+
+
+        out[*token_size] = 0;
     }
 }

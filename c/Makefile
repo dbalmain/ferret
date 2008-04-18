@@ -90,6 +90,7 @@ testall: $(TEST_OBJS) libferret.a
 clean:
 	@rm -f  $(FRT_OBJS) $(FRT_OBJS:%.o=%.gcov) $(FRT_OBJS:%.o=%.gcno)
 	@rm -f  libferret.a testall gmon.out
+	@rm -f  load_bench bench search_bench sort_bench
 	@rm -rf $(DEP_DIR) $(GCOV_DIR)
 
 realclean: clean
@@ -126,7 +127,7 @@ gen_valsupp: testall
 # Benchmarking
 ###
 
-# TODO
+load_bench bench search_bench sort_bench: libferret.a
 
 ###
 # Dependency build
@@ -144,15 +145,10 @@ gen_valsupp: testall
 
 -include $(OBJS:%.o=$(DEP_DIR)/%.P)
 
-src/q_parser.c: src/q_parser.y
-
-src/scanner.c: src/scanner.rl
-
 %.c : %.rl
 	ragel $< -o $@
 
-%.c : %.y
-	yacc -o $@ -p frt_ $<
+src/q_parser.c: src/q_parser.y
 
 ###
 # Generate gcov stats

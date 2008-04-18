@@ -34,7 +34,7 @@ static BitVector *unset_bits(BitVector *bv, char *bits)
 /**
  * Test basic BitVector get/set/unset operations
  */
-static void test_bv(TestCase *tc, void *data)
+static void test_bv(tst_case *tc, void *data)
 {
     int i;
     BitVector *bv = bv_new();
@@ -125,7 +125,7 @@ static void test_bv(TestCase *tc, void *data)
 /**
  * Test simple BitVector scanning
  */
-static void test_bv_scan(TestCase *tc, void *data)
+static void test_bv_scan(tst_case *tc, void *data)
 {
     int i;
     BitVector *bv = bv_new();
@@ -146,7 +146,7 @@ static void test_bv_scan(TestCase *tc, void *data)
     bv_destroy(not_bv);
 }
 
-static void test_bv_eq_hash(TestCase *tc, void *data)
+static void test_bv_eq_hash(tst_case *tc, void *data)
 {
     static int const COUNT = 1000;
     int i;
@@ -195,7 +195,7 @@ static void test_bv_eq_hash(TestCase *tc, void *data)
     bv_destroy(bv2);
 }
 
-static void test_bv_and(TestCase *tc, void *data)
+static void test_bv_and(tst_case *tc, void *data)
 {
 #   define AND_SIZE 1000
     static const int and_cnt = 500;
@@ -262,7 +262,7 @@ static void test_bv_and(TestCase *tc, void *data)
     bv_destroy(and_bv);
 }
 
-static void test_bv_or(TestCase *tc, void *data)
+static void test_bv_or(tst_case *tc, void *data)
 {
 #   define OR_SIZE 1000
     static const int or_cnt = 500;
@@ -315,7 +315,7 @@ static void test_bv_or(TestCase *tc, void *data)
     bv_destroy(or_bv);
 }
 
-static void test_bv_xor(TestCase *tc, void *data)
+static void test_bv_xor(tst_case *tc, void *data)
 {
 #   define XOR_SIZE 1000
     static const int xor_cnt = 500;
@@ -375,7 +375,7 @@ static void test_bv_xor(TestCase *tc, void *data)
     bv_destroy(xor_bv);
 }
 
-static void test_bv_not(TestCase *tc, void *data)
+static void test_bv_not(tst_case *tc, void *data)
 {
     BitVector *bv = bv_new(), *not_bv;
     int i;
@@ -396,7 +396,7 @@ static void test_bv_not(TestCase *tc, void *data)
     bv_destroy(not_bv);
 }
 
-static void test_bv_combined_boolean_ops(TestCase *tc, void *data)
+static void test_bv_combined_boolean_ops(tst_case *tc, void *data)
 {
     BitVector *bv1 = bv_new();
     BitVector *bv2 = bv_new();
@@ -461,7 +461,7 @@ static void test_bv_combined_boolean_ops(TestCase *tc, void *data)
  * set to 97. When running this test with high numbers, be sure use -q on the
  * command line or the test will take a very long time.
  */
-static void test_bv_scan_stress(TestCase *tc, void *data)
+static void test_bv_scan_stress(tst_case * tc, void *data)
 {
     int i;
     BitVector *bv = bv_new_capa(BV_SCAN_SIZE);
@@ -474,9 +474,6 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
 
     for (i = BV_SCAN_INC; i < BV_SCAN_SIZE; i += BV_SCAN_INC) {
         bv_set_fast(bv, i);
-        Aiequal(bv_get(bv, i), 1);
-        Aiequal(bv_get(bv, i-1), 0);
-        Aiequal(bv_get(bv, i+1), 0);
     }
 
     not_bv = bv_not(bv);
@@ -563,7 +560,7 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
 }
 
 
-TestSuite *ts_bitvector(TestSuite *suite)
+tst_suite *ts_bitvector(tst_suite * suite)
 {
     suite = ADD_SUITE(suite);
 

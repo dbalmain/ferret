@@ -86,7 +86,7 @@ static void copy_file(Store *store, char *src, char *dest)
  * Verify we can read the pre-XXX file format, do searches
  * against it, and add documents to it.
  */
-static void test_delete_leftover_files(TestCase *tc, void *data)
+static void test_delete_leftover_files(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw = create_iw_lucene(store);
@@ -173,7 +173,7 @@ static void test_delete_leftover_files(TestCase *tc, void *data)
  *
  ***************************************************************************/
 
-TestSuite *ts_file_deleter(TestSuite *suite)
+tst_suite *ts_file_deleter(tst_suite * suite)
 {
     Store *store = open_ram_store();
     suite = ADD_SUITE(suite);

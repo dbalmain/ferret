@@ -165,9 +165,9 @@ static TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
     return tv;
 }
 
-Hash *tvr_get_tv(TermVectorsReader *tvr, int doc_num)
+HashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num)
 {
-    Hash *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
+    HashTable *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
     int i;
     InStream *tvx_in = tvr->tvx_in;
     InStream *tvd_in = tvr->tvd_in;

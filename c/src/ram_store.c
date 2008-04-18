@@ -98,7 +98,7 @@ static int ram_count(Store *store)
 static void ram_each(Store *store,
                      void (*func)(const char *fname, void *arg), void *arg)
 {
-    Hash *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     int i;
     for (i = 0; i <= ht->mask; i++) {
         RAMFile *rf = (RAMFile *)ht->table[i].value;
@@ -113,7 +113,7 @@ static void ram_each(Store *store,
 
 static void ram_close_i(Store *store)
 {
-    Hash *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     int i;
     for (i = 0; i <= ht->mask; i++) {
         RAMFile *rf = (RAMFile *)ht->table[i].value;
@@ -131,7 +131,7 @@ static void ram_close_i(Store *store)
 static void ram_clear(Store *store)
 {
     int i;
-    Hash *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     for (i = 0; i <= ht->mask; i++) {
         RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf && !file_is_lock(rf->name)) {
@@ -144,7 +144,7 @@ static void ram_clear(Store *store)
 static void ram_clear_locks(Store *store)
 {
     int i;
-    Hash *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     for (i = 0; i <= ht->mask; i++) {
         RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf && file_is_lock(rf->name)) {
@@ -157,7 +157,7 @@ static void ram_clear_locks(Store *store)
 static void ram_clear_all(Store *store)
 {
     int i;
-    Hash *ht = store->dir.ht;
+    HashTable *ht = store->dir.ht;
     for (i = 0; i <= ht->mask; i++) {
         RAMFile *rf = (RAMFile *)ht->table[i].value;
         if (rf) {
@@ -352,16 +352,6 @@ static InStream *ram_open_input(Store *store, const char *filename)
     InStream *is = NULL;
 
     if (rf == NULL) {
-        /*
-        Hash *ht = store->dir.ht;
-        int i;
-        printf("\nlooking for %s, %ld\n", filename, str_hash(filename));
-        for (i = 0; i <= ht->mask; i++) {
-            if (ht->table[i].value)
-                printf("%s, %ld  --  %ld\n", (char *)ht->table[i].key,
-                       str_hash(ht->table[i].key), ht->table[i].hash);
-        }
-        */
         RAISE(FILE_NOT_FOUND_ERROR,
               "tried to open \"%s\" but it doesn't exist", filename);
     }

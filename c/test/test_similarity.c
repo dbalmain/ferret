@@ -1,7 +1,7 @@
 #include "similarity.h"
 #include "test.h"
 
-void test_default_similarity(TestCase *tc, void *data)
+void test_default_similarity(tst_case *tc, void *data)
 {
   Similarity *dsim = sim_create_default();
   (void)data;
@@ -14,7 +14,7 @@ void test_default_similarity(TestCase *tc, void *data)
   Afequal(4.0, sim_coord(dsim, 12, 3));
 }
 
-TestSuite *ts_similarity(TestSuite *suite)
+tst_suite *ts_similarity(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

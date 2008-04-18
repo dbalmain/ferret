@@ -46,8 +46,8 @@ extern const FrtConfig frt_default_config;
  ***************************************************************************/
 
 typedef struct FrtCacheObject {
-    FrtHash *ref_tab1;
-    FrtHash *ref_tab2;
+    FrtHashTable *ref_tab1;
+    FrtHashTable *ref_tab2;
     void *ref1;
     void *ref2;
     void *obj;
@@ -55,10 +55,10 @@ typedef struct FrtCacheObject {
 } FrtCacheObject;
 
 extern void frt_cache_destroy(FrtCacheObject *co);
-extern FrtCacheObject *frt_co_create(FrtHash *ref_tab1,
-                              FrtHash *ref_tab2,
+extern FrtCacheObject *frt_co_create(FrtHashTable *ref_tab1,
+                              FrtHashTable *ref_tab2,
             void *ref1, void *ref2, frt_free_ft destroy, void *obj);
-extern FrtHash *frt_co_hash_create();
+extern FrtHashTable *frt_co_hash_create();
 
 /****************************************************************************
  *
@@ -143,7 +143,7 @@ typedef struct FrtFieldInfos
     int size;
     int capa;
     FrtFieldInfo **fields;
-    FrtHash *field_dict;
+    FrtHashTable *field_dict;
     int ref_cnt;
 } FrtFieldInfos;
 
@@ -300,7 +300,7 @@ typedef struct FrtSegmentFieldIndex
     int         index_interval;
     off_t       index_ptr;
     FrtTermEnum   *index_te;
-    FrtHash  *field_dict;
+    FrtHashTable  *field_dict;
 } FrtSegmentFieldIndex;
 
 extern FrtSegmentFieldIndex *frt_sfi_open(FrtStore *store, const char *segment);
@@ -610,7 +610,7 @@ extern FrtTermVectorsReader *frt_tvr_open(FrtStore *store,
                                    FrtFieldInfos *fis);
 extern FrtTermVectorsReader *frt_tvr_clone(FrtTermVectorsReader *orig);
 extern void frt_tvr_close(FrtTermVectorsReader *tvr);
-extern FrtHash *frt_tvr_get_tv(FrtTermVectorsReader *tvr, int doc_num);
+extern FrtHashTable *frt_tvr_get_tv(FrtTermVectorsReader *tvr, int doc_num);
 extern FrtTermVector *frt_tvr_get_field_tv(FrtTermVectorsReader *tvr,
                                     int doc_num,
                                     int field_num);
@@ -647,7 +647,7 @@ extern void frt_lazy_df_get_bytes(FrtLazyDocField *self, char *buf,
 /* * * FrtLazyDoc * * */
 struct FrtLazyDoc
 {
-    FrtHash *field_dict;
+    FrtHashTable *field_dict;
     int size;
     FrtLazyDocField **fields;
     FrtInStream *fields_in;
@@ -676,7 +676,7 @@ extern FrtFieldsReader *frt_fr_clone(FrtFieldsReader *orig);
 extern void frt_fr_close(FrtFieldsReader *fr);
 extern FrtDocument *frt_fr_get_doc(FrtFieldsReader *fr, int doc_num);
 extern FrtLazyDoc *frt_fr_get_lazy_doc(FrtFieldsReader *fr, int doc_num);
-extern FrtHash *frt_fr_get_tv(FrtFieldsReader *fr, int doc_num);
+extern FrtHashTable *frt_fr_get_tv(FrtFieldsReader *fr, int doc_num);
 extern FrtTermVector *frt_fr_get_field_tv(FrtFieldsReader *fr, int doc_num,
                                    int field_num);
 
@@ -760,7 +760,7 @@ struct FrtIndexReader
     FrtTermDocEnum        *(*term_positions)(FrtIndexReader *ir);
     FrtTermVector         *(*term_vector)(FrtIndexReader *ir, int doc_num,
                                        const char *field);
-    FrtHash    *(*term_vectors)(FrtIndexReader *ir, int doc_num);
+    FrtHashTable    *(*term_vectors)(FrtIndexReader *ir, int doc_num);
     bool                (*is_deleted)(FrtIndexReader *ir, int doc_num);
     bool                (*has_deletions)(FrtIndexReader *ir);
     void                (*acquire_write_lock)(FrtIndexReader *ir);
@@ -778,8 +778,8 @@ struct FrtIndexReader
     FrtLock               *write_lock;
     FrtSegmentInfos       *sis;
     FrtFieldInfos         *fis;
-    FrtHash    *cache;
-    FrtHash    *field_index_cache;
+    FrtHashTable    *cache;
+    FrtHashTable    *field_index_cache;
     frt_mutex_t             field_index_mutex;
     frt_uchar              *fake_norms;
     frt_mutex_t             mutex;
@@ -826,7 +826,7 @@ struct FrtMultiReader {
     int r_cnt;
     int *starts;
     FrtIndexReader **sub_readers;
-    FrtHash *norms_cache;
+    FrtHashTable *norms_cache;
     bool has_deletions : 1;
     int **field_num_map;
 };
@@ -856,7 +856,7 @@ typedef struct FrtBoost
 
 typedef struct FrtFieldInverter
 {
-    FrtHash *plists;
+    FrtHashTable *plists;
     frt_uchar *norms;
     FrtFieldInfo *fi;
     int length;
@@ -884,8 +884,8 @@ typedef struct FrtDocWriter
     FrtFieldsWriter *fw;
     FrtMemoryPool *mp;
     FrtAnalyzer *analyzer;
-    FrtHash *curr_plists;
-    FrtHash *fields;
+    FrtHashTable *curr_plists;
+    FrtHashTable *fields;
     FrtSimilarity *similarity;
     FrtOffset *offsets;
     int offsets_size;
@@ -902,11 +902,11 @@ extern void frt_dw_close(FrtDocWriter *dw);
 extern void frt_dw_add_doc(FrtDocWriter *dw, FrtDocument *doc);
 extern void frt_dw_new_segment(FrtDocWriter *dw, FrtSegmentInfo *si);
 /* For testing. need to remove somehow. FIXME */
-extern FrtHash *frt_dw_invert_field(FrtDocWriter *dw,
+extern FrtHashTable *frt_dw_invert_field(FrtDocWriter *dw,
                                   FrtFieldInverter *fld_inv,
                                   FrtDocField *df);
 extern FrtFieldInverter *frt_dw_get_fld_inv(FrtDocWriter *dw, FrtFieldInfo *fi);
-extern void frt_dw_reset_postings(FrtHash *postings);
+extern void frt_dw_reset_postings(FrtHashTable *postings);
 
 /****************************************************************************
  *

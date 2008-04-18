@@ -556,427 +556,29 @@ Analyzer *mb_letter_analyzer_new(bool lowercase)
 /*
  * StandardTokenizer
  */
-static int std_get_alpha(TokenStream *ts, char *token)
-{
-    int i = 0;
-    char *t = ts->t;
-    while (t[i] != '\0' && isalnum(t[i])) {
-        if (i < MAX_WORD_SIZE) {
-            token[i] = t[i];
-        }
-        i++;
-    }
-    return i;
-}
-
-static int mb_std_get_alpha(TokenStream *ts, char *token)
-{
-    char *t = ts->t;
-    wchar_t wchr;
-    int i;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    i = mb_next_char(&wchr, t, &state);
-
-    while (wchr != 0 && iswalnum(wchr)) {
-        t += i;
-        i = mb_next_char(&wchr, t, &state);
-    }
-
-    i = (int)(t - ts->t);
-    if (i > MAX_WORD_SIZE) {
-        i = MAX_WORD_SIZE - 1;
-    }
-    memcpy(token, ts->t, i);
-    return i;
-}
-
-static int isnumpunc(char c)
-{
-    return (c == '.' || c == ',' || c == '\\' || c == '/' || c == '_'
-            || c == '-');
-}
-
-static int w_isnumpunc(wchar_t c)
-{
-    return (c == L'.' || c == L',' || c == L'\\' || c == L'/' || c == L'_'
-            || c == L'-');
-}
-
-static int isurlpunc(char c)
-{
-    return (c == '.' || c == '/' || c == '-' || c == '_');
-}
-
-static int isurlc(char c)
-{
-    return (c == '.' || c == '/' || c == '-' || c == '_' || isalnum(c));
-}
-
-static int isurlxatpunc(char c)
-{
-    return (c == '.' || c == '/' || c == '-' || c == '_' || c == '@');
-}
-
-static int isurlxatc(char c)
-{
-    return (c == '.' || c == '/' || c == '-' || c == '_' || c == '@'
-            || isalnum(c));
-}
-
-static bool std_is_tok_char(char *c)
-{
-    if (isspace(*c)) {
-        return false;           /* most common so check first. */
-    }
-    if (isalnum(*c) || isnumpunc(*c) || *c == '&' ||
-        *c == '@' || *c == '\'' || *c == ':') {
-        return true;
-    }
-    return false;
-}
-
-static bool mb_std_is_tok_char(char *t)
-{
-    wchar_t c;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    if (((int)mbrtowc(&c, t, MB_CUR_MAX, &state)) < 0) {
-        /* error which we can handle next time round. For now just return
-         * false so that we can return a token */
-        return false;
-    }
-    if (iswspace(c)) {
-        return false;           /* most common so check first. */
-    }
-    if (iswalnum(c) || w_isnumpunc(c) || c == L'&' || c == L'@' || c == L'\''
-        || c == L':') {
-        return true;
-    }
-    return false;
-}
-
-/* (alnum)((punc)(alnum))+ where every second sequence of alnum must contain at
- * least one digit.
- * (alnum) = [a-zA-Z0-9]
- * (punc) = [_\/.,-]
- */
-static int std_get_number(char *input)
-{
-    int i = 0;
-    int count = 0;
-    int last_seen_digit = 2;
-    int seen_digit = false;
-
-    while (last_seen_digit >= 0) {
-        while ((input[i] != '\0') && isalnum(input[i])) {
-            if ((last_seen_digit < 2) && isdigit(input[i])) {
-                last_seen_digit = 2;
-            }
-            if ((seen_digit == false) && isdigit(input[i])) {
-                seen_digit = true;
-            }
-            i++;
-        }
-        last_seen_digit--;
-        if (!isnumpunc(input[i]) || !isalnum(input[i + 1])) {
-
-            if (last_seen_digit >= 0) {
-                count = i;
-            }
-            break;
-        }
-        count = i;
-        i++;
-    }
-    if (seen_digit) {
-        return count;
-    }
-    else {
-        return 0;
-    }
-}
-
-static int std_get_apostrophe(char *input)
-{
-    char *t = input;
-
-    while (isalpha(*t) || *t == '\'') {
-        t++;
-    }
-
-    return (int)(t - input);
-}
-
-static int mb_std_get_apostrophe(char *input)
-{
-    char *t = input;
-    wchar_t wchr;
-    int i;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    i = mb_next_char(&wchr, t, &state);
-
-    while (iswalpha(wchr) || wchr == L'\'') {
-        t += i;
-        i = mb_next_char(&wchr, t, &state);
-    }
-    return (int)(t - input);
-}
-
-static char *std_get_url(char *input, char *token, int i, int *len)
-{
-    char *next = NULL;
-    while (isurlc(input[i])) {
-        if (isurlpunc(input[i]) && isurlpunc(input[i - 1])) {
-            break; /* can't have two puncs in a row */
-        }
-        if (i < MAX_WORD_SIZE) {
-            token[i] = input[i];
-        }
-        i++;
-    }
-    next = input + i;
-
-    /* We don't want to index past the end of the token capacity) */
-    if (i >= MAX_WORD_SIZE) {
-        i = MAX_WORD_SIZE - 1;
-    }
-
-    /* strip trailing puncs */
-    while (isurlpunc(input[i - 1])) {
-        i--;
-    }
-    *len = i;
-    token[i] = '\0';
-
-    return next;
-}
-
-/* Company names can contain '@' and '&' like AT&T and Excite@Home. Let's
-*/
-static int std_get_company_name(char *input)
-{
-    int i = 0;
-    while (isalpha(input[i]) || input[i] == '@' || input[i] == '&') {
-        i++;
-    }
-
-    return i;
-}
-
-static bool std_advance_to_start(TokenStream *ts)
-{
-    char *t = ts->t;
-    while (*t != '\0' && !isalnum(*t)) {
-        if (isnumpunc(*t) && isdigit(t[1])) break;
-        t++;
-    }
-
-    ts->t = t;
-
-    return (*t != '\0');
-}
-
-static bool mb_std_advance_to_start(TokenStream *ts)
-{
-    int i;
-    wchar_t wchr;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    i = mb_next_char(&wchr, ts->t, &state);
-
-    while (wchr != 0 && !iswalnum(wchr)) {
-        if (isnumpunc(*ts->t) && isdigit(ts->t[1])) break;
-        ts->t += i;
-        i = mb_next_char(&wchr, ts->t, &state);
-    }
-
-    return (wchr != 0);
-}
-
 static Token *std_next(TokenStream *ts)
 {
     StandardTokenizer *std_tz = STDTS(ts);
-    char *s;
-    char *t;
     char *start = NULL;
-    char *num_end = NULL;
-    char token[MAX_WORD_SIZE + 1];
-    int token_i = 0;
+    char *end = NULL;
     int len;
-    bool is_acronym;
-    bool seen_at_symbol;
+    Token *tk = &(CTS(ts)->token);
 
-    /*
-     * The Ragel generated scanner doesn't currently support multibyte
-     * strings.  We therefore only call it when we're dealing with a
-     * regular, non-mb aware tokenizer.
-     */
-    if (std_tz->advance_to_start == std_advance_to_start) {
-        char *end = NULL;
-        Token *tk = &(CTS(ts)->token);
-
-        frt_std_scan(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
-        if (len == 0)
-            return NULL;
-
-        ts->t       = end;
-        tk->len     = len;
-        tk->start   = start - ts->text;
-        tk->end     = end   - ts->text;
-        tk->pos_inc = 1;
-        return &(CTS(ts)->token);
+    if (std_tz->is_ascii) {
+        frt_scan(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
     }
     else {
-        char *end = NULL;
-        Token *tk = &(CTS(ts)->token);
-
-        frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
-        if (len == 0)
-            return NULL;
-
-        ts->t       = end;
-        tk->len     = len;
-        tk->start   = start - ts->text;
-        tk->end     = end   - ts->text;
-        tk->pos_inc = 1;
-        return &(CTS(ts)->token);
+        frt_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
     }
 
-    if (!std_tz->advance_to_start(ts)) {
+    if (len == 0)
         return NULL;
-    }
 
-    start = t = ts->t;
-    token_i = std_tz->get_alpha(ts, token);
-    t += token_i;
-
-    if (!std_tz->is_tok_char(t)) {
-        /* very common case, ie a plain word, so check and return */
-        ts->t = t;
-        return tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-    }
-
-    if (*t == '\'') {       /* apostrophe case. */
-        t += std_tz->get_apostrophe(t);
-        ts->t = t;
-        len = (int)(t - start);
-        /* strip possesive */
-        if ((t[-1] == 's' || t[-1] == 'S') && t[-2] == '\'') {
-            t -= 2;
-            tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-            CTS(ts)->token.end += 2;
-        }
-        else if (t[-1] == '\'') {
-            t -= 1;
-            tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-            CTS(ts)->token.end += 1;
-        }
-        else {
-            tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-        }
-
-        return &(CTS(ts)->token);
-    }
-
-    if (*t == '&') {        /* apostrophe case. */
-        t += std_get_company_name(t);
-        ts->t = t;
-        return tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-    }
-
-    if ((isdigit(*t) || isnumpunc(*t))       /* possibly a number */
-        && (len = std_get_number(t) > 0)) {
-        num_end = start + len;
-        if (!std_tz->is_tok_char(num_end)) { /* won't find a longer token */
-            ts->t = num_end;
-            return tk_set_ts(&(CTS(ts)->token), start, num_end, ts->text, 1);
-        }
-        /* else there may be a longer token so check */
-    }
-
-    if (t[0] == ':' && t[1] == '/' && t[2] == '/') {
-        /* check for a known url start */
-        token[token_i] = '\0';
-        t += 3;
-        token_i += 3;
-        while (*t == '/') {
-            t++;
-        }
-        if (isalpha(*t) &&
-            (memcmp(token, "ftp", 3) == 0 ||
-             memcmp(token, "http", 4) == 0 ||
-             memcmp(token, "https", 5) == 0 ||
-             memcmp(token, "file", 4) == 0)) {
-            ts->t = std_get_url(t, token, 0, &len); /* dispose of first part of the URL */
-        }
-        else {              /* still treat as url but keep the first part */
-            token_i = (int)(t - start);
-            memcpy(token, start, token_i * sizeof(char));
-            ts->t = std_get_url(t, token, token_i, &len); /* keep start */
-        }
-        return tk_set(&(CTS(ts)->token), token, len,
-                      (off_t)(start - ts->text),
-                      (off_t)(ts->t - ts->text), 1);
-    }
-
-    /* now see how long a url we can find. */
-    is_acronym = true;
-    seen_at_symbol = false;
-    while (isurlxatc(*t)) {
-        if (is_acronym && !isalpha(*t) && (*t != '.')) {
-            is_acronym = false;
-        }
-        if (isurlxatpunc(*t) && isurlxatpunc(t[-1])) {
-            break; /* can't have two punctuation characters in a row */
-        }
-        if (*t == '@') {
-            if (seen_at_symbol) {
-                break; /* we can only have one @ symbol */
-            }
-            else {
-                seen_at_symbol = true;
-            }
-        }
-        t++;
-    }
-    while (isurlxatpunc(t[-1]) && t > ts->t) {
-        t--;                /* strip trailing punctuation */
-    }
-
-    if (t < ts->t || (num_end != NULL && num_end < ts->t)) {
-        fprintf(stderr, "Warning: encoding error. Please check that you are using the correct locale for your input");
-        return NULL;
-    } else if (num_end == NULL || t > num_end) {
-        ts->t = t;
-
-        if (is_acronym) {   /* check it is one letter followed by one '.' */
-            for (s = start; s < t - 1; s++) {
-                if (isalpha(*s) && (s[1] != '.'))
-                    is_acronym = false;
-            }
-        }
-        if (is_acronym) {   /* strip '.'s */
-            for (s = start + token_i; s < t; s++) {
-                if (*s != '.') {
-                    token[token_i] = *s;
-                    token_i++;
-                }
-            }
-            tk_set(&(CTS(ts)->token), token, token_i,
-                   (off_t)(start - ts->text),
-                   (off_t)(t - ts->text), 1);
-        }
-        else { /* just return the url as is */
-            tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
-        }
-    }
-    else {                  /* return the number */
-        ts->t = num_end;
-        tk_set_ts(&(CTS(ts)->token), start, num_end, ts->text, 1);
-    }
-
+    ts->t       = end;
+    tk->len     = len;
+    tk->start   = start - ts->text;
+    tk->end     = end   - ts->text;
+    tk->pos_inc = 1;
     return &(CTS(ts)->token);
 }
 
@@ -998,24 +600,14 @@ static TokenStream *std_ts_new()
 TokenStream *standard_tokenizer_new()
 {
     TokenStream *ts = std_ts_new();
-
-    STDTS(ts)->advance_to_start = &std_advance_to_start;
-    STDTS(ts)->get_alpha        = &std_get_alpha;
-    STDTS(ts)->is_tok_char      = &std_is_tok_char;
-    STDTS(ts)->get_apostrophe   = &std_get_apostrophe;
-
+    STDTS(ts)->is_ascii = true;
     return ts;
 }
 
 TokenStream *mb_standard_tokenizer_new()
 {
     TokenStream *ts = std_ts_new();
-
-    STDTS(ts)->advance_to_start = &mb_std_advance_to_start;
-    STDTS(ts)->get_alpha        = &mb_std_get_alpha;
-    STDTS(ts)->is_tok_char      = &mb_std_is_tok_char;
-    STDTS(ts)->get_apostrophe   = &mb_std_get_apostrophe;
-
+    STDTS(ts)->is_ascii = false;
     return ts;
 }
 
@@ -1087,7 +679,7 @@ static TokenStream *sf_clone_i(TokenStream *orig_ts)
 static Token *sf_next(TokenStream *ts)
 {
     int pos_inc = 0;
-    Hash *words = StopFilt(ts)->words;
+    HashTable *words = StopFilt(ts)->words;
     TokenFilter *tf = TkFilt(ts);
     Token *tk = tf->sub_ts->next(tf->sub_ts);
 
@@ -1108,7 +700,7 @@ TokenStream *stop_filter_new_with_words_len(TokenStream *sub_ts,
 {
     int i;
     char *word;
-    Hash *word_table = h_new_str(&free, (free_ft) NULL);
+    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     for (i = 0; i < len; i++) {
@@ -1126,7 +718,7 @@ TokenStream *stop_filter_new_with_words(TokenStream *sub_ts,
                                         const char **words)
 {
     char *word;
-    Hash *word_table = h_new_str(&free, (free_ft) NULL);
+    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     while (*words) {

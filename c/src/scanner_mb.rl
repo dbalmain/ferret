@@ -9,28 +9,11 @@
 #include "global.h"
 #include "internal.h"
 
-static char *position_in_mb( const unsigned long *orig_wc,
-                             const char *orig_mb,
-                             const unsigned long *curr_wc )
-{
-    char          *mb = (char *)orig_mb;
-    unsigned long *wc = (unsigned long *)orig_wc;
-
-    while (wc < curr_wc)
-    {
-        char buf[MB_LEN_MAX];
-        mb += wctomb(buf, *wc);
-        ++wc;
-    }
-
-    return mb;
-}
-
 #define RET goto ret;
 
 #define STRIP(c) do { \
     strip_char = c;   \
-    goto strip;       \
+    goto ret;         \
 } while(0)
 
 %%{
@@ -82,6 +65,23 @@ static char *position_in_mb( const unsigned long *orig_wc,
 
 %% write data nofinal;
 
+static const char *position_in_mb( const unsigned long *orig_wc,
+                                   const char *orig_mb,
+                                   const unsigned long *curr_wc )
+{
+    const char          *mb = orig_mb;
+    const unsigned long *wc = orig_wc;
+
+    while (wc < curr_wc)
+    {
+        char buf[MB_LEN_MAX];
+        mb += wctomb(buf, *wc);
+        ++wc;
+    }
+
+    return mb;
+}
+
 static int mb_next_char(unsigned long *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
@@ -111,8 +111,8 @@ static int wc_next_char(char *s, const unsigned long *wchr, mbstate_t *state)
  * mbtowc on the buffer, pass it to the tokenizer which will extract
  * one token out.  This token will then be converted back with wctomb.
  *
- * frt_std_scan_mb takes in a pointer to the mb buffer +inmb+ that has
- * max size +in_size+.  The resulting token will be stored in +outmb+,
+ * frt_scan_mb takes in a pointer to the mb buffer +inmb+ that has max
+ * size +in_size+.  The resulting token will be stored in +outmb+,
  * with at most +out_size+ bytes written.
  *
  * While tokenizing, part of the token may be stripped out. Eg,
@@ -129,18 +129,21 @@ static void mb_to_wc(const char *in,
                      unsigned long *out, size_t out_size)
 {
     mbstate_t state;
-    char *in_p           = (char *)in;
+    const char *in_p     = in;
     unsigned long *out_p = out;
     ZEROSET(&state, mbstate_t);
 
-    while (*in_p && out_p < (out + out_size/sizeof(*out))) {
+    while (*in_p && out_p < (out + out_size/sizeof(*out)))
+    {
+        /* We can break out early here on, say, a space XXX */
+
         int n = mb_next_char(out_p, in_p, &state);
-        if (n < 0) {
+        if (n < 0)
+        {
             ++in_p;
             continue;
         }
 
-        /* We can break out early here on, say, a space XXX */
         in_p += n;
         ++out_p;
     }
@@ -174,9 +177,10 @@ static void wc_to_mb(char *out, size_t out_size, int *token_size,
     *token_size = out_p - out;
 }
 
-void frt_std_scan_mb(const char *in_mb,
+void frt_scan_mb(const char *in_mb,
                  char *out_mb, size_t out_mb_size,
-                 char **start_mb, char **end_mb,
+                 const char **start_mb,
+                 const char **end_mb,
                  int *token_size)
 {
     int cs, act;
@@ -185,12 +189,9 @@ void frt_std_scan_mb(const char *in_mb,
     %% write init;
 
     unsigned long in_wc[4096] = {0};
-    unsigned long out_wc[4096] = {0};
     mb_to_wc(in_mb, in_wc, sizeof(in_wc));
 
-    unsigned long *p = in_wc;
-    unsigned long *pe = 0;
-    unsigned long *eof = pe;
+    unsigned long *p = in_wc, *pe = 0, *eof = pe;
     int skip = 0;
     int trunc = 0;
     unsigned long strip_char = 0;
@@ -208,28 +209,22 @@ void frt_std_scan_mb(const char *in_mb,
 
  ret:
     {
-        *start_mb   = position_in_mb(in_wc, in_mb, ts);
-        *end_mb     = position_in_mb(in_wc, in_mb, te);
-
+        unsigned long out_wc[4096] = {0};
         size_t __len = te - ts - skip - trunc;
-        memcpy(out_wc, ts + skip, __len*sizeof(unsigned long));
 
-        wc_to_mb(out_mb, out_mb_size, token_size, out_wc, sizeof(out_wc));
-        out_mb[*token_size] = 0;
-        return;
-    }
-
- strip:
-    {
         *start_mb = position_in_mb(in_wc, in_mb, ts);
         *end_mb   = position_in_mb(in_wc, in_mb, te);
 
-        size_t __len = te - ts - skip - trunc;
-        unsigned long *__p = ts + skip;
-        unsigned long *__o = out_wc;
-        for (; __p < (ts + skip + __len); ++__p) {
-            if (*__p != strip_char)
-                *__o++ = *__p;
+        if (strip_char) {
+            unsigned long *__p = ts + skip;
+            unsigned long *__o = out_wc;
+            for (; __p < (ts + skip + __len); ++__p) {
+                if (*__p != strip_char)
+                    *__o++ = *__p;
+            }
+        }
+        else {
+            memcpy(out_wc, ts + skip, __len*sizeof(unsigned long));
         }
 
         wc_to_mb(out_mb, out_mb_size, token_size, out_wc, sizeof(out_wc));

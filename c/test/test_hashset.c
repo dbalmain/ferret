@@ -5,7 +5,7 @@
  * Test basic HashSet functions like adding elements and testing for
  * existence.
  */
-static void test_hs(TestCase *tc, void *data)
+static void test_hs(tst_case *tc, void *data)
 {
     char *two = estrdup("two");
     HashSet *hs = hs_new_str(&free);
@@ -61,7 +61,7 @@ static void test_hs(TestCase *tc, void *data)
  * Test hs_add_safe
  */
 
-static void test_hs_add_safe(TestCase *tc, void *data)
+static void test_hs_add_safe(tst_case *tc, void *data)
 {
     char *str = estrdup("one");
     HashSet *hs = hs_new_str(&free);
@@ -94,7 +94,7 @@ static void test_hs_add_safe(TestCase *tc, void *data)
  * HashSet that was merged should be destroyed including all elements that
  * weren't added to the final HashSet.
  */
-static void test_hs_merge(TestCase *tc, void *data)
+static void test_hs_merge(tst_case *tc, void *data)
 {
     HashSet *hs1 = hs_new_str(&free);
     HashSet *hs2 = hs_new_str(&free);
@@ -139,7 +139,7 @@ static void hs_free_mock(void *p)
  * HashSet is destroyed, all elements have the correct free function called on
  * them
  */
-static void test_hs_free(TestCase *tc, void *data)
+static void test_hs_free(tst_case *tc, void *data)
 {
     char str1[10], str2[10], str3[10], str4[10], str5[10];
     HashSet *hs1 = hs_new_str(&hs_free_mock);
@@ -206,7 +206,7 @@ static void test_hs_free(TestCase *tc, void *data)
  */
 #define HS_STRESS_NUM 10000 /* number of adds to the HashSet */
 #define HS_STRESS_MAX 100   /* number of elements allowed in the HashSet */
-static void stress_hs(TestCase *tc, void *data)
+static void stress_hs(tst_case *tc, void *data)
 {
     int i;
     char buf[100];
@@ -238,7 +238,7 @@ static void stress_hs(TestCase *tc, void *data)
 /**
  * HashSet Test Suite
  */
-TestSuite *ts_hashset(TestSuite *suite)
+tst_suite *ts_hashset(tst_suite *suite)
 {
     suite = ADD_SUITE(suite);
 

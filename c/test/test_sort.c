@@ -98,7 +98,7 @@ static void sort_multi_test_setup(Store *store1, Store *store2)
 
 #define R_START 3
 #define R_END 6
-static void do_test_top_docs(TestCase *tc, Searcher *searcher, Query *query,
+static void do_test_top_docs(tst_case *tc, Searcher *searcher, Query *query,
                       char *expected_hits, Sort *sort)
 {
     static int num_array[ARRAY_SIZE];
@@ -161,7 +161,7 @@ static void do_test_top_docs(TestCase *tc, Searcher *searcher, Query *query,
     } while (0)
 
 
-static void test_sort_field_to_s(TestCase *tc, void *data)
+static void test_sort_field_to_s(tst_case *tc, void *data)
 {
     (void)data;
     TEST_SF_TO_S("<SCORE>", sort_field_score_new(false));
@@ -185,7 +185,7 @@ static void test_sort_field_to_s(TestCase *tc, void *data)
         free(fstr);\
     } while (0)
 
-static void test_sort_to_s(TestCase *tc, void *data)
+static void test_sort_to_s(tst_case *tc, void *data)
 {
     Sort *sort = sort_new();
     (void)data;
@@ -212,7 +212,7 @@ static void test_sort_to_s(TestCase *tc, void *data)
 }
 
 static bool do_byte_test = true;
-static void test_sorts(TestCase *tc, void *data)
+static void test_sorts(tst_case *tc, void *data)
 {
     Searcher *sea = (Searcher *)data;
     Query *q;
@@ -302,7 +302,7 @@ static void test_sorts(TestCase *tc, void *data)
     q_deref(q);
 }
 
-TestSuite *ts_sort(TestSuite *suite)
+tst_suite *ts_sort(tst_suite *suite)
 {
     Searcher *sea, **searchers;
     Store *store = open_ram_store(), *fs_store;
