@@ -1582,7 +1582,7 @@ Analyzer *per_field_analyzer_new(Analyzer *default_a)
     return a;
 }
 
-#ifdef ALONE
+#ifdef TOKENIZE
 int main(int argc, char **argv)
 {
     char buf[10000];
