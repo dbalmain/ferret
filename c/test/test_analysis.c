@@ -101,7 +101,7 @@ static void test_non_tokenizer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = non_tokenizer_new();
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     (void)data;
 
     ts->reset(ts, text);
@@ -119,7 +119,7 @@ static void test_non_analyzer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = non_analyzer_new();
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
 
@@ -140,7 +140,7 @@ static void test_whitespace_tokenizer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = whitespace_tokenizer_new();
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     (void)data;
 
     ts->reset(ts, text);
@@ -151,7 +151,7 @@ static void test_whitespace_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */
@@ -166,7 +166,7 @@ static void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
     Token *t, *tk = tk_new();
     TokenStream *ts = mb_whitespace_tokenizer_new(false);
     char text[100] =
-        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
+        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     (void)data;
 
     ts->reset(ts, text);
@@ -177,7 +177,7 @@ static void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     test_token(t = ts_next(ts), "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts = mb_lowercase_filter_new(ts);
@@ -189,7 +189,7 @@ static void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     test_token(ts_next(ts), "áägç®êëì¯úøã¬öîí", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
@@ -202,7 +202,7 @@ static void test_mb_whitespace_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     test_token(ts_next(ts), "áägç®êëì¯úøã¬öîí", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     REF(ts);                    /* test ref_cnt */
@@ -217,7 +217,7 @@ static void test_whitespace_analyzer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = whitespace_analyzer_new(false);
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
 
@@ -228,7 +228,7 @@ static void test_whitespace_analyzer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     ts_deref(ts);
@@ -240,7 +240,7 @@ static void test_mb_whitespace_analyzer(TestCase *tc, void *data)
     Token *tk = tk_new();
     Analyzer *a = mb_whitespace_analyzer_new(false);
     char text[100] =
-        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
+        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
 
@@ -251,7 +251,7 @@ static void test_mb_whitespace_analyzer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     test_token(ts_next(ts), "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
@@ -266,7 +266,7 @@ static void test_mb_whitespace_analyzer(TestCase *tc, void *data)
     test_token(ts_next(ts), "52", 32, 34);
     test_token(ts_next(ts), "#$", 37, 39);
     test_token(ts_next(ts), "address.", 40, 48);
-    test_token(ts_next(ts), "23#@$", 49, 54);
+    test_token(ts_next(ts), "23#!$", 49, 54);
     test_token(ts_next(ts), "áägç®êëì¯úøã¬öîí", 55, 86);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
@@ -284,7 +284,7 @@ static void test_letter_tokenizer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     TokenStream *ts = letter_tokenizer_new();
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     (void)data;
 
     ts->reset(ts, text);
@@ -310,7 +310,7 @@ static void test_mb_letter_tokenizer(TestCase *tc, void *data)
     Token *tk = tk_new();
     TokenStream *ts = mb_letter_tokenizer_new(false);
     char text[100] =
-        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
+        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     (void)data;
 
     ts->reset(ts, text);
@@ -370,7 +370,7 @@ static void test_letter_analyzer(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
     Analyzer *a = letter_analyzer_new(true);
-    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
 
@@ -393,7 +393,7 @@ static void test_mb_letter_analyzer(TestCase *tc, void *data)
     Token *tk = tk_new();
     Analyzer *a = mb_letter_analyzer_new(false);
     char text[100] =
-        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ "
+        "DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ "
         "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
@@ -444,7 +444,7 @@ static void do_standard_tokenizer(TestCase *tc, TokenStream *ts)
 {
     Token *tk = tk_new();
     char text[200] =
-        "DBalmain@gmail.com is My e-mail -52  #$ Address. 23#@$ "
+        "DBalmain@gmail.com is My e-mail -52  #$ Address. 23#!$ "
         "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 "
         "underscored_word, won't we're";
 
@@ -500,13 +500,15 @@ static void test_legacy_standard_tokenizer(TestCase *tc, void *data)
 static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
 {
     Token *tk = tk_new();
-    char text[200] =
-        "DBalmán@gmail.com is My e-mail -52  #$ Address. 23#@$ "
+    char text[512] =
+        "DBalmain@gmail.com is My e-mail -52  #$ Address. 23#!$ "
         "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 "
-        "underscored_word, won't we're 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ "
-        "\200 badchar";
+        "underscored_word, won't we're 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ "
+        "\200 badchar it's groups' Barnes&Noble file:///home/user/ "
+        "svn://www.davebalmain.com/ www,.google.com www.google.com "
+        "dave@balmain@gmail.com";
     ts->reset(ts, text);
-    test_token(ts_next(ts), "DBalmán@gmail.com", 0, 18);
+    test_token(ts_next(ts), "DBalmain@gmail.com", 0, 18);
     test_token(ts_next(ts), "is", 19, 21);
     test_token(ts_next(ts), "My", 22, 24);
     test_token(ts_next(ts), "e-mail", 25, 31);
@@ -524,7 +526,17 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
     test_token(ts_next(ts), "ÊËÌ", 156, 162);
     test_token(ts_next(ts), "ÚØÃ", 164, 170);
     test_token(ts_next(ts), "ÖÎÍ", 172, 178);
-    test_token_pi(ts_next(ts), "badchar", 181, 188, 1);
+    test_token(ts_next(ts), "badchar", 181, 188);
+    test_token(ts_next(ts), "it", 189, 193);
+    test_token(ts_next(ts), "groups", 194, 201);
+    test_token(ts_next(ts), "Barnes&Noble", 202, 214);
+    test_token(ts_next(ts), "home/user", 215, 233);
+    test_token(ts_next(ts), "svn://www.davebalmain.com", 234, 260);
+    test_token(ts_next(ts), "www", 261, 264);
+    test_token(ts_next(ts), "google.com", 266, 276);
+    test_token(ts_next(ts), "www.google.com", 277, 291);
+    test_token(ts_next(ts), "dave@balmain", 292, 304);
+    test_token(ts_next(ts), "gmail.com", 305, 314);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */
@@ -577,7 +589,7 @@ static void test_standard_analyzer(TestCase *tc, void *data)
     Analyzer *a =
         standard_analyzer_new_with_words(ENGLISH_STOP_WORDS, true);
     char text[200] =
-        "DBalmain@gmail.com is My e-mail and the Address. -23@$ "
+        "DBalmain@gmail.com is My e-mail and the Address. -23!$ "
         "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234";
     TokenStream *ts = a_get_ts(a, "random", text);
     (void)data;
@@ -605,13 +617,13 @@ static void test_mb_standard_analyzer(TestCase *tc, void *data)
         mb_standard_analyzer_new_with_words(ENGLISH_STOP_WORDS, false);
     const char *words[] = { "is", "the", "-23", "tnt", NULL };
     char text[200] =
-        "DBalmán@gmail.com is My e-mail and the Address. -23@$ "
-        "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ "
+        "DBalmain@gmail.com is My e-mail and the Address. -23!$ "
+        "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ "
         "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     TokenStream *ts = a_get_ts(a, "random", text), *ts2;
     (void)data;
 
-    test_token_pi(ts_next(ts), "DBalmán@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "DBalmain@gmail.com", 0, 18, 1);
     test_token_pi(ts_next(ts), "My", 22, 24, 2);
     test_token_pi(ts_next(ts), "email", 25, 31, 1);
     test_token_pi(ts_next(ts), "e", 25, 26, 0);
@@ -631,7 +643,7 @@ static void test_mb_standard_analyzer(TestCase *tc, void *data)
     a_deref(a);
     a = mb_standard_analyzer_new(true);
     ts = a_get_ts(a, "random", text);
-    test_token_pi(ts_next(ts), "dbalmán@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "dbalmain@gmail.com", 0, 18, 1);
     test_token_pi(ts_next(ts), "email", 25, 31, 3);
     test_token_pi(ts_next(ts), "e", 25, 26, 0);
     test_token_pi(ts_next(ts), "mail", 27, 31, 1);
@@ -651,7 +663,7 @@ static void test_mb_standard_analyzer(TestCase *tc, void *data)
     a = mb_standard_analyzer_new_with_words(words, true);
     ts = a_get_ts(a, "random", text);
     ts2 = a_get_ts(a, "random", text);
-    test_token_pi(ts_next(ts), "dbalmán@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "dbalmain@gmail.com", 0, 18, 1);
     test_token_pi(ts_next(ts), "my", 22, 24, 2);
     test_token_pi(ts_next(ts), "email", 25, 31, 1);
     test_token_pi(ts_next(ts), "e", 25, 26, 0);
@@ -667,7 +679,7 @@ static void test_mb_standard_analyzer(TestCase *tc, void *data)
     test_token_pi(ts_next(ts), "öîí", 142, 148, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
-    test_token_pi(ts_next(ts2), "dbalmán@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts2), "dbalmain@gmail.com", 0, 18, 1);
     test_token_pi(ts_next(ts2), "my", 22, 24, 2);
     test_token_pi(ts_next(ts2), "email", 25, 31, 1);
     test_token_pi(ts_next(ts2), "e", 25, 26, 0);
@@ -736,7 +748,7 @@ static void test_lowercase_filter(TestCase *tc, void *data)
     Token *tk = tk_new();
     TokenStream *ts = lowercase_filter_new(standard_tokenizer_new());
     char text[200] =
-        "DBalmain@gmail.com is My e-mail 52   #$ Address. -23@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234";
+        "DBalmain@gmail.com is My e-mail 52   #$ Address. -23!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234";
     (void)data;
 
     ts->reset(ts, text);
@@ -764,7 +776,7 @@ static void test_hyphen_filter(TestCase *tc, void *data)
     Token *tk = tk_new();
     TokenStream *ts = hyphen_filter_new(lowercase_filter_new(standard_tokenizer_new()));
     char text[200] =
-        "DBalmain@gmail.com is My e-mail 52   #$ Address. -23@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 long-hyph-en-at-ed-word";
+        "DBalmain@gmail.com is My e-mail 52   #$ Address. -23!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 long-hyph-en-at-ed-word";
     (void)data;
 
     ts->reset(ts, text);
@@ -940,7 +952,7 @@ static void test_per_field_analyzer(TestCase *tc, void *data)
 {
     TokenStream *ts;
     Token *tk = tk_new();
-    char text[100] = "DBalmain@gmail.com is My E-mail 52   #$ address. 23#@$";
+    char text[100] = "DBalmain@gmail.com is My E-mail 52   #$ address. 23#!$";
     Analyzer *pfa = per_field_analyzer_new(standard_analyzer_new(true));
     (void)data;
 
@@ -957,7 +969,7 @@ static void test_per_field_analyzer(TestCase *tc, void *data)
     test_token_pi(ts_next(ts), "52", 32, 34, 1);
     test_token_pi(ts_next(ts), "#$", 37, 39, 1);
     test_token_pi(ts_next(ts), "address.", 40, 48, 1);
-    test_token_pi(ts_next(ts), "23#@$", 49, 54, 1);
+    test_token_pi(ts_next(ts), "23#!$", 49, 54, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
     ts = a_get_ts(pfa, "white_l", text);
@@ -968,7 +980,7 @@ static void test_per_field_analyzer(TestCase *tc, void *data)
     test_token_pi(ts_next(ts), "52", 32, 34, 1);
     test_token_pi(ts_next(ts), "#$", 37, 39, 1);
     test_token_pi(ts_next(ts), "address.", 40, 48, 1);
-    test_token_pi(ts_next(ts), "23#@$", 49, 54, 1);
+    test_token_pi(ts_next(ts), "23#!$", 49, 54, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     ts_deref(ts);
     ts = a_get_ts(pfa, "letter_u", text);

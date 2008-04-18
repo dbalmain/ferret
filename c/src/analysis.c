@@ -919,8 +919,8 @@ static Token *legacy_std_next(TokenStream *ts)
         return tk_set_ts(&(CTS(ts)->token), start, t, ts->text, 1);
     }
 
-    if ((isdigit(*t) || isnumpunc(*t))       /* possibly a number */
-        && (len = legacy_std_get_number(t) > 0)) {
+    if ((isdigit(*start) || isnumpunc(*start))       /* possibly a number */
+        && ((len = legacy_std_get_number(start)) > 0)) {
         num_end = start + len;
         if (!std_tz->is_tok_char(num_end)) { /* won't find a longer token */
             ts->t = num_end;
@@ -947,7 +947,7 @@ static Token *legacy_std_next(TokenStream *ts)
         else {              /* still treat as url but keep the first part */
             token_i = (int)(t - start);
             memcpy(token, start, token_i * sizeof(char));
-            ts->t = std_get_url(t, token, token_i, &len); /* keep start */
+            ts->t = std_get_url(start, token, token_i, &len); /* keep start */
         }
         return tk_set(&(CTS(ts)->token), token, len,
                       (off_t)(start - ts->text),

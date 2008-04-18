@@ -16,18 +16,27 @@
     goto ret;         \
 } while(0)
 
+#define PUTS(desc) do {           \
+    printf(desc);                 \
+    fwrite(ts, 1, te-ts, stdout); \
+    printf("\n");                 \
+} while(0)
+
 %%{
     machine StdTokMb;
     alphtype unsigned int;
     include WChar "src/wchar.rl";
+    include Email "src/email.rl";
 
     delim = space;
     token = walpha walnum*;
-    punc  = [.,\/_\-];
+    punc  = [.\/_\-];
     proto = 'http'[s]? | 'ftp' | 'file';
     urlc  = walnum | punc | [\@\:];
 
     main := |*
+        #// Email
+        email { RET; };
 
         #// Token, or token with possessive
         token           { RET; };
@@ -36,9 +45,6 @@
 
         #// contractions
         walpha+ [\'] walpha+ { RET; };
-
-        #// Token with hyphens
-        walnum+ ([\-_] walnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };
@@ -49,9 +55,6 @@
         walnum+[:][/]+ urlc+ [/] { trunc = 1; RET; };
         walnum+[:][/]+ urlc+     { RET; };
 
-        #// Email
-        walnum+ '@' walnum+ '.' walpha+ { RET; };
-
         #// Acronym
         (walpha '.')+ walpha { STRIP('.'); };
 
@@ -59,9 +62,13 @@
         [\-\+]?wdigit+            { RET; };
         [\-\+]?wdigit+ '.' wdigit+ { RET; };
 
+        #// URL without proto
+        walnum+ ([\-_] walnum+)* { RET; };
+
         #// Ignore whitespace and other crap
         0 { return; };
         (any - walnum);
+
 
         *|;
 }%%
