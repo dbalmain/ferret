@@ -158,7 +158,7 @@ end
 if ENV['USE_CPP']
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
-  #CFLAGS << ' -lstlport -I/usr/include/stlport/'
+  FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
 end
 
 
@@ -268,6 +268,15 @@ namespace :build do
   rule '.o' => lambda {|obj| get_dep_srcs(FILE2SRC[obj])} do |t|
     qsh "Compiling #{t.name}",
         "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
+  end
+
+  file '.rake/HAVE_SPARSE_HASH' => '.rake/have_sparse_hash.cpp' do |t|
+    begin
+      sh "g++ #{t.prerequisites}"
+      File.open(t.name, 'w') {|f| f.write(' -DHAVE_SPARSE_HASH')}
+    rescue
+      File.open(t.name, 'w') {|f|}
+    end
   end
 end
 

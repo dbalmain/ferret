@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(HAVE_SPARSE_HASH)
 # include <google/dense_hash_map>
 # include <google/sparse_hash_map>
 #endif
