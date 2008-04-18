@@ -55,6 +55,7 @@ namespace :build do
                      "../c/lib/libstemmer_c/include/libstemmer.[h]"]
   EXT_SRC.exclude('../c/**/ind.[ch]',
                   '../c/include/threading.h',
+                  '../c/include/internal.h',
                   '../c/src/lang.c',
                   '../c/include/lang.h')
 
@@ -67,10 +68,11 @@ namespace :build do
     end
     EXT_SRC_MAP[fn] = ext_fn
   end
-  SRC = FileList["ext/*.[ch]", EXT_SRC_DEST].uniq
+  SRC = FileList["ext/*.[ch]", EXT_SRC_DEST, 'ext/internal.h'].uniq
 
-  CLEAN.include     ['**/*.o', '**/*.obj', '.config', 'ext/cferret.c']
-  CLOBBER.include   ['doc/api', 'ext/*.so', 'ext/Makefile', EXT_SRC_DEST]
+  CLEAN.include   ['**/*.o', '**/*.obj', '.config', 'ext/cferret.c']
+  CLOBBER.include ['doc/api', 'ext/*.so', 'ext/Makefile',
+                   'ext/internal.h', EXT_SRC_DEST]
 
   # The following block creates file tasks for all of the c files. They
   # belong in the ../c directory in source the working copy and they need
@@ -94,6 +96,15 @@ namespace :build do
       end
     end
   end if File.exists?("../c")
+
+  file 'ext/internal.h' => '../c/include/internal.h' do
+    File.open('ext/internal.h', 'w') do |f|
+      File.readlines('../c/include/internal.h').each do |l|
+        next if l =~ /ALLOC/ and l !~ /ZERO/
+        f.puts(l)
+      end
+    end
+  end
 
   desc "Build the extension (ferret_ext.so). You'll need a C compiler and Make."
   task :compile => ["ext/#{EXT}"] + SRC

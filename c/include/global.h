@@ -51,7 +51,7 @@ typedef void (*frt_free_ft)(void *key);
       } else {\
         self->capa = 4;\
       }\
-      FRT_REALLOC_N(self->ptr, type, self->capa);\
+      self->ptr = frt_erealloc(self->ptr, sizeof(type) * self->capa);\
     }\
   } while (0)
 
