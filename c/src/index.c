@@ -2045,8 +2045,8 @@ static void sti_destroy(SegmentTermIndex *sti)
 {
     if (sti->index_terms) {
         int i;
-        const int sti_index_size = sti->index_size;
-        for (i = 0; i < sti_index_size; i++) {
+        const int sti_index_cnt = sti->index_cnt;
+        for (i = 0; i < sti_index_cnt; i++) {
             free(sti->index_terms[i]);
         }
         free(sti->index_terms);
@@ -2062,20 +2062,20 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
 {
     if (NULL == sti->index_terms) {
         int i;
-        int index_size = sti->index_size;
+        int index_cnt = sti->index_cnt;
         off_t index_ptr = 0;
         ste_reset(index_te);
         is_seek(STE(index_te)->is, sti->index_ptr);
-        STE(index_te)->size = sti->index_size;
+        STE(index_te)->size = sti->index_cnt;
 
-        sti->index_terms = ALLOC_N(char *, index_size);
-        sti->index_term_lens = ALLOC_N(int, index_size);
-        sti->index_term_infos = ALLOC_N(TermInfo, index_size);
-        sti->index_ptrs = ALLOC_N(off_t, index_size);
+        sti->index_terms = ALLOC_N(char *, index_cnt);
+        sti->index_term_lens = ALLOC_N(int, index_cnt);
+        sti->index_term_infos = ALLOC_N(TermInfo, index_cnt);
+        sti->index_ptrs = ALLOC_N(off_t, index_cnt);
 
         for (i = 0; NULL != ste_next(index_te); i++) {
 #ifdef DEBUG
-            if (i >= index_size) {
+            if (i >= index_cnt) {
                 RAISE(FERRET_ERROR, "index term enum read too many terms");
             }
 #endif
@@ -2091,7 +2091,7 @@ static void sti_ensure_index_is_read(SegmentTermIndex *sti,
 static int sti_get_index_offset(SegmentTermIndex *sti, const char *term)
 {
     int lo = 0;
-    int hi = sti->index_size - 1;
+    int hi = sti->index_cnt - 1;
     int mid, delta;
     char **index_terms = sti->index_terms;
 
@@ -2145,7 +2145,7 @@ SegmentFieldIndex *sfi_open(Store *store, const char *segment)
         SegmentTermIndex *sti = ALLOC_AND_ZERO(SegmentTermIndex);
         sti->index_ptr = is_read_voff_t(is);
         sti->ptr = is_read_voff_t(is);
-        sti->index_size = is_read_vint(is);
+        sti->index_cnt = is_read_vint(is);
         sti->size = is_read_vint(is);
         h_set_int(sfi->field_dict, field_num, sti);
     }
@@ -2255,7 +2255,7 @@ static char *ste_scan_to(TermEnum *te, const char *term)
             int enum_offset = (int)(STE(te)->pos / sfi->index_interval) + 1;
             /* if we are at the end of the index or before the next index
              * ptr then a simple scan suffices */
-            if (sti->index_size == enum_offset ||
+            if (sti->index_cnt == enum_offset ||
                 strcmp(term, sti->index_terms[enum_offset]) < 0) {
                 return te_skip_to(te, term);
             }

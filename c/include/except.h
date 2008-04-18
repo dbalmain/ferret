@@ -73,6 +73,7 @@
 #include <setjmp.h>
 #include "config.h"
 
+/* TODO make this an enum */
 #define FRT_BODY 0
 #define FRT_FINALLY 1
 #define FRT_EXCEPTION 2

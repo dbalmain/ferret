@@ -3,11 +3,11 @@
 
 #include "config.h"
 
-extern int hlp_string_diff(register const char *const s1,
+extern int frt_hlp_string_diff(register const char *const s1,
                                   register const char *const s2);
-extern frt_i32 float2int(float f);
-extern float int2float(frt_i32 i32);
-extern float byte2float(unsigned char b);
-extern unsigned char float2byte(float f);
+extern frt_i32 frt_float2int(float f);
+extern float frt_int2float(frt_i32 i32);
+extern float frt_byte2float(unsigned char b);
+extern unsigned char frt_float2byte(float f);
 
 #endif

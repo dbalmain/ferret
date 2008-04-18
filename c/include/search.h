@@ -94,29 +94,29 @@ extern char *td_to_s(TopDocs *td);
 
 /***************************************************************************
  *
- * Filter
+ * FrtFilter
  *
  ***************************************************************************/
 
-typedef struct Filter
+typedef struct FrtFilter
 {
     char                *name;
     FrtHashTable     *cache;
-    FrtBitVector           *(*get_bv_i)(struct Filter *self, IndexReader *ir);
-    char                *(*to_s)(struct Filter *self);
-    unsigned long        (*hash)(struct Filter *self);
-    int                  (*eq)(struct Filter *self, struct Filter *o);
-    void                 (*destroy_i)(struct Filter *self);
+    FrtBitVector           *(*get_bv_i)(struct FrtFilter *self, IndexReader *ir);
+    char                *(*to_s)(struct FrtFilter *self);
+    unsigned long        (*hash)(struct FrtFilter *self);
+    int                  (*eq)(struct FrtFilter *self, struct FrtFilter *o);
+    void                 (*destroy_i)(struct FrtFilter *self);
     int                  ref_cnt;
-} Filter;
+} FrtFilter;
 
 #define filt_new(type) filt_create(sizeof(type), #type)
-extern Filter *filt_create(size_t size, const char *name);
-extern FrtBitVector *filt_get_bv(Filter *filt, IndexReader *ir);
-extern void filt_destroy_i(Filter *filt);
-extern void filt_deref(Filter *filt);
-extern unsigned long filt_hash(Filter *filt);
-extern int filt_eq(Filter *filt, Filter *o);
+extern FrtFilter *filt_create(size_t size, const char *name);
+extern FrtBitVector *filt_get_bv(FrtFilter *filt, IndexReader *ir);
+extern void filt_destroy_i(FrtFilter *filt);
+extern void filt_deref(FrtFilter *filt);
+extern unsigned long filt_hash(FrtFilter *filt);
+extern int filt_eq(FrtFilter *filt, FrtFilter *o);
 
 /***************************************************************************
  *
@@ -124,7 +124,7 @@ extern int filt_eq(Filter *filt, Filter *o);
  *
  ***************************************************************************/
 
-extern Filter *rfilt_new(const char *field,
+extern FrtFilter *rfilt_new(const char *field,
                          const char *lower_term, const char *upper_term,
                          bool include_lower, bool include_upper);
 
@@ -134,7 +134,7 @@ extern Filter *rfilt_new(const char *field,
  *
  ***************************************************************************/
 
-extern Filter *trfilt_new(const char *field,
+extern FrtFilter *trfilt_new(const char *field,
                           const char *lower_term, const char *upper_term,
                           bool include_lower, bool include_upper);
 
@@ -144,8 +144,8 @@ extern Filter *trfilt_new(const char *field,
  *
  ***************************************************************************/
 
-extern Filter *qfilt_new(Query *query);
-extern Filter *qfilt_new_nr(Query *query);
+extern FrtFilter *qfilt_new(Query *query);
+extern FrtFilter *qfilt_new_nr(Query *query);
 
 /***************************************************************************
  *
@@ -419,12 +419,12 @@ extern Query *fuzq_new_conf(const char *field, const char *term,
 typedef struct ConstantScoreQuery
 {
     Query   super;
-    Filter *filter;
+    FrtFilter *filter;
     Query  *original;
 } ConstantScoreQuery;
 
-extern Query *csq_new(Filter *filter);
-extern Query *csq_new_nr(Filter *filter);
+extern Query *csq_new(FrtFilter *filter);
+extern Query *csq_new_nr(FrtFilter *filter);
 
 /***************************************************************************
  * FilteredQuery
@@ -434,10 +434,10 @@ typedef struct FilteredQuery
 {
     Query   super;
     Query  *query;
-    Filter *filter;
+    FrtFilter *filter;
 } FilteredQuery;
 
-extern Query *fq_new(Query *query, Filter *filter);
+extern Query *fq_new(Query *query, FrtFilter *filter);
 
 /***************************************************************************
  * MatchAllQuery
@@ -675,7 +675,7 @@ typedef struct SortField
     char                  *field;
     enum SORT_TYPE         type;
     bool                   reverse : 1;
-    const FieldIndexClass *field_index_class;
+    const FrtFieldIndexClass *field_index_class;
     int         (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
     void        (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable);
 } SortField;
@@ -755,11 +755,11 @@ extern bool fdshq_lt(FieldDoc *fd1, FieldDoc *fd2);
 
 typedef float (*filter_ft)(int doc_num, float score, Searcher *self, void *arg);
 
-typedef struct PostFilter
+typedef struct FrtPostFilter
 {
     float (*filter_func)(int doc_num, float score, Searcher *self, void *arg);
     void *arg;  
-} PostFilter;
+} FrtPostFilter;
 
 struct Searcher
 {
@@ -771,20 +771,20 @@ struct Searcher
     int          (*max_doc)(Searcher *self);
     Weight      *(*create_weight)(Searcher *self, Query *query);
     TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
-                           int num_docs, Filter *filter, Sort *sort,
-                           PostFilter *post_filter,
+                           int num_docs, FrtFilter *filter, Sort *sort,
+                           FrtPostFilter *post_filter,
                            bool load_fields);
     TopDocs     *(*search_w)(Searcher *self, Weight *weight, int first_doc,
-                             int num_docs, Filter *filter, Sort *sort,
-                             PostFilter *post_filter,
+                             int num_docs, FrtFilter *filter, Sort *sort,
+                             FrtPostFilter *post_filter,
                              bool load_fields);
-    void         (*search_each)(Searcher *self, Query *query, Filter *filter,
-                                PostFilter *post_filter,
+    void         (*search_each)(Searcher *self, Query *query, FrtFilter *filter,
+                                FrtPostFilter *post_filter,
                                 void (*fn)(Searcher *, int, float, void *),
                                 void *arg);
     void         (*search_each_w)(Searcher *self, Weight *weight,
-                                  Filter *filter,
-                                  PostFilter *post_filter,
+                                  FrtFilter *filter,
+                                  FrtPostFilter *post_filter,
                                   void (*fn)(Searcher *, int, float, void *),
                                   void *arg);
     /*

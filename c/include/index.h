@@ -276,7 +276,7 @@ typedef struct SegmentTermIndex
 {
     off_t       index_ptr;
     off_t       ptr;
-    int         index_size;
+    int         index_cnt;
     int         size;
     char      **index_terms;
     int        *index_term_lens;

@@ -99,7 +99,7 @@ static void test_segment_field_index_single_field(tst_case *tc, void *data)
 
     sti = h_get_int(sfi->field_dict, 0);
     Aiequal(DICT_LEN, sti->size);
-    Aiequal(DICT_LEN / 32 + 1, sti->index_size);
+    Aiequal(DICT_LEN / 32 + 1, sti->index_cnt);
     Aiequal(0, sti->ptr);
     Aiequal(0, sti->index_ptr);
     sfi_close(sfi);
@@ -137,17 +137,17 @@ static void test_segment_field_index_multi_field(tst_case *tc, void *data)
 
     sti = h_get_int(sfi->field_dict, 0);
     Aiequal(40, sti->size);
-    Aiequal(5, sti->index_size);
+    Aiequal(5, sti->index_cnt);
     Aiequal(0, sti->ptr);
     Aiequal(0, sti->index_ptr);
 
     sti = h_get_int(sfi->field_dict, 2);
     Aiequal(40, sti->size);
-    Aiequal(5, sti->index_size);
+    Aiequal(5, sti->index_cnt);
 
     sti = h_get_int(sfi->field_dict, 2 * (DICT_LEN / 40));
     Aiequal(DICT_LEN % 40, sti->size);
-    Aiequal((DICT_LEN % 40) / 8 + 1, sti->index_size);
+    Aiequal((DICT_LEN % 40) / 8 + 1, sti->index_cnt);
     sfi_close(sfi);
 }
 
