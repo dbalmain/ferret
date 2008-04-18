@@ -6,6 +6,7 @@
 #include <wctype.h>
 #include <wchar.h>
 #include "internal.h"
+#include "scanner.h"
 
 /****************************************************************************
  *
@@ -807,6 +808,26 @@ static Token *std_next(TokenStream *ts)
     bool is_acronym;
     bool seen_at_symbol;
 
+    /*
+     * The Ragel generated scanner doesn't currently support multibyte
+     * strings.  We therefore only call it when we're dealing with a
+     * regular, non-mb aware tokenizer.
+     */
+    if (std_tz->advance_to_start == std_advance_to_start) {
+        char *end = NULL;
+        Token *tk = &(CTS(ts)->token);
+
+        frt_scan(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
+        if (len == 0)
+            return NULL;
+
+        ts->t       = end;
+        tk->len     = len;
+        tk->start   = start - ts->text;
+        tk->end     = end   - ts->text;
+        tk->pos_inc = 1;
+        return &(CTS(ts)->token);
+    }
 
     if (!std_tz->advance_to_start(ts)) {
         return NULL;

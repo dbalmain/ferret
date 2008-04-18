@@ -41,7 +41,8 @@ q_filtered_query.o  q_fuzzy.o            q_match_all.o      q_multi_term.o    \
 q_parser.o          q_phrase.o           q_prefix.o         q_range.o         \
 q_span.o            q_term.o             q_wildcard.o       ram_store.o       \
 search.o            similarity.o         sort.o             stopwords.o       \
-store.o             term_vectors.o       field_index.o      lang.o
+store.o             term_vectors.o       field_index.o      lang.o            \
+scanner.o
 
 TEST_OBJS = \
 test_multimapper.o       test_q_const_score.o     test_threading.o     \
@@ -143,6 +144,9 @@ load_bench bench search_bench sort_bench: libferret.a
             rm -f $*.d
 
 -include $(OBJS:%.o=$(DEP_DIR)/%.P)
+
+%.c : %.rl
+	ragel $< -o $@
 
 src/q_parser.c: src/q_parser.y
 

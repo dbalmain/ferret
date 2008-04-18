@@ -4,17 +4,33 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define PUTS(desc) do {           \
-    printf(desc);                 \
-    fwrite(ts, 1, te-ts, stdout); \
-    printf("\n");                 \
+#define RET do {                        \
+    size_t __len = te - ts - skip - trunc; \
+    if (__len > out_size)               \
+        __len = out_size;               \
+    *len     = __len;                   \
+    *start   = ts;                      \
+    *end     = te;                      \
+     memcpy(out, ts + skip, __len);     \
+     out[__len] = 0;                    \
+     return;                            \
 } while(0)
 
-#define RET do {    \
-    *start = ts;    \
-    *len   = te-ts; \
-    return;         \
-} while (0)
+#define STRIP(c) do {                         \
+    char *__p = ts;                           \
+    char *__o = out;                          \
+    char *__max = __p + out_size;             \
+    for (; __p <= te && __p < __max; ++__p) { \
+        if (*__p != c)                        \
+            *__o++ = *__p;                    \
+    }                                         \
+    *__o = 0;                                 \
+                                              \
+    *start = ts;                              \
+    *end   = te;                              \
+    *len   = __o - out;                       \
+    return;                                   \
+} while(0)
 
 %%{
     machine StdTok;
@@ -29,24 +45,30 @@
 
         #// Token, or token with possessive
         token           { RET; };
-        token [\'][sS]? { RET; };
+        token [\']      { trunc = 1; RET; };
+        token [\'][sS]? { trunc = 2; RET; };
+
+        #// Token with hyphens
+        alnum+ ('-' alnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };
 
         #// URL
-        proto [:][/]+ urlc+ { RET; };
-        alnum+[:][/]+ urlc+ { RET; };
+        proto [:][/]+ %{ skip = p - ts; } urlc+ [/] { trunc = 1; RET; };
+        proto [:][/]+ %{ skip = p - ts; } urlc+     { RET; };
+        alnum+[:][/]+ urlc+ [/] { trunc = 1; RET; };
+        alnum+[:][/]+ urlc+     { RET; };
 
         #// Email
         alnum+ '@' alnum+ '.' alpha+ { RET; };
 
         #// Acronym
-        (alpha '.')+ alpha { RET; };
+        (alpha '.')+ alpha { STRIP('.'); };
 
         #// Int+float
-        digit+            { RET; };
-        digit+ '.' digit+ { RET; };
+        [\-\+]?digit+            { RET; };
+        [\-\+]?digit+ '.' digit+ { RET; };
 
         #// Ignore whitespace and other crap
         0 { return; };
@@ -57,18 +79,22 @@
 
 %% write data nofinal;
 
-void frt_scan(const char *buf, char **start, int *len)
+void frt_scan(const char *in,
+              char *out, size_t out_size,
+              char **start, char **end,
+              int *len)
 {
     int cs, act;
     char *ts, *te = 0;
 
     %% write init;
 
-    char *p = buf;
+    char *p = (char *)in;
     char *pe = 0;
     char *eof = pe;
-    *start = 0;
-    *len   = 0;
+    *len = 0;
+    int skip = 0;
+    int trunc = 0;
 
     %% write exec;
 
@@ -80,7 +106,6 @@ void frt_scan(const char *buf, char **start, int *len)
 
     if ( ts )
     {
-        // There is stuff left
         fprintf(stderr, "STUFF LEFT: '%s'\n", ts);
     }
 }

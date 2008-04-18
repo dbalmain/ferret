@@ -12,6 +12,12 @@ void tt_token(Token *tk,
 {
     Token tk_exp;
     static char buf[3000];
+    if (tk == NULL) {
+        sprintf(buf, "Token1[NULL] != Token2[%d:%d:%s]\n",
+                start, end, str);
+        tst_assert(line_num, tc, false, buf);
+        return;
+    }
     if (!tk_eq(tk_set(&tk_exp, str, (int)strlen(str), start, end, 1), tk)) {
         sprintf(buf, "Token1[%d:%d:%s] != Token2[%d:%d:%s]\n",
                 (int)tk->start, (int)tk->end, tk->text, start, end, str);
@@ -29,6 +35,12 @@ void tt_token_pi(Token *tk,
 {
     Token tk_exp;
     static char buf[3000];
+    if (tk == NULL) {
+        sprintf(buf, "Token1[NULL] != Token2[%d:%d:%s]\n",
+                start, end, str);
+        tst_assert(line_num, tc, false, buf);
+        return;
+    }
     if (!tk_eq(tk_set(&tk_exp, str, (int)strlen(str), start, end, pi), tk)) {
         sprintf(buf, "Token1[%d:%d:%s-%d] != Token2[%d:%d:%s-%d]\n",
                 (int)tk->start, (int)tk->end, tk->text, tk->pos_inc, start, end, str, pi);
@@ -764,7 +776,7 @@ void test_mapping_filter(tst_case *tc, void *data)
     TokenStream *ts = mapping_filter_new(letter_tokenizer_new());
     char text[200] =
         "one, two, three, four, five, six, seven, eight, nine, ten.";
-    char long_word[301] = 
+    char long_word[301] =
        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
