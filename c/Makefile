@@ -42,7 +42,7 @@ q_parser.o          q_phrase.o           q_prefix.o         q_range.o         \
 q_span.o            q_term.o             q_wildcard.o       ram_store.o       \
 search.o            similarity.o         sort.o             stopwords.o       \
 store.o             term_vectors.o       field_index.o      lang.o            \
-scanner.o
+scanner.o           scanner_mb.o
 
 TEST_OBJS = \
 test_multimapper.o       test_q_const_score.o     test_threading.o     \

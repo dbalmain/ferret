@@ -828,6 +828,21 @@ static Token *std_next(TokenStream *ts)
         tk->pos_inc = 1;
         return &(CTS(ts)->token);
     }
+    else {
+        char *end = NULL;
+        Token *tk = &(CTS(ts)->token);
+
+        frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
+        if (len == 0)
+            return NULL;
+
+        ts->t       = end;
+        tk->len     = len;
+        tk->start   = start - ts->text;
+        tk->end     = end   - ts->text;
+        tk->pos_inc = 1;
+        return &(CTS(ts)->token);
+    }
 
     if (!std_tz->advance_to_start(ts)) {
         return NULL;
