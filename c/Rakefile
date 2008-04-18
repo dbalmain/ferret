@@ -106,11 +106,6 @@ ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
 end
 
 ###
-# Create required directories
-###
-['test/testdir/store', TMP].each {|d| FileUtils.mkdir_p(d)}
-
-###
 # Dependency Handling
 ###
 DEP_L1_CACHE = Hash.new do |h, src|
@@ -149,10 +144,10 @@ end
 ###
 CC       = 'gcc'
 DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 " +
-           "-D_POSIX_C_SOURCE=2 -D_BSD_SOURCE -DDEBUG"
+           "-D_POSIX_C_SOURCE=2 -DDEBUG"
 AR       = "ar"
 CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
-LDFLAGS  = "-lm -lpthread -lz"
+LDFLAGS  = "-lm -lpthread"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
 CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS}"
@@ -170,6 +165,7 @@ def check_coptions
   end
   copts = {
     :cflags => CFLAGS,
+    :ldflags => LDFLAGS,
     :cc => CC
   }
   if copts != old_copts
@@ -177,6 +173,11 @@ def check_coptions
     Rake::Task[:clean].invoke
   end
 end
+
+###
+# Create required directories
+###
+['test/testdir/store', TMP, GCOV_DIR].each {|d| FileUtils.mkdir_p(d)}
 
 ###
 # Clean Constants
@@ -200,28 +201,53 @@ CLOBBER.include([ '*.a',
 task :default => :test
 
 def run_tests
+  check_coptions
+  Rake::Task[:testall].invoke
   sh "./testall -q -v"
 end
 
 def use_cpp
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
+  LDFLAGS << ' -lz'
   FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
 end
 
 desc "Run all tests"
 task :test do
-  check_coptions
-  Rake::Task[:testall].invoke
   run_tests
 end
 
 desc "Run all tests with c++"
 task :"test++" do
   use_cpp
-  check_coptions
-  Rake::Task[:testall].invoke
   run_tests
+end
+
+task :gcov do
+  CFLAGS << " -fprofile-arcs -ftest-coverage"
+  run_tests
+  gcov_results = []
+  gcov_scanner = /File '([^']+)'\nLines executed:(\d+.\d+)% of (\d+)/
+  OBJS.each do |obj|
+    bn = obj.pathmap('%n')
+    %w{gcda gcno}.each do |ext|
+      fn = "#{bn}.#{ext}"
+      File.rename(fn, GCOV_DIR/fn) if File.exists?(fn)
+    end
+    next unless File.exists?(GCOV_DIR/"#{bn}.gcno") and
+                File.exists?(GCOV_DIR/"#{bn}.gcda")
+    gcov_cmd = "gcov -o .gcov/ #{obj}"
+    details = IO.popen(gcov_cmd).read.scan(gcov_scanner)
+    details.each do |filename, percent, line_cnt|
+      next if filename =~ /^\//
+      gcov_results << [percent.to_f, line_cnt, filename]
+    end
+  end
+  puts "\ngcov Results\n=============\n"
+  gcov_results.sort_by{|res| res[0]}.reverse.each do |percent, line_cnt, fn|
+    puts "%25s %6.2f%% (%4d)" % [fn, percent, line_cnt]
+  end
 end
 
 desc "Build the benchmark runner"
