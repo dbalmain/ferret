@@ -5,10 +5,6 @@ TODO
     + FIX file descriptor overflow. See Tickets #341 and #343
   - add .. operator to query parser. For example, [100 200] could be written as
     100..200 or 100...201 like in Ruby Ranges
-  - improve unit test code. I'd like to implement some way to print out a stack
-    trace when a test fails so that it is easy to find the source of the error.
-  - catch segfaults and print stack trace so users can post helpful bug tickets.
-    again, see the same links for adding stacktrace to unit tests.
   - remove exception handling from C code. All errors to be handled by return
     values.
   - Move to sqlite's locking model. Ferret should work fine in a multi-process
@@ -62,7 +58,7 @@ Done
 * FIX :create parameter so that it only deletes the files owned by Ferret.
 * fix compression. Currently nothing is happening if you set a field to
   :compress. I guess we'll just assume zlib is installed, as I think it has to
-  be for Ruby to be installed. 
+  be for Ruby to be installed.
 * add bzlib support
 * integrate gcov
 * add a field cache to IndexReader
@@ -71,3 +67,7 @@ Done
   required number of documents and then break. This will require the ability to
   start searches from a particular doc-num.
   + See searcher_search_unordered in the C code and Searcher#scan in Ruby
+* improve unit test code. I'd like to implement some way to print out a stack
+  trace when a test fails so that it is easy to find the source of the error.
+* catch segfaults and print stack trace so users can post helpful bug tickets.
+  again, see the same links for adding stacktrace to unit tests.

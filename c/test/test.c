@@ -14,6 +14,7 @@ static int curr_char;
  * the command line. See USAGE below.
  *
  * verbose:    true if you want verbose messages in the error diagnostics
+ * show_stack: true if you want to see the stack trace on errors
  * exclude:    true if you want to exclude tests entered via the command line
  * quiet:      true if you don't want to display the ticker. This is useful if
  *             you are writing the error diagnostics to a file
@@ -22,6 +23,7 @@ static int curr_char;
  * list_tests: true if you want to list all tests available
  */
 static bool verbose = false;
+static bool show_stack = false;
 static bool exclude = false;
 static bool quiet = false;
 static bool force = false;
@@ -41,7 +43,6 @@ static int f_cnt = 0;/* number of failures */
  */
 #define MAX_MSG_SIZE 100000
 static char msg_buf[MAX_MSG_SIZE] = "";
-static char tmp_buf[2000] = "";
 
 /* Check to see if +testname+ was specified on the command line */
 static bool find_test_name(const char *testname)
@@ -273,86 +274,86 @@ static int report(tst_suite * suite)
 }
 
 static const char *curr_err_func = "";
+#define APPEND(buf, fmt) snprintf(buf, sizeof(buf), "%s" fmt, buf);
+#define APPEND2(buf, fmt, arg) snprintf(buf, sizeof(buf), "%s" fmt, buf, arg)
 
-void Tmsg(const char *fmt, ...)
+static void Tstack()
 {
-    va_list args;
-
-    if (verbose) {
-        va_start(args, fmt);
-        vsprintf(tmp_buf, fmt, args);
-        va_end(args);
-        if (strlen(tmp_buf) + strlen(msg_buf) < MAX_MSG_SIZE) {
-            sprintf(msg_buf + strlen(msg_buf), "\t%s\n", tmp_buf);
-        }
-        else {
-            fprintf(stderr, "msg_buf full: %s\n", tmp_buf);
-            fflush(stderr);
+    if (show_stack) {
+        char * stack = get_stacktrace();
+        if (stack) {
+            APPEND2(msg_buf, "\n\nStack trace:\n%s\n", stack);
+            free(stack);
         }
     }
 }
 
-void Tmsg_nf(const char *fmt, ...)
+static void vTmsg_nf(const char *fmt, va_list args)
 {
-    va_list args;
-
     if (verbose) {
-        va_start(args, fmt);
-        vsprintf(tmp_buf, fmt, args);
-        va_end(args);
-        if (strlen(tmp_buf) + strlen(msg_buf) < MAX_MSG_SIZE) {
-            sprintf(msg_buf + strlen(msg_buf), "%s", tmp_buf);
-        }
-        else {
-            fprintf(stderr, "msg_buf full: %s\n", tmp_buf);
-            fflush(stderr);
-        }
+        vsnprintf(msg_buf         + strlen(msg_buf),
+                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
+        Tstack();
     }
 }
 
 void vTmsg(const char *fmt, va_list args)
 {
     if (verbose) {
-        vsprintf(tmp_buf, fmt, args);
-        if (strlen(tmp_buf) + strlen(msg_buf) < MAX_MSG_SIZE) {
-            sprintf(msg_buf + strlen(msg_buf), "\t%s\n", tmp_buf);
-        }
-        else {
-            fprintf(stderr, "msg_buf full: %s", tmp_buf);
-            fflush(stderr);
-        }
+        APPEND(msg_buf, "\t");
+        vsnprintf(msg_buf         + strlen(msg_buf),
+                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
+        va_end(args);
+        APPEND(msg_buf, "\n");
+
+        Tstack();
     }
+}
+
+void Tmsg(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    vTmsg(fmt, args);
+    va_end(args);
+}
+
+void Tmsg_nf(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    vTmsg_nf(fmt, args);
+    va_end(args);
 }
 
 void tst_msg(const char *func, const char *fname, int line_num,
              const char *fmt, ...)
 {
+
     int i;
     va_list args;
 
     f_cnt++;
 
     if (verbose) {
-        if (strcmp(curr_err_func, (char *) func) != 0) {
-            sprintf(tmp_buf, "\n%s\n", func);
-            strcat(msg_buf, tmp_buf);
-            for (i = (int) strlen(tmp_buf); i > 0; i--) {
-                strcat(msg_buf, "=");
-            }
-            strcat(msg_buf, "\n");
+        if (strcmp(curr_err_func, func) != 0) {
+            APPEND2(msg_buf, "\n%s\n", func);
+            for (i = strlen(func) + 2; i > 0; --i)
+                APPEND(msg_buf, "=");
+            APPEND(msg_buf, "\n");
             curr_err_func = func;
         }
-        sprintf(tmp_buf, "%3d)\n\t%s:%d\n\t", f_cnt, fname, line_num);
+        snprintf(msg_buf, sizeof(msg_buf),
+                 "%s%3d)\n\t%s:%d\n\t", msg_buf, f_cnt, fname, line_num);
+
         va_start(args, fmt);
-        vsprintf(tmp_buf + strlen(tmp_buf), fmt, args);
+        vsnprintf(msg_buf         + strlen(msg_buf),
+                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
         va_end(args);
-        if (strlen(tmp_buf) + strlen(msg_buf) < MAX_MSG_SIZE) {
-            strcat(msg_buf, tmp_buf);
-        }
-        else {
-            fprintf(stderr, "msg_buf full: %s", tmp_buf);
-            fflush(stderr);
-        }
+
+        Tstack();
     }
 }
 
@@ -715,6 +716,7 @@ bool Assert(int condition, const char *fmt, ...)
 
 #define USAGE "Invalid option: `%s'\n\
   -v verbose\n\
+  -s show stacktrace\n\
   -x exclude\n\
   -l list tests\n\
   -f force\n\
@@ -734,6 +736,10 @@ int main(int argc, const char *const argv[])
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-v")) {
             verbose = true;
+            continue;
+        }
+        if (!strcmp(argv[i], "-s")) {
+            show_stack = true;
             continue;
         }
         if (!strcmp(argv[i], "-x")) {
