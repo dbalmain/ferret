@@ -21,6 +21,8 @@ TODO
     useful for storing field names so that no objects need to strdup the
     field-names but can just store the symbol representative instead.
   - Make threading optional at compile time
+  - to_json should limit output to prevent memory overflow on large indexes.
+    Perhaps we could use some type of buffered read for this.
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking

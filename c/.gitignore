@@ -1,6 +1,7 @@
 testall
 search_bench
 bench
+tokenize
 .deps
 .gdb-bt
 .gcov

@@ -238,6 +238,7 @@
 #define LazyDoc                 FrtLazyDoc
 #define LazyDocField            FrtLazyDocField
 #define LazyDocFieldData        FrtLazyDocFieldData
+#define LegacyStandardTokenizer FrtLegacyStandardTokenizer
 #define Lock                    FrtLock
 #define MTQMaxTerms             FrtMTQMaxTerms
 #define MTQSubQuery             FrtMTQSubQuery
@@ -633,6 +634,7 @@
 #define lazy_df_get_bytes                       frt_lazy_df_get_bytes
 #define lazy_df_get_data                        frt_lazy_df_get_data
 #define lazy_doc_close                          frt_lazy_doc_close
+#define legacy_standard_tokenizer_new           frt_legacy_standard_tokenizer_new
 #define letter_analyzer_new                     frt_letter_analyzer_new
 #define letter_tokenizer_new                    frt_letter_tokenizer_new
 #define lmalloc                                 frt_lmalloc
@@ -649,6 +651,7 @@
 #define matchv_sort                             frt_matchv_sort
 #define max2                                    frt_max2
 #define max3                                    frt_max3
+#define mb_legacy_standard_tokenizer_new        frt_mb_legacy_standard_tokenizer_new
 #define mb_letter_analyzer_new                  frt_mb_letter_analyzer_new
 #define mb_letter_tokenizer_new                 frt_mb_letter_tokenizer_new
 #define mb_lowercase_filter_new                 frt_mb_lowercase_filter_new

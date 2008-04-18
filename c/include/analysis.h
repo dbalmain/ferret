@@ -71,6 +71,15 @@ typedef struct FrtStandardTokenizer
     bool is_ascii;
 } FrtStandardTokenizer;
 
+typedef struct FrtLegacyStandardTokenizer
+{
+    FrtCachedTokenStream super;
+    bool        (*advance_to_start)(FrtTokenStream *ts);
+    bool        (*is_tok_char)(char *c);
+    int         (*get_alpha)(FrtTokenStream *ts, char *token);
+    int         (*get_apostrophe)(char *input);
+} FrtLegacyStandardTokenizer;
+
 typedef struct FrtTokenFilter
 {
     FrtTokenStream super;
@@ -126,6 +135,9 @@ extern FrtTokenStream *frt_mb_letter_tokenizer_new(bool lowercase);
 
 extern FrtTokenStream *frt_standard_tokenizer_new();
 extern FrtTokenStream *frt_mb_standard_tokenizer_new();
+
+extern FrtTokenStream *frt_legacy_standard_tokenizer_new();
+extern FrtTokenStream *frt_mb_legacy_standard_tokenizer_new();
 
 extern FrtTokenStream *frt_hyphen_filter_new(FrtTokenStream *ts);
 extern FrtTokenStream *frt_lowercase_filter_new(FrtTokenStream *ts);

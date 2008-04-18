@@ -17,63 +17,27 @@
 } while(0)
 
 %%{
-    machine StdTokMb;
+    machine StdTok;
     alphtype unsigned int;
     include WChar "src/wchar.rl";
 
-    delim = space;
-    token = walpha walnum*;
-    punc  = [.,\/_\-];
-    proto = 'http'[s]? | 'ftp' | 'file';
-    urlc  = walnum | punc | [\@\:];
+    frt_alpha = walpha;
+    frt_alnum = walnum;
+    frt_digit = wdigit;
 
-    main := |*
+    include StdTok "src/scanner.in";
 
-        #// Token, or token with possessive
-        token           { RET; };
-        token [\']      { trunc = 1; RET; };
-        token [\'][sS]? { trunc = 2; RET; };
-
-        #// contractions
-        walpha+ [\'] walpha+ { RET; };
-
-        #// Token with hyphens
-        walnum+ ([\-_] walnum+)* { RET; };
-
-        #// Company name
-        token [\&\@] token* { RET; };
-
-        #// URL
-        proto [:][/]+ %{ skip = p - ts; } urlc+ [/] { trunc = 1; RET; };
-        proto [:][/]+ %{ skip = p - ts; } urlc+     { RET; };
-        walnum+[:][/]+ urlc+ [/] { trunc = 1; RET; };
-        walnum+[:][/]+ urlc+     { RET; };
-
-        #// Email
-        walnum+ '@' walnum+ '.' walpha+ { RET; };
-
-        #// Acronym
-        (walpha '.')+ walpha { STRIP('.'); };
-
-        #// Int+float
-        [\-\+]?wdigit+            { RET; };
-        [\-\+]?wdigit+ '.' wdigit+ { RET; };
-
-        #// Ignore whitespace and other crap
-        0 { return; };
-        (any - walnum);
-
-        *|;
+    main := any @{ fhold; fcall frt_tokenizer; };
 }%%
 
 %% write data nofinal;
 
-static const char *position_in_mb( const unsigned long *orig_wc,
+static const char *position_in_mb( const unsigned int *orig_wc,
                                    const char *orig_mb,
-                                   const unsigned long *curr_wc )
+                                   const unsigned int *curr_wc )
 {
-    const char          *mb = orig_mb;
-    const unsigned long *wc = orig_wc;
+    const char         *mb = orig_mb;
+    const unsigned int *wc = orig_wc;
 
     while (wc < curr_wc)
     {
@@ -85,7 +49,7 @@ static const char *position_in_mb( const unsigned long *orig_wc,
     return mb;
 }
 
-static int mb_next_char(unsigned long *wchr, const char *s, mbstate_t *state)
+static int mb_next_char(unsigned int *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
     if ((num_bytes = (int)mbrtowc((wchar_t*)wchr, s, MB_CUR_MAX, state)) < 0) {
@@ -101,7 +65,7 @@ static int mb_next_char(unsigned long *wchr, const char *s, mbstate_t *state)
     return num_bytes;
 }
 
-static int wc_next_char(char *s, const unsigned long *wchr, mbstate_t *state)
+static int wc_next_char(char *s, const unsigned int *wchr, mbstate_t *state)
 {
     return (int)wcrtomb(s, *wchr, state);
 }
@@ -129,11 +93,11 @@ static int wc_next_char(char *s, const unsigned long *wchr, mbstate_t *state)
  */
 
 static void mb_to_wc(const char *in,
-                     unsigned long *out, size_t out_size)
+                     unsigned int *out, size_t out_size)
 {
     mbstate_t state;
     const char *in_p     = in;
-    unsigned long *out_p = out;
+    unsigned int *out_p = out;
     ZEROSET(&state, mbstate_t);
 
     while (*in_p && out_p < (out + out_size/sizeof(*out)))
@@ -153,11 +117,11 @@ static void mb_to_wc(const char *in,
 }
 
 static void wc_to_mb(char *out, size_t out_size, int *token_size,
-                     const unsigned long *in_wc, size_t in_wc_size)
+                     const unsigned int *in_wc, size_t in_wc_size)
 {
     mbstate_t state;
     char *out_p = out;
-    const unsigned long *in_wc_p = in_wc;
+    const unsigned int *in_wc_p = in_wc;
     ZEROSET(&state, mbstate_t);
     *token_size = 0;
 
@@ -186,18 +150,19 @@ void frt_std_scan_mb(const char *in_mb,
                      const char **end_mb,
                      int *token_size)
 {
-    int cs, act;
-    unsigned long *ts = 0, *te = 0;
+    int cs, act, top;
+    int stack[32];
+    unsigned int *ts = 0, *te = 0;
 
     %% write init;
 
-    unsigned long in_wc[4096] = {0};
+    unsigned int in_wc[4096] = {0};
     mb_to_wc(in_mb, in_wc, sizeof(in_wc));
 
-    unsigned long *p = in_wc, *pe = 0, *eof = pe;
+    unsigned int *p = in_wc, *pe = 0, *eof = pe;
     int skip = 0;
     int trunc = 0;
-    unsigned long strip_char = 0;
+    unsigned int strip_char = 0;
 
     *end_mb = 0;
     *start_mb = 0;
@@ -205,29 +170,29 @@ void frt_std_scan_mb(const char *in_mb,
 
     %% write exec;
 
-    if ( cs == StdTokMb_error )
+    if ( cs == StdTok_error )
                    fwprintf(stderr, L"PARSE ERROR\n");
     else if ( ts ) fwprintf(stderr, L"STUFF LEFT: '%ls'\n", ts);
     return;
 
  ret:
     {
-        unsigned long out_wc[4096] = {0};
+        unsigned int out_wc[4096] = {0};
         size_t __len = te - ts - skip - trunc;
 
         *start_mb = position_in_mb(in_wc, in_mb, ts);
         *end_mb   = position_in_mb(in_wc, in_mb, te);
 
         if (strip_char) {
-            unsigned long *__p = ts + skip;
-            unsigned long *__o = out_wc;
+            unsigned int *__p = ts + skip;
+            unsigned int *__o = out_wc;
             for (; __p < (ts + skip + __len); ++__p) {
                 if (*__p != strip_char)
                     *__o++ = *__p;
             }
         }
         else {
-            memcpy(out_wc, ts + skip, __len*sizeof(unsigned long));
+            memcpy(out_wc, ts + skip, __len*sizeof(unsigned int));
         }
 
         wc_to_mb(out_mb, out_mb_size, token_size, out_wc, sizeof(out_wc));
