@@ -3,50 +3,50 @@
 
 #include "hash.h"
 
-typedef struct State
+typedef struct FrtState
 {
-    int  (*next)(struct State *self, int c, int *states);
-    void (*destroy_i)(struct State *self);
-    int  (*is_match)(struct State *self, char **mapping);
-} State;
+    int  (*next)(struct FrtState *self, int c, int *states);
+    void (*destroy_i)(struct FrtState *self);
+    int  (*is_match)(struct FrtState *self, char **mapping);
+} FrtState;
 
-typedef struct DeterministicState
+typedef struct FrtDeterministicState
 {
-    struct DeterministicState *next[256];
+    struct FrtDeterministicState *next[256];
     int longest_match;
     char *mapping;
     int mapping_len;
-} DeterministicState;
+} FrtDeterministicState;
 
-typedef struct Mapping
+typedef struct FrtMapping
 {
     char *pattern;
     char *replacement;
-} Mapping;
+} FrtMapping;
 
-typedef struct MultiMapper
+typedef struct FrtMultiMapper
 {
-    Mapping **mappings;
+    FrtMapping **mappings;
     int size;
     int capa;
-    DeterministicState **dstates;
+    FrtDeterministicState **dstates;
     int d_size;
     int d_capa;
     unsigned char alphabet[256];
     int a_size;
     FrtHashTable *dstates_map;
-    State **nstates;
+    FrtState **nstates;
     int nsize;
     int *next_states;
     int ref_cnt;
-} MultiMapper;
+} FrtMultiMapper;
 
-extern MultiMapper *mulmap_new();
-extern void mulmap_add_mapping(MultiMapper *self, const char *p, const char *r);
-extern void mulmap_compile(MultiMapper *self);
-extern char *mulmap_map(MultiMapper *self, char *to, char *from, int capa);
-extern char *mulmap_dynamic_map(MultiMapper *self, char *from);
-extern int mulmap_map_len(MultiMapper *self, char *to, char *from, int capa);
-extern void mulmap_destroy(MultiMapper *self);
+extern FrtMultiMapper *frt_mulmap_new();
+extern void frt_mulmap_add_mapping(FrtMultiMapper *self, const char *p, const char *r);
+extern void frt_mulmap_compile(FrtMultiMapper *self);
+extern char *frt_mulmap_map(FrtMultiMapper *self, char *to, char *from, int capa);
+extern char *frt_mulmap_dynamic_map(FrtMultiMapper *self, char *from);
+extern int frt_mulmap_map_len(FrtMultiMapper *self, char *to, char *from, int capa);
+extern void frt_mulmap_destroy(FrtMultiMapper *self);
 
 #endif

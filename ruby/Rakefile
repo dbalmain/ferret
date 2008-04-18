@@ -100,7 +100,7 @@ namespace :build do
   file 'ext/internal.h' => '../c/include/internal.h' do
     File.open('ext/internal.h', 'w') do |f|
       File.readlines('../c/include/internal.h').each do |l|
-        next if l =~ /ALLOC/ and l !~ /ZERO/
+        next if l =~ /ALLOC/ and l !~ /ZERO|MP_/
         f.puts(l)
       end
     end

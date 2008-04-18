@@ -93,7 +93,7 @@ typedef struct FrtStopFilter
 typedef struct FrtMappingFilter 
 {
     FrtTokenFilter  super;
-    MultiMapper *mapper;
+    FrtMultiMapper *mapper;
 } FrtMappingFilter;
 
 typedef struct FrtHyphenFilter 
