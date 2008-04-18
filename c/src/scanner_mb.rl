@@ -34,6 +34,9 @@
         token [\']      { trunc = 1; RET; };
         token [\'][sS]? { trunc = 2; RET; };
 
+        #// contractions
+        walpha+ [\'] walpha+ { RET; };
+
         #// Token with hyphens
         walnum+ ([\-_] walnum+)* { RET; };
 

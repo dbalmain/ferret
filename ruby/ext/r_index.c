@@ -2506,7 +2506,7 @@ static VALUE
 frb_ir_term_vectors(VALUE self, VALUE rdoc_id)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    HashTable *tvs = ir->term_vectors(ir, FIX2INT(rdoc_id));
+    Hash *tvs = ir->term_vectors(ir, FIX2INT(rdoc_id));
     VALUE rtvs = rb_hash_new();
     h_each(tvs, &frb_add_each_tv, (void *)rtvs);
     h_destroy(tvs);

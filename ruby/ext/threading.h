@@ -5,7 +5,7 @@
 #define UNTHREADED 1
 
 typedef void * frt_mutex_t;
-typedef struct FrtHashTable *frt_thread_key_t;
+typedef struct FrtHash *frt_thread_key_t;
 typedef int frt_thread_once_t;
 #define FRT_MUTEX_INITIALIZER NULL
 #define FRT_MUTEX_RECURSIVE_INITIALIZER NULL

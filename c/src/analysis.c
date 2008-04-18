@@ -559,8 +559,8 @@ Analyzer *mb_letter_analyzer_new(bool lowercase)
 static Token *std_next(TokenStream *ts)
 {
     StandardTokenizer *std_tz = STDTS(ts);
-    char *start = NULL;
-    char *end = NULL;
+    const char *start = NULL;
+    const char *end = NULL;
     int len;
     Token *tk = &(CTS(ts)->token);
 

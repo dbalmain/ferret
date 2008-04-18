@@ -11,12 +11,13 @@
  */
 void frt_std_scan(const char *in,
                   char *out, size_t out_size,
-                  char **start, char **end,
+                  const char **start, const char **end,
                   int *token_length);
+
 
 void frt_std_scan_mb(const char *in,
                      char *out, size_t out_size,
-                     char **start, char **end,
+                     const char **start, const char **end,
                      int *token_length);
 
 #endif /* FRT_SCANNER */

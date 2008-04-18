@@ -444,7 +444,7 @@ void test_standard_tokenizer(TestCase *tc, void *data)
     Token *tk = tk_new();
     TokenStream *ts = standard_tokenizer_new();
     char text[200] =
-        "DBalmain@gmail.com is My e-mail -52  #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234";
+        "DBalmain@gmail.com is My e-mail -52  #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 underscored_word, won't we're";
     (void)data;
 
     ts->reset(ts, text);
@@ -458,6 +458,9 @@ void test_standard_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "www.google.com/results", 55, 85);
     test_token(ts_next(ts), "TNT", 86, 91);
     test_token(ts_next(ts), "123-1235-ASD-1234", 93, 110);
+    test_token(ts_next(ts), "underscored_word", 111, 127);
+    test_token(ts_next(ts), "won't", 129, 134);
+    test_token(ts_next(ts), "we're", 135, 140);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */
@@ -483,7 +486,7 @@ void test_mb_standard_tokenizer(TestCase *tc, void *data)
     Token *tk = tk_new();
     TokenStream *ts = mb_standard_tokenizer_new();
     char text[200] =
-        "DBalmán@gmail.com is My e-mail -52  #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
+        "DBalmán@gmail.com is My e-mail -52  #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 underscored_word, won't we're 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
     (void)data;
 
     ts->reset(ts, text);
@@ -497,11 +500,14 @@ void test_mb_standard_tokenizer(TestCase *tc, void *data)
     test_token(ts_next(ts), "www.google.com/results", 55, 85);
     test_token(ts_next(ts), "TNT", 86, 91);
     test_token(ts_next(ts), "123-1235-ASD-1234", 93, 110);
-    test_token(ts_next(ts), "23", 111, 113);
-    test_token(ts_next(ts), "ÁÄGÇ", 117, 124);
-    test_token(ts_next(ts), "ÊËÌ", 126, 132);
-    test_token(ts_next(ts), "ÚØÃ", 134, 140);
-    test_token(ts_next(ts), "ÖÎÍ", 142, 148);
+    test_token(ts_next(ts), "underscored_word", 111, 127);
+    test_token(ts_next(ts), "won't", 129, 134);
+    test_token(ts_next(ts), "we're", 135, 140);
+    test_token(ts_next(ts), "23", 141, 143);
+    test_token(ts_next(ts), "ÁÄGÇ", 147, 154);
+    test_token(ts_next(ts), "ÊËÌ", 156, 162);
+    test_token(ts_next(ts), "ÚØÃ", 164, 170);
+    test_token(ts_next(ts), "ÖÎÍ", 172, 178);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */

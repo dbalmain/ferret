@@ -7,7 +7,7 @@
 #include "internal.h"
 
 /* Object Map */
-static HashTable *object_map;
+static Hash *object_map;
 
 /* IDs */
 ID id_new;

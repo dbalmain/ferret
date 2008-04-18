@@ -43,6 +43,7 @@ static int f_cnt = 0;/* number of failures */
  */
 #define MAX_MSG_SIZE 100000
 static char msg_buf[MAX_MSG_SIZE] = "";
+static char *msg_bufp = msg_buf;
 
 /* Check to see if +testname+ was specified on the command line */
 static bool find_test_name(const char *testname)
@@ -274,15 +275,23 @@ static int report(TestSuite *suite)
 }
 
 static const char *curr_err_func = "";
-#define APPEND(buf, fmt) snprintf(buf, sizeof(buf), "%s" fmt, buf);
-#define APPEND2(buf, fmt, arg) snprintf(buf, sizeof(buf), "%s" fmt, buf, arg)
+#define MSG_BUF_HAVE sizeof(msg_buf) - (msg_bufp - msg_buf) - 1
+#define APPEND(fmt) msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt)
+#define APPEND1(fmt, arg1)\
+    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1)
+#define APPEND2(fmt, arg1, arg2)\
+    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1, arg2);
+#define APPEND3(fmt, arg1, arg2, arg3)\
+    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1, arg2, arg3);
+#define VAPPEND(args)\
+    msg_bufp += vsnprintf(msg_bufp, MSG_BUF_HAVE, fmt, args);
 
 static void Tstack()
 {
     if (show_stack) {
         char *stack = get_stacktrace();
         if (stack) {
-            APPEND2(msg_buf, "\n\nStack trace:\n%s\n", stack);
+            APPEND1("\n\nStack trace:\n%s\n", stack);
             free(stack);
         }
     }
@@ -291,8 +300,7 @@ static void Tstack()
 static void vTmsg_nf(const char *fmt, va_list args)
 {
     if (verbose) {
-        vsnprintf(msg_buf         + strlen(msg_buf),
-                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
+        VAPPEND(args);
         Tstack();
     }
 }
@@ -300,11 +308,10 @@ static void vTmsg_nf(const char *fmt, va_list args)
 void vTmsg(const char *fmt, va_list args)
 {
     if (verbose) {
-        APPEND(msg_buf, "\t");
-        vsnprintf(msg_buf         + strlen(msg_buf),
-                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
+        APPEND("\t");
+        VAPPEND(args);
         va_end(args);
-        APPEND(msg_buf, "\n");
+        APPEND("\n");
 
         Tstack();
     }
@@ -339,18 +346,16 @@ void tst_msg(const char *func, const char *fname, int line_num,
 
     if (verbose) {
         if (strcmp(curr_err_func, func) != 0) {
-            APPEND2(msg_buf, "\n%s\n", func);
+            APPEND1("\n%s\n", func);
             for (i = strlen(func) + 2; i > 0; --i)
-                APPEND(msg_buf, "=");
-            APPEND(msg_buf, "\n");
+                APPEND("=");
+            APPEND("\n");
             curr_err_func = func;
         }
-        snprintf(msg_buf, sizeof(msg_buf),
-                 "%s%3d)\n\t%s:%d\n\t", msg_buf, f_cnt, fname, line_num);
+        APPEND3("%3d)\n\t%s:%d\n\t", f_cnt, fname, line_num);
 
         va_start(args, fmt);
-        vsnprintf(msg_buf         + strlen(msg_buf),
-                  sizeof(msg_buf) - strlen(msg_buf), fmt, args);
+        VAPPEND(args);
         va_end(args);
 
         Tstack();

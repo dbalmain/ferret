@@ -97,6 +97,7 @@ ext/q_term.c
 ext/q_wildcard.c
 ext/ram_store.c
 ext/scanner.[ch]
+ext/scanner_mb.c
 ext/search.c
 ext/search.h
 ext/similarity.c
