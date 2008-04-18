@@ -107,22 +107,6 @@ end
 
 UTF8_BOUNDARIES = [0x7f, 0x7ff, 0xffff, 0x10ffff]
 
-###
-# Given a range, splits it up into ranges that can be continuously
-# encoded into utf8.  Eg: 0x00 .. 0xff => [0x00..0x7f, 0x80..0xff]
-
-def utf8_ranges( range )
-  ranges = []
-  UTF8_BOUNDARIES.each do |max|
-    if range.begin <= max
-      return ranges << range if range.end <= max
-
-      ranges << range.begin .. max
-      range = (max + 1) .. range.end
-    end
-  end
-end
-
 def to_utf8_enc( n )
   r = 0
   if n <= 0x7f
@@ -144,6 +128,25 @@ def to_utf8_enc( n )
     r = w << 24 | x << 16 | y << 8 | z
   end
   to_hex(r)
+end
+
+###
+# Given a range, splits it up into ranges that can be continuously
+# encoded into utf8.  Eg: 0x00 .. 0xff => [0x00..0x7f, 0x80..0xff]
+# This is not strictly needed since the current [5.1] unicode standard
+# doesn't have ranges that straddle utf8 boundaries.  This is included
+# for completeness as there is no telling if that will ever change.
+
+def utf8_ranges( range )
+  ranges = []
+  UTF8_BOUNDARIES.each do |max|
+    if range.begin <= max
+      return ranges << range if range.end <= max
+
+      ranges << range.begin .. max
+      range = (max + 1) .. range.end
+    end
+  end
 end
 
 def to_utf8( range )
@@ -178,13 +181,13 @@ EOF
 pipe = " "
 for_each_line( CHART_URL, "Alphabetic" ) do |range, description|
 
+  if description.size > 46
+    description = description.slice(0..42) + "..."
+  end
+
   encode(range, options[:encoding]).each_with_index do |r, idx|
-    if idx.zero?
-      dots = description.size > 47 ? "..." : "   "
-      puts "      #{pipe} #{'%-23s' % r} ##{description.slice(0..42)}#{dots}"
-    else
-      puts "      #{pipe} #{'%-23s' % r}"
-    end
+    description = "" unless idx.zero?
+    puts "      #{pipe} #{'%-23s' % r} ##{description}"
     pipe = "|"
   end
 end
