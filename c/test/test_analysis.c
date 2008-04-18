@@ -504,7 +504,7 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
         "DBalmán@gmail.com is My e-mail -52  #$ Address. 23#@$ "
         "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 "
         "underscored_word, won't we're 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ "
-        "bad\200char";
+        "\200 badchar";
     ts->reset(ts, text);
     test_token(ts_next(ts), "DBalmán@gmail.com", 0, 18);
     test_token(ts_next(ts), "is", 19, 21);
@@ -524,24 +524,35 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
     test_token(ts_next(ts), "ÊËÌ", 156, 162);
     test_token(ts_next(ts), "ÚØÃ", 164, 170);
     test_token(ts_next(ts), "ÖÎÍ", 172, 178);
-    test_token_pi(ts_next(ts), "bad\200char", 179, 187, 1);
+    test_token_pi(ts_next(ts), "badchar", 181, 188, 1);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */
     Aiequal(2, ts->ref_cnt);
     ts_deref(ts);
     Aiequal(1, ts->ref_cnt);
-    ts->reset(ts, "http://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    ts->reset(ts, "http://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     test_token(ts_next(ts), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                "xxxxxxxxxxxxxxxxxxx", 0, 280);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts->reset(ts, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    test_token(ts_next(ts), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               "xxxxxxxxxxxxxxxxxxx", 0, 348);
 }
 
 static void test_mb_standard_tokenizer(TestCase *tc, void *data)

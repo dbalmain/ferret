@@ -159,7 +159,6 @@ static INLINE int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
     int num_bytes;
     if ((num_bytes = (int)mbrtowc(wchr, s, MB_CUR_MAX, state)) < 0) {
         const char *t = s;
-        Jx
         do {
             t++;
             ZEROSET(state, mbstate_t);
