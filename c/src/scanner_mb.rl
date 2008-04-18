@@ -177,11 +177,11 @@ static void wc_to_mb(char *out, size_t out_size, int *token_size,
     *token_size = out_p - out;
 }
 
-void frt_scan_mb(const char *in_mb,
-                 char *out_mb, size_t out_mb_size,
-                 const char **start_mb,
-                 const char **end_mb,
-                 int *token_size)
+void frt_std_scan_mb(const char *in_mb,
+                     char *out_mb, size_t out_mb_size,
+                     const char **start_mb,
+                     const char **end_mb,
+                     int *token_size)
 {
     int cs, act;
     unsigned long *ts = 0, *te = 0;
