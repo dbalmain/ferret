@@ -20,9 +20,7 @@ TODO
   - Add Rakefile for development purposes
     + task to publish gcov and benchmark results to ferret wiki
   - Fix tmpname warning.
-  - Ranged, unordered searching. Ie search through the index until you have the
-    required number of documents and then break. This will require the ability
-    to start searches from a particular doc-num.
+  - Index rebuilding of old versioned indexes.
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
@@ -69,3 +67,7 @@ Done
 * integrate gcov
 * add a field cache to IndexReader
 * setup email alerts for svn commits
+* Ranged, unordered searching. Ie search through the index until you have the
+  required number of documents and then break. This will require the ability to
+  start searches from a particular doc-num.
+  + See searcher_search_unordered in the C code and Searcher#scan in Ruby
