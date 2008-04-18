@@ -12,24 +12,24 @@
 
 typedef struct FrtIndex
 {
-    Config config;
-    mutex_t mutex;
-    Store *store;
+    FrtConfig config;
+    frt_mutex_t mutex;
+    FrtStore *store;
     FrtAnalyzer *analyzer;
-    IndexReader *ir;
-    IndexWriter *iw;
+    FrtIndexReader *ir;
+    FrtIndexWriter *iw;
     Searcher *sea;
     QParser *qp;
     FrtHashSet *key;
     char *id_field;
     char *def_field;
-    /* for IndexWriter */
+    /* for FrtIndexWriter */
     bool auto_flush : 1;
     bool has_writes : 1;
     bool check_latest : 1;
 } FrtIndex;
 
-extern FrtIndex *frt_index_new(Store *store, FrtAnalyzer *analyzer,
+extern FrtIndex *frt_index_new(FrtStore *store, FrtAnalyzer *analyzer,
                         FrtHashSet *def_fields, bool create);
 extern void frt_index_destroy(FrtIndex *self);
 extern void frt_index_flush(FrtIndex *self);

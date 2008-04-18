@@ -22,9 +22,9 @@ typedef struct Buffer
     off_t len;
 } Buffer;
 
-typedef struct OutStream OutStream;
+typedef struct FrtOutStream FrtOutStream;
 struct OutStreamMethods {
-    /* internal functions for the InStream */
+    /* internal functions for the FrtInStream */
     /**
      * Flush +len+ characters from +src+ to the output stream +os+
      *
@@ -33,7 +33,7 @@ struct OutStreamMethods {
      * @param len the number of characters to write
      * @raise FRT_IO_ERROR if there is an error writing the characters
      */
-    void (*flush_i)(struct OutStream *os, const frt_uchar *buf, int len);
+    void (*flush_i)(struct FrtOutStream *os, const frt_uchar *buf, int len);
 
     /**
      * Seek +pos+ in the output stream
@@ -42,7 +42,7 @@ struct OutStreamMethods {
      * @param pos the position to seek in the stream
      * @raise FRT_IO_ERROR if there is an error seeking in the output stream
      */
-    void (*seek_i)(struct OutStream *os, off_t pos);
+    void (*seek_i)(struct FrtOutStream *os, off_t pos);
 
     /**
      * Close any resources used by the output stream +os+
@@ -50,7 +50,7 @@ struct OutStreamMethods {
      * @param os self
      * @raise FRT_IO_ERROR if there is an closing the file
      */
-    void (*close_i)(struct OutStream *os);
+    void (*close_i)(struct FrtOutStream *os);
 };
 
 typedef struct RAMFile
@@ -62,7 +62,7 @@ typedef struct RAMFile
     int     ref_cnt;
 } RAMFile;
 
-struct OutStream
+struct FrtOutStream
 {
     Buffer buf;
     union
@@ -76,7 +76,7 @@ struct OutStream
 
 typedef struct CompoundInStream CompoundInStream;
 
-typedef struct InStream InStream;
+typedef struct FrtInStream FrtInStream;
 
 struct InStreamMethods
 {
@@ -90,7 +90,7 @@ struct InStreamMethods
      * @param len the number of bytes to read
      * @raise FRT_IO_ERROR if there is an error reading from the input stream
      */
-    void (*read_i)(struct InStream *is, frt_uchar *buf, int len);
+    void (*read_i)(struct FrtInStream *is, frt_uchar *buf, int len);
 
     /**
      * Seek position +pos+ in input stream +is+
@@ -99,7 +99,7 @@ struct InStreamMethods
      * @param pos the position to seek
      * @raise FRT_IO_ERROR if the seek fails
      */
-    void (*seek_i)(struct InStream *is, off_t pos);
+    void (*seek_i)(struct FrtInStream *is, off_t pos);
 
     /**
      * Returns the length of the input stream +is+
@@ -107,7 +107,7 @@ struct InStreamMethods
      * @param is self
      * @raise FRT_IO_ERROR if there is an error getting the file length
      */
-    off_t (*length_i)(struct InStream *is);
+    off_t (*length_i)(struct FrtInStream *is);
 
     /**
      * Close the resources allocated to the inputstream +is+
@@ -115,10 +115,10 @@ struct InStreamMethods
      * @param is self
      * @raise FRT_IO_ERROR if the close fails
      */
-    void (*close_i)(struct InStream *is);
+    void (*close_i)(struct FrtInStream *is);
 };
 
-struct InStream
+struct FrtInStream
 {
     Buffer buf;
     union
@@ -138,19 +138,19 @@ struct InStream
 
 struct CompoundInStream
 {
-    InStream *sub;
+    FrtInStream *sub;
     off_t offset;
     off_t length;
 };
 
 #define is_length(mis) mis->m->length_i(mis)
 
-typedef struct Store Store;
+typedef struct FrtStore FrtStore;
 typedef struct Lock Lock;
 struct Lock
 {
     char *name;
-    Store *store;
+    FrtStore *store;
     int (*obtain)(Lock *lock);
     int (*is_locked)(Lock *lock);
     void (*release)(Lock *lock);
@@ -158,17 +158,17 @@ struct Lock
 
 typedef struct CompoundStore
 {
-    Store *store;
+    FrtStore *store;
     const char *name;
     FrtHashTable *entries;
-    InStream *stream;
+    FrtInStream *stream;
 } CompoundStore;
 
-struct Store
+struct FrtStore
 {
     int ref_cnt;                /* for fs_store only */
-    mutex_t mutex_i;            /* for internal use only */
-    mutex_t mutex;              /* external mutex for use outside */
+    frt_mutex_t mutex_i;            /* for internal use only */
+    frt_mutex_t mutex;              /* external mutex for use outside */
     union
     {
         char *path;             /* for fs_store only */
@@ -190,7 +190,7 @@ struct Store
      * @param filename the name of the file to create
      * @raise FRT_IO_ERROR if the file cannot be created
      */
-    void (*touch)(Store *store, const char *filename);
+    void (*touch)(FrtStore *store, const char *filename);
 
     /**
      * Return true if a file of name +filename+ exists in +store+.
@@ -200,7 +200,7 @@ struct Store
      * @returns true if the file exists
      * @raise FRT_IO_ERROR if there is an error checking for the files existance
      */
-    int (*exists)(Store *store, const char *filename);
+    int (*exists)(FrtStore *store, const char *filename);
 
     /**
      * Remove the file +filename+ from the +store+
@@ -210,7 +210,7 @@ struct Store
      * @returns On success, zero is returned.  On error, -1 is returned, and errno
      *          is set appropriately.
      */
-    int (*remove)(Store *store, const char *filename);
+    int (*remove)(FrtStore *store, const char *filename);
 
     /**
      * Rename the file in the +store+ from the name +from+ to the name +to+.
@@ -220,7 +220,7 @@ struct Store
      * @param to the new name of the file
      * @raise FRT_IO_ERROR if there is an error renaming the file
      */
-    void (*rename)(Store *store, const char *from, const char *to);
+    void (*rename)(FrtStore *store, const char *from, const char *to);
 
     /**
      * Returns the number of files in the store.
@@ -229,7 +229,7 @@ struct Store
      * @return the number of files in the store
      * @raise FRT_IO_ERROR if there is an error opening the directory
      */
-    int (*count)(Store *store);
+    int (*count)(FrtStore *store);
 
     /**
      * Call the function +func+ with each filename in the store and the arg
@@ -243,7 +243,7 @@ struct Store
      * @param arg the argument to pass to the function
      * @raise FRT_IO_ERROR if there is an error opening the directory
      */
-    void (*each)(Store *store, void (*func)(const char *fname, void *arg),
+    void (*each)(FrtStore *store, void (*func)(const char *fname, void *arg),
                   void *arg);
 
     /**
@@ -252,7 +252,7 @@ struct Store
      * @param store self
      * @raise FRT_IO_ERROR if there is an error opening the directory
      */
-    void (*clear_locks)(Store *store);
+    void (*clear_locks)(FrtStore *store);
 
     /**
      * Clear all files from the store except the lock files.
@@ -260,7 +260,7 @@ struct Store
      * @param store self
      * @raise FRT_IO_ERROR if there is an error deleting the files
      */
-    void (*clear)(Store *store);
+    void (*clear)(FrtStore *store);
 
     /**
      * Clear all files from the store including the lock files.
@@ -268,7 +268,7 @@ struct Store
      * @param store self
      * @raise FRT_IO_ERROR if there is an error deleting the files
      */
-    void (*clear_all)(Store *store);
+    void (*clear_all)(FrtStore *store);
 
     /**
      * Return the length of the file +filename+ in +store+
@@ -278,7 +278,7 @@ struct Store
      * @return the length of the file in bytes
      * @raise FRT_IO_ERROR if there is an error checking the file length
      */
-    off_t (*length)(Store *store, const char *filename);
+    off_t (*length)(FrtStore *store, const char *filename);
 
     /**
      * Allocate the resources needed for the output stream in the +store+ with
@@ -290,7 +290,7 @@ struct Store
      * @raise FRT_IO_ERROR if there is an error opening the output stream
      *   resources
      */
-    OutStream *(*new_output)(Store *store, const char *filename);
+    FrtOutStream *(*new_output)(FrtStore *store, const char *filename);
 
     /**
      * Open an input stream in the +store+ with the name +filename+
@@ -299,7 +299,7 @@ struct Store
      * @param filename the name of the input stream
      * @raise FRT_FILE_NOT_FOUND_ERROR if the input stream cannot be opened
      */
-    InStream *(*open_input)(Store *store, const char *filename);
+    FrtInStream *(*open_input)(FrtStore *store, const char *filename);
 
     /**
      * Obtain a lock on the lock +lock+
@@ -307,7 +307,7 @@ struct Store
      * @param store self
      * @param lock the lock to obtain
      */
-    Lock *(*open_lock_i)(Store *store, const char *lockname);
+    Lock *(*open_lock_i)(FrtStore *store, const char *lockname);
 
     /**
      * Returns true if +lock+ is locked. To test if the file is locked:wq
@@ -323,27 +323,27 @@ struct Store
      *
      * @param store self
      */
-    void (*close_i)(Store *store);
+    void (*close_i)(FrtStore *store);
 };
 
 /**
- * Create a newly allocated file-system Store at the pathname designated. The
+ * Create a newly allocated file-system FrtStore at the pathname designated. The
  * pathname must be the name of an existing directory.
  *
  * @param pathname the pathname of the directory to be used by the index
- * @return a newly allocated file-system Store.
+ * @return a newly allocated file-system FrtStore.
  */
-extern Store *open_fs_store(const char *pathname);
+extern FrtStore *open_fs_store(const char *pathname);
 
 /**
- * Create a newly allocated in-memory or RAM Store.
+ * Create a newly allocated in-memory or RAM FrtStore.
  *
- * @return a newly allocated RAM Store.
+ * @return a newly allocated RAM FrtStore.
  */
-extern Store *open_ram_store();
+extern FrtStore *open_ram_store();
 
 /**
- * Create a newly allocated in-memory or RAM Store. Copy the contents of
+ * Create a newly allocated in-memory or RAM FrtStore. Copy the contents of
  * another store into this store. Then close the other store if required. This
  * method would be used for example to read an index into memory for faster
  * searching.
@@ -351,9 +351,9 @@ extern Store *open_ram_store();
  * @param store the whose contents will be copied into the newly allocated RAM
  *   store
  * @param close_store close the store whose contents where copied
- * @return a newly allocated RAM Store.
+ * @return a newly allocated RAM FrtStore.
  */
-extern Store *open_ram_store_and_copy(Store *store, bool close_store);
+extern FrtStore *open_ram_store_and_copy(FrtStore *store, bool close_store);
 
 /**
  * Open a compound store. This is basically store which is stored within a
@@ -362,58 +362,58 @@ extern Store *open_ram_store_and_copy(Store *store, bool close_store);
  *
  * @param store the store within which this compound store will be stored
  * @param filename the name of the file in which to store the compound store
- * @return a newly allocated Compound Store.
+ * @return a newly allocated Compound FrtStore.
  */
-extern Store *open_cmpd_store(Store *store, const char *filename);
+extern FrtStore *open_cmpd_store(FrtStore *store, const char *filename);
 
 /*
  * == RamStore functions ==
  *
  * These functions or optimizations to be used when you know you are using a
- * Ram OutStream.
+ * Ram FrtOutStream.
  */
 
 /**
- * Return the length of the OutStream in bytes.
+ * Return the length of the FrtOutStream in bytes.
  *
- * @param os the OutStream who's length you want
+ * @param os the FrtOutStream who's length you want
  * @return the length of +os+ in bytes
  */
-extern off_t ramo_length(OutStream *os);
+extern off_t ramo_length(FrtOutStream *os);
 
 /**
- * Reset the OutStream removing any data written to it. Since it is a RAM
+ * Reset the FrtOutStream removing any data written to it. Since it is a RAM
  * file, all that needs to be done is set the length to 0.
  *
- * @param os the OutStream to reset
+ * @param os the FrtOutStream to reset
  */
-extern void ramo_reset(OutStream *os);
+extern void ramo_reset(FrtOutStream *os);
 
 /**
- * Write the contents of a RAM OutStream to another OutStream.
+ * Write the contents of a RAM FrtOutStream to another FrtOutStream.
  *
- * @param from_os the OutStream to write from
- * @param to_os the OutStream to write to
+ * @param from_os the FrtOutStream to write from
+ * @param to_os the FrtOutStream to write to
  */
-extern void ramo_write_to(OutStream *from_os, OutStream *to_os);
+extern void ramo_write_to(FrtOutStream *from_os, FrtOutStream *to_os);
 
 /**
- * Create a buffer RAM OutStream which is unassociated with any RAM Store.
- * This OutStream can be used to write temporary data too. When the time
- * comes, this data can be written to another OutStream (which might possibly
- * be a file-system OutStream) using ramo_write_to.
+ * Create a buffer RAM FrtOutStream which is unassociated with any RAM FrtStore.
+ * This FrtOutStream can be used to write temporary data too. When the time
+ * comes, this data can be written to another FrtOutStream (which might possibly
+ * be a file-system FrtOutStream) using ramo_write_to.
  *
- * @return A newly allocated RAM OutStream
+ * @return A newly allocated RAM FrtOutStream
  */
-extern OutStream *ram_new_buffer();
+extern FrtOutStream *ram_new_buffer();
 
 /**
- * Destroy a RAM OutStream which is unassociated with any RAM Store, freeing
+ * Destroy a RAM FrtOutStream which is unassociated with any RAM FrtStore, freeing
  * all resources allocated to it.
  *
- * @param os the OutStream to destroy
+ * @param os the FrtOutStream to destroy
  */
-extern void ram_destroy_buffer(OutStream *os);
+extern void ram_destroy_buffer(FrtOutStream *os);
 
 /**
  * Call the function +func+ with the +lock+ locked. The argument +arg+ will be
@@ -441,7 +441,7 @@ extern void with_lock(Lock *lock, void (*func)(void *arg), void *arg);
  * @raise FRT_IO_ERROR  if the lock is already locked
  * @see with_lock
  */
-extern void with_lock_name(Store *store, const char *lock_name,
+extern void with_lock_name(FrtStore *store, const char *lock_name,
                            void (*func)(void *arg), void *arg);
 
 /**
@@ -450,328 +450,328 @@ extern void with_lock_name(Store *store, const char *lock_name,
  *
  * @param store the store to be dereferenced
  */
-extern void store_deref(Store *store);
+extern void store_deref(FrtStore *store);
 
 /**
- * Flush the buffered contents of the OutStream to the store.
+ * Flush the buffered contents of the FrtOutStream to the store.
  *
- * @param os the OutStream to flush
+ * @param os the FrtOutStream to flush
  */
-extern void os_flush(OutStream *os);
+extern void os_flush(FrtOutStream *os);
 
 /**
- * Close the OutStream after flushing the buffers, also freeing all allocated
+ * Close the FrtOutStream after flushing the buffers, also freeing all allocated
  * resources.
  *
- * @param os the OutStream to close
+ * @param os the FrtOutStream to close
  */
-extern void os_close(OutStream *os);
+extern void os_close(FrtOutStream *os);
 
 /**
- * Return the current position of OutStream +os+.
+ * Return the current position of FrtOutStream +os+.
  *
- * @param os the OutStream to get the position from
- * @return the current position in OutStream +os+
+ * @param os the FrtOutStream to get the position from
+ * @return the current position in FrtOutStream +os+
  */
-extern off_t os_pos(OutStream *os);
+extern off_t os_pos(FrtOutStream *os);
 
 /**
- * Set the current position in OutStream +os+.
+ * Set the current position in FrtOutStream +os+.
  *
- * @param os the OutStream to set the position in
- * @param pos the new position in the OutStream
+ * @param os the FrtOutStream to set the position in
+ * @param pos the new position in the FrtOutStream
  * @raise FRT_IO_ERROR if there is a file-system IO error seeking the file
  */
-extern void os_seek(OutStream *os, off_t new_pos);
+extern void os_seek(FrtOutStream *os, off_t new_pos);
 
 /**
- * Write a single byte +b+ to the OutStream +os+
+ * Write a single byte +b+ to the FrtOutStream +os+
  *
- * @param os the OutStream to write to @param b  the byte to write @raise
+ * @param os the FrtOutStream to write to @param b  the byte to write @raise
  * FRT_IO_ERROR if there is an IO error writing to the file-system
  */
-extern void os_write_byte(OutStream *os, frt_uchar b);
+extern void os_write_byte(FrtOutStream *os, frt_uchar b);
 /**
- * Write +len+ bytes from buffer +buf+ to the OutStream +os+.
+ * Write +len+ bytes from buffer +buf+ to the FrtOutStream +os+.
  *
- * @param os  the OutStream to write to
+ * @param os  the FrtOutStream to write to
  * @param len the number of bytes to write
  * @param buf the buffer from which to get the bytes to write.
  * @raise FRT_IO_ERROR if there is an IO error writing to the file-system
  */
-extern void os_write_bytes(OutStream *os, const frt_uchar *buf, int len);
+extern void os_write_bytes(FrtOutStream *os, const frt_uchar *buf, int len);
 
 /**
- * Write a 32-bit signed integer to the OutStream
+ * Write a 32-bit signed integer to the FrtOutStream
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the 32-bit signed integer to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_i32(OutStream *os, frt_i32 num);
+extern void os_write_i32(FrtOutStream *os, frt_i32 num);
 
 /**
- * Write a 64-bit signed integer to the OutStream
+ * Write a 64-bit signed integer to the FrtOutStream
  *
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the 64-bit signed integer to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_i64(OutStream *os, frt_i64 num);
+extern void os_write_i64(FrtOutStream *os, frt_i64 num);
 
 /**
- * Write a 32-bit unsigned integer to the OutStream
+ * Write a 32-bit unsigned integer to the FrtOutStream
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the 32-bit unsigned integer to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_u32(OutStream *os, frt_u32 num);
+extern void os_write_u32(FrtOutStream *os, frt_u32 num);
 
 /**
- * Write a 64-bit unsigned integer to the OutStream
+ * Write a 64-bit unsigned integer to the FrtOutStream
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the 64-bit unsigned integer to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_u64(OutStream *os, frt_u64 num);
+extern void os_write_u64(FrtOutStream *os, frt_u64 num);
 
 /**
- * Write an unsigned integer to OutStream in compressed VINT format.
+ * Write an unsigned integer to FrtOutStream in compressed VINT format.
  * TODO: describe VINT format
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the integer to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vint(OutStream *os, register unsigned int num);
+extern void os_write_vint(FrtOutStream *os, register unsigned int num);
 
 /**
- * Write an unsigned off_t to OutStream in compressed VINT format.
+ * Write an unsigned off_t to FrtOutStream in compressed VINT format.
  * TODO: describe VINT format
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the off_t to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_voff_t(OutStream *os, register off_t num);
+extern void os_write_voff_t(FrtOutStream *os, register off_t num);
 
 /**
- * Write an unsigned 64bit int to OutStream in compressed VINT format.
+ * Write an unsigned 64bit int to FrtOutStream in compressed VINT format.
  * TODO: describe VINT format
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param num the 64bit int to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vll(OutStream *os, register frt_u64 num);
+extern void os_write_vll(FrtOutStream *os, register frt_u64 num);
 
 /**
- * Write a string to the OutStream. A string is an integer +length+ in VINT
+ * Write a string to the FrtOutStream. A string is an integer +length+ in VINT
  * format (see os_write_vint) followed by +length+ bytes. The string can then
  * be read using is_read_string.
  *
- * @param os OutStream to write to
+ * @param os FrtOutStream to write to
  * @param str the string to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_string(OutStream *os, const char *str);
+extern void os_write_string(FrtOutStream *os, const char *str);
 /**
- * Get the current position within an InStream.
+ * Get the current position within an FrtInStream.
  *
- * @param is the InStream to get the current position from
- * @return the current position within the InStream +is+
+ * @param is the FrtInStream to get the current position from
+ * @return the current position within the FrtInStream +is+
  */
-extern off_t is_pos(InStream *is);
+extern off_t is_pos(FrtInStream *is);
 
 /**
- * Set the current position in InStream +is+ to +pos+.
+ * Set the current position in FrtInStream +is+ to +pos+.
  *
- * @param is the InStream to set the current position in
- * @param pos the position in InStream to seek
+ * @param is the FrtInStream to set the current position in
+ * @param pos the position in FrtInStream to seek
  * @raise FRT_IO_ERROR if there is a error seeking from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to seek past the end of the file
  */
-extern void is_seek(InStream *is, off_t pos);
+extern void is_seek(FrtInStream *is, off_t pos);
 
 /**
- * Close the InStream freeing all allocated resources.
+ * Close the FrtInStream freeing all allocated resources.
  *
- * @param is the InStream to close
+ * @param is the FrtInStream to close
  * @raise FRT_IO_ERROR if there is an error closing the associated file
  */
-extern void is_close(InStream *is);
+extern void is_close(FrtInStream *is);
 
 /**
- * Clone the InStream allocating a new InStream structure
+ * Clone the FrtInStream allocating a new FrtInStream structure
  *
- * @param is the InStream to clone
- * @return a newly allocated InStream which is a clone of +is+
+ * @param is the FrtInStream to clone
+ * @return a newly allocated FrtInStream which is a clone of +is+
  */
-extern InStream *is_clone(InStream *is);
+extern FrtInStream *is_clone(FrtInStream *is);
 
 /**
- * Read a singly byte (unsigned char) from the InStream +is+.
+ * Read a singly byte (unsigned char) from the FrtInStream +is+.
  *
  * @param is the Instream to read from
- * @return a single unsigned char read from the InStream +is+
+ * @return a single unsigned char read from the FrtInStream +is+
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE frt_uchar is_read_byte(InStream *is);
+extern FRT_INLINE frt_uchar is_read_byte(FrtInStream *is);
 
 /**
- * Read +len+ bytes from InStream +is+ and write them to buffer +buf+
+ * Read +len+ bytes from FrtInStream +is+ and write them to buffer +buf+
  *
- * @param is     the InStream to read from
+ * @param is     the FrtInStream to read from
  * @param buf    the buffer to read into, that is copy the bytes read to
  * @param len    the number of bytes to read
  * @return       the resultant buffer +buf+
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern frt_uchar *is_read_bytes(InStream *is, frt_uchar *buf, int len);
+extern frt_uchar *is_read_bytes(FrtInStream *is, frt_uchar *buf, int len);
 
 /**
- * Read a 32-bit unsigned integer from the InStream.
+ * Read a 32-bit unsigned integer from the FrtInStream.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a 32-bit unsigned integer
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern frt_i32 is_read_i32(InStream *is);
+extern frt_i32 is_read_i32(FrtInStream *is);
 
 /**
- * Read a 64-bit unsigned integer from the InStream.
+ * Read a 64-bit unsigned integer from the FrtInStream.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a 64-bit unsigned integer
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern frt_i64 is_read_i64(InStream *is);
+extern frt_i64 is_read_i64(FrtInStream *is);
 
 /**
- * Read a 32-bit signed integer from the InStream.
+ * Read a 32-bit signed integer from the FrtInStream.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a 32-bit signed integer
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern frt_u32 is_read_u32(InStream *is);
+extern frt_u32 is_read_u32(FrtInStream *is);
 
 /**
- * Read a 64-bit signed integer from the InStream.
+ * Read a 64-bit signed integer from the FrtInStream.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a 64-bit signed integer
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern frt_u64 is_read_u64(InStream *is);
+extern frt_u64 is_read_u64(FrtInStream *is);
 
 /**
- * Read a compressed (VINT) unsigned integer from the InStream.
+ * Read a compressed (VINT) unsigned integer from the FrtInStream.
  * TODO: describe VINT format
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return an int
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE unsigned int is_read_vint(InStream *is);
+extern FRT_INLINE unsigned int is_read_vint(FrtInStream *is);
 
 /**
  * Skip _cnt_ vints. This is a convenience method used for performance reasons
  * to skip large numbers of vints. It is mostly used by TermDocEnums. When
  * skipping positions os the proximity index file.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @param cnt the number of vints to skip
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE void is_skip_vints(InStream *is, register int cnt);
+extern FRT_INLINE void is_skip_vints(FrtInStream *is, register int cnt);
 
 /**
- * Read a compressed (VINT) unsigned off_t from the InStream.
+ * Read a compressed (VINT) unsigned off_t from the FrtInStream.
  * TODO: describe VINT format
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a off_t
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE off_t is_read_voff_t(InStream *is);
+extern FRT_INLINE off_t is_read_voff_t(FrtInStream *is);
 
 /**
- * Read a compressed (VINT) unsigned 64bit int from the InStream.
+ * Read a compressed (VINT) unsigned 64bit int from the FrtInStream.
  * TODO: describe VINT format
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a 64bit int
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE frt_u64 is_read_vll(InStream *is);
+extern FRT_INLINE frt_u64 is_read_vll(FrtInStream *is);
 
 /**
- * Read a string from the InStream. A string is an integer +length+ in vint
+ * Read a string from the FrtInStream. A string is an integer +length+ in vint
  * format (see is_read_vint) followed by +length+ bytes. This is the format
  * used by os_write_string.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a null byte delimited string
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern char *is_read_string(InStream *is);
+extern char *is_read_string(FrtInStream *is);
 
 /**
- * Read a string from the InStream. A string is an integer +length+ in vint
+ * Read a string from the FrtInStream. A string is an integer +length+ in vint
  * format (see is_read_vint) followed by +length+ bytes. This is the format
  * used by os_write_string. This method is similar to +is_read_string+ except
  * that it will safely free all memory if there is an error reading the
  * string.
  *
- * @param is the InStream to read from
+ * @param is the FrtInStream to read from
  * @return a null byte delimited string
  * @raise FRT_IO_ERROR if there is a error reading from the file-system
  * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern char *is_read_string_safe(InStream *is);
+extern char *is_read_string_safe(FrtInStream *is);
 
 /**
- * Copy cnt bytes from Instream _is_ to OutStream _os_.
+ * Copy cnt bytes from Instream _is_ to FrtOutStream _os_.
  *
- * @param is the InStream to read from
- * @param os the OutStream to write to
+ * @param is the FrtInStream to read from
+ * @param os the FrtOutStream to write to
  * @raise FRT_IO_ERROR
  * @raise FRT_EOF_ERROR
  */
-extern void is2os_copy_bytes(InStream *is, OutStream *os, int cnt);
+extern void is2os_copy_bytes(FrtInStream *is, FrtOutStream *os, int cnt);
 
 /**
- * Copy cnt vints from Instream _is_ to OutStream _os_.
+ * Copy cnt vints from Instream _is_ to FrtOutStream _os_.
  *
- * @param is the InStream to read from
- * @param os the OutStream to write to
+ * @param is the FrtInStream to read from
+ * @param os the FrtOutStream to write to
  * @raise FRT_IO_ERROR
  * @raise FRT_EOF_ERROR
  */
-extern void is2os_copy_vints(InStream *is, OutStream *os, int cnt);
+extern void is2os_copy_vints(FrtInStream *is, FrtOutStream *os, int cnt);
 
 /**
  * Print the filenames in a store to a buffer.
  *
  * @param store the store to get the filenames from
  */
-extern char *store_to_s(Store *store);
+extern char *store_to_s(FrtStore *store);
 
-extern Lock *open_lock(Store *store, const char *lockname);
+extern Lock *open_lock(FrtStore *store, const char *lockname);
 extern void close_lock(Lock *lock);
 #endif

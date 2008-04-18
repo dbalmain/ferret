@@ -102,7 +102,7 @@ typedef struct FrtFilter
 {
     char                *name;
     FrtHashTable     *cache;
-    FrtBitVector           *(*get_bv_i)(struct FrtFilter *self, IndexReader *ir);
+    FrtBitVector           *(*get_bv_i)(struct FrtFilter *self, FrtIndexReader *ir);
     char                *(*to_s)(struct FrtFilter *self);
     unsigned long        (*hash)(struct FrtFilter *self);
     int                  (*eq)(struct FrtFilter *self, struct FrtFilter *o);
@@ -112,7 +112,7 @@ typedef struct FrtFilter
 
 #define filt_new(type) filt_create(sizeof(type), #type)
 extern FrtFilter *filt_create(size_t size, const char *name);
-extern FrtBitVector *filt_get_bv(FrtFilter *filt, IndexReader *ir);
+extern FrtBitVector *filt_get_bv(FrtFilter *filt, FrtIndexReader *ir);
 extern void filt_destroy_i(FrtFilter *filt);
 extern void filt_deref(FrtFilter *filt);
 extern unsigned long filt_hash(FrtFilter *filt);
@@ -164,8 +164,8 @@ struct Weight
     Query       *(*get_query)(Weight *self);
     float        (*get_value)(Weight *self);
     void         (*normalize)(Weight *self, float normalization_factor);
-    Scorer      *(*scorer)(Weight *self, IndexReader *ir);
-    Explanation *(*explain)(Weight *self, IndexReader *ir, int doc_num);
+    Scorer      *(*scorer)(Weight *self, FrtIndexReader *ir);
+    Explanation *(*explain)(Weight *self, FrtIndexReader *ir, int doc_num);
     float        (*sum_of_squared_weights)(Weight *self);
     char        *(*to_s)(Weight *self);
     void         (*destroy)(Weight *self);
@@ -213,7 +213,7 @@ struct Query
     int           ref_cnt;
     float         boost;
     Weight        *weight;
-    Query        *(*rewrite)(Query *self, IndexReader *ir);
+    Query        *(*rewrite)(Query *self, FrtIndexReader *ir);
     void          (*extract_terms)(Query *self, FrtHashSet *terms);
     Similarity   *(*get_similarity)(Query *self, Searcher *searcher);
     char         *(*to_s)(Query *self, const char *field);
@@ -221,7 +221,7 @@ struct Query
     int           (*eq)(Query *self, Query *o);
     void          (*destroy_i)(Query *self);
     Weight       *(*create_weight_i)(Query *self, Searcher *searcher);
-    MatchVector  *(*get_matchv_i)(Query *self, MatchVector *mv, TermVector *tv);
+    MatchVector  *(*get_matchv_i)(Query *self, MatchVector *mv, FrtTermVector *tv);
     enum QUERY_TYPE type;
 };
 
@@ -492,7 +492,7 @@ typedef struct SpanQuery
 {
     Query        super;
     char        *field;
-    SpanEnum    *(*get_spans)(Query *self, IndexReader *ir);
+    SpanEnum    *(*get_spans)(Query *self, FrtIndexReader *ir);
     FrtHashSet     *(*get_terms)(Query *self);
 } SpanQuery;
 
@@ -725,7 +725,7 @@ extern Hit *fshq_pq_pop(FrtPriorityQueue *pq);
 extern void fshq_pq_down(FrtPriorityQueue *pq);
 extern void fshq_pq_insert(FrtPriorityQueue *pq, Hit *hit);
 extern void fshq_pq_destroy(FrtPriorityQueue *pq);
-extern FrtPriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
+extern FrtPriorityQueue *fshq_pq_new(int size, Sort *sort, FrtIndexReader *ir);
 extern Hit *fshq_pq_pop_fd(FrtPriorityQueue *pq);
 
 /***************************************************************************
@@ -767,7 +767,7 @@ struct Searcher
     int          (*doc_freq)(Searcher *self, const char *field,
                              const char *term);
     FrtDocument    *(*get_doc)(Searcher *self, int doc_num);
-    LazyDoc     *(*get_lazy_doc)(Searcher *self, int doc_num);
+    FrtLazyDoc     *(*get_lazy_doc)(Searcher *self, int doc_num);
     int          (*max_doc)(Searcher *self);
     Weight      *(*create_weight)(Searcher *self, Query *query);
     TopDocs     *(*search)(Searcher *self, Query *query, int first_doc,
@@ -808,7 +808,7 @@ struct Searcher
     Query       *(*rewrite)(Searcher *self, Query *original);
     Explanation *(*explain)(Searcher *self, Query *query, int doc_num);
     Explanation *(*explain_w)(Searcher *self, Weight *weight, int doc_num);
-    TermVector  *(*get_term_vector)(Searcher *self, const int doc_num,
+    FrtTermVector  *(*get_term_vector)(Searcher *self, const int doc_num,
                                     const char *field);
     Similarity  *(*get_similarity)(Searcher *self);
     void         (*close)(Searcher *self);
@@ -855,11 +855,11 @@ extern char **searcher_highlight(Searcher *self,
 
 typedef struct IndexSearcher {
     Searcher        super;
-    IndexReader    *ir;
+    FrtIndexReader    *ir;
     bool            close_ir : 1;
 } IndexSearcher;
 
-extern Searcher *isea_new(IndexReader *ir);
+extern Searcher *isea_new(FrtIndexReader *ir);
 extern int isea_doc_freq(Searcher *self, const char *field, const char *term);
 
 
@@ -893,7 +893,7 @@ extern Searcher *msea_new(Searcher **searchers, int s_cnt, bool close_subs);
 
 typedef struct QParser
 {
-    mutex_t mutex;
+    frt_mutex_t mutex;
     int def_slop;
     int max_clauses;
     int phq_pos_inc;

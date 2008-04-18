@@ -278,9 +278,9 @@ static void fi_check_params(int store, int index, int term_vector)
 }
 
 FieldInfo *fi_new(const char *name,
-                  enum StoreValues store,
-                  enum IndexValues index,
-                  enum TermVectorValues term_vector)
+                  StoreValues store,
+                  IndexValues index,
+                  TermVectorValues term_vector)
 {
     FieldInfo *fi = ALLOC(FieldInfo);
     fi_check_params(store, index, term_vector);

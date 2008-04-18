@@ -77,9 +77,9 @@ frb_fi_free(void *p)
 
 static void
 frb_fi_get_params(VALUE roptions,
-                  enum StoreValues *store,
-                  enum IndexValues *index,
-                  enum TermVectorValues *term_vector,
+                  StoreValues *store,
+                  IndexValues *index,
+                  TermVectorValues *term_vector,
                   float *boost)
 {
     VALUE v;
@@ -180,9 +180,9 @@ frb_fi_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions, rname;
     FieldInfo *fi;
-    enum StoreValues store = STORE_YES;
-    enum IndexValues index = INDEX_YES;
-    enum TermVectorValues term_vector = TERM_VECTOR_WITH_POSITIONS_OFFSETS;
+    StoreValues store = STORE_YES;
+    IndexValues index = INDEX_YES;
+    TermVectorValues term_vector = TERM_VECTOR_WITH_POSITIONS_OFFSETS;
     float boost = 1.0f;
 
     rb_scan_args(argc, argv, "11", &rname, &roptions);
@@ -421,9 +421,9 @@ frb_fis_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions;
     FieldInfos *fis;
-    enum StoreValues store = STORE_YES;
-    enum IndexValues index = INDEX_YES;
-    enum TermVectorValues term_vector = TERM_VECTOR_WITH_POSITIONS_OFFSETS;
+    StoreValues store = STORE_YES;
+    IndexValues index = INDEX_YES;
+    TermVectorValues term_vector = TERM_VECTOR_WITH_POSITIONS_OFFSETS;
     float boost;
 
     rb_scan_args(argc, argv, "01", &roptions);
@@ -528,9 +528,9 @@ frb_fis_add_field(int argc, VALUE *argv, VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     FieldInfo *fi;
-    enum StoreValues store = fis->store;
-    enum IndexValues index = fis->index;
-    enum TermVectorValues term_vector = fis->term_vector;
+    StoreValues store = fis->store;
+    IndexValues index = fis->index;
+    TermVectorValues term_vector = fis->term_vector;
     float boost = 1.0f;
     VALUE rname, roptions;
 

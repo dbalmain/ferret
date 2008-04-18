@@ -1,4 +1,4 @@
-map <F2> :source keymaps.vim<CR>
+map <F2> :source tools/keymaps.vim<CR>
 map <F12> :call <SID>FerretizeCurrent(expand("<cword>"))<CR>
 
 function! <SID>FerretizeCurrent(word)
@@ -18,7 +18,7 @@ function! <SID>FerretizeCurrent(word)
     normal 'tzt`s
     return
   endif
-  exec(":bufdo! %s/\\<".a:word."\\>/".replace_str."/gec | update")
+  exec(":bufdo! %s/\\<".a:word."\\>/".replace_str."/ge | update")
   exe ":silent! :b! ".bn
   normal 'tzt`s
 endfunction

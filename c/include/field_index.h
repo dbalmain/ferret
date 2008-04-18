@@ -21,7 +21,7 @@ typedef struct FrtFieldIndexClass {
     const char *type;
     void *(*create_index)(int size);
     void  (*destroy_index)(void *p);
-    void  (*handle_term)(void *index, TermDocEnum *tde, const char *text);
+    void  (*handle_term)(void *index, FrtTermDocEnum *tde, const char *text);
 } FrtFieldIndexClass;
 
 typedef struct FrtFieldIndex {
@@ -35,7 +35,7 @@ extern const FrtFieldIndexClass   FRT_FLOAT_FIELD_INDEX_CLASS;
 extern const FrtFieldIndexClass  FRT_STRING_FIELD_INDEX_CLASS;
 extern const FrtFieldIndexClass    FRT_BYTE_FIELD_INDEX_CLASS;
 
-extern FrtFieldIndex *frt_field_index_get(IndexReader *ir, const char *field,
+extern FrtFieldIndex *frt_field_index_get(FrtIndexReader *ir, const char *field,
                                    const FrtFieldIndexClass *klass);
 extern const char *frt_get_string_value(FrtFieldIndex *field_index, long doc_num);
 extern float frt_get_float_value(FrtFieldIndex *field_index, long doc_num);
