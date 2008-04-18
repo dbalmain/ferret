@@ -85,12 +85,12 @@ static char *position_in_mb( const unsigned long *orig_wc,
 static int mb_next_char(unsigned long *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
-    if ((num_bytes = (int)mbrtowc(wchr, s, MB_CUR_MAX, state)) < 0) {
+    if ((num_bytes = (int)mbrtowc((wchar_t*)wchr, s, MB_CUR_MAX, state)) < 0) {
         const char *t = s;
         do {
             t++;
             ZEROSET(state, mbstate_t);
-            num_bytes = (int)mbrtowc(wchr, t, MB_CUR_MAX, state);
+            num_bytes = (int)mbrtowc((wchar_t*)wchr, t, MB_CUR_MAX, state);
         } while ((num_bytes < 0) && (*t != 0));
         num_bytes = t - s;
         if (*t == 0) *wchr = 0;
@@ -125,7 +125,7 @@ static int wc_next_char(char *s, const unsigned long *wchr, mbstate_t *state)
  * +token_size+.
  */
 
-static void mb_to_wc(const char *in, size_t in_size,
+static void mb_to_wc(const char *in,
                      unsigned long *out, size_t out_size)
 {
     mbstate_t state;
@@ -133,14 +133,9 @@ static void mb_to_wc(const char *in, size_t in_size,
     unsigned long *out_p = out;
     ZEROSET(&state, mbstate_t);
 
-    while (in_p < (in + in_size) && out_p < (out + out_size/sizeof(*out)))
-    {
-        if (!*in_p)
-            break;
-
+    while (*in_p && out_p < (out + out_size/sizeof(*out))) {
         int n = mb_next_char(out_p, in_p, &state);
-        if (n < 0)
-        {
+        if (n < 0) {
             ++in_p;
             continue;
         }
@@ -179,7 +174,7 @@ static void wc_to_mb(char *out, size_t out_size, int *token_size,
     *token_size = out_p - out;
 }
 
-void frt_std_scan_mb(const char *in_mb, size_t in_mb_size,
+void frt_std_scan_mb(const char *in_mb,
                  char *out_mb, size_t out_mb_size,
                  char **start_mb, char **end_mb,
                  int *token_size)
@@ -191,7 +186,7 @@ void frt_std_scan_mb(const char *in_mb, size_t in_mb_size,
 
     unsigned long in_wc[4096] = {0};
     unsigned long out_wc[4096] = {0};
-    mb_to_wc(in_mb, in_mb_size, in_wc, sizeof(in_wc));
+    mb_to_wc(in_mb, in_wc, sizeof(in_wc));
 
     unsigned long *p = in_wc;
     unsigned long *pe = 0;
