@@ -8,27 +8,27 @@
 
 /****************************************************************************
  *
- * Token
+ * FerretToken
  *
  ****************************************************************************/
 
-typedef struct Token
+typedef struct FerretToken
 {
     char text[MAX_WORD_SIZE];
     int len;
     off_t start;
     off_t end;
     int pos_inc;
-} Token;
+} FerretToken;
 
-extern Token *tk_new();
-extern void tk_destroy(void *p);
-extern Token *tk_set(Token *tk, char *text, int tlen, off_t start, off_t end,
+extern FerretToken *frt_tk_new();
+extern void frt_tk_destroy(void *p);
+extern FerretToken *frt_tk_set(FerretToken *tk, char *text, int tlen, off_t start, off_t end,
                      int pos_inc);
-extern Token *tk_set_no_len(Token *tk, char *text, off_t start, off_t end,
+extern FerretToken *frt_tk_set_no_len(FerretToken *tk, char *text, off_t start, off_t end,
                             int pos_inc);
-extern int tk_eq(Token *tk1, Token *tk2);
-extern int tk_cmp(Token *tk1, Token *tk2);
+extern int frt_tk_eq(FerretToken *tk1, FerretToken *tk2);
+extern int frt_tk_cmp(FerretToken *tk1, FerretToken *tk2);
 
 /****************************************************************************
  *
@@ -42,7 +42,7 @@ struct TokenStream
 {
     char        *t;             /* ptr used to scan text */
     char        *text;
-    Token       *(*next)(TokenStream *ts);
+    FerretToken       *(*next)(TokenStream *ts);
     TokenStream *(*reset)(TokenStream *ts, char *text);
     TokenStream *(*clone_i)(TokenStream *ts);
     void         (*destroy_i)(TokenStream *ts);
@@ -56,7 +56,7 @@ extern TokenStream *ts_clone_size(TokenStream *orig_ts, size_t size);
 typedef struct CachedTokenStream
 {
     TokenStream super;
-    Token       token;
+    FerretToken       token;
 } CachedTokenStream;
 
 typedef struct MultiByteTokenStream
@@ -103,7 +103,7 @@ typedef struct HyphenFilter
     int start;
     int pos;
     int len;
-    Token *tk;
+    FerretToken *tk;
 } HyphenFilter;
 
 typedef struct StemFilter

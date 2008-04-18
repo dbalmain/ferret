@@ -15,6 +15,7 @@
 #define HashTable               FerretHashTable
 #define PriorityQueue           FerretPriorityQueue
 #define PriorityQueueInsertEnum FerretPriorityQueueInsertEnum
+#define Token                   FerretToken
 
 /* Functions */
 #define calloc            frt_calloc
@@ -66,5 +67,11 @@
 #define ptr_hash          frt_ptr_hash
 #define setprogname       frt_setprogname
 #define str_hash          frt_str_hash
+#define tk_cmp            frt_tk_cmp
+#define tk_destroy        frt_tk_destroy
+#define tk_eq             frt_tk_eq
+#define tk_new            frt_tk_new
+#define tk_set            frt_tk_set
+#define tk_set_no_len     frt_tk_set_no_len
 
 #endif
