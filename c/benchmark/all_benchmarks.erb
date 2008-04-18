@@ -1,0 +1,17 @@
+#ifndef ALL_BENCHMARKS_H
+#define ALL_BENCHMARKS_H
+
+#include "benchmark.h"
+
+<% benchmarks.each do |benchmark| %>
+void bm_<%= benchmark %>(BenchMark *bm);<% end %>
+
+const struct BenchMarkList
+{
+    void (*initialize)(BenchMark *benchmark);
+    char *name;
+} all_benchmarks[] = {
+<%= benchmarks.map{|benchmark| "    {bm_#{benchmark}, \"#{benchmark}\"}"}.join(",\n") %>
+};
+
+#endif
