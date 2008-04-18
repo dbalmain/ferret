@@ -4,7 +4,7 @@
 #include "threading.h"
 #include "internal.h"
 
-const char *const ERROR_TYPES[] = {
+static const char *const ERROR_TYPES[] = {
     "Body",
     "Finally",
     "Exception",

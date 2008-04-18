@@ -31,7 +31,7 @@ struct OutStreamMethods {
      * @param os self
      * @param src the characters to write to the output stream
      * @param len the number of characters to write
-     * @raise IO_ERROR if there is an error writing the characters
+     * @raise FRT_IO_ERROR if there is an error writing the characters
      */
     void (*flush_i)(struct OutStream *os, const frt_uchar *buf, int len);
 
@@ -40,7 +40,7 @@ struct OutStreamMethods {
      *
      * @param os self
      * @param pos the position to seek in the stream
-     * @raise IO_ERROR if there is an error seeking in the output stream
+     * @raise FRT_IO_ERROR if there is an error seeking in the output stream
      */
     void (*seek_i)(struct OutStream *os, off_t pos);
 
@@ -48,7 +48,7 @@ struct OutStreamMethods {
      * Close any resources used by the output stream +os+
      *
      * @param os self
-     * @raise IO_ERROR if there is an closing the file
+     * @raise FRT_IO_ERROR if there is an closing the file
      */
     void (*close_i)(struct OutStream *os);
 };
@@ -88,7 +88,7 @@ struct InStreamMethods
      * @param buf an array of characters which must be allocated with  at least
      *          +offset+ + +len+ bytes
      * @param len the number of bytes to read
-     * @raise IO_ERROR if there is an error reading from the input stream
+     * @raise FRT_IO_ERROR if there is an error reading from the input stream
      */
     void (*read_i)(struct InStream *is, frt_uchar *buf, int len);
 
@@ -97,7 +97,7 @@ struct InStreamMethods
      *
      * @param is self
      * @param pos the position to seek
-     * @raise IO_ERROR if the seek fails
+     * @raise FRT_IO_ERROR if the seek fails
      */
     void (*seek_i)(struct InStream *is, off_t pos);
 
@@ -105,7 +105,7 @@ struct InStreamMethods
      * Returns the length of the input stream +is+
      *
      * @param is self
-     * @raise IO_ERROR if there is an error getting the file length
+     * @raise FRT_IO_ERROR if there is an error getting the file length
      */
     off_t (*length_i)(struct InStream *is);
 
@@ -113,7 +113,7 @@ struct InStreamMethods
      * Close the resources allocated to the inputstream +is+
      *
      * @param is self
-     * @raise IO_ERROR if the close fails
+     * @raise FRT_IO_ERROR if the close fails
      */
     void (*close_i)(struct InStream *is);
 };
@@ -188,7 +188,7 @@ struct Store
      *
      * @param store self
      * @param filename the name of the file to create
-     * @raise IO_ERROR if the file cannot be created
+     * @raise FRT_IO_ERROR if the file cannot be created
      */
     void (*touch)(Store *store, const char *filename);
 
@@ -198,7 +198,7 @@ struct Store
      * @param store self
      * @param filename the name of the file to check for
      * @returns true if the file exists
-     * @raise IO_ERROR if there is an error checking for the files existance
+     * @raise FRT_IO_ERROR if there is an error checking for the files existance
      */
     int (*exists)(Store *store, const char *filename);
 
@@ -218,7 +218,7 @@ struct Store
      * @param store self
      * @param from the name of the file to rename
      * @param to the new name of the file
-     * @raise IO_ERROR if there is an error renaming the file
+     * @raise FRT_IO_ERROR if there is an error renaming the file
      */
     void (*rename)(Store *store, const char *from, const char *to);
 
@@ -227,7 +227,7 @@ struct Store
      *
      * @param store self
      * @return the number of files in the store
-     * @raise IO_ERROR if there is an error opening the directory
+     * @raise FRT_IO_ERROR if there is an error opening the directory
      */
     int (*count)(Store *store);
 
@@ -241,7 +241,7 @@ struct Store
      * @param func the function to call with each files name and the +arg+
      *   passed
      * @param arg the argument to pass to the function
-     * @raise IO_ERROR if there is an error opening the directory
+     * @raise FRT_IO_ERROR if there is an error opening the directory
      */
     void (*each)(Store *store, void (*func)(const char *fname, void *arg),
                   void *arg);
@@ -250,7 +250,7 @@ struct Store
      * Clear all the locks in the store.
      *
      * @param store self
-     * @raise IO_ERROR if there is an error opening the directory
+     * @raise FRT_IO_ERROR if there is an error opening the directory
      */
     void (*clear_locks)(Store *store);
 
@@ -258,7 +258,7 @@ struct Store
      * Clear all files from the store except the lock files.
      *
      * @param store self
-     * @raise IO_ERROR if there is an error deleting the files
+     * @raise FRT_IO_ERROR if there is an error deleting the files
      */
     void (*clear)(Store *store);
 
@@ -266,7 +266,7 @@ struct Store
      * Clear all files from the store including the lock files.
      *
      * @param store self
-     * @raise IO_ERROR if there is an error deleting the files
+     * @raise FRT_IO_ERROR if there is an error deleting the files
      */
     void (*clear_all)(Store *store);
 
@@ -276,7 +276,7 @@ struct Store
      * @param store self
      * @param the name of the file to check the length of
      * @return the length of the file in bytes
-     * @raise IO_ERROR if there is an error checking the file length
+     * @raise FRT_IO_ERROR if there is an error checking the file length
      */
     off_t (*length)(Store *store, const char *filename);
 
@@ -287,7 +287,7 @@ struct Store
      * @param store self
      * @param filename the name of the output stream
      * @return a newly allocated filestream
-     * @raise IO_ERROR if there is an error opening the output stream
+     * @raise FRT_IO_ERROR if there is an error opening the output stream
      *   resources
      */
     OutStream *(*new_output)(Store *store, const char *filename);
@@ -297,7 +297,7 @@ struct Store
      *
      * @param store self
      * @param filename the name of the input stream
-     * @raise FILE_NOT_FOUND_ERROR if the input stream cannot be opened
+     * @raise FRT_FILE_NOT_FOUND_ERROR if the input stream cannot be opened
      */
     InStream *(*open_input)(Store *store, const char *filename);
 
@@ -313,7 +313,7 @@ struct Store
      * Returns true if +lock+ is locked. To test if the file is locked:wq
      *
      * @param lock the lock to test
-     * @raise IO_ERROR if there is an error detecting the lock status
+     * @raise FRT_IO_ERROR if there is an error detecting the lock status
      */
     void (*close_lock_i)(Lock *lock);
 
@@ -423,7 +423,7 @@ extern void ram_destroy_buffer(OutStream *os);
  * @param lock     lock to be locked while func is called
  * @param func     function to call with the lock locked
  * @param arg      argument to pass to the function
- * @raise IO_ERROR if the lock is already locked
+ * @raise FRT_IO_ERROR if the lock is already locked
  * @see with_lock_name
  */
 extern void with_lock(Lock *lock, void (*func)(void *arg), void *arg);
@@ -438,7 +438,7 @@ extern void with_lock(Lock *lock, void (*func)(void *arg), void *arg);
  * @param lock_name name of the lock to open
  * @param func      function to call with the lock locked
  * @param arg       argument to pass to the function
- * @raise IO_ERROR  if the lock is already locked
+ * @raise FRT_IO_ERROR  if the lock is already locked
  * @see with_lock
  */
 extern void with_lock_name(Store *store, const char *lock_name,
@@ -480,7 +480,7 @@ extern off_t os_pos(OutStream *os);
  *
  * @param os the OutStream to set the position in
  * @param pos the new position in the OutStream
- * @raise IO_ERROR if there is a file-system IO error seeking the file
+ * @raise FRT_IO_ERROR if there is a file-system IO error seeking the file
  */
 extern void os_seek(OutStream *os, off_t new_pos);
 
@@ -488,7 +488,7 @@ extern void os_seek(OutStream *os, off_t new_pos);
  * Write a single byte +b+ to the OutStream +os+
  *
  * @param os the OutStream to write to @param b  the byte to write @raise
- * IO_ERROR if there is an IO error writing to the file-system
+ * FRT_IO_ERROR if there is an IO error writing to the file-system
  */
 extern void os_write_byte(OutStream *os, frt_uchar b);
 /**
@@ -497,7 +497,7 @@ extern void os_write_byte(OutStream *os, frt_uchar b);
  * @param os  the OutStream to write to
  * @param len the number of bytes to write
  * @param buf the buffer from which to get the bytes to write.
- * @raise IO_ERROR if there is an IO error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an IO error writing to the file-system
  */
 extern void os_write_bytes(OutStream *os, const frt_uchar *buf, int len);
 
@@ -506,7 +506,7 @@ extern void os_write_bytes(OutStream *os, const frt_uchar *buf, int len);
  *
  * @param os OutStream to write to
  * @param num the 32-bit signed integer to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_i32(OutStream *os, frt_i32 num);
 
@@ -516,7 +516,7 @@ extern void os_write_i32(OutStream *os, frt_i32 num);
  *
  * @param os OutStream to write to
  * @param num the 64-bit signed integer to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_i64(OutStream *os, frt_i64 num);
 
@@ -525,7 +525,7 @@ extern void os_write_i64(OutStream *os, frt_i64 num);
  *
  * @param os OutStream to write to
  * @param num the 32-bit unsigned integer to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_u32(OutStream *os, frt_u32 num);
 
@@ -534,7 +534,7 @@ extern void os_write_u32(OutStream *os, frt_u32 num);
  *
  * @param os OutStream to write to
  * @param num the 64-bit unsigned integer to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_u64(OutStream *os, frt_u64 num);
 
@@ -544,7 +544,7 @@ extern void os_write_u64(OutStream *os, frt_u64 num);
  *
  * @param os OutStream to write to
  * @param num the integer to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_vint(OutStream *os, register unsigned int num);
 
@@ -554,7 +554,7 @@ extern void os_write_vint(OutStream *os, register unsigned int num);
  *
  * @param os OutStream to write to
  * @param num the off_t to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_voff_t(OutStream *os, register off_t num);
 
@@ -564,7 +564,7 @@ extern void os_write_voff_t(OutStream *os, register off_t num);
  *
  * @param os OutStream to write to
  * @param num the 64bit int to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_vll(OutStream *os, register frt_u64 num);
 
@@ -575,7 +575,7 @@ extern void os_write_vll(OutStream *os, register frt_u64 num);
  *
  * @param os OutStream to write to
  * @param str the string to write
- * @raise IO_ERROR if there is an error writing to the file-system
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
 extern void os_write_string(OutStream *os, const char *str);
 /**
@@ -591,8 +591,8 @@ extern off_t is_pos(InStream *is);
  *
  * @param is the InStream to set the current position in
  * @param pos the position in InStream to seek
- * @raise IO_ERROR if there is a error seeking from the file-system
- * @raise EOF_ERROR if there is an attempt to seek past the end of the file
+ * @raise FRT_IO_ERROR if there is a error seeking from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to seek past the end of the file
  */
 extern void is_seek(InStream *is, off_t pos);
 
@@ -600,7 +600,7 @@ extern void is_seek(InStream *is, off_t pos);
  * Close the InStream freeing all allocated resources.
  *
  * @param is the InStream to close
- * @raise IO_ERROR if there is an error closing the associated file
+ * @raise FRT_IO_ERROR if there is an error closing the associated file
  */
 extern void is_close(InStream *is);
 
@@ -617,8 +617,8 @@ extern InStream *is_clone(InStream *is);
  *
  * @param is the Instream to read from
  * @return a single unsigned char read from the InStream +is+
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern FRT_INLINE frt_uchar is_read_byte(InStream *is);
 
@@ -629,8 +629,8 @@ extern FRT_INLINE frt_uchar is_read_byte(InStream *is);
  * @param buf    the buffer to read into, that is copy the bytes read to
  * @param len    the number of bytes to read
  * @return       the resultant buffer +buf+
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern frt_uchar *is_read_bytes(InStream *is, frt_uchar *buf, int len);
 
@@ -639,8 +639,8 @@ extern frt_uchar *is_read_bytes(InStream *is, frt_uchar *buf, int len);
  *
  * @param is the InStream to read from
  * @return a 32-bit unsigned integer
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern frt_i32 is_read_i32(InStream *is);
 
@@ -649,8 +649,8 @@ extern frt_i32 is_read_i32(InStream *is);
  *
  * @param is the InStream to read from
  * @return a 64-bit unsigned integer
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern frt_i64 is_read_i64(InStream *is);
 
@@ -659,8 +659,8 @@ extern frt_i64 is_read_i64(InStream *is);
  *
  * @param is the InStream to read from
  * @return a 32-bit signed integer
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern frt_u32 is_read_u32(InStream *is);
 
@@ -669,8 +669,8 @@ extern frt_u32 is_read_u32(InStream *is);
  *
  * @param is the InStream to read from
  * @return a 64-bit signed integer
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern frt_u64 is_read_u64(InStream *is);
 
@@ -680,8 +680,8 @@ extern frt_u64 is_read_u64(InStream *is);
  *
  * @param is the InStream to read from
  * @return an int
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern FRT_INLINE unsigned int is_read_vint(InStream *is);
 
@@ -692,8 +692,8 @@ extern FRT_INLINE unsigned int is_read_vint(InStream *is);
  *
  * @param is the InStream to read from
  * @param cnt the number of vints to skip
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern FRT_INLINE void is_skip_vints(InStream *is, register int cnt);
 
@@ -703,8 +703,8 @@ extern FRT_INLINE void is_skip_vints(InStream *is, register int cnt);
  *
  * @param is the InStream to read from
  * @return a off_t
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern FRT_INLINE off_t is_read_voff_t(InStream *is);
 
@@ -714,8 +714,8 @@ extern FRT_INLINE off_t is_read_voff_t(InStream *is);
  *
  * @param is the InStream to read from
  * @return a 64bit int
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern FRT_INLINE frt_u64 is_read_vll(InStream *is);
 
@@ -726,8 +726,8 @@ extern FRT_INLINE frt_u64 is_read_vll(InStream *is);
  *
  * @param is the InStream to read from
  * @return a null byte delimited string
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern char *is_read_string(InStream *is);
 
@@ -740,8 +740,8 @@ extern char *is_read_string(InStream *is);
  *
  * @param is the InStream to read from
  * @return a null byte delimited string
- * @raise IO_ERROR if there is a error reading from the file-system
- * @raise EOF_ERROR if there is an attempt to read past the end of the file
+ * @raise FRT_IO_ERROR if there is a error reading from the file-system
+ * @raise FRT_EOF_ERROR if there is an attempt to read past the end of the file
  */
 extern char *is_read_string_safe(InStream *is);
 
@@ -750,8 +750,8 @@ extern char *is_read_string_safe(InStream *is);
  *
  * @param is the InStream to read from
  * @param os the OutStream to write to
- * @raise IO_ERROR
- * @raise EOF_ERROR
+ * @raise FRT_IO_ERROR
+ * @raise FRT_EOF_ERROR
  */
 extern void is2os_copy_bytes(InStream *is, OutStream *os, int cnt);
 
@@ -760,8 +760,8 @@ extern void is2os_copy_bytes(InStream *is, OutStream *os, int cnt);
  *
  * @param is the InStream to read from
  * @param os the OutStream to write to
- * @raise IO_ERROR
- * @raise EOF_ERROR
+ * @raise FRT_IO_ERROR
+ * @raise FRT_EOF_ERROR
  */
 extern void is2os_copy_vints(InStream *is, OutStream *os, int cnt);
 

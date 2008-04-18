@@ -4,33 +4,33 @@
  * Exception Handling looks something like this;
  *
  * <pre>
- *   TRY
- *       RAISE(EXCEPTION, msg1);
+ *   FRT_TRY
+ *       FRT_RAISE(FRT_EXCEPTION, msg1);
  *       break;
- *   case EXCEPTION:
+ *   case FRT_EXCEPTION:
  *       // This should be called
  *       exception_handled = true;
- *       HANDLED();
+ *       FRT_HANDLED();
  *       break;
  *   default:
  *       // shouldn't enter here
  *       break;
- *   XFINALLY
+ *   FRT_XFINALLY
  *       // this code will always be run
  *       if (close_widget_one(arg) == 0) {
- *           RAISE(EXCEPTION_CODE, msg);
+ *           FRT_RAISE(EXCEPTION_CODE, msg);
  *       }
  *       // this code will also always run, even if the above exception is
  *       // raised
  *       if (close_widget_two(arg) == 0) {
- *           RAISE(EXCEPTION_CODE, msg);
+ *           FRT_RAISE(EXCEPTION_CODE, msg);
  *       }
- *   XENDTRY
+ *   FRT_XENDTRY
  * </pre>
  *
  * Basically exception handling uses the following macros;
  *
- * TRY
+ * FRT_TRY
  *   Sets up the exception handler and need be placed before any expected
  *   exceptions would be raised.
  *
@@ -39,33 +39,33 @@
  *   statement with the appropriate error code to catch Exceptions. Hence, if
  *   you want to catch all exceptions, use the default keyword.
  *
- * HANDLED
+ * FRT_HANDLED
  *   If you catch and handle an exception you need to explicitely call
- *   HANDLED(); or the exeption will be re-raised once the current exception
+ *   FRT_HANDLED(); or the exeption will be re-raised once the current exception
  *   handling context is left.
  *
- * case FINALLY:
+ * case FRT_FINALLY:
  *   Code in this block is always called. Use this block to close any
  *   resources opened in the Exception handling body.
  *
- * ENDTRY
+ * FRT_ENDTRY
  *   Must be placed at the end of all exception handling code.
  *
- * XFINALLY
- *   Similar to case FINALLY: except that it uses a fall through (ie, you must
+ * FRT_XFINALLY
+ *   Similar to case FRT_FINALLY: except that it uses a fall through (ie, you must
  *   not use a break before it) instead of a jump to get to it. This saves a
- *   jump. It must be used in combination with XENDTRY and must not have any
+ *   jump. It must be used in combination with FRT_XENDTRY and must not have any
  *   other catches. This is an optimization so should probably be not be used
  *   in most cases.
  *
- * XCATCHALL
- *   Like XFINALLY but the block is only called when an exception is raised.
- *   Must use in combination with XENDTRY and do not have any other FINALLY or
+ * FRT_XCATCHALL
+ *   Like FRT_XFINALLY but the block is only called when an exception is raised.
+ *   Must use in combination with FRT_XENDTRY and do not have any other FRT_FINALLY or
  *   catch block.
  *
- * XENDTRY
- *   Must use in combination with XFINALLY or XCATCHALL. Simply, it doesn't
- *   jump to FINALLY, making it more efficient.
+ * FRT_XENDTRY
+ *   Must use in combination with FRT_XFINALLY or FRT_XCATCHALL. Simply, it doesn't
+ *   jump to FRT_FINALLY, making it more efficient.
  */
 #ifndef FRT_EXCEPT_H
 #define FRT_EXCEPT_H
@@ -73,95 +73,95 @@
 #include <setjmp.h>
 #include "config.h"
 
-#define BODY 0
-#define FINALLY 1
-#define EXCEPTION 2
-#define FERRET_ERROR 2
-#define IO_ERROR 3
-#define FILE_NOT_FOUND_ERROR 4
-#define ARG_ERROR 5
-#define EOF_ERROR 6
-#define UNSUPPORTED_ERROR 7
-#define STATE_ERROR 8
-#define PARSE_ERROR 9
-#define MEM_ERROR 10
-#define INDEX_ERROR 11
-#define LOCK_ERROR 12
+#define FRT_BODY 0
+#define FRT_FINALLY 1
+#define FRT_EXCEPTION 2
+#define FRT_FERRET_ERROR 2
+#define FRT_IO_ERROR 3
+#define FRT_FILE_NOT_FOUND_ERROR 4
+#define FRT_ARG_ERROR 5
+#define FRT_EOF_ERROR 6
+#define FRT_UNSUPPORTED_ERROR 7
+#define FRT_STATE_ERROR 8
+#define FRT_PARSE_ERROR 9
+#define FRT_MEM_ERROR 10
+#define FRT_INDEX_ERROR 11
+#define FRT_LOCK_ERROR 12
 
-extern char *const UNSUPPORTED_ERROR_MSG;
-extern char *const EOF_ERROR_MSG;
+extern char *const FRT_UNSUPPORTED_ERROR_MSG;
+extern char *const FRT_EOF_ERROR_MSG;
 
-typedef struct xcontext_t
+typedef struct frt_xcontext_t
 {
     jmp_buf jbuf;
-    struct xcontext_t *next;
+    struct frt_xcontext_t *next;
     const char *msg;
     volatile int excode;
     unsigned int handled : 1;
     unsigned int in_finally : 1;
-} xcontext_t;
+} frt_xcontext_t;
 
-#define TRY\
+#define FRT_TRY\
   do {\
-    xcontext_t xcontext;\
-    xpush_context(&xcontext);\
+    frt_xcontext_t xcontext;\
+    frt_xpush_context(&xcontext);\
     switch (setjmp(xcontext.jbuf)) {\
-      case BODY:
+      case FRT_BODY:
 
 
-#define XENDTRY\
+#define FRT_XENDTRY\
     }\
-    xpop_context();\
+    frt_xpop_context();\
   } while (0);
 
-#define ENDTRY\
+#define FRT_ENDTRY\
     }\
     if (!xcontext.in_finally) {\
-      xpop_context();\
+      frt_xpop_context();\
       xcontext.in_finally = 1;\
-      longjmp(xcontext.jbuf, FINALLY);\
+      longjmp(xcontext.jbuf, FRT_FINALLY);\
     }\
   } while (0);
 
-#define RETURN_EARLY() xpop_context()
+#define FRT_RETURN_EARLY() frt_xpop_context()
 
 
-#define XFINALLY default: xcontext.in_finally = 1;
+#define FRT_XFINALLY default: xcontext.in_finally = 1;
 
-#define XCATCHALL break; default: xcontext.in_finally = 1;
+#define FRT_XCATCHALL break; default: xcontext.in_finally = 1;
 
-#define HANDLED() xcontext.handled = 1; /* true */
+#define FRT_HANDLED() xcontext.handled = 1; /* true */
 
-#define XMSG_BUFFER_SIZE 2048
+#define FRT_XMSG_BUFFER_SIZE 2048
 
 #ifdef FRT_HAS_ISO_VARARGS
-# define RAISE(excode, ...) do {\
-  snprintf(xmsg_buffer, XMSG_BUFFER_SIZE, __VA_ARGS__);\
-  snprintf(xmsg_buffer_final, XMSG_BUFFER_SIZE,\
+# define FRT_RAISE(excode, ...) do {\
+  snprintf(frt_xmsg_buffer, FRT_XMSG_BUFFER_SIZE, __VA_ARGS__);\
+  snprintf(frt_xmsg_buffer_final, FRT_XMSG_BUFFER_SIZE,\
           "Error occured in %s:%d - %s\n\t%s\n",\
-          __FILE__, __LINE__, __func__, xmsg_buffer);\
-  xraise(excode, xmsg_buffer_final);\
+          __FILE__, __LINE__, __func__, frt_xmsg_buffer);\
+  frt_xraise(excode, frt_xmsg_buffer_final);\
 } while (0)
 #elif defined(FRT_HAS_GNUC_VARARGS)
-# define RAISE(excode, args...) do {\
-  snprintf(xmsg_buffer, XMSG_BUFFER_SIZE, ##args);\
-  snprintf(xmsg_buffer_final, XMSG_BUFFER_SIZE,\
+# define FRT_RAISE(excode, args...) do {\
+  snprintf(frt_xmsg_buffer, FRT_XMSG_BUFFER_SIZE, ##args);\
+  snprintf(frt_xmsg_buffer_final, FRT_XMSG_BUFFER_SIZE,\
           "Error occured in %s:%d - %s\n\t%s\n",\
-          __FILE__, __LINE__, __func__, xmsg_buffer);\
-  xraise(excode, xmsg_buffer_final);\
+          __FILE__, __LINE__, __func__, frt_xmsg_buffer);\
+  frt_xraise(excode, frt_xmsg_buffer_final);\
 } while (0)
 
 #else
-extern void RAISE(int excode, const char *fmt, ...);
+extern void FRT_RAISE(int excode, const char *fmt, ...);
 #endif
-#define RAISE_HELL() RAISE(FERRET_ERROR, "Hell")
+#define RAISE_HELL() FRT_RAISE(FRT_FERRET_ERROR, "Hell")
 
 
-extern void xraise(int excode, const char *const msg);
-extern void xpush_context(xcontext_t *context);
-extern void xpop_context();
+extern void frt_xraise(int excode, const char *const msg);
+extern void frt_xpush_context(frt_xcontext_t *context);
+extern void frt_xpop_context();
 
-extern char xmsg_buffer[XMSG_BUFFER_SIZE];
-extern char xmsg_buffer_final[XMSG_BUFFER_SIZE];
+extern char frt_xmsg_buffer[FRT_XMSG_BUFFER_SIZE];
+extern char frt_xmsg_buffer_final[FRT_XMSG_BUFFER_SIZE];
 
 #endif
