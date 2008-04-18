@@ -84,6 +84,7 @@ void FRT_VEXIT(const char *err_type, const char *fmt, va_list args)
     }
 
     fprintf(EXCEPTION_STREAM, "\n");
+    print_stacktrace();
     if (x_abort_on_exception) {
         exit(2);                 /* conventional value for failed execution */
     }
