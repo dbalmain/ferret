@@ -55,6 +55,8 @@ OBJS          = obj_map(SRCS)
 TEST_SRCS     = FileList['test/*.c']
 TEST_OBJS     = obj_map(TEST_SRCS)
 
+FileUtils.mkdir_p(HOME / 'test/testdir/store')
+
 ###
 # Dependency Tree
 ###
@@ -95,23 +97,34 @@ CLOBBER.include([ '*.a',
                   'search_bench',
                   'sort_bench'])
 
-task :default => ["testall"]
+task :default => :test
 
-rule '.o' => lambda {|obj| OBJ_MAP[obj]} do |t|
-  qsh "gcc #{CFLAGS} -c -o #{t.name} #{t.source}", "Compiling #{t.name}"
+desc "Run all tests"
+task :test => 'testall' do
+    sh "./testall"
 end
 
-task :defaults => "libferret.a"
+namespace :build do
+  desc "Build the Ferret library 'libferret.a'"
+  task :lib => 'libferret.a'
 
-file "libferret.a" => [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten do |t|
-  qsh "#{AR} -cru #{t.name} #{t.prerequisites}", "Generating library: #{t.name}"
+  file "libferret.a" => [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten do |t|
+    qsh "#{AR} -cru #{t.name} #{t.prerequisites}", "Generating library: #{t.name}"
+  end
+
+  desc "Build the test binary 'testall'"
+  task :tests => 'testall'
+
+  file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
+    qsh "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall", "Building tests"
+  end
+
+  rule '.o' => lambda {|obj| OBJ_MAP[obj]} do |t|
+    qsh "gcc #{CFLAGS} -c -o #{t.name} #{t.source}", "Compiling #{t.name}"
+  end
 end
 
-file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
-  qsh "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall", "Building tests"
-  sh "./testall"
+desc "Look for TODO and FIXME tags in the code"
+task :todo do
+  FileList['**/*.rb', 'ext/*.[ch]'].egrep /[#*].*(FIXME|TODO|TBD)/i
 end
-  
-# File dependencies go here ...
-file 'main.o' => ['main.c', 'greet.h']
-file 'greet.o' => ['greet.c']
