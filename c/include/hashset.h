@@ -4,156 +4,156 @@
 #include "hash.h"
 #include "global.h"
 
-#define HS_MIN_SIZE 4
-typedef struct HashSetEntry {
+#define FRT_HS_MIN_SIZE 4
+typedef struct FerretHashSetEntry {
     void *elem;
-    struct HashSetEntry *next;
-    struct HashSetEntry *prev;
-} HashSetEntry;
+    struct FerretHashSetEntry *next;
+    struct FerretHashSetEntry *prev;
+} FerretHashSetEntry;
 
-typedef struct HashSet
+typedef struct FerretHashSet
 {
-    /* the number of elements in the HashSet */
+    /* the number of elements in the instance */
     int size;
 
-    /* the first element in the list of elements in the HashSet. The elements
+    /* the first element in the list of elements in the FerretHashSet. The elements
      * will be listed in the order they were added and can be iterated over by
      * following the ->next pointer */
-    HashSetEntry *first;
+    FerretHashSetEntry *first;
 
-    /* the last element in the list of elements in the HashSet. This is used
+    /* the last element in the list of elements in the FerretHashSet. This is used
      * internally to add elements to the list. */
-    HashSetEntry *last;
+    FerretHashSetEntry *last;
 
     /* HashTable used internally */
     FerretHashTable *ht;
 
-    /* Internal: Frees elements added to the HashSet. Should never be NULL */
+    /* Internal: Frees elements added to the FerretHashSet. Should never be NULL */
     frt_free_ft free_elem_i;
-} HashSet;
+} FerretHashSet;
 
 /**
- * Create a new HashSet. The function will allocate a HashSet Struct setting
+ * Create a new FerretHashSet. The function will allocate a FerretHashSet Struct setting
  * the functions used to hash the objects it will contain and the eq function.
  * This should be used for non-string types.
  *
- * @param hash function to hash objects added to the HashSet
+ * @param hash function to hash objects added to the FerretHashSet
  * @param eq function to determine whether two items are equal
- * @param free_elem function used to free elements as added to the HashSet
- *   when the HashSet if destroyed or duplicate elements are added to the Set
- * @return a newly allocated HashSet structure
+ * @param free_elem function used to free elements as added to the FerretHashSet
+ *   when the FerretHashSet if destroyed or duplicate elements are added to the Set
+ * @return a newly allocated FerretHashSet structure
  */
-extern HashSet *hs_new(frt_hash_ft hash_func,
-                             frt_eq_ft eq_func,
-                             frt_free_ft free_func);
+extern FerretHashSet *frt_hs_new(frt_hash_ft hash_func,
+                                 frt_eq_ft eq_func,
+                                 frt_free_ft free_func);
 
 /**
- * Create a new HashSet specifically for strings. This will create a HashSet
- * as if you used hs_new with the standard string hash and eq functions.
+ * Create a new FerretHashSet specifically for strings. This will create a FerretHashSet
+ * as if you used frt_hs_new with the standard string hash and eq functions.
  *
- * @param free_elem function used to free elements as added to the HashSet
- *   when the HashSet if destroyed or duplicate elements are added to the Set
- * @return a newly allocated HashSet structure
+ * @param free_elem function used to free elements as added to the FerretHashSet
+ *   when the FerretHashSet if destroyed or duplicate elements are added to the Set
+ * @return a newly allocated FerretHashSet structure
  */
-extern HashSet *hs_new_str(frt_free_ft free_func);
+extern FerretHashSet *frt_hs_new_str(frt_free_ft free_func);
 
 /**
- * Free the memory allocated by the HashSet, but don't free the elements added
- * to the HashSet. If you'd like to free everything in the HashSet you should
- * use hs_destroy
+ * Free the memory allocated by the FerretHashSet, but don't free the elements added
+ * to the FerretHashSet. If you'd like to free everything in the FerretHashSet you should
+ * use frt_hs_destroy
  *
- * @param hs the HashSet to free
+ * @param hs the FerretHashSet to free
  */
-extern void hs_free(HashSet *self);
+extern void frt_hs_free(FerretHashSet *self);
 
 /**
- * Destroy the HashSet including all elements added to the HashSet. If you'd
- * like to free the memory allocated to the HashSet without touching the
- * elements in the HashSet then use hs_free
+ * Destroy the FerretHashSet including all elements added to the FerretHashSet. If you'd
+ * like to free the memory allocated to the FerretHashSet without touching the
+ * elements in the FerretHashSet then use frt_hs_free
  *
- * @param hs the HashSet to destroy
+ * @param hs the FerretHashSet to destroy
  */
-extern void hs_destroy(HashSet *self);
+extern void frt_hs_destroy(FerretHashSet *self);
 
 /**
  * WARNING: this function may destroy some elements if you add them to a
- * HashSet were equivalent elements already exist, depending on how free_elem
+ * FerretHashSet were equivalent elements already exist, depending on how free_elem
  * was set.
  *
- * Add the element to the HashSet whether or not it was already in the
- * HashSet.
+ * Add the element to the FerretHashSet whether or not it was already in the
+ * FerretHashSet.
  *
  * When a element is added to the HashTable where it already exists, free_elem
  * is called on it, ie the element you tried to add might get destroyed.
  *
- * @param hs the HashSet to add the element to
- * @param elem the element to add to the HashSet
+ * @param hs the FerretHashSet to add the element to
+ * @param elem the element to add to the FerretHashSet
  * @return one of three values;
  *   <pre>
- *     HASH_KEY_DOES_NOT_EXIST  the element was not already in the HashSet.
+ *     HASH_KEY_DOES_NOT_EXIST  the element was not already in the FerretHashSet.
  *                              This value is equal to 0 or false
  *     HASH_KEY_SAME            the element was identical (same memory
  *                              pointer) to an existing element so no freeing
  *                              was done
  *     HASH_KEY_EQUAL           the element was equal to an element already in
- *                              the HashSet so the new_elem was freed if
+ *                              the FerretHashSet so the new_elem was freed if
  *                              free_elem was set
  *   </pre>
  */
-extern FerretHashKeyStatus hs_add(HashSet *self, void *elem);
+extern FerretHashKeyStatus frt_hs_add(FerretHashSet *self, void *elem);
 
 /**
- * Add element to the HashSet. If the element already existed in the HashSet
+ * Add element to the FerretHashSet. If the element already existed in the FerretHashSet
  * and the new element was equal but not the same (same pointer/memory) then
  * don't add the element and return false, otherwise return true.
  *
- * @param hs the HashSet to add the element to
- * @param elem the element to add to the HashSet
+ * @param hs the FerretHashSet to add the element to
+ * @param elem the element to add to the FerretHashSet
  * @return true if the element was successfully added or false otherwise
  */
-extern int hs_add_safe(HashSet *self, void *elem);
+extern int frt_hs_add_safe(FerretHashSet *self, void *elem);
 
 /**
- * Delete the element from the HashSet. Returns true if the item was
+ * Delete the element from the FerretHashSet. Returns true if the item was
  * successfully deleted or false if the element never existed.
  *
- * @param hs the HashSet to delete from
+ * @param hs the FerretHashSet to delete from
  * @param elem the element to delete
  * @return true if the element was deleted or false if the element never
  *   existed
  */
-extern int hs_del(HashSet *self, void *elem);
+extern int frt_hs_del(FerretHashSet *self, void *elem);
 
 /**
- * Remove an item from the HashSet without actually freeing the item. This
+ * Remove an item from the FerretHashSet without actually freeing the item. This
  * function should return the item itself so that it can be freed later if
  * necessary.
  *
- * @param hs the HashSet to remove the element from.
+ * @param hs the FerretHashSet to remove the element from.
  * @param elem the element to remove
  * @param the element that was removed or NULL otherwise
  */
-extern void *hs_rem(HashSet *self, void *elem);
+extern void *frt_hs_rem(FerretHashSet *self, void *elem);
 
 /**
  * Check if the element exists and return the appropriate value described
  * bellow.
  *
- * @param hs the HashSet to check in
+ * @param hs the FerretHashSet to check in
  * @param elem the element to check for
  * @return one of the following values
  * <pre>
- *     HASH_KEY_DOES_NOT_EXIST  the element was not already in the HashSet.
+ *     HASH_KEY_DOES_NOT_EXIST  the element was not already in the FerretHashSet.
  *                              This value is equal to 0 or false
  *     HASH_KEY_SAME            the element was identical (same memory
  *                              pointer) to an existing element so no freeing
  *                              was done
  *     HASH_KEY_EQUAL           the element was equal to an element already in
- *                              the HashSet so the new_elem was freed if
+ *                              the FerretHashSet so the new_elem was freed if
  *                              free_elem was set
  *   </pre>
  */
-extern FerretHashKeyStatus hs_exists(HashSet *self, void *elem);
+extern FerretHashKeyStatus frt_hs_exists(FerretHashSet *self, void *elem);
 
 /**
  * Merge two HashSets. When a merge is done the merger (self) HashTable is
@@ -161,34 +161,34 @@ extern FerretHashKeyStatus hs_exists(HashSet *self, void *elem);
  * not found in merger (self) will be added to self, otherwise they will be
  * destroyed.
  *
- * @param self the HashSet to merge into
+ * @param self the FerretHashSet to merge into
  * @param other HastSet to be merged into self
- * @return the merged HashSet
+ * @return the merged FerretHashSet
  */
-extern HashSet *hs_merge(HashSet *self, HashSet *other);
+extern FerretHashSet *frt_hs_merge(FerretHashSet *self, FerretHashSet *other);
 
 /**
  * Return the original version of +elem+. So if you allocate two elements
- * which are equal and add the first to the HashSet, calling this function
- * with the second element will return the first element from the HashSet.
+ * which are equal and add the first to the FerretHashSet, calling this function
+ * with the second element will return the first element from the FerretHashSet.
  */
-extern void *hs_orig(HashSet *self, void *elem);
+extern void *frt_hs_orig(FerretHashSet *self, void *elem);
 
 /**
- * Clear all elements from the HashSet. If free_elem was set then use it to
+ * Clear all elements from the FerretHashSet. If free_elem was set then use it to
  * free all elements as they are cleared. After the method is called, the
  * HashSets size will be 0.
  *
- * @param self the HashSet to clear
+ * @param self the FerretHashSet to clear
  */
-extern void hs_clear(HashSet *self);
+extern void frt_hs_clear(FerretHashSet *self);
 
-/* TODO: finish these functions.
-int hs_osf(HashSet *hs, void *elem);
-HashSet hs_or(HashSet *hs1, HashSet *h2);
-HashSet hs_excl_or(HashSet *hs1, HashSet *h2);
-HashSet hs_and(HashSet *hs1, HashSet *h2);
-HashSet hs_mask(HashSet *hs1, HashSet *h2);
+/* TODO: finish implementing these functions FerretHashSet
+int hs_osf(FerretHashSet *hs, void *elem);
+FerretHashSet hs_or(FerretHashSet *hs1, FerretHashSet *h2);
+FerretHashSet hs_excl_or(FerretHashSet *hs1, FerretHashSet *h2);
+FerretHashSet hs_and(FerretHashSet *hs1, FerretHashSet *h2);
+FerretHashSet hs_mask(FerretHashSet *hs1, FerretHashSet *h2);
 */
 
 #endif

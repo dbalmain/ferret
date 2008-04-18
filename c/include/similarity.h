@@ -10,7 +10,7 @@ typedef struct Searcher Searcher;
  ****************************************************************************/
 
 #define term_set_new() \
-    hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy)
+    frt_hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy)
 
 typedef struct Term
 {

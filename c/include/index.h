@@ -716,7 +716,7 @@ struct Deleter
 {
     Store         *store;
     SegmentInfos  *sis;
-    HashSet       *pending;
+    FerretHashSet       *pending;
 };
 
 extern Deleter *deleter_new(SegmentInfos *sis, Store *store);
@@ -955,7 +955,7 @@ typedef struct CWFileEntry
 typedef struct CompoundWriter {
     Store *store;
     const char *name;
-    HashSet *ids;
+    FerretHashSet *ids;
     CWFileEntry *file_entries;
 } CompoundWriter;
 

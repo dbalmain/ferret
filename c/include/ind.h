@@ -20,7 +20,7 @@ typedef struct Index
     IndexWriter *iw;
     Searcher *sea;
     QParser *qp;
-    HashSet *key;
+    FerretHashSet *key;
     char *id_field;
     char *def_field;
     /* for IndexWriter */
@@ -30,7 +30,7 @@ typedef struct Index
 } Index;
 
 extern Index *index_new(Store *store, Analyzer *analyzer,
-                        HashSet *def_fields, bool create);
+                        FerretHashSet *def_fields, bool create);
 extern void index_destroy(Index *self);
 extern void index_flush(Index *self);
 extern int index_size(Index *self);

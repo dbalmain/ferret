@@ -2,6 +2,7 @@
 #include "testhelper.h"
 #include "search.h"
 #include "ind.h"
+#include "internal.h"
 
 extern char *num_to_str(int num);
 

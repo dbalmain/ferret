@@ -164,6 +164,33 @@ namespace :build do
         "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
 
+  file 'include/internal.h' =>
+        FileList['include/*.h'].exclude('include/internal.h') do |t|
+    # read in all of the data removing the initial masking defines
+    data = t.prerequisites.map {|f| File.read(f).sub(/^.*\n.*\n/, '')}.join
+    File.open(t.name, 'w') do |f|
+      f.write "#ifndef FRT_INTERNAL_H\n"
+      f.write "#define FRT_INTERNAL_H\n"
+      f.write "\n"
+
+      [
+        ['Constants',  'FRT_'   ],
+        ['Types',      'Ferret' ],
+        ['Functions',  'frt_'   ]
+      ].each do |header, re|
+        names = data.scan(/#{re}[A-Za-z_]+/).sort.uniq
+        next unless names and names.size > 0
+        f.write "/* #{header} */\n"
+        maxlen = names.map{|name| name.size}.max - re.size
+        names.each do |name|
+          f.write "#define %-#{maxlen}s #{name}\n" % name.sub(/^#{re}/, '')
+        end
+        f.write "\n"
+      end
+      f.write "#endif\n"
+    end
+  end
+
   rule '.o' => lambda {|obj| get_dep_srcs(FILE2SRC[obj])} do |t|
     qsh "Compiling #{t.name}",
         "gcc #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"

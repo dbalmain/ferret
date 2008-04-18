@@ -181,7 +181,7 @@ struct Store
 #else
     mode_t file_mode;
 #endif
-    HashSet *locks;
+    FerretHashSet *locks;
 
     /**
      * Create the file +filename+ in the +store+.

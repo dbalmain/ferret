@@ -1,5 +1,6 @@
 #include "test.h"
 #include "search.h"
+#include "internal.h"
 
 static char *f1 = "f1";
 static char *f2 = "f2";

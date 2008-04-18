@@ -1,6 +1,7 @@
 #include "ind.h"
 #include "array.h"
 #include <string.h>
+#include "internal.h"
 
 
 static const char * NON_UNIQUE_KEY_ERROR_MSG = "Tried to use a key that was not unique";

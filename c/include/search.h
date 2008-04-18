@@ -214,7 +214,7 @@ struct Query
     float         boost;
     Weight        *weight;
     Query        *(*rewrite)(Query *self, IndexReader *ir);
-    void          (*extract_terms)(Query *self, HashSet *terms);
+    void          (*extract_terms)(Query *self, FerretHashSet *terms);
     Similarity   *(*get_similarity)(Query *self, Searcher *searcher);
     char         *(*to_s)(Query *self, const char *field);
     unsigned long (*hash)(Query *self);
@@ -493,7 +493,7 @@ typedef struct SpanQuery
     Query        super;
     char        *field;
     SpanEnum    *(*get_spans)(Query *self, IndexReader *ir);
-    HashSet     *(*get_terms)(Query *self);
+    FerretHashSet     *(*get_terms)(Query *self);
 } SpanQuery;
 
 /***************************************************************************
@@ -903,11 +903,11 @@ typedef struct QParser
     char *dynbuf;
     int  buf_index;
     FerretHashTable *field_cache;
-    HashSet *fields;
-    HashSet *fields_buf;
-    HashSet *def_fields;
-    HashSet *all_fields;
-    HashSet *tokenized_fields;
+    FerretHashSet *fields;
+    FerretHashSet *fields_buf;
+    FerretHashSet *def_fields;
+    FerretHashSet *all_fields;
+    FerretHashSet *tokenized_fields;
     Analyzer *analyzer;
     FerretHashTable *ts_cache;
     Query *result;
@@ -924,8 +924,8 @@ typedef struct QParser
     bool use_typed_range_query : 1;
 } QParser;
 
-extern QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
-                       HashSet *tokenized_fields, Analyzer *analyzer);
+extern QParser *qp_new(FerretHashSet *all_fields, FerretHashSet *def_fields,
+                       FerretHashSet *tokenized_fields, Analyzer *analyzer);
 extern void qp_destroy(QParser *self);
 extern Query *qp_parse(QParser *self, char *qstr);
 extern char *qp_clean_str(char *str);
