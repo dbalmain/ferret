@@ -908,10 +908,10 @@ typedef struct QParser
     FerretHashSet *def_fields;
     FerretHashSet *all_fields;
     FerretHashSet *tokenized_fields;
-    Analyzer *analyzer;
+    FerretAnalyzer *analyzer;
     FerretHashTable *ts_cache;
     Query *result;
-    TokenStream *non_tokenizer;
+    FerretTokenStream *non_tokenizer;
     bool or_default : 1;
     bool wild_lower : 1;
     bool clean_str : 1;
@@ -925,7 +925,7 @@ typedef struct QParser
 } QParser;
 
 extern QParser *qp_new(FerretHashSet *all_fields, FerretHashSet *def_fields,
-                       FerretHashSet *tokenized_fields, Analyzer *analyzer);
+                       FerretHashSet *tokenized_fields, FerretAnalyzer *analyzer);
 extern void qp_destroy(QParser *self);
 extern Query *qp_parse(QParser *self, char *qstr);
 extern char *qp_clean_str(char *str);

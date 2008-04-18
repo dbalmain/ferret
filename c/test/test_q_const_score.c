@@ -1,5 +1,6 @@
 #include "test.h"
 #include "search.h"
+#include "internal.h"
 
 static const char *num = "num";
 

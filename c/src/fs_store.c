@@ -360,7 +360,7 @@ static int fs_lock_obtain(Lock *lock)
                    S_IRUSR | S_IWUSR)) < 0) && (trys > 0)) {
 
         /* sleep for 10 milliseconds */
-        frt_micro_sleep(10000);
+        micro_sleep(10000);
         trys--;
     }
     if (f >= 0) {

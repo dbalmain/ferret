@@ -1,5 +1,6 @@
 #include "store.h"
 #include "test_store.h"
+#include "internal.h"
 
 /**
  * Test a FileSystem store

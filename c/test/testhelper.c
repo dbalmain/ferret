@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "internal.h"
 
 const char *test_word_list[] = {
     "desirous", "hollowness's", "camp's", "Senegal", "broadcaster's",

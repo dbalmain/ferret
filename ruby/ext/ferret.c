@@ -91,24 +91,24 @@ object_del2(void *key, const char *file, int line)
     h_del(object_map, key);
 }
 
-void frt_gc_mark(void *key)
+void frb_gc_mark(void *key)
 {
     VALUE val = (VALUE)h_get(object_map, key);
     if (val)
         rb_gc_mark(val);
 }
 
-VALUE frt_data_alloc(VALUE klass)
+VALUE frb_data_alloc(VALUE klass)
 {
     return Frt_Make_Struct(klass);
 }
 
-void frt_deref_free(void *p)
+void frb_deref_free(void *p)
 {
     object_del(p);
 }
 
-void frt_thread_once(int *once_control, void (*init_routine) (void))
+void frb_thread_once(int *once_control, void (*init_routine) (void))
 {
     if (*once_control) {
         init_routine();
@@ -116,27 +116,27 @@ void frt_thread_once(int *once_control, void (*init_routine) (void))
     }
 }
 
-void frt_thread_key_create(thread_key_t *key, void (*destr_function)(void *))
+void frb_thread_key_create(thread_key_t *key, void (*destr_function)(void *))
 {
     *key = h_new(&value_hash, &value_eq, NULL, destr_function);
 }
 
-void frt_thread_key_delete(thread_key_t key)
+void frb_thread_key_delete(thread_key_t key)
 {
     h_destroy(key);
 }
 
-void frt_thread_setspecific(thread_key_t key, const void *pointer)
+void frb_thread_setspecific(thread_key_t key, const void *pointer)
 {
     h_set(key, (void *)rb_thread_current(), (void *)pointer);
 }
 
-void *frt_thread_getspecific(thread_key_t key)
+void *frb_thread_getspecific(thread_key_t key)
 {
     return h_get(key, (void *)rb_thread_current());
 }
 
-void frt_create_dir(VALUE rpath)
+void frb_create_dir(VALUE rpath)
 {
     VALUE mFileUtils;
     rb_require("fileutils");
@@ -144,7 +144,7 @@ void frt_create_dir(VALUE rpath)
     rb_funcall(mFileUtils, id_mkdir_p, 1, rpath);
 }
 
-VALUE frt_hs_to_rb_ary(HashSet *hs)
+VALUE frb_hs_to_rb_ary(HashSet *hs)
 {
     HashSetEntry *hse;
     VALUE ary = rb_ary_new();
@@ -155,7 +155,7 @@ VALUE frt_hs_to_rb_ary(HashSet *hs)
     return ary;
 }
 
-void *frt_rb_data_ptr(VALUE val)
+void *frb_rb_data_ptr(VALUE val)
 {
     Check_Type(val, T_DATA);
     return DATA_PTR(val);
@@ -178,7 +178,7 @@ nstrdup(VALUE rstr)
 }
 
 char *
-frt_field(VALUE rfield)
+frb_field(VALUE rfield)
 {
     switch (TYPE(rfield)) {
         case T_SYMBOL:
@@ -218,7 +218,7 @@ json_concat_string(char *s, char *field)
 
 static VALUE error_map;
 
-VALUE frt_get_error(const char *err_type)
+VALUE frb_get_error(const char *err_type)
 {
     VALUE error_class;
     if (Qnil != (error_class = rb_hash_aref(error_map, rb_intern(err_type)))) {
@@ -253,11 +253,11 @@ void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
     }
 
     snprintf(buf + so_far, FRT_BUF_SIZ - so_far, "\n");
-    rb_raise(frt_get_error(err_type), buf);
+    rb_raise(frb_get_error(err_type), buf);
 }
 
 #ifdef FRT_HAS_VARARGS
-void frt_rb_raise(const char *file, int line_num, const char *func,
+void frb_rb_raise(const char *file, int line_num, const char *func,
                   const char *err_type, const char *fmt, ...)
 #else
 void FRT_EXIT(const char *err_type, const char *fmt, ...)
@@ -281,7 +281,7 @@ void FRT_EXIT(const char *err_type, const char *fmt, ...)
 static ID id_field;
 static ID id_text;
 
-VALUE frt_get_term(const char *field, const char *text)
+VALUE frb_get_term(const char *field, const char *text)
 {
     return rb_struct_new(cTerm,
                          ID2SYM(rb_intern(field)),
@@ -289,7 +289,7 @@ VALUE frt_get_term(const char *field, const char *text)
                          NULL);
 }
 
-static VALUE frt_term_to_s(VALUE self)
+static VALUE frb_term_to_s(VALUE self)
 {
     VALUE rstr;
     VALUE rfield = rb_funcall(self, id_field, 0); 
@@ -316,7 +316,7 @@ void Init_Term(void)
     cTerm = rb_struct_define(term_class, "field", "text", NULL);
     rb_set_class_path(cTerm, mFerret, term_class);
     rb_const_set(mFerret, rb_intern(term_class), cTerm);
-    rb_define_method(cTerm, "to_s", frt_term_to_s, 0);
+    rb_define_method(cTerm, "to_s", frb_term_to_s, 0);
     id_field = rb_intern("field");
     id_text = rb_intern("text");
 }

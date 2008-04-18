@@ -5,10 +5,11 @@
 #include "lang.h"
 #include "except.h"
 #include "global.h"
+#include "internal.h"
 
 
-/* frt_malloc: malloc and report if error */
-extern void *frt_malloc(size_t size)
+/* emalloc: malloc and report if error */
+void *emalloc(size_t size)
 {
     void *p = malloc(size);
 
@@ -19,8 +20,8 @@ extern void *frt_malloc(size_t size)
     return p;
 }
 
-/* frt_calloc: malloc, zeroset and report if error */
-extern void *frt_calloc(size_t size)
+/* ecalloc: malloc, zeroset and report if error */
+void *ecalloc(size_t size)
 {
     void *p = calloc(1, size);
 
@@ -31,8 +32,8 @@ extern void *frt_calloc(size_t size)
     return p;
 }
 
-/* frt_realloc: realloc and report if error */
-extern void *frt_realloc(void *ptr, size_t size)
+/* erealloc: realloc and report if error */
+void *erealloc(void *ptr, size_t size)
 {
     void *p = realloc(ptr, size);
 
@@ -50,7 +51,7 @@ extern int unlink(const char *path);
 #  include <unistd.h>
 #endif
 
-extern void frt_micro_sleep(const int micro_seconds)
+void micro_sleep(const int micro_seconds)
 {
 #ifdef POSH_OS_WIN32
     Sleep(micro_seconds / 1000);
@@ -59,16 +60,16 @@ extern void frt_micro_sleep(const int micro_seconds)
 #endif
 }
 
-/* frt_exit: print error message and exit */
+/* xexit: print error message and exit */
 # ifdef FRT_HAS_VARARGS
-extern void frt_vexit(const char *file, int line_num, const char *func,
+void vexit(const char *file, int line_num, const char *func,
                       const char *err_type, const char *fmt, va_list args)
 # else
-extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args)
+void FRT_VEXIT(const char *err_type, const char *fmt, va_list args)
 # endif
 {
     fflush(stdout);
-    fprintf(EXCEPTION_STREAM, "\n%s: ", frt_progname());
+    fprintf(EXCEPTION_STREAM, "\n%s: ", progname());
 
 # ifdef FRT_HAS_VARARGS
     fprintf(EXCEPTION_STREAM, "%s occured at <%s>:%d in %s\n",
@@ -93,16 +94,16 @@ extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args)
 
 
 # ifdef FRT_HAS_VARARGS
-extern void frt_exit(const char *file, int line_num, const char *func,
+void xexit(const char *file, int line_num, const char *func,
               const char *err_type, const char *fmt, ...)
 # else
-extern void FRT_EXIT(const char *err_type, const char *fmt, ...)
+void XEXIT(const char *err_type, const char *fmt, ...)
 # endif
 {
     va_list args;
     va_start(args, fmt);
 # ifdef FRT_HAS_VARARGS
-    frt_vexit(file, line_num, func, err_type, fmt, args);
+    vexit(file, line_num, func, err_type, fmt, args);
 # else
     FRT_VEXIT(err_type, fmt, args);
 # endif

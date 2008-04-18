@@ -1,25 +1,26 @@
 #include "test.h"
 #include "lang.h"
+#include "internal.h"
 
 typedef void *(*alloc_ft)(size_t);
 
 static void huge_emalloc(void *data)
 {
     (void)data;
-    frt_malloc((size_t)-1);
+    emalloc((size_t)-1);
 }
 
 static void huge_ecalloc(void *data)
 {
     (void)data;
-    frt_calloc((size_t)-1);
+    ecalloc((size_t)-1);
 }
 
 static void huge_erealloc(void *data)
 {
     char * p = NULL;
     (void)data;
-    frt_realloc(p, (size_t)-1);
+    erealloc(p, (size_t)-1);
 }
 
 static void test_emalloc(tst_case *tc, void *data)
@@ -27,7 +28,7 @@ static void test_emalloc(tst_case *tc, void *data)
     char *p;
     (void)data; /* suppress warning */
 
-    p = frt_malloc(100);
+    p = emalloc(100);
     Apnotnull(p);
     free(p);
 
@@ -40,7 +41,7 @@ static void test_ecalloc(tst_case *tc, void *data)
     char *p;
     (void)data; /* suppress warning */
 
-    p = frt_calloc(100);
+    p = ecalloc(100);
     Apnotnull(p);
     for (i = 0; i < 100; ++i) {
         Aiequal(p[i], 0);
@@ -55,7 +56,7 @@ static void test_erealloc(tst_case *tc, void *data)
     char *p = NULL;
     (void)data; /* suppress warning */
 
-    p = frt_realloc(p, 100);
+    p = erealloc(p, 100);
     Apnotnull(p);
     free(p);
 

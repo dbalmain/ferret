@@ -1,5 +1,6 @@
 #include "helper.h"
 #include "test.h"
+#include "internal.h"
 
 static void test_hlp_string_diff(tst_case *tc, void *data)
 {

@@ -1,5 +1,6 @@
 #include "bitvector.h"
 #include <string.h>
+#include "internal.h"
 
 BitVector *bv_new_capa(int capa)
 {

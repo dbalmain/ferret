@@ -1,7 +1,6 @@
 #include "ferret.h"
 #include "index.h"
 #include <st.h>
-#include "internal.h"
 
 VALUE mIndex;
 
@@ -59,9 +58,9 @@ static ID id_fld_num_map;
 static ID id_field_num;
 static ID id_boost;
 
-extern void frt_set_term(VALUE rterm, Term *t);
-extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
-extern VALUE frt_get_analyzer(Analyzer *a);
+extern void frb_set_term(VALUE rterm, Term *t);
+extern Analyzer *frb_get_cwrapped_analyzer(VALUE ranalyzer);
+extern VALUE frb_get_analyzer(Analyzer *a);
 
 /****************************************************************************
  *
@@ -70,14 +69,14 @@ extern VALUE frt_get_analyzer(Analyzer *a);
  ****************************************************************************/
 
 static void
-frt_fi_free(void *p)
+frb_fi_free(void *p)
 {
     object_del(p);
     fi_deref((FieldInfo *)p);
 }
 
 static void
-frt_fi_get_params(VALUE roptions,
+frb_fi_get_params(VALUE roptions,
                   enum StoreValues *store,
                   enum IndexValues *index,
                   enum TermVectorValues *term_vector,
@@ -152,14 +151,14 @@ frt_fi_get_params(VALUE roptions,
 }
 
 static VALUE
-frt_get_field_info(FieldInfo *fi)
+frb_get_field_info(FieldInfo *fi)
 {
 
     VALUE rfi = Qnil;
     if (fi) {
         rfi = object_get(fi);
         if (rfi == Qnil) {
-            rfi = Data_Wrap_Struct(cFieldInfo, NULL, &frt_fi_free, fi);
+            rfi = Data_Wrap_Struct(cFieldInfo, NULL, &frb_fi_free, fi);
             REF(fi);
             object_add(fi, rfi);
         }
@@ -177,7 +176,7 @@ frt_get_field_info(FieldInfo *fi)
  *  information on these properties. 
  */
 static VALUE
-frt_fi_init(int argc, VALUE *argv, VALUE self)
+frb_fi_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions, rname;
     FieldInfo *fi;
@@ -188,11 +187,11 @@ frt_fi_init(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", &rname, &roptions);
     if (argc > 1) {
-        frt_fi_get_params(roptions, &store, &index, &term_vector, &boost);
+        frb_fi_get_params(roptions, &store, &index, &term_vector, &boost);
     }
-    fi = fi_new(frt_field(rname), store, index, term_vector);
+    fi = fi_new(frb_field(rname), store, index, term_vector);
     fi->boost = boost;
-    Frt_Wrap_Struct(self, NULL, &frt_fi_free, fi);
+    Frt_Wrap_Struct(self, NULL, &frb_fi_free, fi);
     object_add(fi, self);
     return self;
 }
@@ -204,7 +203,7 @@ frt_fi_init(int argc, VALUE *argv, VALUE self)
  *  Return the name of the field
  */
 static VALUE
-frt_fi_name(VALUE self)
+frb_fi_name(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return ID2SYM(rb_intern(fi->name));
@@ -217,7 +216,7 @@ frt_fi_name(VALUE self)
  *  Return true if the field is stored in the index.
  */
 static VALUE
-frt_fi_is_stored(VALUE self)
+frb_fi_is_stored(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_is_stored(fi) ? Qtrue : Qfalse;
@@ -230,7 +229,7 @@ frt_fi_is_stored(VALUE self)
  *  Return true if the field is stored in the index in compressed format.
  */
 static VALUE
-frt_fi_is_compressed(VALUE self)
+frb_fi_is_compressed(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_is_compressed(fi) ? Qtrue : Qfalse;
@@ -243,7 +242,7 @@ frt_fi_is_compressed(VALUE self)
  *  Return true if the field is indexed, ie searchable in the index.
  */
 static VALUE
-frt_fi_is_indexed(VALUE self)
+frb_fi_is_indexed(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_is_indexed(fi) ? Qtrue : Qfalse;
@@ -261,7 +260,7 @@ frt_fi_is_indexed(VALUE self)
  *  A field can only be tokenized if it is indexed.
  */
 static VALUE
-frt_fi_is_tokenized(VALUE self)
+frb_fi_is_tokenized(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_is_tokenized(fi) ? Qtrue : Qfalse;
@@ -279,7 +278,7 @@ frt_fi_is_tokenized(VALUE self)
  *  large number of documents.
  */
 static VALUE
-frt_fi_omit_norms(VALUE self)
+frb_fi_omit_norms(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_omit_norms(fi) ? Qtrue : Qfalse;
@@ -292,7 +291,7 @@ frt_fi_omit_norms(VALUE self)
  *  Return true if the term-vectors are stored for this field.
  */
 static VALUE
-frt_fi_store_term_vector(VALUE self)
+frb_fi_store_term_vector(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_store_term_vector(fi) ? Qtrue : Qfalse;
@@ -305,7 +304,7 @@ frt_fi_store_term_vector(VALUE self)
  *  Return true if positions are stored with the term-vectors for this field.
  */
 static VALUE
-frt_fi_store_positions(VALUE self)
+frb_fi_store_positions(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_store_positions(fi) ? Qtrue : Qfalse;
@@ -318,7 +317,7 @@ frt_fi_store_positions(VALUE self)
  *  Return true if offsets are stored with the term-vectors for this field.
  */
 static VALUE
-frt_fi_store_offsets(VALUE self)
+frb_fi_store_offsets(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_store_offsets(fi) ? Qtrue : Qfalse;
@@ -333,7 +332,7 @@ frt_fi_store_offsets(VALUE self)
  *    fi.indexed? and not fi.omit_norms?
  */
 static VALUE
-frt_fi_has_norms(VALUE self)
+frb_fi_has_norms(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return fi_has_norms(fi) ? Qtrue : Qfalse;
@@ -346,7 +345,7 @@ frt_fi_has_norms(VALUE self)
  *  Return the default boost for this field
  */
 static VALUE
-frt_fi_boost(VALUE self)
+frb_fi_boost(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     return rb_float_new((double)fi->boost);
@@ -359,7 +358,7 @@ frt_fi_boost(VALUE self)
  *  Return a string representation of the FieldInfo object.
  */
 static VALUE
-frt_fi_to_s(VALUE self)
+frb_fi_to_s(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
     char *fi_s = fi_to_s(fi);
@@ -375,32 +374,32 @@ frt_fi_to_s(VALUE self)
  ****************************************************************************/
 
 static void
-frt_fis_free(void *p)
+frb_fis_free(void *p)
 {
     object_del(p);
     fis_deref((FieldInfos *)p);
 }
 
 static void
-frt_fis_mark(void *p)
+frb_fis_mark(void *p)
 {
     int i;
     FieldInfos *fis = (FieldInfos *)p;
 
     for (i = 0; i < fis->size; i++) {
-        frt_gc_mark(fis->fields[i]);
+        frb_gc_mark(fis->fields[i]);
     }
 }
 
 static VALUE
-frt_get_field_infos(FieldInfos *fis)
+frb_get_field_infos(FieldInfos *fis)
 {
 
     VALUE rfis = Qnil;
     if (fis) {
         rfis = object_get(fis);
         if (rfis == Qnil) {
-            rfis = Data_Wrap_Struct(cFieldInfos, &frt_fis_mark, &frt_fis_free,
+            rfis = Data_Wrap_Struct(cFieldInfos, &frb_fis_mark, &frb_fis_free,
                                     fis);
             REF(fis);
             object_add(fis, rfis);
@@ -418,7 +417,7 @@ frt_get_field_infos(FieldInfos *fis)
  *  property values.
  */
 static VALUE
-frt_fis_init(int argc, VALUE *argv, VALUE self)
+frb_fis_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions;
     FieldInfos *fis;
@@ -429,10 +428,10 @@ frt_fis_init(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &roptions);
     if (argc > 0) {
-        frt_fi_get_params(roptions, &store, &index, &term_vector, &boost);
+        frb_fi_get_params(roptions, &store, &index, &term_vector, &boost);
     }
     fis = fis_new(store, index, term_vector);
-    Frt_Wrap_Struct(self, &frt_fis_mark, &frt_fis_free, fis);
+    Frt_Wrap_Struct(self, &frb_fis_mark, &frb_fis_free, fis);
     object_add(fis, self);
     return self;
 }
@@ -445,14 +444,14 @@ frt_fis_init(int argc, VALUE *argv, VALUE self)
  *  object.
  */
 static VALUE
-frt_fis_to_a(VALUE self)
+frb_fis_to_a(VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     VALUE rary = rb_ary_new();
     int i;
 
     for (i = 0; i < fis->size; i++) {
-        rb_ary_push(rary, frt_get_field_info(fis->fields[i]));
+        rb_ary_push(rary, frb_get_field_info(fis->fields[i]));
     }
     return rary;
 }
@@ -470,7 +469,7 @@ frt_fis_to_a(VALUE self)
  *    fi = fis[2]
  */
 static VALUE
-frt_fis_get(VALUE self, VALUE ridx)
+frb_fis_get(VALUE self, VALUE ridx)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     VALUE rfi = Qnil;
@@ -482,14 +481,14 @@ frt_fis_get(VALUE self, VALUE ridx)
                 rb_raise(rb_eArgError, "index of %d is out of range (0..%d)\n",
                          index, fis->size - 1);
             }
-            rfi = frt_get_field_info(fis->fields[index]);
+            rfi = frb_get_field_info(fis->fields[index]);
             break;
                        }
         case T_SYMBOL:
-            rfi = frt_get_field_info(fis_get_field(fis, frt_field(ridx)));
+            rfi = frb_get_field_info(fis_get_field(fis, frb_field(ridx)));
             break;
         case T_STRING:
-            rfi = frt_get_field_info(fis_get_field(fis, StringValuePtr(ridx)));
+            rfi = frb_get_field_info(fis_get_field(fis, StringValuePtr(ridx)));
             break;
         default:
             rb_raise(rb_eArgError, "Can't index FieldInfos with %s",
@@ -508,10 +507,10 @@ frt_fis_get(VALUE self, VALUE ridx)
  *  possible.
  */
 static VALUE
-frt_fis_add(VALUE self, VALUE rfi)
+frb_fis_add(VALUE self, VALUE rfi)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
-    FieldInfo *fi = (FieldInfo *)frt_rb_data_ptr(rfi);
+    FieldInfo *fi = (FieldInfo *)frb_rb_data_ptr(rfi);
     fis_add_field(fis, fi);
     REF(fi);
     return self;
@@ -525,7 +524,7 @@ frt_fis_add(VALUE self, VALUE rfi)
  *  of the available properties.
  */
 static VALUE
-frt_fis_add_field(int argc, VALUE *argv, VALUE self)
+frb_fis_add_field(int argc, VALUE *argv, VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     FieldInfo *fi;
@@ -537,9 +536,9 @@ frt_fis_add_field(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", &rname, &roptions);
     if (argc > 1) {
-        frt_fi_get_params(roptions, &store, &index, &term_vector, &boost);
+        frb_fi_get_params(roptions, &store, &index, &term_vector, &boost);
     }
-    fi = fi_new(frt_field(rname), store, index, term_vector);
+    fi = fi_new(frb_field(rname), store, index, term_vector);
     fi->boost = boost;
     fis_add_field(fis, fi);
     return self;
@@ -552,13 +551,13 @@ frt_fis_add_field(int argc, VALUE *argv, VALUE self)
  *  Iterate through the FieldInfo objects.
  */
 static VALUE
-frt_fis_each(VALUE self)
+frb_fis_each(VALUE self)
 {
     int i;
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
 
     for (i = 0; i < fis->size; i++) {
-        rb_yield(frt_get_field_info(fis->fields[i]));
+        rb_yield(frb_get_field_info(fis->fields[i]));
     }
     return self;
 }
@@ -570,7 +569,7 @@ frt_fis_each(VALUE self)
  *  Return a string representation of the FieldInfos object.
  */
 static VALUE
-frt_fis_to_s(VALUE self)
+frb_fis_to_s(VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     char *fis_s = fis_to_s(fis);
@@ -586,7 +585,7 @@ frt_fis_to_s(VALUE self)
  *  Return the number of fields in the FieldInfos object.
  */
 static VALUE
-frt_fis_size(VALUE self)
+frb_fis_size(VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     return INT2FIX(fis->size);
@@ -603,7 +602,7 @@ frt_fis_size(VALUE self)
  *  directory and overwritten by the new index.
  */
 static VALUE
-frt_fis_create_index(VALUE self, VALUE rdir)
+frb_fis_create_index(VALUE self, VALUE rdir)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     Store *store = NULL;
@@ -612,7 +611,7 @@ frt_fis_create_index(VALUE self, VALUE rdir)
         REF(store);
     } else {
         StringValue(rdir);
-        frt_create_dir(rdir);
+        frb_create_dir(rdir);
         store = open_fs_store(rs2s(rdir));
     }
     index_create(store, fis);
@@ -628,7 +627,7 @@ frt_fis_create_index(VALUE self, VALUE rdir)
  *  index.
  */
 static VALUE
-frt_fis_get_fields(VALUE self)
+frb_fis_get_fields(VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     VALUE rfield_names = rb_ary_new();
@@ -647,7 +646,7 @@ frt_fis_get_fields(VALUE self)
  *  in the index.
  */
 static VALUE
-frt_fis_get_tk_fields(VALUE self)
+frb_fis_get_tk_fields(VALUE self)
 {
     FieldInfos *fis = (FieldInfos *)DATA_PTR(self);
     VALUE rfield_names = rb_ary_new();
@@ -666,14 +665,14 @@ frt_fis_get_tk_fields(VALUE self)
  ****************************************************************************/
 
 static void
-frt_te_free(void *p)
+frb_te_free(void *p)
 {
     TermEnum *te = (TermEnum *)p;
     te->close(te);
 }
 
 static VALUE
-frt_te_get_set_term(VALUE self, const char *term)
+frb_te_get_set_term(VALUE self, const char *term)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
     VALUE str = term ? rb_str_new(term, te->curr_term_len) : Qnil;
@@ -682,12 +681,12 @@ frt_te_get_set_term(VALUE self, const char *term)
 }
 
 static VALUE
-frt_get_te(VALUE rir, TermEnum *te)
+frb_get_te(VALUE rir, TermEnum *te)
 {
     VALUE self = Qnil;
     if (te != NULL) {
-        self = Data_Wrap_Struct(cTermEnum, NULL, &frt_te_free, te);
-        frt_te_get_set_term(self, te->curr_term);
+        self = Data_Wrap_Struct(cTermEnum, NULL, &frb_te_free, te);
+        frb_te_get_set_term(self, te->curr_term);
         rb_ivar_set(self, id_fld_num_map, rb_ivar_get(rir, id_fld_num_map));
     }
     return self;
@@ -700,10 +699,10 @@ frt_get_te(VALUE rir, TermEnum *te)
  *  Returns the next term in the enumeration or nil otherwise.
  */
 static VALUE
-frt_te_next(VALUE self)
+frb_te_next(VALUE self)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
-    return frt_te_get_set_term(self, te->next(te));
+    return frb_te_get_set_term(self, te->next(te));
 }
 
 /*
@@ -714,7 +713,7 @@ frt_te_next(VALUE self)
  *  be called after a successful call to TermEnum#next.
  */
 static VALUE
-frt_te_term(VALUE self)
+frb_te_term(VALUE self)
 {
     return rb_ivar_get(self, id_term);
 }
@@ -728,7 +727,7 @@ frt_te_term(VALUE self)
  *  should only be called after a successful call to TermEnum#next.
  */
 static VALUE
-frt_te_doc_freq(VALUE self)
+frb_te_doc_freq(VALUE self)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
     return INT2FIX(te->curr_ti.doc_freq);
@@ -746,10 +745,10 @@ frt_te_doc_freq(VALUE self)
  *  Returns the first term greater than or equal to +target+
  */
 static VALUE
-frt_te_skip_to(VALUE self, VALUE rterm)
+frb_te_skip_to(VALUE self, VALUE rterm)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
-    return frt_te_get_set_term(self, te->skip_to(te, frt_field(rterm)));
+    return frb_te_get_set_term(self, te->skip_to(te, frb_field(rterm)));
 }
 
 /*
@@ -760,7 +759,7 @@ frt_te_skip_to(VALUE self, VALUE rterm)
  *  document frequency. 
  */
 static VALUE
-frt_te_each(VALUE self)
+frb_te_each(VALUE self)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
     char *term;
@@ -795,7 +794,7 @@ frt_te_each(VALUE self)
  *    end
  */
 static VALUE
-frt_te_set_field(VALUE self, VALUE rfield)
+frb_te_set_field(VALUE self, VALUE rfield)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
     int field_num = 0;
@@ -807,7 +806,7 @@ frt_te_set_field(VALUE self, VALUE rfield)
     } else {
         Check_Type(rfield, T_SYMBOL);
         rb_raise(rb_eArgError, "field %s doesn't exist in the index",
-                 frt_field(rfield));
+                 frb_field(rfield));
     }
     te->set_field(te, field_num);
 
@@ -837,7 +836,7 @@ frt_te_set_field(VALUE self, VALUE rfield)
  *    # ]
  */
 static VALUE
-frt_te_to_json(int argc, VALUE *argv, VALUE self)
+frb_te_to_json(int argc, VALUE *argv, VALUE self)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
     VALUE rjson;
@@ -901,16 +900,16 @@ frt_te_to_json(int argc, VALUE *argv, VALUE self)
  ****************************************************************************/
 
 static void
-frt_tde_free(void *p)
+frb_tde_free(void *p)
 {
     TermDocEnum *tde = (TermDocEnum *)p;
     tde->close(tde);
 }
 
 static VALUE
-frt_get_tde(VALUE rir, TermDocEnum *tde)
+frb_get_tde(VALUE rir, TermDocEnum *tde)
 {
-    VALUE self = Data_Wrap_Struct(cTermDocEnum, NULL, &frt_tde_free, tde);
+    VALUE self = Data_Wrap_Struct(cTermDocEnum, NULL, &frb_tde_free, tde);
     rb_ivar_set(self, id_fld_num_map, rb_ivar_get(rir, id_fld_num_map));
     return self;
 }
@@ -924,7 +923,7 @@ frt_get_tde(VALUE rir, TermDocEnum *tde)
  *  this particular term.
  */
 static VALUE
-frt_tde_seek(VALUE self, VALUE rfield, VALUE rterm)
+frb_tde_seek(VALUE self, VALUE rfield, VALUE rterm)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     char *term;
@@ -936,7 +935,7 @@ frt_tde_seek(VALUE self, VALUE rfield, VALUE rterm)
         field_num = FIX2INT(rfnum);
     } else {
         rb_raise(rb_eArgError, "field %s doesn't exist in the index",
-                 frt_field(rfield));
+                 frb_field(rfield));
     }
     tde->seek(tde, field_num, term);
     return self;
@@ -955,10 +954,10 @@ frt_tde_seek(VALUE self, VALUE rfield, VALUE rterm)
  *  a large performance improvement.
  */
 static VALUE
-frt_tde_seek_te(VALUE self, VALUE rterm_enum)
+frb_tde_seek_te(VALUE self, VALUE rterm_enum)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
-    TermEnum *te = (TermEnum *)frt_rb_data_ptr(rterm_enum);
+    TermEnum *te = (TermEnum *)frb_rb_data_ptr(rterm_enum);
     tde->seek_te(tde, te);
     return self;
 }
@@ -970,7 +969,7 @@ frt_tde_seek_te(VALUE self, VALUE rterm_enum)
  *  Returns the current document number pointed to by the +term_doc_enum+.
  */
 static VALUE
-frt_tde_doc(VALUE self)
+frb_tde_doc(VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     return INT2FIX(tde->doc_num(tde));
@@ -984,7 +983,7 @@ frt_tde_doc(VALUE self)
  *  +term_doc_enum+.
  */
 static VALUE
-frt_tde_freq(VALUE self)
+frb_tde_freq(VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     return INT2FIX(tde->freq(tde));
@@ -998,7 +997,7 @@ frt_tde_freq(VALUE self)
  *  there is another document or +false+ otherwise.
  */
 static VALUE
-frt_tde_next(VALUE self)
+frb_tde_next(VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     return tde->next(tde) ? Qtrue : Qfalse;
@@ -1012,7 +1011,7 @@ frt_tde_next(VALUE self)
  *  there is another document or +false+ otherwise.
  */
 static VALUE
-frt_tde_next_position(VALUE self)
+frb_tde_next_position(VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     int pos;
@@ -1036,7 +1035,7 @@ frt_tde_next_position(VALUE self)
  *  call +#each+ again then you should call +#seek+ again too.
  */
 static VALUE
-frt_tde_each(VALUE self)
+frb_tde_each(VALUE self)
 {
     int doc_cnt = 0;
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
@@ -1080,7 +1079,7 @@ frt_tde_each(VALUE self)
  *    # ]
  */
 static VALUE
-frt_tde_to_json(int argc, VALUE *argv, VALUE self)
+frb_tde_to_json(int argc, VALUE *argv, VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     VALUE rjson;
@@ -1154,7 +1153,7 @@ frt_tde_to_json(int argc, VALUE *argv, VALUE self)
  *    end
  */
 static VALUE
-frt_tde_each_position(VALUE self)
+frb_tde_each_position(VALUE self)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     int pos;
@@ -1177,7 +1176,7 @@ frt_tde_each_position(VALUE self)
  *  a document >= +target+.
  */
 static VALUE
-frt_tde_skip_to(VALUE self, VALUE rtarget)
+frb_tde_skip_to(VALUE self, VALUE rtarget)
 {
     TermDocEnum *tde = (TermDocEnum *)DATA_PTR(self);
     return tde->skip_to(tde, FIX2INT(rtarget)) ? Qtrue : Qfalse;
@@ -1190,7 +1189,7 @@ frt_tde_skip_to(VALUE self, VALUE rtarget)
  ****************************************************************************/
 
 static VALUE
-frt_get_tv_offsets(Offset *offset)
+frb_get_tv_offsets(Offset *offset)
 {
     return rb_struct_new(cTVOffsets,
                          ULL2NUM((f_u64)offset->start),
@@ -1205,7 +1204,7 @@ frt_get_tv_offsets(Offset *offset)
  ****************************************************************************/
 
 static VALUE
-frt_get_tv_term(TVTerm *tv_term)
+frb_get_tv_term(TVTerm *tv_term)
 {
     int i;
     const int freq = tv_term->freq;
@@ -1232,7 +1231,7 @@ frt_get_tv_term(TVTerm *tv_term)
  ****************************************************************************/
 
 static VALUE
-frt_get_tv(TermVector *tv)
+frb_get_tv(TermVector *tv)
 {
     int i;
     TVTerm *terms = tv->terms;
@@ -1245,7 +1244,7 @@ frt_get_tv(TermVector *tv)
     rterms = rb_ary_new2(t_cnt);
     rts = RARRAY(rterms)->ptr;
     for (i = 0; i < t_cnt; i++) {
-        rts[i] = frt_get_tv_term(&terms[i]);
+        rts[i] = frb_get_tv_term(&terms[i]);
         RARRAY(rterms)->len++;
     }
 
@@ -1255,7 +1254,7 @@ frt_get_tv(TermVector *tv)
         roffsets = rb_ary_new2(o_cnt);
         ros = RARRAY(roffsets)->ptr;
         for (i = 0; i < o_cnt; i++) {
-            ros[i] = frt_get_tv_offsets(&offsets[i]);
+            ros[i] = frb_get_tv_offsets(&offsets[i]);
             RARRAY(roffsets)->len++;
         }
     }
@@ -1270,18 +1269,18 @@ frt_get_tv(TermVector *tv)
  ****************************************************************************/
 
 void
-frt_iw_free(void *p)
+frb_iw_free(void *p)
 {
     iw_close((IndexWriter *)p);
 }
 
 void
-frt_iw_mark(void *p)
+frb_iw_mark(void *p)
 {
     IndexWriter *iw = (IndexWriter *)p;
-    frt_gc_mark(iw->analyzer);
-    frt_gc_mark(iw->store);
-    frt_gc_mark(iw->fis);
+    frb_gc_mark(iw->analyzer);
+    frb_gc_mark(iw->store);
+    frb_gc_mark(iw->fis);
 }
 
 /*
@@ -1293,7 +1292,7 @@ frt_iw_mark(void *p)
  *  automatically if not called explicitly.
  */
 static VALUE
-frt_iw_close(VALUE self)
+frb_iw_close(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     Frt_Unwrap_Struct(self);
@@ -1326,7 +1325,7 @@ frt_iw_close(VALUE self)
  * See IndexWriter for more options.
  */
 static VALUE
-frt_iw_init(int argc, VALUE *argv, VALUE self)
+frb_iw_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions, rval;
     bool create = false;
@@ -1345,7 +1344,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
             store = DATA_PTR(rval);
         } else if ((rval = rb_hash_aref(roptions, sym_path)) != Qnil) {
             StringValue(rval);
-            frt_create_dir(rval);
+            frb_create_dir(rval);
             store = open_fs_store(rs2s(rval));
             DEREF(store);
         }
@@ -1362,7 +1361,7 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
             : true;
 
         if ((rval = rb_hash_aref(roptions, sym_analyzer)) != Qnil) {
-            analyzer = frt_get_cwrapped_analyzer(rval);
+            analyzer = frb_get_cwrapped_analyzer(rval);
         }
 
         create = RTEST(rb_hash_aref(roptions, sym_create));
@@ -1400,11 +1399,11 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
 
     iw = iw_open(store, analyzer, &config);
 
-    Frt_Wrap_Struct(self, &frt_iw_mark, &frt_iw_free, iw);
+    Frt_Wrap_Struct(self, &frb_iw_mark, &frb_iw_free, iw);
 
     if (rb_block_given_p()) {
         rb_yield(self);
-        frt_iw_close(self);
+        frb_iw_close(self);
         return Qnil;
     } else {
         return self;
@@ -1419,14 +1418,14 @@ frt_iw_init(int argc, VALUE *argv, VALUE self)
  *  taken into account until the IndexWriter has been committed.
  */
 static VALUE
-frt_iw_get_doc_count(VALUE self)
+frb_iw_get_doc_count(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw_doc_count(iw));
 }
 
 static int
-frt_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
+frb_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
 {
     if (key == Qundef) {
         return ST_CONTINUE;
@@ -1480,7 +1479,7 @@ frt_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
 }
 
 static Document *
-frt_get_doc(VALUE rdoc)
+frb_get_doc(VALUE rdoc)
 {
     VALUE val;
     Document *doc = doc_new();
@@ -1492,7 +1491,7 @@ frt_get_doc(VALUE rdoc)
 
     switch (TYPE(rdoc)) {
         case T_HASH:
-            rb_hash_foreach(rdoc, frt_hash_to_doc_i, (VALUE)doc);
+            rb_hash_foreach(rdoc, frb_hash_to_doc_i, (VALUE)doc);
             break;
         case T_ARRAY:
             {
@@ -1535,10 +1534,10 @@ frt_get_doc(VALUE rdoc)
  *  hash object.
  */
 static VALUE
-frt_iw_add_doc(VALUE self, VALUE rdoc)
+frb_iw_add_doc(VALUE self, VALUE rdoc)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
-    Document *doc = frt_get_doc(rdoc);
+    Document *doc = frb_get_doc(rdoc);
     iw_add_doc(iw, doc);
     doc_destroy(doc);
     return self;
@@ -1557,7 +1556,7 @@ frt_iw_add_doc(VALUE self, VALUE rdoc)
  *  process).
  */
 static VALUE
-frt_iw_optimize(VALUE self)
+frb_iw_optimize(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw_optimize(iw);
@@ -1573,7 +1572,7 @@ frt_iw_optimize(VALUE self)
  *  with an IndexWriter.
  */
 static VALUE
-frt_iw_commit(VALUE self)
+frb_iw_commit(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw_commit(iw);
@@ -1591,7 +1590,7 @@ frt_iw_commit(VALUE self)
  *  index.
  */
 static VALUE
-frt_iw_add_readers(VALUE self, VALUE rreaders)
+frb_iw_add_readers(VALUE self, VALUE rreaders)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     int i;
@@ -1622,7 +1621,7 @@ frt_iw_add_readers(VALUE self, VALUE rreaders)
  *  want to delete all documents with the term "viagra" when deleting spam.
  */
 static VALUE
-frt_iw_delete(VALUE self, VALUE rfield, VALUE rterm)
+frb_iw_delete(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     if (TYPE(rterm) == T_ARRAY) {
@@ -1632,10 +1631,10 @@ frt_iw_delete(VALUE self, VALUE rfield, VALUE rterm)
         for (i = 0; i < term_cnt; i++) {
             terms[i] = StringValuePtr(RARRAY(rterm)->ptr[i]);
         }
-        iw_delete_terms(iw, frt_field(rfield), terms, term_cnt);
+        iw_delete_terms(iw, frb_field(rfield), terms, term_cnt);
         free(terms);
     } else {
-        iw_delete_term(iw, frt_field(rfield), StringValuePtr(rterm));
+        iw_delete_term(iw, frb_field(rfield), StringValuePtr(rterm));
     }
     return self;
 }
@@ -1648,10 +1647,10 @@ frt_iw_delete(VALUE self, VALUE rfield, VALUE rterm)
  *  to dynamically add new fields to the index with specific properties.
  */
 static VALUE
-frt_iw_field_infos(VALUE self)
+frb_iw_field_infos(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
-    return frt_get_field_infos(iw->fis);
+    return frb_get_field_infos(iw->fis);
 }
 
 /*
@@ -1662,10 +1661,10 @@ frt_iw_field_infos(VALUE self)
  *  to use the same analyzer in a QueryParser.
  */
 static VALUE
-frt_iw_get_analyzer(VALUE self)
+frb_iw_get_analyzer(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
-    return frt_get_analyzer(iw->analyzer);
+    return frb_get_analyzer(iw->analyzer);
 }
 
 /*
@@ -1677,12 +1676,12 @@ frt_iw_get_analyzer(VALUE self)
  *  same analyzer will be used for all documents during search.
  */
 static VALUE
-frt_iw_set_analyzer(VALUE self, VALUE ranalyzer)
+frb_iw_set_analyzer(VALUE self, VALUE ranalyzer)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
 
     a_deref(iw->analyzer);
-    iw->analyzer = frt_get_cwrapped_analyzer(ranalyzer);
+    iw->analyzer = frb_get_cwrapped_analyzer(ranalyzer);
     return ranalyzer;
 }
 
@@ -1693,7 +1692,7 @@ frt_iw_set_analyzer(VALUE self, VALUE ranalyzer)
  *  Returns the current version of the index writer.
  */
 static VALUE
-frt_iw_version(VALUE self)
+frb_iw_version(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return ULL2NUM(iw->sis->version);
@@ -1706,7 +1705,7 @@ frt_iw_version(VALUE self)
  *  Return the current value of chunk_size
  */
 static VALUE
-frt_iw_get_chunk_size(VALUE self)
+frb_iw_get_chunk_size(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.chunk_size);
@@ -1719,7 +1718,7 @@ frt_iw_get_chunk_size(VALUE self)
  *  Set the chunk_size parameter
  */
 static VALUE
-frt_iw_set_chunk_size(VALUE self, VALUE rval)
+frb_iw_set_chunk_size(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.chunk_size = FIX2INT(rval);
@@ -1733,7 +1732,7 @@ frt_iw_set_chunk_size(VALUE self, VALUE rval)
  *  Return the current value of max_buffer_memory
  */
 static VALUE
-frt_iw_get_max_buffer_memory(VALUE self)
+frb_iw_get_max_buffer_memory(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.max_buffer_memory);
@@ -1746,7 +1745,7 @@ frt_iw_get_max_buffer_memory(VALUE self)
  *  Set the max_buffer_memory parameter
  */
 static VALUE
-frt_iw_set_max_buffer_memory(VALUE self, VALUE rval)
+frb_iw_set_max_buffer_memory(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.max_buffer_memory = FIX2INT(rval);
@@ -1760,7 +1759,7 @@ frt_iw_set_max_buffer_memory(VALUE self, VALUE rval)
  *  Return the current value of term_index_interval
  */
 static VALUE
-frt_iw_get_index_interval(VALUE self)
+frb_iw_get_index_interval(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.index_interval);
@@ -1773,7 +1772,7 @@ frt_iw_get_index_interval(VALUE self)
  *  Set the term_index_interval parameter
  */
 static VALUE
-frt_iw_set_index_interval(VALUE self, VALUE rval)
+frb_iw_set_index_interval(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.index_interval = FIX2INT(rval);
@@ -1787,7 +1786,7 @@ frt_iw_set_index_interval(VALUE self, VALUE rval)
  *  Return the current value of doc_skip_interval
  */
 static VALUE
-frt_iw_get_skip_interval(VALUE self)
+frb_iw_get_skip_interval(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.skip_interval);
@@ -1800,7 +1799,7 @@ frt_iw_get_skip_interval(VALUE self)
  *  Set the doc_skip_interval parameter
  */
 static VALUE
-frt_iw_set_skip_interval(VALUE self, VALUE rval)
+frb_iw_set_skip_interval(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.skip_interval = FIX2INT(rval);
@@ -1814,7 +1813,7 @@ frt_iw_set_skip_interval(VALUE self, VALUE rval)
  *  Return the current value of merge_factor
  */
 static VALUE
-frt_iw_get_merge_factor(VALUE self)
+frb_iw_get_merge_factor(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.merge_factor);
@@ -1827,7 +1826,7 @@ frt_iw_get_merge_factor(VALUE self)
  *  Set the merge_factor parameter
  */
 static VALUE
-frt_iw_set_merge_factor(VALUE self, VALUE rval)
+frb_iw_set_merge_factor(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.merge_factor = FIX2INT(rval);
@@ -1841,7 +1840,7 @@ frt_iw_set_merge_factor(VALUE self, VALUE rval)
  *  Return the current value of max_buffered_docs
  */
 static VALUE
-frt_iw_get_max_buffered_docs(VALUE self)
+frb_iw_get_max_buffered_docs(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.max_buffered_docs);
@@ -1854,7 +1853,7 @@ frt_iw_get_max_buffered_docs(VALUE self)
  *  Set the max_buffered_docs parameter
  */
 static VALUE
-frt_iw_set_max_buffered_docs(VALUE self, VALUE rval)
+frb_iw_set_max_buffered_docs(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.max_buffered_docs = FIX2INT(rval);
@@ -1868,7 +1867,7 @@ frt_iw_set_max_buffered_docs(VALUE self, VALUE rval)
  *  Return the current value of max_merge_docs
  */
 static VALUE
-frt_iw_get_max_merge_docs(VALUE self)
+frb_iw_get_max_merge_docs(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.max_merge_docs);
@@ -1881,7 +1880,7 @@ frt_iw_get_max_merge_docs(VALUE self)
  *  Set the max_merge_docs parameter
  */
 static VALUE
-frt_iw_set_max_merge_docs(VALUE self, VALUE rval)
+frb_iw_set_max_merge_docs(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.max_merge_docs = FIX2INT(rval);
@@ -1895,7 +1894,7 @@ frt_iw_set_max_merge_docs(VALUE self, VALUE rval)
  *  Return the current value of max_field_length
  */
 static VALUE
-frt_iw_get_max_field_length(VALUE self)
+frb_iw_get_max_field_length(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return INT2FIX(iw->config.max_field_length);
@@ -1908,7 +1907,7 @@ frt_iw_get_max_field_length(VALUE self)
  *  Set the max_field_length parameter
  */
 static VALUE
-frt_iw_set_max_field_length(VALUE self, VALUE rval)
+frb_iw_set_max_field_length(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.max_field_length = FIX2INT(rval);
@@ -1922,7 +1921,7 @@ frt_iw_set_max_field_length(VALUE self, VALUE rval)
  *  Return the current value of use_compound_file
  */
 static VALUE
-frt_iw_get_use_compound_file(VALUE self)
+frb_iw_get_use_compound_file(VALUE self)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     return iw->config.use_compound_file ? Qtrue : Qfalse;
@@ -1935,7 +1934,7 @@ frt_iw_get_use_compound_file(VALUE self)
  *  Set the use_compound_file parameter
  */
 static VALUE
-frt_iw_set_use_compound_file(VALUE self, VALUE rval)
+frb_iw_set_use_compound_file(VALUE self, VALUE rval)
 {
     IndexWriter *iw = (IndexWriter *)DATA_PTR(self);
     iw->config.use_compound_file = RTEST(rval);
@@ -1949,13 +1948,13 @@ frt_iw_set_use_compound_file(VALUE self, VALUE rval)
  ****************************************************************************/
 
 static void
-frt_lzd_date_free(void *p)
+frb_lzd_date_free(void *p)
 {
     lazy_doc_close((LazyDoc *)p);
 }
 
 static VALUE
-frt_lazy_df_load(VALUE self, VALUE rkey, LazyDocField *lazy_df)
+frb_lazy_df_load(VALUE self, VALUE rkey, LazyDocField *lazy_df)
 {
     VALUE rdata = Qnil;
     if (lazy_df) {
@@ -1985,7 +1984,7 @@ frt_lazy_df_load(VALUE self, VALUE rkey, LazyDocField *lazy_df)
  *  really need to call it yourself.
  */
 static VALUE
-frt_lzd_default(VALUE self, VALUE rkey)
+frb_lzd_default(VALUE self, VALUE rkey)
 {
     LazyDoc *lazy_doc = (LazyDoc *)DATA_PTR(rb_ivar_get(self, id_data));
     char *field = NULL;
@@ -1995,7 +1994,7 @@ frt_lzd_default(VALUE self, VALUE rkey)
             rkey = ID2SYM(rb_intern(field));
             break;
         case T_SYMBOL:
-            field = frt_field(rkey);
+            field = frb_field(rkey);
             break;
         default:
             rb_raise(rb_eArgError,
@@ -2003,7 +2002,7 @@ frt_lzd_default(VALUE self, VALUE rkey)
                      " be symbols.", rs2s(rb_obj_as_string(rkey)));
             break;
     }
-    return frt_lazy_df_load(self, rkey, h_get(lazy_doc->field_dict, field));
+    return frb_lazy_df_load(self, rkey, h_get(lazy_doc->field_dict, field));
 }
 
 /*
@@ -2015,7 +2014,7 @@ frt_lzd_default(VALUE self, VALUE rkey)
  *  Try to access any other field an nil will be returned.
  */
 static VALUE
-frt_lzd_fields(VALUE self)
+frb_lzd_fields(VALUE self)
 {
     return rb_ivar_get(self, id_fields);
 }
@@ -2027,19 +2026,19 @@ frt_lzd_fields(VALUE self)
  *  Load all unloaded fields in the document from the index.
  */
 static VALUE
-frt_lzd_load(VALUE self)
+frb_lzd_load(VALUE self)
 {
     LazyDoc *lazy_doc = (LazyDoc *)DATA_PTR(rb_ivar_get(self, id_data));
     int i;
     for (i = 0; i < lazy_doc->size; i++) {
         LazyDocField *lazy_df = lazy_doc->fields[i];
-        frt_lazy_df_load(self, ID2SYM(rb_intern(lazy_df->name)), lazy_df);
+        frb_lazy_df_load(self, ID2SYM(rb_intern(lazy_df->name)), lazy_df);
     }
     return self;
 }
 
 VALUE
-frt_get_lazy_doc(LazyDoc *lazy_doc)
+frb_get_lazy_doc(LazyDoc *lazy_doc)
 {
     int i;
     VALUE rfields = rb_ary_new2(lazy_doc->size);
@@ -2048,7 +2047,7 @@ frt_get_lazy_doc(LazyDoc *lazy_doc)
     self = rb_hash_new();
     OBJSETUP(self, cLazyDoc, T_HASH);
 
-    rdata = Data_Wrap_Struct(cLazyDocData, NULL, &frt_lzd_date_free, lazy_doc);
+    rdata = Data_Wrap_Struct(cLazyDocData, NULL, &frb_lzd_date_free, lazy_doc);
     rb_ivar_set(self, id_data, rdata);
 
     for (i = 0; i < lazy_doc->size; i++) {
@@ -2067,28 +2066,28 @@ frt_get_lazy_doc(LazyDoc *lazy_doc)
  ****************************************************************************/
 
 void
-frt_ir_free(void *p)
+frb_ir_free(void *p)
 {
     object_del(p);
     ir_close((IndexReader *)p);
 }
 
 void
-frt_ir_mark(void *p)
+frb_ir_mark(void *p)
 {
     IndexReader *ir = (IndexReader *)p;
-    frt_gc_mark(ir->store);
+    frb_gc_mark(ir->store);
 }
 
-static VALUE frt_ir_close(VALUE self);
+static VALUE frb_ir_close(VALUE self);
 
 void
-frt_mr_mark(void *p)
+frb_mr_mark(void *p)
 {
     MultiReader *mr = (MultiReader *)p;
     int i;
     for (i = 0; i < mr->r_cnt; i++) {
-        frt_gc_mark(mr->sub_readers[i]);
+        frb_gc_mark(mr->sub_readers[i]);
     }
 }
 
@@ -2119,7 +2118,7 @@ frt_mr_mark(void *p)
  *    iw = IndexReader.new(["/path/to/index1", "/path/to/index2"])
  */
 static VALUE
-frt_ir_init(VALUE self, VALUE rdir)
+frb_ir_init(VALUE self, VALUE rdir)
 {
     Store *store = NULL;
     IndexReader *ir;
@@ -2151,7 +2150,7 @@ frt_ir_init(VALUE self, VALUE rdir)
                     }
                     break;
                 case T_STRING:
-                    frt_create_dir(rdir);
+                    frb_create_dir(rdir);
                     store = open_fs_store(rs2s(rdir));
                     DEREF(store);
                     break;
@@ -2165,14 +2164,14 @@ frt_ir_init(VALUE self, VALUE rdir)
             sub_readers[i] = ir_open(store);
         }
         ir = mr_open(sub_readers, reader_cnt);
-        Frt_Wrap_Struct(self, &frt_mr_mark, &frt_ir_free, ir);
+        Frt_Wrap_Struct(self, &frb_mr_mark, &frb_ir_free, ir);
     } else {
         switch (TYPE(rdir)) {
             case T_DATA:
                 store = DATA_PTR(rdir);
                 break;
             case T_STRING:
-                frt_create_dir(rdir);
+                frb_create_dir(rdir);
                 store = open_fs_store(rs2s(rdir));
                 DEREF(store);
                 break;
@@ -2183,7 +2182,7 @@ frt_ir_init(VALUE self, VALUE rdir)
                 break;
         }
         ir = ir_open(store);
-        Frt_Wrap_Struct(self, &frt_ir_mark, &frt_ir_free, ir);
+        Frt_Wrap_Struct(self, &frb_ir_mark, &frb_ir_free, ir);
     }
     object_add(ir, self);
 
@@ -2208,10 +2207,10 @@ frt_ir_init(VALUE self, VALUE rdir)
  *  encoded float value.
  */
 static VALUE
-frt_ir_set_norm(VALUE self, VALUE rdoc_id, VALUE rfield, VALUE rval)
+frb_ir_set_norm(VALUE self, VALUE rdoc_id, VALUE rfield, VALUE rval)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    ir_set_norm(ir, FIX2INT(rdoc_id), frt_field(rfield), (uchar)NUM2CHR(rval));
+    ir_set_norm(ir, FIX2INT(rdoc_id), frb_field(rfield), (uchar)NUM2CHR(rval));
     return self;
 }
 
@@ -2224,11 +2223,11 @@ frt_ir_set_norm(VALUE self, VALUE rdoc_id, VALUE rfield, VALUE rval)
  *  could have null bytes.
  */
 static VALUE
-frt_ir_norms(VALUE self, VALUE rfield)
+frb_ir_norms(VALUE self, VALUE rfield)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     uchar *norms;
-    norms = ir_get_norms(ir, frt_field(rfield));
+    norms = ir_get_norms(ir, frb_field(rfield));
     if (norms) {
         return rb_str_new((char *)norms, ir->max_doc(ir));
     } else {
@@ -2243,7 +2242,7 @@ frt_ir_norms(VALUE self, VALUE rfield)
  *  Expert: Get the norm values into a string +buffer+ starting at +offset+.
  */
 static VALUE
-frt_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
+frb_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     int offset;
@@ -2256,7 +2255,7 @@ frt_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
                  RSTRING(rnorms)->len, offset, ir->max_doc(ir));
     }
 
-    ir_get_norms_into(ir, frt_field(rfield),
+    ir_get_norms_into(ir, frb_field(rfield),
                       (uchar *)rs2s(rnorms) + offset);
     return rnorms;
 }
@@ -2269,7 +2268,7 @@ frt_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
  *  will use open a Commit lock.
  */
 static VALUE
-frt_ir_commit(VALUE self)
+frb_ir_commit(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     ir_commit(ir);
@@ -2287,7 +2286,7 @@ frt_ir_commit(VALUE self)
  *  errors.
  */
 static VALUE
-frt_ir_close(VALUE self)
+frb_ir_close(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     object_del(ir);
@@ -2304,7 +2303,7 @@ frt_ir_close(VALUE self)
  *  IndexReader or committed by any other IndexReader.
  */
 static VALUE
-frt_ir_has_deletions(VALUE self)
+frb_ir_has_deletions(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return ir->has_deletions(ir) ? Qtrue : Qfalse;
@@ -2319,7 +2318,7 @@ frt_ir_has_deletions(VALUE self)
  *  returned by search methods.
  */
 static VALUE
-frt_ir_delete(VALUE self, VALUE rdoc_id)
+frb_ir_delete(VALUE self, VALUE rdoc_id)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     ir_delete_doc(ir, FIX2INT(rdoc_id));
@@ -2333,7 +2332,7 @@ frt_ir_delete(VALUE self, VALUE rdoc_id)
  *  Returns true if the document at +doc_id+ has been deleted.
  */
 static VALUE
-frt_ir_is_deleted(VALUE self, VALUE rdoc_id)
+frb_ir_is_deleted(VALUE self, VALUE rdoc_id)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return ir->is_deleted(ir, FIX2INT(rdoc_id)) ? Qtrue : Qfalse;
@@ -2349,7 +2348,7 @@ frt_ir_is_deleted(VALUE self, VALUE rdoc_id)
  *  in the index.
  */
 static VALUE
-frt_ir_max_doc(VALUE self)
+frb_ir_max_doc(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return INT2FIX(ir->max_doc(ir));
@@ -2364,7 +2363,7 @@ frt_ir_max_doc(VALUE self)
  *  deleted from the index.
  */
 static VALUE
-frt_ir_num_docs(VALUE self)
+frb_ir_num_docs(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return INT2FIX(ir->num_docs(ir));
@@ -2380,7 +2379,7 @@ frt_ir_num_docs(VALUE self)
  *  effect on these documents.
  */
 static VALUE
-frt_ir_undelete_all(VALUE self)
+frb_ir_undelete_all(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     ir_undelete_all(ir);
@@ -2388,7 +2387,7 @@ frt_ir_undelete_all(VALUE self)
 }
 
 static VALUE
-frt_get_doc_range(IndexReader *ir, int pos, int len, int max)
+frb_get_doc_range(IndexReader *ir, int pos, int len, int max)
 {
     VALUE ary;
     int i;
@@ -2396,7 +2395,7 @@ frt_get_doc_range(IndexReader *ir, int pos, int len, int max)
     len = max - pos;
     ary = rb_ary_new2(len);
     for (i = 0; i < len; i++) {
-        RARRAY(ary)->ptr[i] = frt_get_lazy_doc(ir->get_lazy_doc(ir, i + pos));
+        RARRAY(ary)->ptr[i] = frb_get_lazy_doc(ir->get_lazy_doc(ir, i + pos));
         RARRAY(ary)->len++;
     }
     return ary;
@@ -2412,7 +2411,7 @@ frt_get_doc_range(IndexReader *ir, int pos, int len, int max)
  *  which are returned by the Searchers search methods.
  */
 static VALUE
-frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
+frb_ir_get_doc(int argc, VALUE *argv, VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     VALUE arg1, arg2;
@@ -2427,7 +2426,7 @@ frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
                 rb_raise(rb_eArgError, "index %d is out of range [%d..%d] for "
                          "IndexReader#[]", pos, 0, max, -1);
             }
-            return frt_get_lazy_doc(ir->get_lazy_doc(ir, pos));
+            return frb_get_lazy_doc(ir->get_lazy_doc(ir, pos));
         }
 
         /* check if idx is Range */
@@ -2440,13 +2439,13 @@ frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
             case Qnil:
                 return Qnil;
             default:
-                return frt_get_doc_range(ir, pos, len, max);
+                return frb_get_doc_range(ir, pos, len, max);
         }
     }
     else {
         pos = FIX2LONG(arg1);
         len = FIX2LONG(arg2);
-        return frt_get_doc_range(ir, pos, len, max);
+        return frb_get_doc_range(ir, pos, len, max);
     }
 }
 
@@ -2459,7 +2458,7 @@ frt_ir_get_doc(int argc, VALUE *argv, VALUE self)
  *  index to search the latest documents added to the index.
  */
 static VALUE
-frt_ir_is_latest(VALUE self)
+frb_ir_is_latest(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return ir_is_latest(ir) ? Qtrue : Qfalse;
@@ -2473,14 +2472,14 @@ frt_ir_is_latest(VALUE self)
  *  the index. Return nil of no such term_vector exists. See TermVector.
  */
 static VALUE
-frt_ir_term_vector(VALUE self, VALUE rdoc_id, VALUE rfield)
+frb_ir_term_vector(VALUE self, VALUE rdoc_id, VALUE rfield)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     TermVector *tv;
     VALUE rtv;
-    tv = ir->term_vector(ir, FIX2INT(rdoc_id), frt_field(rfield));
+    tv = ir->term_vector(ir, FIX2INT(rdoc_id), frb_field(rfield));
     if (tv) {
-        rtv = frt_get_tv(tv);
+        rtv = frb_get_tv(tv);
         tv_destroy(tv);
         return rtv;
     }
@@ -2490,9 +2489,9 @@ frt_ir_term_vector(VALUE self, VALUE rdoc_id, VALUE rfield)
 }
 
 static void
-frt_add_each_tv(void *key, void *value, void *rtvs)
+frb_add_each_tv(void *key, void *value, void *rtvs)
 {
-    rb_hash_aset((VALUE)rtvs, ID2SYM(rb_intern(key)), frt_get_tv(value));
+    rb_hash_aset((VALUE)rtvs, ID2SYM(rb_intern(key)), frb_get_tv(value));
 }
 
 /*
@@ -2504,12 +2503,12 @@ frt_add_each_tv(void *key, void *value, void *rtvs)
  *  and they are referenced by field names (as symbols).
  */
 static VALUE
-frt_ir_term_vectors(VALUE self, VALUE rdoc_id)
+frb_ir_term_vectors(VALUE self, VALUE rdoc_id)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     HashTable *tvs = ir->term_vectors(ir, FIX2INT(rdoc_id));
     VALUE rtvs = rb_hash_new();
-    h_each(tvs, &frt_add_each_tv, (void *)rtvs);
+    h_each(tvs, &frb_add_each_tv, (void *)rtvs);
     h_destroy(tvs);
 
     return rtvs;
@@ -2524,10 +2523,10 @@ frt_ir_term_vectors(VALUE self, VALUE rdoc_id)
  *  See TermDocEnum for more info.
  */
 static VALUE
-frt_ir_term_docs(VALUE self)
+frb_ir_term_docs(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_tde(self, ir->term_docs(ir));
+    return frb_get_tde(self, ir->term_docs(ir));
 }
 
 /*
@@ -2538,11 +2537,11 @@ frt_ir_term_docs(VALUE self)
  *  term +term+ in the field +field+. See TermDocEnum for more info.
  */
 static VALUE
-frt_ir_term_docs_for(VALUE self, VALUE rfield, VALUE rterm)
+frb_ir_term_docs_for(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_tde(self, ir_term_docs_for(ir,
-                                              frt_field(rfield),
+    return frb_get_tde(self, ir_term_docs_for(ir,
+                                              frb_field(rfield),
                                               StringValuePtr(rterm)));
 }
 
@@ -2555,10 +2554,10 @@ frt_ir_term_docs_for(VALUE self, VALUE rfield, VALUE rterm)
  *  more info.
  */
 static VALUE
-frt_ir_term_positions(VALUE self)
+frb_ir_term_positions(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_tde(self, ir->term_positions(ir));
+    return frb_get_tde(self, ir->term_positions(ir));
 }
 
 /*
@@ -2570,11 +2569,11 @@ frt_ir_term_positions(VALUE self)
  *  TermDocEnum for more info.
  */
 static VALUE
-frt_ir_t_pos_for(VALUE self, VALUE rfield, VALUE rterm)
+frb_ir_t_pos_for(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_tde(self, ir_term_positions_for(ir,
-                                                   frt_field(rfield),
+    return frb_get_tde(self, ir_term_positions_for(ir,
+                                                   frb_field(rfield),
                                                    StringValuePtr(rterm)));
 }
 
@@ -2586,11 +2585,11 @@ frt_ir_t_pos_for(VALUE self, VALUE rfield, VALUE rterm)
  *  field +field+.
  */
 static VALUE
-frt_ir_doc_freq(VALUE self, VALUE rfield, VALUE rterm)
+frb_ir_doc_freq(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return INT2FIX(ir_doc_freq(ir,
-                               frt_field(rfield),
+                               frb_field(rfield),
                                StringValuePtr(rterm)));
 }
 
@@ -2602,10 +2601,10 @@ frt_ir_doc_freq(VALUE self, VALUE rfield, VALUE rterm)
  *  terms in the field +field+ in the index.
  */
 static VALUE
-frt_ir_terms(VALUE self, VALUE rfield)
+frb_ir_terms(VALUE self, VALUE rfield)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_te(self, ir_terms(ir, frt_field(rfield)));
+    return frb_get_te(self, ir_terms(ir, frb_field(rfield)));
 }
 
 /*
@@ -2616,11 +2615,11 @@ frt_ir_terms(VALUE self, VALUE rfield)
  *  at term +term+.
  */
 static VALUE
-frt_ir_terms_from(VALUE self, VALUE rfield, VALUE rterm)
+frb_ir_terms_from(VALUE self, VALUE rfield, VALUE rterm)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_te(self, ir_terms_from(ir,
-                                          frt_field(rfield),
+    return frb_get_te(self, ir_terms_from(ir,
+                                          frb_field(rfield),
                                           StringValuePtr(rterm)));
 }
 
@@ -2631,10 +2630,10 @@ frt_ir_terms_from(VALUE self, VALUE rfield, VALUE rterm)
  *  Same return a count of the number of terms in the field
  */
 static VALUE
-frt_ir_term_count(VALUE self, VALUE rfield)
+frb_ir_term_count(VALUE self, VALUE rfield)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    TermEnum *te = ir_terms(ir, frt_field(rfield));
+    TermEnum *te = ir_terms(ir, frb_field(rfield));
     int count = 0;
     while (te->next(te)) {
         count++;
@@ -2653,7 +2652,7 @@ frt_ir_term_count(VALUE self, VALUE rfield)
  *  gathered from the FieldInfos object.
  */
 static VALUE
-frt_ir_fields(VALUE self)
+frb_ir_fields(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     FieldInfos *fis = ir->fis;
@@ -2672,10 +2671,10 @@ frt_ir_fields(VALUE self)
  *  Get the FieldInfos object for this IndexReader.
  */
 static VALUE
-frt_ir_field_infos(VALUE self)
+frb_ir_field_infos(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
-    return frt_get_field_infos(ir->fis);
+    return frb_get_field_infos(ir->fis);
 }
 
 /*
@@ -2688,7 +2687,7 @@ frt_ir_field_infos(VALUE self)
  *  of field names can also be gathered from the FieldInfos object.
  */
 static VALUE
-frt_ir_tk_fields(VALUE self)
+frb_ir_tk_fields(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     FieldInfos *fis = ir->fis;
@@ -2708,7 +2707,7 @@ frt_ir_tk_fields(VALUE self)
  *  Returns the current version of the index reader.
  */
 static VALUE
-frt_ir_version(VALUE self)
+frb_ir_version(VALUE self)
 {
     IndexReader *ir = (IndexReader *)DATA_PTR(self);
     return ULL2NUM(ir->sis->version);
@@ -2864,24 +2863,24 @@ Init_FieldInfo(void)
     sym_with_positions_offsets = ID2SYM(rb_intern("with_positions_offsets"));
 
     cFieldInfo = rb_define_class_under(mIndex, "FieldInfo", rb_cObject);
-    rb_define_alloc_func(cFieldInfo, frt_data_alloc);
+    rb_define_alloc_func(cFieldInfo, frb_data_alloc);
 
-    rb_define_method(cFieldInfo, "initialize",  frt_fi_init, -1);
-    rb_define_method(cFieldInfo, "name",        frt_fi_name, 0);
-    rb_define_method(cFieldInfo, "stored?",     frt_fi_is_stored, 0);
-    rb_define_method(cFieldInfo, "compressed?", frt_fi_is_compressed, 0);
-    rb_define_method(cFieldInfo, "indexed?",    frt_fi_is_indexed, 0);
-    rb_define_method(cFieldInfo, "tokenized?",  frt_fi_is_tokenized, 0);
-    rb_define_method(cFieldInfo, "omit_norms?", frt_fi_omit_norms, 0);
+    rb_define_method(cFieldInfo, "initialize",  frb_fi_init, -1);
+    rb_define_method(cFieldInfo, "name",        frb_fi_name, 0);
+    rb_define_method(cFieldInfo, "stored?",     frb_fi_is_stored, 0);
+    rb_define_method(cFieldInfo, "compressed?", frb_fi_is_compressed, 0);
+    rb_define_method(cFieldInfo, "indexed?",    frb_fi_is_indexed, 0);
+    rb_define_method(cFieldInfo, "tokenized?",  frb_fi_is_tokenized, 0);
+    rb_define_method(cFieldInfo, "omit_norms?", frb_fi_omit_norms, 0);
     rb_define_method(cFieldInfo, "store_term_vector?",
-                                                frt_fi_store_term_vector, 0);
+                                                frb_fi_store_term_vector, 0);
     rb_define_method(cFieldInfo, "store_positions?",
-                                                frt_fi_store_positions, 0);
+                                                frb_fi_store_positions, 0);
     rb_define_method(cFieldInfo, "store_offsets?",
-                                                frt_fi_store_offsets, 0);
-    rb_define_method(cFieldInfo, "has_norms?",  frt_fi_has_norms, 0);
-    rb_define_method(cFieldInfo, "boost",       frt_fi_boost, 0);
-    rb_define_method(cFieldInfo, "to_s",        frt_fi_to_s, 0);
+                                                frb_fi_store_offsets, 0);
+    rb_define_method(cFieldInfo, "has_norms?",  frb_fi_has_norms, 0);
+    rb_define_method(cFieldInfo, "boost",       frb_fi_boost, 0);
+    rb_define_method(cFieldInfo, "to_s",        frb_fi_to_s, 0);
 }
 
 /*
@@ -2930,21 +2929,21 @@ Init_FieldInfos(void)
     Init_FieldInfo();
 
     cFieldInfos = rb_define_class_under(mIndex, "FieldInfos", rb_cObject);
-    rb_define_alloc_func(cFieldInfos, frt_data_alloc);
+    rb_define_alloc_func(cFieldInfos, frb_data_alloc);
 
-    rb_define_method(cFieldInfos, "initialize", frt_fis_init, -1);
-    rb_define_method(cFieldInfos, "to_a",       frt_fis_to_a, 0);
-    rb_define_method(cFieldInfos, "[]",         frt_fis_get, 1);
-    rb_define_method(cFieldInfos, "add",        frt_fis_add, 1);
-    rb_define_method(cFieldInfos, "<<",         frt_fis_add, 1);
-    rb_define_method(cFieldInfos, "add_field",  frt_fis_add_field, -1);
-    rb_define_method(cFieldInfos, "each",       frt_fis_each, 0);
-    rb_define_method(cFieldInfos, "to_s",       frt_fis_to_s, 0);
-    rb_define_method(cFieldInfos, "size",       frt_fis_size, 0);
+    rb_define_method(cFieldInfos, "initialize", frb_fis_init, -1);
+    rb_define_method(cFieldInfos, "to_a",       frb_fis_to_a, 0);
+    rb_define_method(cFieldInfos, "[]",         frb_fis_get, 1);
+    rb_define_method(cFieldInfos, "add",        frb_fis_add, 1);
+    rb_define_method(cFieldInfos, "<<",         frb_fis_add, 1);
+    rb_define_method(cFieldInfos, "add_field",  frb_fis_add_field, -1);
+    rb_define_method(cFieldInfos, "each",       frb_fis_each, 0);
+    rb_define_method(cFieldInfos, "to_s",       frb_fis_to_s, 0);
+    rb_define_method(cFieldInfos, "size",       frb_fis_size, 0);
     rb_define_method(cFieldInfos, "create_index",
-                                                frt_fis_create_index, 1);
-    rb_define_method(cFieldInfos, "fields",     frt_fis_get_fields, 0);
-    rb_define_method(cFieldInfos, "tokenized_fields", frt_fis_get_tk_fields, 0);
+                                                frb_fis_create_index, 1);
+    rb_define_method(cFieldInfos, "fields",     frb_fis_get_fields, 0);
+    rb_define_method(cFieldInfos, "tokenized_fields", frb_fis_get_tk_fields, 0);
 }
 
 /*
@@ -2974,16 +2973,16 @@ Init_TermEnum(void)
     id_term = rb_intern("@term");
 
     cTermEnum = rb_define_class_under(mIndex, "TermEnum", rb_cObject);
-    rb_define_alloc_func(cTermEnum, frt_data_alloc);
+    rb_define_alloc_func(cTermEnum, frb_data_alloc);
 
-    rb_define_method(cTermEnum, "next?",    frt_te_next, 0);
-    rb_define_method(cTermEnum, "term",     frt_te_term, 0);
-    rb_define_method(cTermEnum, "doc_freq", frt_te_doc_freq, 0);
-    rb_define_method(cTermEnum, "skip_to",  frt_te_skip_to, 1);
-    rb_define_method(cTermEnum, "each",     frt_te_each, 0);
-    rb_define_method(cTermEnum, "field=",   frt_te_set_field, 1);
-    rb_define_method(cTermEnum, "set_field",frt_te_set_field, 1);
-    rb_define_method(cTermEnum, "to_json",  frt_te_to_json, -1);
+    rb_define_method(cTermEnum, "next?",    frb_te_next, 0);
+    rb_define_method(cTermEnum, "term",     frb_te_term, 0);
+    rb_define_method(cTermEnum, "doc_freq", frb_te_doc_freq, 0);
+    rb_define_method(cTermEnum, "skip_to",  frb_te_skip_to, 1);
+    rb_define_method(cTermEnum, "each",     frb_te_each, 0);
+    rb_define_method(cTermEnum, "field=",   frb_te_set_field, 1);
+    rb_define_method(cTermEnum, "set_field",frb_te_set_field, 1);
+    rb_define_method(cTermEnum, "to_json",  frb_te_to_json, -1);
 }
 
 /*
@@ -3025,17 +3024,17 @@ Init_TermDocEnum(void)
     id_field_num = rb_intern("@field_num");
 
     cTermDocEnum = rb_define_class_under(mIndex, "TermDocEnum", rb_cObject);
-    rb_define_alloc_func(cTermDocEnum, frt_data_alloc);
-    rb_define_method(cTermDocEnum, "seek",           frt_tde_seek, 2);
-    rb_define_method(cTermDocEnum, "seek_term_enum", frt_tde_seek_te, 1);
-    rb_define_method(cTermDocEnum, "doc",            frt_tde_doc, 0);
-    rb_define_method(cTermDocEnum, "freq",           frt_tde_freq, 0);
-    rb_define_method(cTermDocEnum, "next?",          frt_tde_next, 0);
-    rb_define_method(cTermDocEnum, "next_position",  frt_tde_next_position, 0);
-    rb_define_method(cTermDocEnum, "each",           frt_tde_each, 0);
-    rb_define_method(cTermDocEnum, "each_position",  frt_tde_each_position, 0);
-    rb_define_method(cTermDocEnum, "skip_to",        frt_tde_skip_to, 1);
-    rb_define_method(cTermDocEnum, "to_json",        frt_tde_to_json, -1);
+    rb_define_alloc_func(cTermDocEnum, frb_data_alloc);
+    rb_define_method(cTermDocEnum, "seek",           frb_tde_seek, 2);
+    rb_define_method(cTermDocEnum, "seek_term_enum", frb_tde_seek_te, 1);
+    rb_define_method(cTermDocEnum, "doc",            frb_tde_doc, 0);
+    rb_define_method(cTermDocEnum, "freq",           frb_tde_freq, 0);
+    rb_define_method(cTermDocEnum, "next?",          frb_tde_next, 0);
+    rb_define_method(cTermDocEnum, "next_position",  frb_tde_next_position, 0);
+    rb_define_method(cTermDocEnum, "each",           frb_tde_each, 0);
+    rb_define_method(cTermDocEnum, "each_position",  frb_tde_each_position, 0);
+    rb_define_method(cTermDocEnum, "skip_to",        frb_tde_skip_to, 1);
+    rb_define_method(cTermDocEnum, "to_json",        frb_tde_to_json, -1);
 }
 
 /* rdochack
@@ -3276,7 +3275,7 @@ Init_IndexWriter(void)
     sym_use_compound_file   = ID2SYM(rb_intern("use_compound_file"));
 
     cIndexWriter = rb_define_class_under(mIndex, "IndexWriter", rb_cObject);
-    rb_define_alloc_func(cIndexWriter, frt_data_alloc);
+    rb_define_alloc_func(cIndexWriter, frb_data_alloc);
 
     rb_define_const(cIndexWriter, "WRITE_LOCK_TIMEOUT", INT2FIX(1));
     rb_define_const(cIndexWriter, "COMMIT_LOCK_TIMEOUT", INT2FIX(10));
@@ -3303,64 +3302,64 @@ Init_IndexWriter(void)
     rb_define_const(cIndexWriter, "DEFAULT_USE_COMPOUND_FILE",
                     default_config.use_compound_file ? Qtrue : Qfalse);
 
-    rb_define_method(cIndexWriter, "initialize",    frt_iw_init, -1);
-    rb_define_method(cIndexWriter, "doc_count",     frt_iw_get_doc_count, 0);
-    rb_define_method(cIndexWriter, "close",         frt_iw_close, 0);
-    rb_define_method(cIndexWriter, "add_document",  frt_iw_add_doc, 1);
-    rb_define_method(cIndexWriter, "<<",            frt_iw_add_doc, 1);
-    rb_define_method(cIndexWriter, "optimize",      frt_iw_optimize, 0);
-    rb_define_method(cIndexWriter, "commit",        frt_iw_commit, 0);
-    rb_define_method(cIndexWriter, "add_readers",   frt_iw_add_readers, 1);
-    rb_define_method(cIndexWriter, "delete",        frt_iw_delete, 2);
-    rb_define_method(cIndexWriter, "field_infos",   frt_iw_field_infos, 0);
-    rb_define_method(cIndexWriter, "analyzer",      frt_iw_get_analyzer, 0);
-    rb_define_method(cIndexWriter, "analyzer=",     frt_iw_set_analyzer, 1);
-    rb_define_method(cIndexWriter, "version",       frt_iw_version, 0);
+    rb_define_method(cIndexWriter, "initialize",    frb_iw_init, -1);
+    rb_define_method(cIndexWriter, "doc_count",     frb_iw_get_doc_count, 0);
+    rb_define_method(cIndexWriter, "close",         frb_iw_close, 0);
+    rb_define_method(cIndexWriter, "add_document",  frb_iw_add_doc, 1);
+    rb_define_method(cIndexWriter, "<<",            frb_iw_add_doc, 1);
+    rb_define_method(cIndexWriter, "optimize",      frb_iw_optimize, 0);
+    rb_define_method(cIndexWriter, "commit",        frb_iw_commit, 0);
+    rb_define_method(cIndexWriter, "add_readers",   frb_iw_add_readers, 1);
+    rb_define_method(cIndexWriter, "delete",        frb_iw_delete, 2);
+    rb_define_method(cIndexWriter, "field_infos",   frb_iw_field_infos, 0);
+    rb_define_method(cIndexWriter, "analyzer",      frb_iw_get_analyzer, 0);
+    rb_define_method(cIndexWriter, "analyzer=",     frb_iw_set_analyzer, 1);
+    rb_define_method(cIndexWriter, "version",       frb_iw_version, 0);
 
     rb_define_method(cIndexWriter, "chunk_size", 
-                     frt_iw_get_chunk_size, 0);
+                     frb_iw_get_chunk_size, 0);
     rb_define_method(cIndexWriter, "chunk_size=",
-                     frt_iw_set_chunk_size, 1);
+                     frb_iw_set_chunk_size, 1);
 
     rb_define_method(cIndexWriter, "max_buffer_memory", 
-                     frt_iw_get_max_buffer_memory, 0);
+                     frb_iw_get_max_buffer_memory, 0);
     rb_define_method(cIndexWriter, "max_buffer_memory=",
-                     frt_iw_set_max_buffer_memory, 1);
+                     frb_iw_set_max_buffer_memory, 1);
 
     rb_define_method(cIndexWriter, "term_index_interval",
-                     frt_iw_get_index_interval, 0);
+                     frb_iw_get_index_interval, 0);
     rb_define_method(cIndexWriter, "term_index_interval=",
-                     frt_iw_set_index_interval, 1);
+                     frb_iw_set_index_interval, 1);
 
     rb_define_method(cIndexWriter, "doc_skip_interval",
-                     frt_iw_get_skip_interval, 0);
+                     frb_iw_get_skip_interval, 0);
     rb_define_method(cIndexWriter, "doc_skip_interval=",
-                     frt_iw_set_skip_interval, 1);
+                     frb_iw_set_skip_interval, 1);
 
     rb_define_method(cIndexWriter, "merge_factor", 
-                     frt_iw_get_merge_factor, 0);
+                     frb_iw_get_merge_factor, 0);
     rb_define_method(cIndexWriter, "merge_factor=",
-                     frt_iw_set_merge_factor, 1);
+                     frb_iw_set_merge_factor, 1);
 
     rb_define_method(cIndexWriter, "max_buffered_docs", 
-                     frt_iw_get_max_buffered_docs, 0);
+                     frb_iw_get_max_buffered_docs, 0);
     rb_define_method(cIndexWriter, "max_buffered_docs=",
-                     frt_iw_set_max_buffered_docs, 1);
+                     frb_iw_set_max_buffered_docs, 1);
 
     rb_define_method(cIndexWriter, "max_merge_docs",
-                     frt_iw_get_max_merge_docs, 0);
+                     frb_iw_get_max_merge_docs, 0);
     rb_define_method(cIndexWriter, "max_merge_docs=",
-                     frt_iw_set_max_merge_docs, 1);
+                     frb_iw_set_max_merge_docs, 1);
 
     rb_define_method(cIndexWriter, "max_field_length",
-                     frt_iw_get_max_field_length, 0);
+                     frb_iw_get_max_field_length, 0);
     rb_define_method(cIndexWriter, "max_field_length=",
-                     frt_iw_set_max_field_length, 1);
+                     frb_iw_set_max_field_length, 1);
 
     rb_define_method(cIndexWriter, "use_compound_file",
-                     frt_iw_get_use_compound_file, 0);
+                     frb_iw_get_use_compound_file, 0);
     rb_define_method(cIndexWriter, "use_compound_file=",
-                     frt_iw_set_use_compound_file, 1);
+                     frb_iw_set_use_compound_file, 1);
 
 }
 
@@ -3401,12 +3400,12 @@ Init_LazyDoc(void)
 
 
     cLazyDoc = rb_define_class_under(mIndex, "LazyDoc", rb_cHash);
-    rb_define_method(cLazyDoc, "default",   frt_lzd_default, 1);
-    rb_define_method(cLazyDoc, "load",      frt_lzd_load, 0);
-    rb_define_method(cLazyDoc, "fields",    frt_lzd_fields, 0);
+    rb_define_method(cLazyDoc, "default",   frb_lzd_default, 1);
+    rb_define_method(cLazyDoc, "load",      frb_lzd_load, 0);
+    rb_define_method(cLazyDoc, "fields",    frb_lzd_fields, 0);
 
     cLazyDocData = rb_define_class_under(cLazyDoc, "LazyDocData", rb_cObject);
-    rb_define_alloc_func(cLazyDocData, frt_data_alloc);
+    rb_define_alloc_func(cLazyDocData, frb_data_alloc);
 }
 
 /*
@@ -3423,37 +3422,37 @@ void
 Init_IndexReader(void)
 {
     cIndexReader = rb_define_class_under(mIndex, "IndexReader", rb_cObject);
-    rb_define_alloc_func(cIndexReader, frt_data_alloc);
-    rb_define_method(cIndexReader, "initialize",    frt_ir_init, 1);
-    rb_define_method(cIndexReader, "set_norm",      frt_ir_set_norm, 3);
-    rb_define_method(cIndexReader, "norms",         frt_ir_norms, 1);
-    rb_define_method(cIndexReader, "get_norms_into",frt_ir_get_norms_into, 3);
-    rb_define_method(cIndexReader, "commit",        frt_ir_commit, 0);
-    rb_define_method(cIndexReader, "close",         frt_ir_close, 0);
-    rb_define_method(cIndexReader, "has_deletions?",frt_ir_has_deletions, 0);
-    rb_define_method(cIndexReader, "delete",        frt_ir_delete, 1);
-    rb_define_method(cIndexReader, "deleted?",      frt_ir_is_deleted, 1);
-    rb_define_method(cIndexReader, "max_doc",       frt_ir_max_doc, 0);
-    rb_define_method(cIndexReader, "num_docs",      frt_ir_num_docs, 0);
-    rb_define_method(cIndexReader, "undelete_all",  frt_ir_undelete_all, 0);
-    rb_define_method(cIndexReader, "latest?",       frt_ir_is_latest, 0);
-    rb_define_method(cIndexReader, "get_document",  frt_ir_get_doc, -1);
-    rb_define_method(cIndexReader, "[]",            frt_ir_get_doc, -1);
-    rb_define_method(cIndexReader, "term_vector",   frt_ir_term_vector, 2);
-    rb_define_method(cIndexReader, "term_vectors",  frt_ir_term_vectors, 1);
-    rb_define_method(cIndexReader, "term_docs",     frt_ir_term_docs, 0);
-    rb_define_method(cIndexReader, "term_positions",frt_ir_term_positions, 0);
-    rb_define_method(cIndexReader, "term_docs_for", frt_ir_term_docs_for, 2);
-    rb_define_method(cIndexReader, "term_positions_for", frt_ir_t_pos_for, 2);
-    rb_define_method(cIndexReader, "doc_freq",      frt_ir_doc_freq, 2);
-    rb_define_method(cIndexReader, "terms",         frt_ir_terms, 1);
-    rb_define_method(cIndexReader, "terms_from",    frt_ir_terms_from, 2);
-    rb_define_method(cIndexReader, "term_count",    frt_ir_term_count, 1);
-    rb_define_method(cIndexReader, "fields",        frt_ir_fields, 0);
-    rb_define_method(cIndexReader, "field_names",   frt_ir_fields, 0);
-    rb_define_method(cIndexReader, "field_infos",   frt_ir_field_infos, 0);
-    rb_define_method(cIndexReader, "tokenized_fields", frt_ir_tk_fields, 0);
-    rb_define_method(cIndexReader, "version",       frt_ir_version, 0);
+    rb_define_alloc_func(cIndexReader, frb_data_alloc);
+    rb_define_method(cIndexReader, "initialize",    frb_ir_init, 1);
+    rb_define_method(cIndexReader, "set_norm",      frb_ir_set_norm, 3);
+    rb_define_method(cIndexReader, "norms",         frb_ir_norms, 1);
+    rb_define_method(cIndexReader, "get_norms_into",frb_ir_get_norms_into, 3);
+    rb_define_method(cIndexReader, "commit",        frb_ir_commit, 0);
+    rb_define_method(cIndexReader, "close",         frb_ir_close, 0);
+    rb_define_method(cIndexReader, "has_deletions?",frb_ir_has_deletions, 0);
+    rb_define_method(cIndexReader, "delete",        frb_ir_delete, 1);
+    rb_define_method(cIndexReader, "deleted?",      frb_ir_is_deleted, 1);
+    rb_define_method(cIndexReader, "max_doc",       frb_ir_max_doc, 0);
+    rb_define_method(cIndexReader, "num_docs",      frb_ir_num_docs, 0);
+    rb_define_method(cIndexReader, "undelete_all",  frb_ir_undelete_all, 0);
+    rb_define_method(cIndexReader, "latest?",       frb_ir_is_latest, 0);
+    rb_define_method(cIndexReader, "get_document",  frb_ir_get_doc, -1);
+    rb_define_method(cIndexReader, "[]",            frb_ir_get_doc, -1);
+    rb_define_method(cIndexReader, "term_vector",   frb_ir_term_vector, 2);
+    rb_define_method(cIndexReader, "term_vectors",  frb_ir_term_vectors, 1);
+    rb_define_method(cIndexReader, "term_docs",     frb_ir_term_docs, 0);
+    rb_define_method(cIndexReader, "term_positions",frb_ir_term_positions, 0);
+    rb_define_method(cIndexReader, "term_docs_for", frb_ir_term_docs_for, 2);
+    rb_define_method(cIndexReader, "term_positions_for", frb_ir_t_pos_for, 2);
+    rb_define_method(cIndexReader, "doc_freq",      frb_ir_doc_freq, 2);
+    rb_define_method(cIndexReader, "terms",         frb_ir_terms, 1);
+    rb_define_method(cIndexReader, "terms_from",    frb_ir_terms_from, 2);
+    rb_define_method(cIndexReader, "term_count",    frb_ir_term_count, 1);
+    rb_define_method(cIndexReader, "fields",        frb_ir_fields, 0);
+    rb_define_method(cIndexReader, "field_names",   frb_ir_fields, 0);
+    rb_define_method(cIndexReader, "field_infos",   frb_ir_field_infos, 0);
+    rb_define_method(cIndexReader, "tokenized_fields", frb_ir_tk_fields, 0);
+    rb_define_method(cIndexReader, "version",       frb_ir_version, 0);
 }
 
 /* rdoc hack

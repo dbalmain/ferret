@@ -4,6 +4,7 @@
 #include "global.h"
 #include "hashset.h"
 #include "document.h"
+#include "internal.h"
 
 /* IDs */
 extern ID id_new;
@@ -56,15 +57,15 @@ extern void object_set2(void *key, VALUE obj, const char *file, int line);
 //extern void object_del(void *key);
 #define object_del(key) object_del2(key,  __FILE__, __LINE__)
 extern void object_del2(void *key, const char *file, int line);
-extern void frt_gc_mark(void *key);
+extern void frb_gc_mark(void *key);
 extern VALUE object_get(void *key);
-extern VALUE frt_data_alloc(VALUE klass);
-extern void frt_deref_free(void *p);
-extern void frt_create_dir(VALUE rpath);
-extern VALUE frt_hs_to_rb_ary(HashSet *hs);
-extern void *frt_rb_data_ptr(VALUE val);
-extern char * frt_field(VALUE rfield);
-extern VALUE frt_get_term(const char *field, const char *term);
+extern VALUE frb_data_alloc(VALUE klass);
+extern void frb_deref_free(void *p);
+extern void frb_create_dir(VALUE rpath);
+extern VALUE frb_hs_to_rb_ary(HashSet *hs);
+extern void *frb_rb_data_ptr(VALUE val);
+extern char * frb_field(VALUE rfield);
+extern VALUE frb_get_term(const char *field, const char *term);
 extern char *json_concat_string(char *s, char *field);
 extern char *rs2s(VALUE rstr);
 extern char *nstrdup(VALUE rstr);
@@ -87,5 +88,5 @@ extern char *nstrdup(VALUE rstr);
 
 #endif
 
-#define frt_mark_cclass(klass) rb_ivar_set(klass, id_cclass, Qtrue)
-#define frt_is_cclass(obj) (rb_ivar_get(CLASS_OF(obj), id_cclass) == Qtrue)
+#define frb_mark_cclass(klass) rb_ivar_set(klass, id_cclass, Qtrue)
+#define frb_is_cclass(obj) (rb_ivar_get(CLASS_OF(obj), id_cclass) == Qtrue)

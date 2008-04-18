@@ -1,5 +1,6 @@
 #include "test.h"
 #include "index.h"
+#include "internal.h"
 
 #define T 1
 #define F 0

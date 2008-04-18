@@ -1,7 +1,7 @@
 #include <string.h>
 #include "search.h"
-#include "internal.h"
 #include "helper.h"
+#include "internal.h"
 
 #define MTQ(query) ((MultiTermQuery *)(query))
 

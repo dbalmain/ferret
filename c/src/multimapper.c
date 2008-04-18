@@ -299,7 +299,7 @@ char *mulmap_dynamic_map(MultiMapper *self, char *from)
     DeterministicState *start = self->dstates[0];
     DeterministicState *state = start;
     int capa = strlen(from);
-    char *to = frt_calloc(capa);
+    char *to = ecalloc(capa);
     char *s = from, *d = to, *end = to + capa - 1;
     if (self->d_size == 0) {
         mulmap_compile(self);
@@ -324,7 +324,7 @@ char *mulmap_dynamic_map(MultiMapper *self, char *from)
         }
         if (*s) {
             capa += 1024;
-            frt_realloc(to, capa);
+            erealloc(to, capa);
             end = to + capa - 1;
         }
     } while(*s);

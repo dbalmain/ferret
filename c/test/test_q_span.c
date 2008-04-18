@@ -1,5 +1,6 @@
 #include "test.h"
 #include "search.h"
+#include "internal.h"
 
 #define ARRAY_SIZE 20
 #define TEST_SE(query, ir, expected) do { \

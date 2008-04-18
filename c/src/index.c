@@ -2,7 +2,6 @@
 #include "similarity.h"
 #include "helper.h"
 #include "array.h"
-#include "internal.h"
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
@@ -11,6 +10,7 @@
 #else
 # include "bzlib.h"
 #endif
+#include "internal.h"
 
 #define GET_LOCK(lock, name, store, err_msg) do {\
     lock = store->open_lock(store, name);\
@@ -878,7 +878,7 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                     break;
                 }
                 /* sleep for 50 milliseconds */
-                frt_micro_sleep(50000);
+                micro_sleep(50000);
             }
         }
 
@@ -912,7 +912,7 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                       listing_buffer);
             }
             else {
-                frt_micro_sleep(50000);
+                micro_sleep(50000);
                 retry = true;
             }
         }

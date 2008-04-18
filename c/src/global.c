@@ -265,7 +265,7 @@ static char *build_shell_command()
         return NULL;
     }
 
-    snprintf(buf, BUFFER_SIZE, command, gdbfile, frt_progname(), pid);
+    snprintf(buf, BUFFER_SIZE, command, gdbfile, progname(), pid);
     return buf;
 }
 
@@ -341,7 +341,7 @@ void register_for_cleanup(void *p, free_ft free_func)
     free_me->free_func = free_func;
 }
 
-void frt_clean_up()
+void clean_up()
 {
     int i;
     for (i = 0; i < free_mes_size; i++) {
@@ -359,7 +359,7 @@ void weprintf(const char *fmt, ...)
     va_list args;
 
     fflush(stdout);
-    fprintf(stderr, "%s: ", frt_progname());
+    fprintf(stderr, "%s: ", progname());
 
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
@@ -373,13 +373,13 @@ void weprintf(const char *fmt, ...)
 #define MAX_PROG_NAME 200
 static char name[MAX_PROG_NAME]; /* program name for error msgs */
 
-/* frt_setprogname: set stored name of program */
-void frt_setprogname(const char *str)
+/* setprogname: set stored name of program */
+void setprogname(const char *str)
 {
     strncpy(name, str, sizeof(name) - 1);
 }
 
-const char *frt_progname()
+const char *progname()
 {
     return name;
 }
@@ -401,7 +401,7 @@ static const char *signal_to_string(int signum)
 static void sighandler_crash(int signum)
 {
     print_stacktrace();
-    FRT_EXIT("Exiting on signal %s (%d)",
+    XEXIT("Exiting on signal %s (%d)",
              signal_to_string(signum), signum);
 }
 
@@ -413,12 +413,12 @@ static void sighandler_crash(int signum)
     }                                   \
 } while(0)
 
-void frt_init(int argc, const char *const argv[])
+void init(int argc, const char *const argv[])
 {
     struct sigaction action;
 
     if (argc > 0) {
-        frt_setprogname(argv[0]);
+        setprogname(argv[0]);
     }
 
     action.sa_handler = sighandler_crash;

@@ -2,6 +2,7 @@
 #include "test.h"
 #include "testhelper.h"
 #include <limits.h>
+#include "internal.h"
 
 static char *content_f = "content";
 static char *id_f = "id";

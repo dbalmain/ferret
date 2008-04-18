@@ -1,6 +1,7 @@
 #include "test.h"
 #include "testhelper.h"
 #include "multimapper.h"
+#include "internal.h"
 
 static void test_multimapper(tst_case * tc, void *data)
 {

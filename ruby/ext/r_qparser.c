@@ -19,9 +19,9 @@ static VALUE sym_max_clauses;
 static VALUE sym_use_keywords;
 static VALUE sym_use_typed_range_query;
 
-extern VALUE frt_get_analyzer(Analyzer *a);
-extern VALUE frt_get_q(Query *q);
-extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
+extern VALUE frb_get_analyzer(Analyzer *a);
+extern VALUE frb_get_q(Query *q);
+extern Analyzer *frb_get_cwrapped_analyzer(VALUE ranalyzer);
 
 /****************************************************************************
  *
@@ -30,20 +30,20 @@ extern Analyzer *frt_get_cwrapped_analyzer(VALUE ranalyzer);
  ****************************************************************************/
 
 static void
-frt_qp_free(void *p)
+frb_qp_free(void *p)
 {
     object_del(p);
     qp_destroy((QParser *)p);
 }
 
 static void
-frt_qp_mark(void *p)
+frb_qp_mark(void *p)
 {
-    frt_gc_mark(((QParser *)p)->analyzer);
+    frb_gc_mark(((QParser *)p)->analyzer);
 }
 
 static HashSet *
-frt_get_fields(VALUE rfields)
+frb_get_fields(VALUE rfields)
 {
     VALUE rval;
     HashSet *fields;
@@ -139,7 +139,7 @@ frt_get_fields(VALUE rfields)
  *                           class.
  */                   
 static VALUE
-frt_qp_init(int argc, VALUE *argv, VALUE self)
+frb_qp_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE roptions = Qnil;
     VALUE rval;
@@ -155,22 +155,22 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
         if (TYPE(roptions) == T_HASH) {
             has_options = true;
             if (Qnil != (rval = rb_hash_aref(roptions, sym_default_field))) {
-                def_fields = frt_get_fields(rval);
+                def_fields = frb_get_fields(rval);
             }
             if (Qnil != (rval = rb_hash_aref(roptions, sym_analyzer))) {
-                analyzer = frt_get_cwrapped_analyzer(rval);
+                analyzer = frb_get_cwrapped_analyzer(rval);
             }
             if (Qnil != (rval = rb_hash_aref(roptions, sym_all_fields))) {
-                all_fields = frt_get_fields(rval);
+                all_fields = frb_get_fields(rval);
             }
             if (Qnil != (rval = rb_hash_aref(roptions, sym_fields))) {
-                all_fields = frt_get_fields(rval);
+                all_fields = frb_get_fields(rval);
             }
             if (Qnil != (rval = rb_hash_aref(roptions, sym_tkz_fields))) {
-                tkz_fields = frt_get_fields(rval);
+                tkz_fields = frb_get_fields(rval);
             }
         } else {
-            def_fields = frt_get_fields(roptions);
+            def_fields = frb_get_fields(roptions);
             roptions = Qnil;
         }
     }
@@ -216,7 +216,7 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
             qp->use_typed_range_query = RTEST(rval);
         }
     }
-    Frt_Wrap_Struct(self, frt_qp_mark, frt_qp_free, qp);
+    Frt_Wrap_Struct(self, frb_qp_mark, frb_qp_free, qp);
     object_add(qp, self);
     return self;
 }
@@ -230,14 +230,14 @@ frt_qp_init(int argc, VALUE *argv, VALUE self)
  *  Will raise a QueryParseException if unsuccessful. 
  */
 static VALUE
-frt_qp_parse(VALUE self, VALUE rstr)
+frb_qp_parse(VALUE self, VALUE rstr)
 {
     const char *msg = NULL;
     volatile VALUE rq;
     GET_QP;
     rstr = rb_obj_as_string(rstr);
     TRY
-        rq = frt_get_q(qp_parse(qp, rs2s(rstr)));
+        rq = frb_get_q(qp_parse(qp, rs2s(rstr)));
         break;
     default:
         msg = xcontext.msg;
@@ -258,7 +258,7 @@ frt_qp_parse(VALUE self, VALUE rstr)
  *  Returns the list of all fields that the QueryParser knows about.
  */
 static VALUE
-frt_qp_get_fields(VALUE self)
+frb_qp_get_fields(VALUE self)
 {
     GET_QP;
     HashSet *fields = qp->all_fields;
@@ -279,10 +279,10 @@ frt_qp_get_fields(VALUE self)
  *  Set the list of fields. These fields are expanded for searches on "*".
  */
 static VALUE
-frt_qp_set_fields(VALUE self, VALUE rfields)
+frb_qp_set_fields(VALUE self, VALUE rfields)
 {
     GET_QP;
-    HashSet *fields = frt_get_fields(rfields);
+    HashSet *fields = frb_get_fields(rfields);
 
     if (qp->def_fields == qp->all_fields) {
         qp->def_fields = NULL;
@@ -306,7 +306,7 @@ frt_qp_set_fields(VALUE self, VALUE rfields)
  *  Returns the list of all tokenized_fields that the QueryParser knows about.
  */
 static VALUE
-frt_qp_get_tkz_fields(VALUE self)
+frb_qp_get_tkz_fields(VALUE self)
 {
     GET_QP;
     HashSet *fields = qp->tokenized_fields;
@@ -333,11 +333,11 @@ frt_qp_get_tkz_fields(VALUE self)
  *  the queries. If this is set to Qnil then all fields will be tokenized. 
  */
 static VALUE
-frt_qp_set_tkz_fields(VALUE self, VALUE rfields)
+frb_qp_set_tkz_fields(VALUE self, VALUE rfields)
 {
     GET_QP;
     if (qp->tokenized_fields) hs_destroy(qp->tokenized_fields);
-    qp->tokenized_fields = frt_get_fields(rfields);
+    qp->tokenized_fields = frb_get_fields(rfields);
     return self;
 }
 
@@ -584,16 +584,16 @@ Init_QueryParser(void)
 
     /* QueryParser */
     cQueryParser = rb_define_class_under(mFerret, "QueryParser", rb_cObject);
-    rb_define_alloc_func(cQueryParser, frt_data_alloc);
+    rb_define_alloc_func(cQueryParser, frb_data_alloc);
 
-    rb_define_method(cQueryParser, "initialize", frt_qp_init, -1);
-    rb_define_method(cQueryParser, "parse", frt_qp_parse, 1);
-    rb_define_method(cQueryParser, "fields", frt_qp_get_fields, 0);
-    rb_define_method(cQueryParser, "fields=", frt_qp_set_fields, 1);
+    rb_define_method(cQueryParser, "initialize", frb_qp_init, -1);
+    rb_define_method(cQueryParser, "parse", frb_qp_parse, 1);
+    rb_define_method(cQueryParser, "fields", frb_qp_get_fields, 0);
+    rb_define_method(cQueryParser, "fields=", frb_qp_set_fields, 1);
     rb_define_method(cQueryParser, "tokenized_fields",
-                     frt_qp_get_tkz_fields, 0);
+                     frb_qp_get_tkz_fields, 0);
     rb_define_method(cQueryParser, "tokenized_fields=",
-                     frt_qp_set_tkz_fields, 1);
+                     frb_qp_set_tkz_fields, 1);
 
     Init_QueryParseException();
 }

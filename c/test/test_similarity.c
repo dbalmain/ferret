@@ -1,5 +1,6 @@
 #include "test.h"
 #include "similarity.h"
+#include "internal.h"
 
 void test_default_similarity(tst_case *tc, void *data)
 {

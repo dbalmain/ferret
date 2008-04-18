@@ -3,9 +3,8 @@
 #include <st.h>
 #include "ferret.h"
 #include "analysis.h"
-#include "internal.h"
 
-static char *frt_locale = NULL;
+static char *frb_locale = NULL;
 
 static VALUE mAnalysis;
 
@@ -52,7 +51,7 @@ extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int,
                           int, struct re_registers *);
 
 int
-frt_rb_hash_size(VALUE hash)
+frb_rb_hash_size(VALUE hash)
 {
     return RHASH(hash)->tbl->num_entries;
 }
@@ -94,22 +93,22 @@ typedef struct RToken {
 } RToken;
 
 static void
-frt_token_free(void *p)
+frb_token_free(void *p)
 {
     free(p);
 }
 
 static void
-frt_token_mark(void *p)
+frb_token_mark(void *p)
 {
     RToken *token = (RToken *)p;
     rb_gc_mark(token->text);
 }
 
 static VALUE
-frt_token_alloc(VALUE klass)
+frb_token_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, &frt_token_mark, &frt_token_free,
+    return Data_Wrap_Struct(klass, &frb_token_mark, &frb_token_free,
                             ALLOC(RToken));
 }
 
@@ -122,11 +121,11 @@ get_token(Token *tk)
     token->start = tk->start;
     token->end = tk->end;
     token->pos_inc = tk->pos_inc;
-    return Data_Wrap_Struct(cToken, &frt_token_mark, &frt_token_free, token);
+    return Data_Wrap_Struct(cToken, &frb_token_mark, &frb_token_free, token);
 }
 
 Token *
-frt_set_token(Token *tk, VALUE rt)
+frb_set_token(Token *tk, VALUE rt)
 {
     RToken *rtk;
 
@@ -172,7 +171,7 @@ frt_set_token(Token *tk, VALUE rt)
  *  return::     a newly created and assigned Token object
  */
 static VALUE
-frt_token_init(int argc, VALUE *argv, VALUE self) 
+frb_token_init(int argc, VALUE *argv, VALUE self) 
 {
     RToken *token;
     VALUE rtext, rstart, rend, rpos_inc, rtype;
@@ -202,7 +201,7 @@ frt_token_init(int argc, VALUE *argv, VALUE self)
  *  lexically by the token text.
  */
 static VALUE
-frt_token_cmp(VALUE self, VALUE rother)
+frb_token_cmp(VALUE self, VALUE rother)
 {
     RToken *token, *other;
     int cmp;
@@ -231,7 +230,7 @@ frt_token_cmp(VALUE self, VALUE rother)
  *  Returns the text that this token represents
  */
 static VALUE
-frt_token_get_text(VALUE self)
+frb_token_get_text(VALUE self)
 {
     RToken *token;
     GET_TK(token, self);
@@ -245,7 +244,7 @@ frt_token_get_text(VALUE self)
  *  Set the text for this token.
  */
 static VALUE
-frt_token_set_text(VALUE self, VALUE rtext)
+frb_token_set_text(VALUE self, VALUE rtext)
 {
     RToken *token;
     GET_TK(token, self);
@@ -260,7 +259,7 @@ frt_token_set_text(VALUE self, VALUE rtext)
  *  Start byte-position of this token
  */
 static VALUE
-frt_token_get_start_offset(VALUE self)
+frb_token_get_start_offset(VALUE self)
 {
     RToken *token;
     GET_TK(token, self);
@@ -274,7 +273,7 @@ frt_token_get_start_offset(VALUE self)
  *  End byte-position of this token
  */
 static VALUE
-frt_token_get_end_offset(VALUE self)
+frb_token_get_end_offset(VALUE self)
 {
     RToken *token;
     GET_TK(token, self);
@@ -288,7 +287,7 @@ frt_token_get_end_offset(VALUE self)
  *  Position Increment for this token
  */
 static VALUE
-frt_token_get_pos_inc(VALUE self)
+frb_token_get_pos_inc(VALUE self)
 {
     RToken *token;
     GET_TK(token, self);
@@ -302,7 +301,7 @@ frt_token_get_pos_inc(VALUE self)
  *  Set start byte-position of this token
  */
 static VALUE
-frt_token_set_start_offset(VALUE self, VALUE rstart)
+frb_token_set_start_offset(VALUE self, VALUE rstart)
 {
     RToken *token;
     GET_TK(token, self);
@@ -317,7 +316,7 @@ frt_token_set_start_offset(VALUE self, VALUE rstart)
  *  Set end byte-position of this token
  */
 static VALUE
-frt_token_set_end_offset(VALUE self, VALUE rend)
+frb_token_set_end_offset(VALUE self, VALUE rend)
 {
     RToken *token;
     GET_TK(token, self);
@@ -353,7 +352,7 @@ frt_token_set_end_offset(VALUE self, VALUE rend)
  *  
  */
 static VALUE
-frt_token_set_pos_inc(VALUE self, VALUE rpos_inc)
+frb_token_set_pos_inc(VALUE self, VALUE rpos_inc)
 {
     RToken *token;
     GET_TK(token, self);
@@ -368,7 +367,7 @@ frt_token_set_pos_inc(VALUE self, VALUE rpos_inc)
  *  Return a string representation of the token
  */
 static VALUE
-frt_token_to_s(VALUE self)
+frb_token_to_s(VALUE self)
 {
     RToken *token;
     char *buf;
@@ -388,14 +387,14 @@ frt_token_to_s(VALUE self)
 #define GET_TS(ts, self) Data_Get_Struct(self, TokenStream, ts)
 
 static void
-frt_ts_mark(void *p)
+frb_ts_mark(void *p)
 {
     TokenStream *ts = (TokenStream *)p;
-    if (ts->text)   frt_gc_mark(&ts->text);
+    if (ts->text)   frb_gc_mark(&ts->text);
 }
 
 static void
-frt_ts_free(TokenStream *ts)
+frb_ts_free(TokenStream *ts)
 {
     if (object_get(&ts->text) != Qnil) {
         object_del(&ts->text);
@@ -404,8 +403,8 @@ frt_ts_free(TokenStream *ts)
     ts_deref(ts);
 }
 
-static void frt_rets_free(TokenStream *ts);
-static void frt_rets_mark(TokenStream *ts);
+static void frb_rets_free(TokenStream *ts);
+static void frb_rets_mark(TokenStream *ts);
 static Token *rets_next(TokenStream *ts);
 
 static VALUE
@@ -414,11 +413,11 @@ get_rb_token_stream(TokenStream *ts)
     VALUE rts = object_get(ts);
     if (rts == Qnil) {
         if (ts->next == &rets_next) {
-            rts = Data_Wrap_Struct(cTokenStream, &frt_rets_mark,
-                                   &frt_rets_free, ts);
+            rts = Data_Wrap_Struct(cTokenStream, &frb_rets_mark,
+                                   &frb_rets_free, ts);
         } else {
-            rts = Data_Wrap_Struct(cTokenStream, &frt_ts_mark,
-                                   &frt_ts_free, ts);
+            rts = Data_Wrap_Struct(cTokenStream, &frb_ts_mark,
+                                   &frb_ts_free, ts);
         }
         object_add(ts, rts);
     }
@@ -430,7 +429,7 @@ get_wrapped_ts(VALUE self, VALUE rstr, TokenStream *ts)
 {
     StringValue(rstr);
     ts->reset(ts, rs2s(rstr));
-    Frt_Wrap_Struct(self, &frt_ts_mark, &frt_ts_free, ts);
+    Frt_Wrap_Struct(self, &frb_ts_mark, &frb_ts_free, ts);
     object_add(&ts->text, rstr);
     object_add(ts, self);
     return self;
@@ -446,7 +445,7 @@ get_wrapped_ts(VALUE self, VALUE rstr, TokenStream *ts)
  *      token_stream.text = File.read(file_name)
  */
 static VALUE
-frt_ts_set_text(VALUE self, VALUE rtext)
+frb_ts_set_text(VALUE self, VALUE rtext)
 {
     TokenStream *ts; 
     Data_Get_Struct(self, TokenStream, ts);
@@ -466,7 +465,7 @@ frt_ts_set_text(VALUE self, VALUE rtext)
  *  Return the text that the TokenStream is tokenizing
  */
 static VALUE
-frt_ts_get_text(VALUE self)
+frb_ts_get_text(VALUE self)
 {
     VALUE rtext = Qnil;
     TokenStream *ts; 
@@ -488,7 +487,7 @@ frt_ts_get_text(VALUE self)
  *  tokens.
  */
 static VALUE
-frt_ts_next(VALUE self)
+frb_ts_next(VALUE self)
 {
     TokenStream *ts;
     Token *next;
@@ -508,16 +507,16 @@ frt_ts_next(VALUE self)
 #define TkFilt(filter) ((TokenFilter *)(filter))
 
 static void
-frt_tf_mark(void *p)
+frb_tf_mark(void *p)
 {
     TokenStream *ts = (TokenStream *)p;
     if (TkFilt(ts)->sub_ts) {
-        frt_gc_mark(&TkFilt(ts)->sub_ts);
+        frb_gc_mark(&TkFilt(ts)->sub_ts);
     }
 }
 
 static void
-frt_tf_free(TokenStream *ts)
+frb_tf_free(TokenStream *ts)
 {
     if (TkFilt(ts)->sub_ts && (object_get(&TkFilt(ts)->sub_ts) != Qnil)) {
         object_del(&TkFilt(ts)->sub_ts);
@@ -546,7 +545,7 @@ cwrts_destroy_i(TokenStream *ts)
         object_del(&ts->text);
     }
     rb_hash_delete(object_space, ((VALUE)ts)|1);
-    /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
+    /*printf("rb_hash_size = %d\n", frb_rb_hash_size(object_space)); */
     free(ts);
 }
 
@@ -554,7 +553,7 @@ static Token *
 cwrts_next(TokenStream *ts)
 {
     VALUE rtoken = rb_funcall(CWTS(ts)->rts, id_next, 0);
-    return frt_set_token(&(CachedTS(ts)->token), rtoken);
+    return frb_set_token(&(CachedTS(ts)->token), rtoken);
 }
 
 static TokenStream *
@@ -575,10 +574,10 @@ cwrts_clone_i(TokenStream *orig_ts)
 }
 
 static TokenStream *
-frt_get_cwrapped_rts(VALUE rts) 
+frb_get_cwrapped_rts(VALUE rts) 
 {
     TokenStream *ts;
-    if (frt_is_cclass(rts) && DATA_PTR(rts)) {
+    if (frb_is_cclass(rts) && DATA_PTR(rts)) {
         GET_TS(ts, rts);
         REF(ts);
     }
@@ -632,12 +631,12 @@ rets_destroy_i(TokenStream *ts)
         object_del(&ts->text);
     }
     rb_hash_delete(object_space, ((VALUE)ts)|1);
-    /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
+    /*printf("rb_hash_size = %d\n", frb_rb_hash_size(object_space)); */
     free(ts);
 }
 
 static void
-frt_rets_free(TokenStream *ts)
+frb_rets_free(TokenStream *ts)
 {
     if (object_get(&ts->text) != Qnil) {
         object_del(&ts->text);
@@ -647,9 +646,9 @@ frt_rets_free(TokenStream *ts)
 }
 
 static void
-frt_rets_mark(TokenStream *ts)
+frb_rets_mark(TokenStream *ts)
 {
-    if (ts->text)   frt_gc_mark(&ts->text);
+    if (ts->text)   frb_gc_mark(&ts->text);
     rb_gc_mark(RETS(ts)->rtext);
     rb_gc_mark(RETS(ts)->regex);
     rb_gc_mark(RETS(ts)->proc);
@@ -663,7 +662,7 @@ frt_rets_mark(TokenStream *ts)
  *  tokenize the text from the beginning.
  */
 static VALUE
-frt_rets_set_text(VALUE self, VALUE rtext)
+frb_rets_set_text(VALUE self, VALUE rtext)
 {
     TokenStream *ts;
     GET_TS(ts, self);
@@ -683,7 +682,7 @@ frt_rets_set_text(VALUE self, VALUE rtext)
  *  Get the text being tokenized by the tokenizer.
  */
 static VALUE
-frt_rets_get_text(VALUE self)
+frb_rets_get_text(VALUE self)
 {
     TokenStream *ts;
     GET_TS(ts, self);
@@ -771,7 +770,7 @@ rets_new(VALUE rtext, VALUE regex, VALUE proc)
  *  regexp:: regular expression used to recognize tokens in the input
  */
 static VALUE
-frt_rets_init(int argc, VALUE *argv, VALUE self) 
+frb_rets_init(int argc, VALUE *argv, VALUE self) 
 {
     VALUE rtext, regex, proc;
     TokenStream *ts;
@@ -780,7 +779,7 @@ frt_rets_init(int argc, VALUE *argv, VALUE self)
 
     ts = rets_new(rtext, regex, proc);
 
-    Frt_Wrap_Struct(self, &frt_rets_mark, &frt_rets_free, ts);
+    Frt_Wrap_Struct(self, &frb_rets_mark, &frb_rets_free, ts);
     object_add(ts, self);
     return self;
 }
@@ -802,7 +801,7 @@ lower = (argc ? RTEST(rlower) : dflt)
  *  Create a new AsciiLetterTokenizer 
  */
 static VALUE
-frt_a_letter_tokenizer_init(VALUE self, VALUE rstr) 
+frb_a_letter_tokenizer_init(VALUE self, VALUE rstr) 
 {
     return get_wrapped_ts(self, rstr, letter_tokenizer_new());
 }
@@ -817,11 +816,11 @@ frt_a_letter_tokenizer_init(VALUE self, VALUE rstr)
  *  lower:: set to false if you don't wish to downcase tokens
  */
 static VALUE
-frt_letter_tokenizer_init(int argc, VALUE *argv, VALUE self) 
+frb_letter_tokenizer_init(int argc, VALUE *argv, VALUE self) 
 {
     TS_ARGS(false);
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     return get_wrapped_ts(self, rstr, mb_letter_tokenizer_new(lower));
 }
@@ -833,7 +832,7 @@ frt_letter_tokenizer_init(int argc, VALUE *argv, VALUE self)
  *  Create a new AsciiWhiteSpaceTokenizer 
  */
 static VALUE
-frt_a_whitespace_tokenizer_init(VALUE self, VALUE rstr) 
+frb_a_whitespace_tokenizer_init(VALUE self, VALUE rstr) 
 {
     return get_wrapped_ts(self, rstr, whitespace_tokenizer_new());
 }
@@ -848,11 +847,11 @@ frt_a_whitespace_tokenizer_init(VALUE self, VALUE rstr)
  *  lower:: set to false if you don't wish to downcase tokens
  */
 static VALUE
-frt_whitespace_tokenizer_init(int argc, VALUE *argv, VALUE self) 
+frb_whitespace_tokenizer_init(int argc, VALUE *argv, VALUE self) 
 {
     TS_ARGS(false);
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     return get_wrapped_ts(self, rstr, mb_whitespace_tokenizer_new(lower));
 }
@@ -864,7 +863,7 @@ frt_whitespace_tokenizer_init(int argc, VALUE *argv, VALUE self)
  *  Create a new AsciiStandardTokenizer 
  */
 static VALUE
-frt_a_standard_tokenizer_init(VALUE self, VALUE rstr) 
+frb_a_standard_tokenizer_init(VALUE self, VALUE rstr) 
 {
     return get_wrapped_ts(self, rstr, standard_tokenizer_new());
 }
@@ -879,10 +878,10 @@ frt_a_standard_tokenizer_init(VALUE self, VALUE rstr)
  *  lower:: set to false if you don't wish to downcase tokens
  */
 static VALUE
-frt_standard_tokenizer_init(VALUE self, VALUE rstr) 
+frb_standard_tokenizer_init(VALUE self, VALUE rstr) 
 {
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     return get_wrapped_ts(self, rstr, mb_standard_tokenizer_new());
 }
@@ -901,13 +900,13 @@ frt_standard_tokenizer_init(VALUE self, VALUE rstr)
  *  LowerCaseFilter.
  */
 static VALUE
-frt_a_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
+frb_a_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
 {
-    TokenStream *ts = frt_get_cwrapped_rts(rsub_ts);
+    TokenStream *ts = frb_get_cwrapped_rts(rsub_ts);
     ts = lowercase_filter_new(ts);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     return self;
 }
@@ -920,16 +919,16 @@ frt_a_lowercase_filter_init(VALUE self, VALUE rsub_ts)
  *  lowercase based on the current locale.
  */
 static VALUE
-frt_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
+frb_lowercase_filter_init(VALUE self, VALUE rsub_ts) 
 {
-    TokenStream *ts = frt_get_cwrapped_rts(rsub_ts);
+    TokenStream *ts = frb_get_cwrapped_rts(rsub_ts);
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     ts = mb_lowercase_filter_new(ts);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     return self;
 }
@@ -945,13 +944,13 @@ frt_lowercase_filter_init(VALUE self, VALUE rsub_ts)
  *  used by default by the StandardAnalyzer.
  */
 static VALUE
-frt_hyphen_filter_init(VALUE self, VALUE rsub_ts) 
+frb_hyphen_filter_init(VALUE self, VALUE rsub_ts) 
 {
-    TokenStream *ts = frt_get_cwrapped_rts(rsub_ts);
+    TokenStream *ts = frb_get_cwrapped_rts(rsub_ts);
     ts = hyphen_filter_new(ts);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     return self;
 }
@@ -970,12 +969,12 @@ frt_hyphen_filter_init(VALUE self, VALUE rsub_ts)
  *                 Ferret::Analysis contains a number of stop-word lists.
  */
 static VALUE
-frt_stop_filter_init(int argc, VALUE *argv, VALUE self) 
+frb_stop_filter_init(int argc, VALUE *argv, VALUE self) 
 {
     VALUE rsub_ts, rstop_words;
     TokenStream *ts;
     rb_scan_args(argc, argv, "11", &rsub_ts, &rstop_words);
-    ts = frt_get_cwrapped_rts(rsub_ts);
+    ts = frb_get_cwrapped_rts(rsub_ts);
     if (rstop_words != Qnil) {
         char **stop_words = get_stopwords(rstop_words);
         ts = stop_filter_new_with_words(ts, (const char **)stop_words);
@@ -986,12 +985,12 @@ frt_stop_filter_init(int argc, VALUE *argv, VALUE self)
     }
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     return self;
 }
 
-static INLINE void frt_add_mapping_i(TokenStream *mf, VALUE from, char *to)
+static INLINE void frb_add_mapping_i(TokenStream *mf, VALUE from, char *to)
 {
     switch (TYPE(from)) {
         case T_STRING:
@@ -1008,7 +1007,7 @@ static INLINE void frt_add_mapping_i(TokenStream *mf, VALUE from, char *to)
     }
 }
 
-static int frt_add_mappings_i(VALUE key, VALUE value, VALUE arg)
+static int frb_add_mappings_i(VALUE key, VALUE value, VALUE arg)
 {
     if (key == Qundef) {
         return ST_CONTINUE;
@@ -1031,11 +1030,11 @@ static int frt_add_mappings_i(VALUE key, VALUE value, VALUE arg)
         if (TYPE(key) == T_ARRAY) {
             int i;
             for (i = RARRAY(key)->len - 1; i >= 0; i--) {
-                frt_add_mapping_i(mf, RARRAY(key)->ptr[i], to);
+                frb_add_mapping_i(mf, RARRAY(key)->ptr[i], to);
             }
         }
         else {
-            frt_add_mapping_i(mf, key, to);
+            frb_add_mapping_i(mf, key, to);
         }
     }
     return ST_CONTINUE;
@@ -1067,16 +1066,16 @@ static int frt_add_mappings_i(VALUE key, VALUE value, VALUE arg)
  *                              })
  */
 static VALUE
-frt_mapping_filter_init(VALUE self, VALUE rsub_ts, VALUE mapping) 
+frb_mapping_filter_init(VALUE self, VALUE rsub_ts, VALUE mapping) 
 {
     TokenStream *ts;
-    ts = frt_get_cwrapped_rts(rsub_ts);
+    ts = frb_get_cwrapped_rts(rsub_ts);
     ts = mapping_filter_new(ts);
-    rb_hash_foreach(mapping, frt_add_mappings_i, (VALUE)ts);
+    rb_hash_foreach(mapping, frb_add_mappings_i, (VALUE)ts);
     mulmap_compile(((MappingFilter *)ts)->mapper);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     return self;
 }
@@ -1097,14 +1096,14 @@ frt_mapping_filter_init(VALUE self, VALUE rsub_ts, VALUE mapping)
  *  encoding::     The encoding of the data (default: "UTF-8")
  */
 static VALUE
-frt_stem_filter_init(int argc, VALUE *argv, VALUE self) 
+frb_stem_filter_init(int argc, VALUE *argv, VALUE self) 
 {
     VALUE rsub_ts, ralgorithm, rcharenc;
     char *algorithm = "english";
     char *charenc = NULL;
     TokenStream *ts;
     rb_scan_args(argc, argv, "12", &rsub_ts, &ralgorithm, &rcharenc);
-    ts = frt_get_cwrapped_rts(rsub_ts);
+    ts = frb_get_cwrapped_rts(rsub_ts);
     switch (argc) {
         case 3: charenc = rs2s(rb_obj_as_string(rcharenc));
         case 2: algorithm = rs2s(rb_obj_as_string(ralgorithm));
@@ -1112,7 +1111,7 @@ frt_stem_filter_init(int argc, VALUE *argv, VALUE self)
     ts = stem_filter_new(ts, algorithm, charenc);
     object_add(&(TkFilt(ts)->sub_ts), rsub_ts);
 
-    Frt_Wrap_Struct(self, &frt_tf_mark, &frt_tf_free, ts);
+    Frt_Wrap_Struct(self, &frb_tf_mark, &frb_tf_free, ts);
     object_add(ts, self);
     if (((StemFilter *)ts)->stemmer == NULL) {
         rb_raise(rb_eArgError, "No stemmer could be found with the encoding "
@@ -1144,7 +1143,7 @@ static void
 cwa_destroy_i(Analyzer *a)
 {
     rb_hash_delete(object_space, ((VALUE)a)|1);
-    /*printf("rb_hash_size = %d\n", frt_rb_hash_size(object_space)); */
+    /*printf("rb_hash_size = %d\n", frb_rb_hash_size(object_space)); */
     free(a);
 }
 
@@ -1153,19 +1152,19 @@ cwa_get_ts(Analyzer *a, char *field, char *text)
 {
     VALUE rts = rb_funcall(CWA(a)->ranalyzer, id_token_stream, 2,
                            ID2SYM(rb_intern(field)), rb_str_new2(text));
-    return frt_get_cwrapped_rts(rts);
+    return frb_get_cwrapped_rts(rts);
 } 
 
 Analyzer *
-frt_get_cwrapped_analyzer(VALUE ranalyzer)
+frb_get_cwrapped_analyzer(VALUE ranalyzer)
 {
     Analyzer *a = NULL;
-    if (frt_is_cclass(ranalyzer) && DATA_PTR(ranalyzer)) {
+    if (frb_is_cclass(ranalyzer) && DATA_PTR(ranalyzer)) {
         Data_Get_Struct(ranalyzer, Analyzer, a);
         REF(a);
     }
     else {
-        a = (Analyzer *)frt_calloc(sizeof(CWrappedAnalyzer));
+        a = (Analyzer *)frt_ecalloc(sizeof(CWrappedAnalyzer));
         a->destroy_i = &cwa_destroy_i;
         a->get_ts    = &cwa_get_ts;
         a->ref_cnt   = 1;
@@ -1177,20 +1176,20 @@ frt_get_cwrapped_analyzer(VALUE ranalyzer)
 }
 
 static void
-frt_analyzer_free(Analyzer *a)
+frb_analyzer_free(Analyzer *a)
 {
     object_del(a);
     a_deref(a);
 }
 
 VALUE
-frt_get_analyzer(Analyzer *a)
+frb_get_analyzer(Analyzer *a)
 {
     VALUE self = Qnil;
     if (a) {
         self = object_get(a);
         if (self == Qnil) {
-            self = Data_Wrap_Struct(cAnalyzer, NULL, &frt_analyzer_free, a);
+            self = Data_Wrap_Struct(cAnalyzer, NULL, &frb_analyzer_free, a);
             REF(a);
             object_add(a, self);
         }
@@ -1201,7 +1200,7 @@ frt_get_analyzer(Analyzer *a)
 INLINE VALUE
 get_rb_ts_from_a(Analyzer *a, VALUE rfield, VALUE rstring)
 {
-    TokenStream *ts = a_get_ts(a, frt_field(rfield), rs2s(rstring));
+    TokenStream *ts = a_get_ts(a, frb_field(rfield), rs2s(rstring));
 
     /* Make sure that there is no entry already */
     object_set(&ts->text, rstring);
@@ -1220,10 +1219,10 @@ get_rb_ts_from_a(Analyzer *a, VALUE rfield, VALUE rstring)
  *  input::      data from the field to be tokenized
  */
 static VALUE
-frt_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
+frb_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 {
     /* NOTE: Any changes made to this method may also need to be applied to
-     * frt_re_analyzer_token_stream */
+     * frb_re_analyzer_token_stream */
     Analyzer *a;
     GET_A(a, self);
 
@@ -1249,12 +1248,12 @@ lower = (argc ? RTEST(rlower) : dflt)
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
 static VALUE
-frt_a_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_a_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(false);
     a = whitespace_analyzer_new(lower);
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1270,15 +1269,15 @@ frt_a_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
 static VALUE
-frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(false);
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     a = mb_whitespace_analyzer_new(lower);
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1294,12 +1293,12 @@ frt_white_space_analyzer_init(int argc, VALUE *argv, VALUE self)
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
 static VALUE
-frt_a_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_a_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(true);
     a = letter_analyzer_new(lower);
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1315,15 +1314,15 @@ frt_a_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
  *  lower:: set to false if you don't want the field's tokens to be downcased
  */
 static VALUE
-frt_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_letter_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     Analyzer *a;
     GET_LOWER(true);
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     a = mb_letter_analyzer_new(lower);
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1355,7 +1354,7 @@ get_rstopwords(const char **stop_words)
  *  stop_words:: list of stop-words to pass to the StopFilter
  */
 static VALUE
-frt_a_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_a_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     bool lower;
     VALUE rlower, rstop_words;
@@ -1369,7 +1368,7 @@ frt_a_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
     } else {
         a = standard_analyzer_new(lower);
     }
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1388,13 +1387,13 @@ frt_a_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
  *  stop_words:: list of stop-words to pass to the StopFilter
  */
 static VALUE
-frt_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     bool lower;
     VALUE rlower, rstop_words;
     Analyzer *a;
 #ifndef POSH_OS_WIN32
-    if (!frt_locale) frt_locale = setlocale(LC_CTYPE, "");
+    if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
     rb_scan_args(argc, argv, "02", &rstop_words, &rlower);
     lower = ((rlower == Qnil) ? true : RTEST(rlower));
@@ -1405,22 +1404,22 @@ frt_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
     } else {
         a = mb_standard_analyzer_new(lower);
     }
-    Frt_Wrap_Struct(self, NULL, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
 
 static void
-frt_h_mark_values_i(void *key, void *value, void *arg)
+frb_h_mark_values_i(void *key, void *value, void *arg)
 {
-    frt_gc_mark(value);
+    frb_gc_mark(value);
 }
 
 static void
-frt_pfa_mark(void *p)
+frb_pfa_mark(void *p)
 {
-    frt_gc_mark(PFA(p)->default_a);
-    h_each(PFA(p)->dict, &frt_h_mark_values_i, NULL);
+    frb_gc_mark(PFA(p)->default_a);
+    h_each(PFA(p)->dict, &frb_h_mark_values_i, NULL);
 }
 
 /*** PerFieldAnalyzer ***/
@@ -1436,11 +1435,11 @@ frt_pfa_mark(void *p)
  *                     specified
  */
 static VALUE
-frt_per_field_analyzer_init(VALUE self, VALUE ranalyzer)
+frb_per_field_analyzer_init(VALUE self, VALUE ranalyzer)
 {
-    Analyzer *def = frt_get_cwrapped_analyzer(ranalyzer);
+    Analyzer *def = frb_get_cwrapped_analyzer(ranalyzer);
     Analyzer *a = per_field_analyzer_new(def);
-    Frt_Wrap_Struct(self, &frt_pfa_mark, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, &frb_pfa_mark, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1457,13 +1456,13 @@ frt_per_field_analyzer_init(VALUE self, VALUE ranalyzer)
  *  analyzer::   analyzer to be used on +field_name+
  */
 static VALUE
-frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
+frb_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
 {
     Analyzer *pfa, *a;
     Data_Get_Struct(self, Analyzer, pfa);
-    a = frt_get_cwrapped_analyzer(ranalyzer);
+    a = frb_get_cwrapped_analyzer(ranalyzer);
 
-    pfa_add_field(pfa, frt_field(rfield), a);
+    pfa_add_field(pfa, frb_field(rfield), a);
     return self;
 }
 
@@ -1478,10 +1477,10 @@ frt_per_field_analyzer_add_field(VALUE self, VALUE rfield, VALUE ranalyzer)
  *  input::      data from the field to be tokenized
  */
 static VALUE
-frt_pfa_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
+frb_pfa_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 {
     Analyzer *pfa, *a;
-    char *field = frt_field(rfield);
+    char *field = frb_field(rfield);
     GET_A(pfa, self);
 
     StringValue(rstring);
@@ -1501,9 +1500,9 @@ frt_pfa_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
 /*** RegExpAnalyzer ***/
 
 static void
-frt_re_analyzer_mark(Analyzer *a)
+frb_re_analyzer_mark(Analyzer *a)
 {
-    frt_gc_mark(a->current_ts);
+    frb_gc_mark(a->current_ts);
 }
 
 static void
@@ -1524,7 +1523,7 @@ re_analyzer_destroy_i(Analyzer *a)
  *  lower::   set to false if you don't want to downcase the tokens
  */
 static VALUE
-frt_re_analyzer_init(int argc, VALUE *argv, VALUE self)
+frb_re_analyzer_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE lower, rets, regex, proc;
     Analyzer *a;
@@ -1532,17 +1531,17 @@ frt_re_analyzer_init(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "02&", &regex, &lower, &proc);
 
     ts = rets_new(Qnil, regex, proc);
-    rets = Data_Wrap_Struct(cRegExpTokenizer, &frt_rets_mark, &frt_rets_free, ts);
+    rets = Data_Wrap_Struct(cRegExpTokenizer, &frb_rets_mark, &frb_rets_free, ts);
     object_add(ts, rets);
 
     if (lower != Qfalse) {
-        rets = frt_lowercase_filter_init(frt_data_alloc(cLowerCaseFilter), rets);
+        rets = frb_lowercase_filter_init(frb_data_alloc(cLowerCaseFilter), rets);
         ts = DATA_PTR(rets);
     }
     REF(ts);
 
     a = analyzer_new(ts, &re_analyzer_destroy_i, NULL);
-    Frt_Wrap_Struct(self, &frt_re_analyzer_mark, &frt_analyzer_free, a);
+    Frt_Wrap_Struct(self, &frb_re_analyzer_mark, &frb_analyzer_free, a);
     object_add(a, self);
     return self;
 }
@@ -1559,7 +1558,7 @@ frt_re_analyzer_init(int argc, VALUE *argv, VALUE self)
  *  input::      data from the field to be tokenized
  */
 static VALUE
-frt_re_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rtext)
+frb_re_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rtext)
 {
     TokenStream *ts;
     Analyzer *a;
@@ -1567,7 +1566,7 @@ frt_re_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rtext)
 
     StringValue(rtext);
 
-    ts = a_get_ts(a, frt_field(rfield), rs2s(rtext));
+    ts = a_get_ts(a, frb_field(rfield), rs2s(rtext));
 
     /* Make sure that there is no entry already */
     object_set(&ts->text, rtext);
@@ -1596,9 +1595,9 @@ frt_re_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rtext)
  *
  *     puts Ferret.locale #=> "en_US.UTF-8"
  */
-static VALUE frt_get_locale(VALUE self, VALUE locale)
+static VALUE frb_get_locale(VALUE self, VALUE locale)
 {
-    return (frt_locale ? rb_str_new2(frt_locale) : Qnil);
+    return (frb_locale ? rb_str_new2(frb_locale) : Qnil);
 }
 
 /*
@@ -1608,11 +1607,11 @@ static VALUE frt_get_locale(VALUE self, VALUE locale)
  *  Set the global locale. You should use this method to set different locales
  *  when indexing documents with different encodings.
  */
-static VALUE frt_set_locale(VALUE self, VALUE locale)
+static VALUE frb_set_locale(VALUE self, VALUE locale)
 {
     char *l = ((locale == Qnil) ? NULL : rs2s(rb_obj_as_string(locale)));
-    frt_locale = setlocale(LC_CTYPE, l);
-    return frt_locale ? rb_str_new2(frt_locale) : Qnil;
+    frb_locale = setlocale(LC_CTYPE, l);
+    return frb_locale ? rb_str_new2(frb_locale) : Qnil;
 }
 
 /****************************************************************************
@@ -1650,20 +1649,20 @@ static VALUE frt_set_locale(VALUE self, VALUE locale)
 static void Init_Token(void)
 {
     cToken = rb_define_class_under(mAnalysis, "Token", rb_cObject);
-    rb_define_alloc_func(cToken, frt_token_alloc);
+    rb_define_alloc_func(cToken, frb_token_alloc);
     rb_include_module(cToken, rb_mComparable);
 
-    rb_define_method(cToken, "initialize",  frt_token_init, -1);
-    rb_define_method(cToken, "<=>",         frt_token_cmp, 1);
-    rb_define_method(cToken, "text",        frt_token_get_text, 0);
-    rb_define_method(cToken, "text=",       frt_token_set_text, 1);
-    rb_define_method(cToken, "start",       frt_token_get_start_offset, 0);
-    rb_define_method(cToken, "start=",      frt_token_set_start_offset, 1);
-    rb_define_method(cToken, "end",         frt_token_get_end_offset, 0);
-    rb_define_method(cToken, "end=",        frt_token_set_end_offset, 1);
-    rb_define_method(cToken, "pos_inc",     frt_token_get_pos_inc, 0);
-    rb_define_method(cToken, "pos_inc=",    frt_token_set_pos_inc, 1);
-    rb_define_method(cToken, "to_s",        frt_token_to_s, 0);
+    rb_define_method(cToken, "initialize",  frb_token_init, -1);
+    rb_define_method(cToken, "<=>",         frb_token_cmp, 1);
+    rb_define_method(cToken, "text",        frb_token_get_text, 0);
+    rb_define_method(cToken, "text=",       frb_token_set_text, 1);
+    rb_define_method(cToken, "start",       frb_token_get_start_offset, 0);
+    rb_define_method(cToken, "start=",      frb_token_set_start_offset, 1);
+    rb_define_method(cToken, "end",         frb_token_get_end_offset, 0);
+    rb_define_method(cToken, "end=",        frb_token_set_end_offset, 1);
+    rb_define_method(cToken, "pos_inc",     frb_token_get_pos_inc, 0);
+    rb_define_method(cToken, "pos_inc=",    frb_token_set_pos_inc, 1);
+    rb_define_method(cToken, "to_s",        frb_token_to_s, 0);
 }
 
 /*
@@ -1682,10 +1681,10 @@ static void Init_Token(void)
 static void Init_TokenStream(void)
 {
     cTokenStream = rb_define_class_under(mAnalysis, "TokenStream", rb_cObject);
-    frt_mark_cclass(cTokenStream);
-    rb_define_method(cTokenStream, "next", frt_ts_next, 0);
-    rb_define_method(cTokenStream, "text=", frt_ts_set_text, 1);
-    rb_define_method(cTokenStream, "text", frt_ts_get_text, 0);
+    frb_mark_cclass(cTokenStream);
+    rb_define_method(cTokenStream, "next", frb_ts_next, 0);
+    rb_define_method(cTokenStream, "text=", frb_ts_set_text, 1);
+    rb_define_method(cTokenStream, "text", frb_ts_get_text, 0);
 }
 
 /*
@@ -1706,10 +1705,10 @@ static void Init_AsciiLetterTokenizer(void)
 {
     cAsciiLetterTokenizer =
         rb_define_class_under(mAnalysis, "AsciiLetterTokenizer", cTokenStream);
-    frt_mark_cclass(cAsciiLetterTokenizer);
-    rb_define_alloc_func(cAsciiLetterTokenizer, frt_data_alloc);
+    frb_mark_cclass(cAsciiLetterTokenizer);
+    rb_define_alloc_func(cAsciiLetterTokenizer, frb_data_alloc);
     rb_define_method(cAsciiLetterTokenizer, "initialize",
-                     frt_a_letter_tokenizer_init, 1);
+                     frb_a_letter_tokenizer_init, 1);
 }
 
 /*
@@ -1731,10 +1730,10 @@ static void Init_LetterTokenizer(void)
 {
     cLetterTokenizer =
         rb_define_class_under(mAnalysis, "LetterTokenizer", cTokenStream);
-    frt_mark_cclass(cLetterTokenizer);
-    rb_define_alloc_func(cLetterTokenizer, frt_data_alloc);
+    frb_mark_cclass(cLetterTokenizer);
+    rb_define_alloc_func(cLetterTokenizer, frb_data_alloc);
     rb_define_method(cLetterTokenizer, "initialize",
-                     frt_letter_tokenizer_init, -1);
+                     frb_letter_tokenizer_init, -1);
 }
 
 /*
@@ -1755,10 +1754,10 @@ static void Init_AsciiWhiteSpaceTokenizer(void)
     cAsciiWhiteSpaceTokenizer =
         rb_define_class_under(mAnalysis, "AsciiWhiteSpaceTokenizer",
                               cTokenStream);
-    frt_mark_cclass(cAsciiWhiteSpaceTokenizer);
-    rb_define_alloc_func(cAsciiWhiteSpaceTokenizer, frt_data_alloc);
+    frb_mark_cclass(cAsciiWhiteSpaceTokenizer);
+    rb_define_alloc_func(cAsciiWhiteSpaceTokenizer, frb_data_alloc);
     rb_define_method(cAsciiWhiteSpaceTokenizer, "initialize",
-                     frt_a_whitespace_tokenizer_init, 1);
+                     frb_a_whitespace_tokenizer_init, 1);
 }
 
 /*
@@ -1778,10 +1777,10 @@ static void Init_WhiteSpaceTokenizer(void)
 {
     cWhiteSpaceTokenizer =
         rb_define_class_under(mAnalysis, "WhiteSpaceTokenizer", cTokenStream);
-    frt_mark_cclass(cWhiteSpaceTokenizer);
-    rb_define_alloc_func(cWhiteSpaceTokenizer, frt_data_alloc);
+    frb_mark_cclass(cWhiteSpaceTokenizer);
+    rb_define_alloc_func(cWhiteSpaceTokenizer, frb_data_alloc);
     rb_define_method(cWhiteSpaceTokenizer, "initialize",
-                     frt_whitespace_tokenizer_init, -1);
+                     frb_whitespace_tokenizer_init, -1);
 }
 
 /*
@@ -1802,10 +1801,10 @@ static void Init_AsciiStandardTokenizer(void)
 {
     cAsciiStandardTokenizer =
         rb_define_class_under(mAnalysis, "AsciiStandardTokenizer", cTokenStream);
-    frt_mark_cclass(cAsciiStandardTokenizer);
-    rb_define_alloc_func(cAsciiStandardTokenizer, frt_data_alloc);
+    frb_mark_cclass(cAsciiStandardTokenizer);
+    rb_define_alloc_func(cAsciiStandardTokenizer, frb_data_alloc);
     rb_define_method(cAsciiStandardTokenizer, "initialize",
-                     frt_a_standard_tokenizer_init, 1);
+                     frb_a_standard_tokenizer_init, 1);
 }
 
 /*
@@ -1826,10 +1825,10 @@ static void Init_StandardTokenizer(void)
 {
     cStandardTokenizer =
         rb_define_class_under(mAnalysis, "StandardTokenizer", cTokenStream);
-    frt_mark_cclass(cStandardTokenizer);
-    rb_define_alloc_func(cStandardTokenizer, frt_data_alloc);
+    frb_mark_cclass(cStandardTokenizer);
+    rb_define_alloc_func(cStandardTokenizer, frb_data_alloc);
     rb_define_method(cStandardTokenizer, "initialize",
-                     frt_standard_tokenizer_init, 1);
+                     frb_standard_tokenizer_init, 1);
 }
 
 /*
@@ -1856,14 +1855,14 @@ static void Init_RegExpTokenizer(void)
 {
     cRegExpTokenizer =
         rb_define_class_under(mAnalysis, "RegExpTokenizer", cTokenStream);
-    frt_mark_cclass(cRegExpTokenizer);
+    frb_mark_cclass(cRegExpTokenizer);
     rtoken_re = rb_reg_new(TOKEN_RE, strlen(TOKEN_RE), 0);
     rb_define_const(cRegExpTokenizer, "REGEXP", rtoken_re);
-    rb_define_alloc_func(cRegExpTokenizer, frt_data_alloc);
+    rb_define_alloc_func(cRegExpTokenizer, frb_data_alloc);
     rb_define_method(cRegExpTokenizer, "initialize",
-                     frt_rets_init, -1);
-    rb_define_method(cRegExpTokenizer, "text=", frt_rets_set_text, 1);
-    rb_define_method(cRegExpTokenizer, "text", frt_rets_get_text, 0);
+                     frb_rets_init, -1);
+    rb_define_method(cRegExpTokenizer, "text=", frb_rets_set_text, 1);
+    rb_define_method(cRegExpTokenizer, "text", frb_rets_get_text, 0);
 }
 
 /***************/
@@ -1887,10 +1886,10 @@ static void Init_AsciiLowerCaseFilter(void)
 {
     cAsciiLowerCaseFilter =
         rb_define_class_under(mAnalysis, "AsciiLowerCaseFilter", cTokenStream);
-    frt_mark_cclass(cAsciiLowerCaseFilter);
-    rb_define_alloc_func(cAsciiLowerCaseFilter, frt_data_alloc);
+    frb_mark_cclass(cAsciiLowerCaseFilter);
+    rb_define_alloc_func(cAsciiLowerCaseFilter, frb_data_alloc);
     rb_define_method(cAsciiLowerCaseFilter, "initialize",
-                     frt_a_lowercase_filter_init, 1);
+                     frb_a_lowercase_filter_init, 1);
 }
 
 /*
@@ -1910,10 +1909,10 @@ static void Init_LowerCaseFilter(void)
 {
     cLowerCaseFilter =
         rb_define_class_under(mAnalysis, "LowerCaseFilter", cTokenStream);
-    frt_mark_cclass(cLowerCaseFilter);
-    rb_define_alloc_func(cLowerCaseFilter, frt_data_alloc);
+    frb_mark_cclass(cLowerCaseFilter);
+    rb_define_alloc_func(cLowerCaseFilter, frb_data_alloc);
     rb_define_method(cLowerCaseFilter, "initialize",
-                     frt_lowercase_filter_init, 1);
+                     frb_lowercase_filter_init, 1);
 }
 
 /*
@@ -1935,9 +1934,9 @@ static void Init_HyphenFilter(void)
 {
     cHyphenFilter =
         rb_define_class_under(mAnalysis, "HyphenFilter", cTokenStream);
-    frt_mark_cclass(cHyphenFilter);
-    rb_define_alloc_func(cHyphenFilter, frt_data_alloc);
-    rb_define_method(cHyphenFilter, "initialize", frt_hyphen_filter_init, 1);
+    frb_mark_cclass(cHyphenFilter);
+    rb_define_alloc_func(cHyphenFilter, frb_data_alloc);
+    rb_define_method(cHyphenFilter, "initialize", frb_hyphen_filter_init, 1);
 }
 
 /*
@@ -1985,10 +1984,10 @@ static void Init_MappingFilter(void)
 {
     cMappingFilter =
         rb_define_class_under(mAnalysis, "MappingFilter", cTokenStream);
-    frt_mark_cclass(cMappingFilter);
-    rb_define_alloc_func(cMappingFilter, frt_data_alloc);
+    frb_mark_cclass(cMappingFilter);
+    rb_define_alloc_func(cMappingFilter, frb_data_alloc);
     rb_define_method(cMappingFilter, "initialize",
-                     frt_mapping_filter_init, 2);
+                     frb_mapping_filter_init, 2);
 }
 
 /*
@@ -2008,10 +2007,10 @@ static void Init_StopFilter(void)
 {
     cStopFilter =
         rb_define_class_under(mAnalysis, "StopFilter", cTokenStream);
-    frt_mark_cclass(cStopFilter);
-    rb_define_alloc_func(cStopFilter, frt_data_alloc);
+    frb_mark_cclass(cStopFilter);
+    rb_define_alloc_func(cStopFilter, frb_data_alloc);
     rb_define_method(cStopFilter, "initialize",
-                     frt_stop_filter_init, -1);
+                     frb_stop_filter_init, -1);
 }
 
 /* 
@@ -2080,10 +2079,10 @@ static void Init_StemFilter(void)
 {
     cStemFilter =
         rb_define_class_under(mAnalysis, "StemFilter", cTokenStream);
-    frt_mark_cclass(cStemFilter);
-    rb_define_alloc_func(cStemFilter, frt_data_alloc);
+    frb_mark_cclass(cStemFilter);
+    rb_define_alloc_func(cStemFilter, frb_data_alloc);
     rb_define_method(cStemFilter, "initialize",
-                     frt_stem_filter_init, -1);
+                     frb_stem_filter_init, -1);
 }
 
 /*************************/
@@ -2124,10 +2123,10 @@ static void Init_Analyzer(void)
 {
     cAnalyzer =
         rb_define_class_under(mAnalysis, "Analyzer", rb_cObject);
-    frt_mark_cclass(cAnalyzer);
-    rb_define_alloc_func(cAnalyzer, frt_data_alloc);
-    rb_define_method(cAnalyzer, "initialize", frt_letter_analyzer_init, -1);
-    rb_define_method(cAnalyzer, "token_stream", frt_analyzer_token_stream, 2);
+    frb_mark_cclass(cAnalyzer);
+    rb_define_alloc_func(cAnalyzer, frb_data_alloc);
+    rb_define_method(cAnalyzer, "initialize", frb_letter_analyzer_init, -1);
+    rb_define_method(cAnalyzer, "token_stream", frb_analyzer_token_stream, 2);
 }
 
 /*
@@ -2162,10 +2161,10 @@ static void Init_AsciiLetterAnalyzer(void)
 {
     cAsciiLetterAnalyzer =
         rb_define_class_under(mAnalysis, "AsciiLetterAnalyzer", cAnalyzer);
-    frt_mark_cclass(cAsciiLetterAnalyzer);
-    rb_define_alloc_func(cAsciiLetterAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cAsciiLetterAnalyzer);
+    rb_define_alloc_func(cAsciiLetterAnalyzer, frb_data_alloc);
     rb_define_method(cAsciiLetterAnalyzer, "initialize",
-                     frt_a_letter_analyzer_init, -1);
+                     frb_a_letter_analyzer_init, -1);
 }
 
 /*
@@ -2193,10 +2192,10 @@ static void Init_LetterAnalyzer(void)
 {
     cLetterAnalyzer =
         rb_define_class_under(mAnalysis, "LetterAnalyzer", cAnalyzer);
-    frt_mark_cclass(cLetterAnalyzer);
-    rb_define_alloc_func(cLetterAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cLetterAnalyzer);
+    rb_define_alloc_func(cLetterAnalyzer, frb_data_alloc);
     rb_define_method(cLetterAnalyzer, "initialize",
-                     frt_letter_analyzer_init, -1);
+                     frb_letter_analyzer_init, -1);
 }
 
 /*
@@ -2230,10 +2229,10 @@ static void Init_AsciiWhiteSpaceAnalyzer(void)
 {
     cAsciiWhiteSpaceAnalyzer =
         rb_define_class_under(mAnalysis, "AsciiWhiteSpaceAnalyzer", cAnalyzer);
-    frt_mark_cclass(cAsciiWhiteSpaceAnalyzer);
-    rb_define_alloc_func(cAsciiWhiteSpaceAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cAsciiWhiteSpaceAnalyzer);
+    rb_define_alloc_func(cAsciiWhiteSpaceAnalyzer, frb_data_alloc);
     rb_define_method(cAsciiWhiteSpaceAnalyzer, "initialize",
-                     frt_a_white_space_analyzer_init, -1);
+                     frb_a_white_space_analyzer_init, -1);
 }
 
 /*
@@ -2261,10 +2260,10 @@ static void Init_WhiteSpaceAnalyzer(void)
 {
     cWhiteSpaceAnalyzer =
         rb_define_class_under(mAnalysis, "WhiteSpaceAnalyzer", cAnalyzer);
-    frt_mark_cclass(cWhiteSpaceAnalyzer);
-    rb_define_alloc_func(cWhiteSpaceAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cWhiteSpaceAnalyzer);
+    rb_define_alloc_func(cWhiteSpaceAnalyzer, frb_data_alloc);
     rb_define_method(cWhiteSpaceAnalyzer, "initialize",
-                     frt_white_space_analyzer_init, -1);
+                     frb_white_space_analyzer_init, -1);
 }
 
 /*
@@ -2298,10 +2297,10 @@ static void Init_AsciiStandardAnalyzer(void)
 {
     cAsciiStandardAnalyzer =
         rb_define_class_under(mAnalysis, "AsciiStandardAnalyzer", cAnalyzer);
-    frt_mark_cclass(cAsciiStandardAnalyzer);
-    rb_define_alloc_func(cAsciiStandardAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cAsciiStandardAnalyzer);
+    rb_define_alloc_func(cAsciiStandardAnalyzer, frb_data_alloc);
     rb_define_method(cAsciiStandardAnalyzer, "initialize",
-                     frt_a_standard_analyzer_init, -1);
+                     frb_a_standard_analyzer_init, -1);
 }
 
 /*
@@ -2333,10 +2332,10 @@ static void Init_StandardAnalyzer(void)
 {
     cStandardAnalyzer =
         rb_define_class_under(mAnalysis, "StandardAnalyzer", cAnalyzer);
-    frt_mark_cclass(cStandardAnalyzer);
-    rb_define_alloc_func(cStandardAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cStandardAnalyzer);
+    rb_define_alloc_func(cStandardAnalyzer, frb_data_alloc);
     rb_define_method(cStandardAnalyzer, "initialize",
-                     frt_standard_analyzer_init, -1);
+                     frb_standard_analyzer_init, -1);
 }
 
 /*
@@ -2363,16 +2362,16 @@ static void Init_PerFieldAnalyzer(void)
 {
     cPerFieldAnalyzer =
         rb_define_class_under(mAnalysis, "PerFieldAnalyzer", cAnalyzer);
-    frt_mark_cclass(cPerFieldAnalyzer);
-    rb_define_alloc_func(cPerFieldAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cPerFieldAnalyzer);
+    rb_define_alloc_func(cPerFieldAnalyzer, frb_data_alloc);
     rb_define_method(cPerFieldAnalyzer, "initialize",
-                     frt_per_field_analyzer_init, 1);
+                     frb_per_field_analyzer_init, 1);
     rb_define_method(cPerFieldAnalyzer, "add_field",
-                     frt_per_field_analyzer_add_field, 2);
+                     frb_per_field_analyzer_add_field, 2);
     rb_define_method(cPerFieldAnalyzer, "[]=",
-                     frt_per_field_analyzer_add_field, 2);
+                     frb_per_field_analyzer_add_field, 2);
     rb_define_method(cPerFieldAnalyzer, "token_stream",
-                     frt_pfa_analyzer_token_stream, 2);
+                     frb_pfa_analyzer_token_stream, 2);
 }
 
 /*
@@ -2406,12 +2405,12 @@ static void Init_RegExpAnalyzer(void)
 {
     cRegExpAnalyzer =
         rb_define_class_under(mAnalysis, "RegExpAnalyzer", cAnalyzer);
-    frt_mark_cclass(cRegExpAnalyzer);
-    rb_define_alloc_func(cRegExpAnalyzer, frt_data_alloc);
+    frb_mark_cclass(cRegExpAnalyzer);
+    rb_define_alloc_func(cRegExpAnalyzer, frb_data_alloc);
     rb_define_method(cRegExpAnalyzer, "initialize",
-                     frt_re_analyzer_init, -1);
+                     frb_re_analyzer_init, -1);
     rb_define_method(cRegExpAnalyzer, "token_stream",
-                     frt_re_analyzer_token_stream, 2);
+                     frb_re_analyzer_token_stream, 2);
 }
 
 /* rdoc hack
@@ -2476,8 +2475,8 @@ Init_Analysis(void)
     rb_define_const(mFerret, "OBJECT_SPACE", object_space);
 
     /*** * * Locale stuff * * ***/
-    rb_define_singleton_method(mFerret, "locale=", frt_set_locale, 1);
-    rb_define_singleton_method(mFerret, "locale", frt_get_locale, 0);
+    rb_define_singleton_method(mFerret, "locale=", frb_set_locale, 1);
+    rb_define_singleton_method(mFerret, "locale", frb_get_locale, 0);
 
     rb_define_const(mAnalysis, "ENGLISH_STOP_WORDS",
                     get_rstopwords(ENGLISH_STOP_WORDS));

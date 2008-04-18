@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "internal.h"
 
 /*
  * This list of stop words is taken from

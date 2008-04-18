@@ -2,6 +2,7 @@
 #include "test.h"
 #include "testhelper.h"
 #include "bitvector.h"
+#include "internal.h"
 
 #define BV_SIZE 1000
 #define BV_INT 33

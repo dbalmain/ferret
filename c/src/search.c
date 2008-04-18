@@ -256,7 +256,7 @@ void w_destroy(Weight *self)
 
 Weight *w_create(size_t size, Query *query)
 {
-    Weight *self                    = (Weight *)frt_calloc(size);
+    Weight *self                    = (Weight *)ecalloc(size);
 #ifdef DEBUG
     if (size < sizeof(Weight)) {
         RAISE(FERRET_ERROR, "size of weight <%d> should be at least <%d>",
@@ -441,7 +441,7 @@ static MatchVector *q_get_matchv_i(Query *self, MatchVector *mv, TermVector *tv)
 
 Query *q_create(size_t size)
 {
-    Query *self = (Query *)frt_calloc(size);
+    Query *self = (Query *)ecalloc(size);
 #ifdef DEBUG
     if (size < sizeof(Query)) {
         RAISE(FERRET_ERROR, "Size of a query <%d> should never be smaller than "
@@ -471,7 +471,7 @@ void scorer_destroy_i(Scorer *scorer)
 
 Scorer *scorer_create(size_t size, Similarity *similarity)
 {
-    Scorer *self        = (Scorer *)frt_calloc(size);
+    Scorer *self        = (Scorer *)ecalloc(size);
 #ifdef DEBUG
     if (size < sizeof(Scorer)) {
         RAISE(FERRET_ERROR, "size of scorer <%d> should be at least <%d>",

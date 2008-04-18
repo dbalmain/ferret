@@ -684,7 +684,7 @@ static bool tvpe_lt(TVPosEnum *tvpe1, TVPosEnum *tvpe2)
 
 static TVPosEnum *tvpe_new(int *positions, int size, int offset)
 {
-    TVPosEnum *self = frt_malloc(sizeof(TVPosEnum) + size * sizeof(int));
+    TVPosEnum *self = emalloc(sizeof(TVPosEnum) + size * sizeof(int));
     memcpy(self->positions, positions, size * sizeof(int));
     self->size = size;
     self->offset = offset;
@@ -718,7 +718,7 @@ static TVPosEnum *tvpe_new_merge(char **terms, int t_cnt, TermVector *tv,
     }
     else {
         int index = 0;
-        self = frt_malloc(sizeof(TVPosEnum) + total_positions * sizeof(int));
+        self = emalloc(sizeof(TVPosEnum) + total_positions * sizeof(int));
         self->size = total_positions;
         self->offset = offset;
         self->index = -1;

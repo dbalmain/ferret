@@ -10,41 +10,39 @@
 #undef rename
 #undef read
 
-#define frt_malloc xmalloc
-#define frt_calloc(n) xcalloc(n, 1)
-#define frt_realloc xrealloc
+#define frt_emalloc xmalloc
+#define frt_ecalloc(n) xcalloc(n, 1)
+#define frt_erealloc xrealloc
 
 
 #ifdef FRT_HAS_ISO_VARARGS
 /* C99-compliant compiler */
 
-# define FRT_EXIT(...) frt_rb_raise(__FILE__, __LINE__, __func__, __VA_ARGS__)
-extern void frt_rb_raise(const char *file, int line_num, const char *func,
+# define FRT_XEXIT(...) frb_rb_raise(__FILE__, __LINE__, __func__, __VA_ARGS__)
+extern void frb_rb_raise(const char *file, int line_num, const char *func,
                          const char *err_type, const char *fmt, ...);
 
-# define V_FRT_EXIT(err_type, fmt, args) \
-    vfrt_rb_raise(__FILE__, __LINE__, __func__, err_type, fmt, args)
-extern void vfrt_rb_raise(const char *file, int line_num, const char *func,
+# define FRT_VEXIT(err_type, fmt, args) \
+    frb_vrb_raise(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void frb_vrb_raise(const char *file, int line_num, const char *func,
                           const char *err_type, const char *fmt, va_list args);
 
 #elif defined(FRT_HAS_GNUC_VARARGS)
 /* gcc has an extension */
 
-# define FRT_EXIT(args...) frt_rb_raise(__FILE__, __LINE__, __func__, ##args)
-extern void frt_rb_raise(const char *file, int line_num, const char *func,
+# define FRT_XEXIT(args...) frb_rb_raise(__FILE__, __LINE__, __func__, ##args)
+extern void frb_rb_raise(const char *file, int line_num, const char *func,
                          const char *err_type, const char *fmt, ...);
 
-# define V_FRT_EXIT(err_type, fmt, args) \
-    vfrt_rb_raise(__FILE__, __LINE__, __func__, err_type, fmt, args)
-extern void vfrt_rb_raise(const char *file, int line_num, const char *func,
+# define FRT_VEXIT(err_type, fmt, args) \
+    frb_vrb_raise(__FILE__, __LINE__, __func__, err_type, fmt, args)
+extern void frb_vrb_raise(const char *file, int line_num, const char *func,
                           const char *err_type, const char *fmt, va_list args);
 #else
 /* Can't do VARARGS */
 
-extern void FRT_EXIT(const char *err_type, const char *fmt, ...);
-extern void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args);
+extern void FRT_XEXIT(const char *err_type, const char *fmt, ...);
+extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args);
 #endif
-
-extern void frt_micro_sleep(const int micro_seconds);
 
 #endif

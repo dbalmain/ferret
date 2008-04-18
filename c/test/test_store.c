@@ -2,6 +2,7 @@
 #include "store.h"
 #include <string.h>
 #include <limits.h>
+#include "internal.h"
 
 #define TEST_LOCK_NAME "test"
 

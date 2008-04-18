@@ -15,7 +15,7 @@ typedef struct Index
     Config config;
     mutex_t mutex;
     Store *store;
-    Analyzer *analyzer;
+    FerretAnalyzer *analyzer;
     IndexReader *ir;
     IndexWriter *iw;
     Searcher *sea;
@@ -29,7 +29,7 @@ typedef struct Index
     bool check_latest : 1;
 } Index;
 
-extern Index *index_new(Store *store, Analyzer *analyzer,
+extern Index *index_new(Store *store, FerretAnalyzer *analyzer,
                         FerretHashSet *def_fields, bool create);
 extern void index_destroy(Index *self);
 extern void index_flush(Index *self);

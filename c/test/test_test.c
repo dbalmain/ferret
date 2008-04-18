@@ -1,5 +1,6 @@
 #include "test.h"
 #include "except.h"
+#include "internal.h"
 
 static void raise_eof()
 {
@@ -46,7 +47,7 @@ static void raise_nothing(void *nothing)
 static void test_failures(tst_case *tc, void *data)
 {
     void *q = NULL;
-    void *p = frt_malloc(10);
+    void *p = emalloc(10);
 
     int ia1[3] = { 1, 2, 3 };
     int ia2[3] = { 1, 2, 4 };

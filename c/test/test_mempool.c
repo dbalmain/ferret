@@ -1,6 +1,7 @@
 #include "test.h"
 #include "mempool.h"
 #include <stdlib.h>
+#include "internal.h"
 
 
 static void test_mp_default_capa(tst_case *tc, void *data)

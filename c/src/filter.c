@@ -56,7 +56,7 @@ int filt_eq_default(Filter *filt, Filter *o)
 
 Filter *filt_create(size_t size, const char *name)
 {
-    Filter *filt    = (Filter *)frt_malloc(size);
+    Filter *filt    = (Filter *)emalloc(size);
     filt->cache     = co_hash_create();
     filt->name      = estrdup(name);
     filt->to_s      = &filt_to_s_i;

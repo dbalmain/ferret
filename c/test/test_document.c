@@ -1,5 +1,6 @@
 #include "test.h"
 #include "document.h"
+#include "internal.h"
 
 void test_df_standard(tst_case * tc, void *data)
 {

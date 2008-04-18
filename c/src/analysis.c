@@ -114,7 +114,7 @@ static TokenStream *ts_reset(TokenStream *ts, char *text)
 
 TokenStream *ts_clone_size(TokenStream *orig_ts, size_t size)
 {
-    TokenStream *ts = (TokenStream *)frt_calloc(size);
+    TokenStream *ts = (TokenStream *)ecalloc(size);
     memcpy(ts, orig_ts, size);
     ts->ref_cnt = 1;
     return ts;
@@ -122,7 +122,7 @@ TokenStream *ts_clone_size(TokenStream *orig_ts, size_t size)
 
 TokenStream *ts_new_i(size_t size)
 {
-    TokenStream *ts = frt_calloc(size);
+    TokenStream *ts = ecalloc(size);
 
     ts->destroy_i = (void (*)(TokenStream *))&free;
     ts->reset = &ts_reset;
@@ -1070,10 +1070,9 @@ static void filter_destroy_i(TokenStream *ts)
     free(ts);
 }
 
-#define tf_new(type, sub) tf_new_i(sizeof(type), sub)
 TokenStream *tf_new_i(size_t size, TokenStream *sub_ts)
 {
-    TokenStream *ts     = (TokenStream *)frt_calloc(size);
+    TokenStream *ts     = (TokenStream *)ecalloc(size);
 
     TkFilt(ts)->sub_ts  = sub_ts;
 
@@ -1527,7 +1526,6 @@ Analyzer *mb_standard_analyzer_new(bool lowercase)
  *
  ****************************************************************************/
 
-#define PFA(analyzer) ((PerFieldAnalyzer *)(analyzer))
 void pfa_destroy_i(Analyzer *self)
 {
     h_destroy(PFA(self)->dict);
@@ -1558,7 +1556,7 @@ void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer)
 
 Analyzer *per_field_analyzer_new(Analyzer *default_a)
 {
-    Analyzer *a = (Analyzer *)frt_calloc(sizeof(PerFieldAnalyzer));
+    Analyzer *a = (Analyzer *)ecalloc(sizeof(PerFieldAnalyzer));
 
     PFA(a)->default_a = default_a;
     PFA(a)->dict = h_new_str(&free, &pfa_sub_a_destroy_i);

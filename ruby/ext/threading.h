@@ -15,17 +15,17 @@ typedef int thread_once_t;
 #define mutex_trylock(a)
 #define mutex_unlock(a)
 #define mutex_destroy(a)
-#define thread_key_create(a, b) frt_thread_key_create(a, b)
-#define thread_key_delete(a) frt_thread_key_delete(a)
-#define thread_setspecific(a, b) frt_thread_setspecific(a, b)
-#define thread_getspecific(a) frt_thread_getspecific(a)
+#define thread_key_create(a, b) frb_thread_key_create(a, b)
+#define thread_key_delete(a) frb_thread_key_delete(a)
+#define thread_setspecific(a, b) frb_thread_setspecific(a, b)
+#define thread_getspecific(a) frb_thread_getspecific(a)
 #define thread_exit(a)
-#define thread_once(a, b) frt_thread_once(a, b)
+#define thread_once(a, b) frb_thread_once(a, b)
 
-void frt_thread_once(int *once_control, void (*init_routine)(void));
-void frt_thread_key_create(thread_key_t *key, void (*destr_function)(void *));
-void frt_thread_key_delete(thread_key_t key);
-void frt_thread_setspecific(thread_key_t key, const void *pointer);
-void *frt_thread_getspecific(thread_key_t key);
+void frb_thread_once(int *once_control, void (*init_routine)(void));
+void frb_thread_key_create(thread_key_t *key, void (*destr_function)(void *));
+void frb_thread_key_delete(thread_key_t key);
+void frb_thread_setspecific(thread_key_t key, const void *pointer);
+void *frb_thread_getspecific(thread_key_t key);
 
 #endif

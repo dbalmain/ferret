@@ -1,5 +1,6 @@
 #include "test.h"
 #include <signal.h>
+#include "internal.h"
 
 /**
  * Test the strfmt functions. This method is like sprintf except that it

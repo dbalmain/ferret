@@ -2,8 +2,9 @@
 #include "global.h"
 #include "except.h"
 #include "threading.h"
+#include "internal.h"
 
-const char *const FRT_ERROR_TYPES[] = {
+const char *const ERROR_TYPES[] = {
     "Body",
     "Finally",
     "Exception",
@@ -71,7 +72,7 @@ void xraise(int excode, const char *const msg)
     top_context = thread_getspecific(exception_stack_key);
 
     if (!top_context) {
-        FRT_EXIT(FRT_ERROR_TYPES[excode], msg);
+        XEXIT(ERROR_TYPES[excode], msg);
     }
     else if (!top_context->in_finally) {
         xraise_context(top_context, excode, msg);
@@ -95,7 +96,7 @@ void xpop_context()
             xraise_context(context, top_cxt->excode, top_cxt->msg);
         }
         else {
-            FRT_EXIT(FRT_ERROR_TYPES[top_cxt->excode], top_cxt->msg);
+            XEXIT(ERROR_TYPES[top_cxt->excode], top_cxt->msg);
         }
     }
 }

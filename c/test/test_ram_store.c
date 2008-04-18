@@ -1,5 +1,6 @@
 #include "store.h"
 #include "test_store.h"
+#include "internal.h"
 
 /**
  * Test ramo_write_to which basically writes the contents of a RAM output

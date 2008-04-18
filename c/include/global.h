@@ -26,8 +26,8 @@ typedef void (*frt_free_ft)(void *key);
 #define ZEROSET(ptr, type) memset(ptr, 0, sizeof(type))
 #define ZEROSET_N(ptr, type, n) memset(ptr, 0, sizeof(type)*(n))
 
-#define ALLOC_AND_ZERO(type) (type*)frt_calloc(sizeof(type))
-#define ALLOC_AND_ZERO_N(type,n) (type*)frt_calloc(sizeof(type)*(n))
+#define ALLOC_AND_ZERO(type) (type*)frt_ecalloc(sizeof(type))
+#define ALLOC_AND_ZERO_N(type,n) (type*)frt_ecalloc(sizeof(type)*(n))
 
 #define REF(a) (a)->ref_cnt++
 #define DEREF(a) (a)->ref_cnt--
@@ -102,7 +102,7 @@ extern void do_clean_up();
 extern void dummy_free(void *p);
 
 /**
- * For coverage, we don't want FRT_EXIT to actually exit on uncaught
+ * For coverage, we don't want FRT_XEXIT to actually exit on uncaught
  * exceptions.  +x_abort_on_exception+ is +true+ by default, set it to
  * +false+, and +x_has_aborted+ will be set as appropriate.  We also
  * don't want spurious errors to be printed out to stderr, so we give

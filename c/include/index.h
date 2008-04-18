@@ -877,7 +877,7 @@ typedef struct DocWriter
     TermVectorsWriter *tvw;
     FieldsWriter *fw;
     MemoryPool *mp;
-    Analyzer *analyzer;
+    FerretAnalyzer *analyzer;
     FerretHashTable *curr_plists;
     FerretHashTable *fields;
     Similarity *similarity;
@@ -913,7 +913,7 @@ struct IndexWriter
     Config config;
     mutex_t mutex;
     Store *store;
-    Analyzer *analyzer;
+    FerretAnalyzer *analyzer;
     SegmentInfos *sis;
     FieldInfos *fis;
     DocWriter *dw;
@@ -924,7 +924,7 @@ struct IndexWriter
 
 extern void index_create(Store *store, FieldInfos *fis);
 extern bool index_is_locked(Store *store);
-extern IndexWriter *iw_open(Store *store, Analyzer *analyzer,
+extern IndexWriter *iw_open(Store *store, FerretAnalyzer *analyzer,
                             const Config *config);
 extern void iw_delete_term(IndexWriter *iw, const char *field,
                            const char *term);

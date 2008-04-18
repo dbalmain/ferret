@@ -2,6 +2,7 @@
 #include "test.h"
 #include "except.h"
 #include "all_tests.h"
+#include "internal.h"
 
 #define TST_STAT_SIZE 4
 /* chars use in ticker. This is usually too fast to see */

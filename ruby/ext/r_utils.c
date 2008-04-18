@@ -9,17 +9,17 @@
 static VALUE cBitVector;
 
 static void
-frt_bv_free(void *p)
+frb_bv_free(void *p)
 {
     object_del(p);
     bv_destroy((BitVector *)p);
 }
 
 static VALUE
-frt_bv_alloc(VALUE klass)
+frb_bv_alloc(VALUE klass)
 {
     BitVector *bv = bv_new();
-    VALUE rbv = Data_Wrap_Struct(klass, NULL, &frt_bv_free, bv);
+    VALUE rbv = Data_Wrap_Struct(klass, NULL, &frb_bv_free, bv);
     object_add(bv, rbv);
     return rbv;
 }
@@ -27,11 +27,11 @@ frt_bv_alloc(VALUE klass)
 #define GET_BV(bv, self) Data_Get_Struct(self, BitVector, bv)
 
 VALUE
-frt_get_bv(BitVector *bv)
+frb_get_bv(BitVector *bv)
 {
     VALUE rbv;
     if ((rbv = object_get(bv)) == Qnil) {
-        rbv = Data_Wrap_Struct(cBitVector, NULL, &frt_bv_free, bv);
+        rbv = Data_Wrap_Struct(cBitVector, NULL, &frb_bv_free, bv);
         REF(bv);
         object_add(bv, rbv);
     }
@@ -45,7 +45,7 @@ frt_get_bv(BitVector *bv)
  *  Returns a new empty bit vector object
  */
 static VALUE 
-frt_bv_init(VALUE self)
+frb_bv_init(VALUE self)
 {
     return self;
 }
@@ -58,7 +58,7 @@ frt_bv_init(VALUE self)
  *  +false+).
  */
 VALUE
-frt_bv_set(VALUE self, VALUE rindex, VALUE rstate)
+frb_bv_set(VALUE self, VALUE rindex, VALUE rstate)
 {
     BitVector *bv;
     int index = FIX2INT(rindex);
@@ -83,9 +83,9 @@ frt_bv_set(VALUE self, VALUE rindex, VALUE rstate)
  *  Set the bit at _i_ to *on* (+true+)
  */
 VALUE
-frt_bv_set_on(VALUE self, VALUE rindex)
+frb_bv_set_on(VALUE self, VALUE rindex)
 {
-    frt_bv_set(self, rindex, Qtrue);
+    frb_bv_set(self, rindex, Qtrue);
     return self;
 }
 
@@ -96,9 +96,9 @@ frt_bv_set_on(VALUE self, VALUE rindex)
  *  Set the bit at _i_ to *off* (+false+)
  */
 VALUE
-frt_bv_set_off(VALUE self, VALUE rindex)
+frb_bv_set_off(VALUE self, VALUE rindex)
 {
-    frt_bv_set(self, rindex, Qfalse);
+    frb_bv_set(self, rindex, Qfalse);
     return self;
 }
 
@@ -110,7 +110,7 @@ frt_bv_set_off(VALUE self, VALUE rindex)
  *  Get the bit value at _i_
  */
 VALUE
-frt_bv_get(VALUE self, VALUE rindex)
+frb_bv_get(VALUE self, VALUE rindex)
 {
     BitVector *bv;
     int index = FIX2INT(rindex);
@@ -131,7 +131,7 @@ frt_bv_get(VALUE self, VALUE rindex)
  *  instead.
  */
 VALUE
-frt_bv_count(VALUE self)
+frb_bv_count(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -146,7 +146,7 @@ frt_bv_count(VALUE self)
  *  all bits set to *off*.
  */
 VALUE
-frt_bv_clear(VALUE self)
+frb_bv_clear(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -165,7 +165,7 @@ frt_bv_clear(VALUE self)
  *  bits set.
  */
 VALUE
-frt_bv_eql(VALUE self, VALUE other)
+frb_bv_eql(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -181,7 +181,7 @@ frt_bv_eql(VALUE self, VALUE other)
  *  cache them.
  */
 VALUE
-frt_bv_hash(VALUE self)
+frb_bv_hash(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -197,7 +197,7 @@ frt_bv_hash(VALUE self)
  *  +bv2+
  */
 VALUE
-frt_bv_and(VALUE self, VALUE other)
+frb_bv_and(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -213,7 +213,7 @@ frt_bv_and(VALUE self, VALUE other)
  *  +bv2+ in place on +bv1+
  */
 VALUE
-frt_bv_and_x(VALUE self, VALUE other)
+frb_bv_and_x(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -231,7 +231,7 @@ frt_bv_and_x(VALUE self, VALUE other)
  *  +bv2+
  */
 VALUE
-frt_bv_or(VALUE self, VALUE other)
+frb_bv_or(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -247,7 +247,7 @@ frt_bv_or(VALUE self, VALUE other)
  *  +bv2+ in place on +bv1+
  */
 VALUE
-frt_bv_or_x(VALUE self, VALUE other)
+frb_bv_or_x(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -265,7 +265,7 @@ frt_bv_or_x(VALUE self, VALUE other)
  *  +bv2+
  */
 VALUE
-frt_bv_xor(VALUE self, VALUE other)
+frb_bv_xor(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -281,7 +281,7 @@ frt_bv_xor(VALUE self, VALUE other)
  *  +bv2+ in place on +bv1+
  */
 VALUE
-frt_bv_xor_x(VALUE self, VALUE other)
+frb_bv_xor_x(VALUE self, VALUE other)
 {
     BitVector *bv1, *bv2;
     GET_BV(bv1, self);
@@ -298,7 +298,7 @@ frt_bv_xor_x(VALUE self, VALUE other)
  *  Perform a boolean _not_ operation on +bv+
  *  */
 VALUE
-frt_bv_not(VALUE self)
+frb_bv_not(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -312,7 +312,7 @@ frt_bv_not(VALUE self)
  *  Perform a boolean _not_ operation on +bv+ in-place
  */
 VALUE
-frt_bv_not_x(VALUE self)
+frb_bv_not_x(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -329,7 +329,7 @@ frt_bv_not_x(VALUE self)
  *  necessary for the other scan methods or for the +#each+ method.
  */
 VALUE
-frt_bv_reset_scan(VALUE self)
+frb_bv_reset_scan(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -347,7 +347,7 @@ frt_bv_reset_scan(VALUE self)
  *  first create the bit vector.
  */
 VALUE
-frt_bv_next(VALUE self)
+frb_bv_next(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -365,7 +365,7 @@ frt_bv_next(VALUE self)
  *  automatically reset when you first create the bit vector.
  */
 VALUE
-frt_bv_next_unset(VALUE self)
+frb_bv_next_unset(VALUE self)
 {
     BitVector *bv;
     GET_BV(bv, self);
@@ -383,7 +383,7 @@ frt_bv_next_unset(VALUE self)
  *  use the +#next_unset_from+ method.
  */
 VALUE
-frt_bv_next_from(VALUE self, VALUE rfrom)
+frb_bv_next_from(VALUE self, VALUE rfrom)
 {
     BitVector *bv;
     int from = FIX2INT(rfrom);
@@ -405,7 +405,7 @@ frt_bv_next_from(VALUE self, VALUE rfrom)
  *  should use the +#next_from+ method.
  */
 VALUE
-frt_bv_next_unset_from(VALUE self, VALUE rfrom)
+frb_bv_next_unset_from(VALUE self, VALUE rfrom)
 {
     BitVector *bv;
     int from = FIX2INT(rfrom);
@@ -424,7 +424,7 @@ frt_bv_next_unset_from(VALUE self, VALUE rfrom)
  *  order
  */
 VALUE
-frt_bv_each(VALUE self)
+frb_bv_each(VALUE self)
 {
     BitVector *bv;
     int bit;
@@ -455,7 +455,7 @@ frt_bv_each(VALUE self)
  *    bv = [1, 12, 45, 367, 455].inject(BitVector.new) {|bv, i| bv.set(i)}
  */
 VALUE
-frt_bv_to_a(VALUE self)
+frb_bv_to_a(VALUE self)
 {
     BitVector *bv;
     int bit;
@@ -529,38 +529,38 @@ Init_BitVector(void)
 {
     /* BitVector */
     cBitVector = rb_define_class_under(mUtils, "BitVector", rb_cObject);
-    rb_define_alloc_func(cBitVector, frt_bv_alloc);
+    rb_define_alloc_func(cBitVector, frb_bv_alloc);
 
-    rb_define_method(cBitVector, "initialize", frt_bv_init, 0);
-    rb_define_method(cBitVector, "set", frt_bv_set_on, 1);
-    rb_define_method(cBitVector, "unset", frt_bv_set_off, 1);
-    rb_define_method(cBitVector, "[]=", frt_bv_set, 2);
-    rb_define_method(cBitVector, "get", frt_bv_get, 1);
-    rb_define_method(cBitVector, "[]", frt_bv_get, 1);
-    rb_define_method(cBitVector, "count", frt_bv_count, 0);
-    rb_define_method(cBitVector, "clear", frt_bv_clear, 0);
-    rb_define_method(cBitVector, "eql?", frt_bv_eql, 1);
-    rb_define_method(cBitVector, "==", frt_bv_eql, 1);
-    rb_define_method(cBitVector, "hash", frt_bv_hash, 0);
-    rb_define_method(cBitVector, "and!", frt_bv_and_x, 1);
-    rb_define_method(cBitVector, "and", frt_bv_and, 1);
-    rb_define_method(cBitVector, "&", frt_bv_and, 1);
-    rb_define_method(cBitVector, "or!", frt_bv_or_x, 1);
-    rb_define_method(cBitVector, "or", frt_bv_or, 1);
-    rb_define_method(cBitVector, "|", frt_bv_or, 1);
-    rb_define_method(cBitVector, "xor!", frt_bv_xor_x, 1);
-    rb_define_method(cBitVector, "xor", frt_bv_xor, 1);
-    rb_define_method(cBitVector, "^", frt_bv_xor, 1);
-    rb_define_method(cBitVector, "not!", frt_bv_not_x, 0);
-    rb_define_method(cBitVector, "not", frt_bv_not, 0);
-    rb_define_method(cBitVector, "~", frt_bv_not, 0);
-    rb_define_method(cBitVector, "reset_scan", frt_bv_reset_scan, 0);
-    rb_define_method(cBitVector, "next", frt_bv_next, 0);
-    rb_define_method(cBitVector, "next_unset", frt_bv_next_unset, 0);
-    rb_define_method(cBitVector, "next_from", frt_bv_next_from, 1);
-    rb_define_method(cBitVector, "next_unset_from", frt_bv_next_unset_from, 1);
-    rb_define_method(cBitVector, "each", frt_bv_each, 0);
-    rb_define_method(cBitVector, "to_a", frt_bv_to_a, 0);
+    rb_define_method(cBitVector, "initialize", frb_bv_init, 0);
+    rb_define_method(cBitVector, "set", frb_bv_set_on, 1);
+    rb_define_method(cBitVector, "unset", frb_bv_set_off, 1);
+    rb_define_method(cBitVector, "[]=", frb_bv_set, 2);
+    rb_define_method(cBitVector, "get", frb_bv_get, 1);
+    rb_define_method(cBitVector, "[]", frb_bv_get, 1);
+    rb_define_method(cBitVector, "count", frb_bv_count, 0);
+    rb_define_method(cBitVector, "clear", frb_bv_clear, 0);
+    rb_define_method(cBitVector, "eql?", frb_bv_eql, 1);
+    rb_define_method(cBitVector, "==", frb_bv_eql, 1);
+    rb_define_method(cBitVector, "hash", frb_bv_hash, 0);
+    rb_define_method(cBitVector, "and!", frb_bv_and_x, 1);
+    rb_define_method(cBitVector, "and", frb_bv_and, 1);
+    rb_define_method(cBitVector, "&", frb_bv_and, 1);
+    rb_define_method(cBitVector, "or!", frb_bv_or_x, 1);
+    rb_define_method(cBitVector, "or", frb_bv_or, 1);
+    rb_define_method(cBitVector, "|", frb_bv_or, 1);
+    rb_define_method(cBitVector, "xor!", frb_bv_xor_x, 1);
+    rb_define_method(cBitVector, "xor", frb_bv_xor, 1);
+    rb_define_method(cBitVector, "^", frb_bv_xor, 1);
+    rb_define_method(cBitVector, "not!", frb_bv_not_x, 0);
+    rb_define_method(cBitVector, "not", frb_bv_not, 0);
+    rb_define_method(cBitVector, "~", frb_bv_not, 0);
+    rb_define_method(cBitVector, "reset_scan", frb_bv_reset_scan, 0);
+    rb_define_method(cBitVector, "next", frb_bv_next, 0);
+    rb_define_method(cBitVector, "next_unset", frb_bv_next_unset, 0);
+    rb_define_method(cBitVector, "next_from", frb_bv_next_from, 1);
+    rb_define_method(cBitVector, "next_unset_from", frb_bv_next_unset_from, 1);
+    rb_define_method(cBitVector, "each", frb_bv_each, 0);
+    rb_define_method(cBitVector, "to_a", frb_bv_to_a, 0);
 }
 
 /*******************
@@ -569,23 +569,23 @@ Init_BitVector(void)
 static VALUE cMultiMapper;
 
 static void
-frt_mulmap_free(void *p)
+frb_mulmap_free(void *p)
 {
     object_del(p);
     mulmap_destroy((MultiMapper *)p);
 }
 
 static VALUE
-frt_mulmap_alloc(VALUE klass)
+frb_mulmap_alloc(VALUE klass)
 {
     MultiMapper *mulmap = mulmap_new();
-    VALUE rmulmap = Data_Wrap_Struct(klass, NULL, &frt_mulmap_free, mulmap);
+    VALUE rmulmap = Data_Wrap_Struct(klass, NULL, &frb_mulmap_free, mulmap);
     object_add(mulmap, rmulmap);
     return rmulmap;
 }
 
-/* XXX: Duplication from frt_add_mapping_i in r_analysis.c */
-static INLINE void frt_mulmap_add_mapping_i(MultiMapper *mulmap, VALUE from,
+/* XXX: Duplication from frb_add_mapping_i in r_analysis.c */
+static INLINE void frb_mulmap_add_mapping_i(MultiMapper *mulmap, VALUE from,
                                             char *to)
 {
     switch (TYPE(from)) {
@@ -603,8 +603,8 @@ static INLINE void frt_mulmap_add_mapping_i(MultiMapper *mulmap, VALUE from,
     }
 }
 
-/* XXX: Duplication from frt_add_mappings_i in r_analysis.c */
-static int frt_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
+/* XXX: Duplication from frb_add_mappings_i in r_analysis.c */
+static int frb_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
 {
     if (key == Qundef) {
         return ST_CONTINUE;
@@ -627,11 +627,11 @@ static int frt_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
         if (TYPE(key) == T_ARRAY) {
             int i;
             for (i = RARRAY(key)->len - 1; i >= 0; i--) {
-                frt_mulmap_add_mapping_i(mulmap, RARRAY(key)->ptr[i], to);
+                frb_mulmap_add_mapping_i(mulmap, RARRAY(key)->ptr[i], to);
             }
         }
         else {
-            frt_mulmap_add_mapping_i(mulmap, key, to);
+            frb_mulmap_add_mapping_i(mulmap, key, to);
         }
     }
     return ST_CONTINUE;
@@ -646,10 +646,10 @@ static int frt_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
  *  Note that MultiMapper is immutable.
  */
 static VALUE 
-frt_mulmap_init(VALUE self, VALUE rmappings)
+frb_mulmap_init(VALUE self, VALUE rmappings)
 {
     MultiMapper *mulmap = DATA_PTR(self);
-    rb_hash_foreach(rmappings, frt_mulmap_add_mappings_i, (VALUE)mulmap);
+    rb_hash_foreach(rmappings, frb_mulmap_add_mappings_i, (VALUE)mulmap);
     mulmap_compile(mulmap);
 
     return self;
@@ -662,7 +662,7 @@ frt_mulmap_init(VALUE self, VALUE rmappings)
  *  Performs all the mappings on the string.
  */
 VALUE
-frt_mulmap_map(VALUE self, VALUE rstring)
+frb_mulmap_map(VALUE self, VALUE rstring)
 {
     MultiMapper *mulmap = DATA_PTR(self);
     char *string = rs2s(rb_obj_as_string(rstring));
@@ -717,10 +717,10 @@ Init_MultiMapper(void)
 {
     /* MultiMapper */
     cMultiMapper = rb_define_class_under(mUtils, "MultiMapper", rb_cObject);
-    rb_define_alloc_func(cMultiMapper, frt_mulmap_alloc);
+    rb_define_alloc_func(cMultiMapper, frb_mulmap_alloc);
 
-    rb_define_method(cMultiMapper, "initialize", frt_mulmap_init, 1);
-    rb_define_method(cMultiMapper, "map", frt_mulmap_map, 1);
+    rb_define_method(cMultiMapper, "initialize", frb_mulmap_init, 1);
+    rb_define_method(cMultiMapper, "map", frb_mulmap_map, 1);
 }
 
 /*********************
@@ -737,7 +737,7 @@ typedef struct PriQ
 
 #define PQ_START_CAPA 32
 
-static bool frt_pq_lt(VALUE proc, VALUE v1, VALUE v2)
+static bool frb_pq_lt(VALUE proc, VALUE v1, VALUE v2)
 {
     if (proc == Qnil) {
         return RTEST(rb_funcall(v1, id_lt, 1, v2));
@@ -756,7 +756,7 @@ static void pq_up(PriQ *pq)
 
     node = heap[i];
 
-    while ((j > 0) && frt_pq_lt(pq->proc, node, heap[j])) {
+    while ((j > 0) && frb_pq_lt(pq->proc, node, heap[j])) {
         heap[i] = heap[j];
         i = j;
         j = j >> 1;
@@ -773,16 +773,16 @@ static void pq_down(PriQ *pq)
     VALUE *heap = pq->heap;
     VALUE node = heap[i];       /* save top node */
 
-    if ((k <= size) && (frt_pq_lt(pq->proc, heap[k], heap[j]))) {
+    if ((k <= size) && (frb_pq_lt(pq->proc, heap[k], heap[j]))) {
         j = k;
     }
 
-    while ((j <= size) && frt_pq_lt(pq->proc, heap[j], node)) {
+    while ((j <= size) && frb_pq_lt(pq->proc, heap[j], node)) {
         heap[i] = heap[j];      /* shift up child */
         i = j;
         j = i << 1;
         k = j + 1;
-        if ((k <= size) && frt_pq_lt(pq->proc, heap[k], heap[j])) {
+        if ((k <= size) && frb_pq_lt(pq->proc, heap[k], heap[j])) {
             j = k;
         }
     }
@@ -803,7 +803,7 @@ static void pq_push(PriQ *pq, VALUE elem)
 static VALUE cPriorityQueue;
 
 static void
-frt_pq_mark(void *p)
+frb_pq_mark(void *p)
 {
     PriQ *pq = (PriQ *)p;
     int i;
@@ -812,21 +812,21 @@ frt_pq_mark(void *p)
     }
 }
 
-static void frt_pq_free(PriQ *pq)
+static void frb_pq_free(PriQ *pq)
 {
     free(pq->heap);
     free(pq);
 }
 
 static VALUE
-frt_pq_alloc(VALUE klass)
+frb_pq_alloc(VALUE klass)
 {
     PriQ *pq = ALLOC_AND_ZERO(PriQ);
     pq->capa = PQ_START_CAPA;
     pq->mem_capa = PQ_START_CAPA;
     pq->heap = ALLOC_N(VALUE, PQ_START_CAPA);
     pq->proc = Qnil;
-    return Data_Wrap_Struct(klass, &frt_pq_mark, &frt_pq_free, pq);
+    return Data_Wrap_Struct(klass, &frb_pq_mark, &frb_pq_free, pq);
 }
 
 #define GET_PQ(pq, self) Data_Get_Struct(self, PriQ, pq)
@@ -843,7 +843,7 @@ frt_pq_alloc(VALUE klass)
  *  inserted into the queue.
  */
 static VALUE 
-frt_pq_init(int argc, VALUE *argv, VALUE self)
+frb_pq_init(int argc, VALUE *argv, VALUE self)
 {
     if (argc >= 1) {
         PriQ *pq;
@@ -898,7 +898,7 @@ frt_pq_init(int argc, VALUE *argv, VALUE self)
  *  queue is cloned, its contents are not cloned.
  */
 static VALUE
-frt_pq_clone(VALUE self)
+frb_pq_clone(VALUE self)
 {
     PriQ *pq, *new_pq = ALLOC(PriQ);
     GET_PQ(pq, self);
@@ -906,7 +906,7 @@ frt_pq_clone(VALUE self)
     new_pq->heap = ALLOC_N(VALUE, new_pq->mem_capa);
     memcpy(new_pq->heap, pq->heap, sizeof(VALUE) * (new_pq->size + 1));
 
-    return Data_Wrap_Struct(cPriorityQueue, &frt_pq_mark, &frt_pq_free, new_pq);
+    return Data_Wrap_Struct(cPriorityQueue, &frb_pq_mark, &frb_pq_free, new_pq);
 }
 
 /*
@@ -916,7 +916,7 @@ frt_pq_clone(VALUE self)
  *  Clears all elements from the priority queue. The size will be reset to 0.
  */
 static VALUE
-frt_pq_clear(VALUE self)
+frb_pq_clear(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -933,14 +933,14 @@ frt_pq_clear(VALUE self)
  *  position in the queue according to its priority.
  */
 static VALUE
-frt_pq_insert(VALUE self, VALUE elem)
+frb_pq_insert(VALUE self, VALUE elem)
 {
     PriQ *pq;
     GET_PQ(pq, self);
     if (pq->size < pq->capa) {
         pq_push(pq, elem);
     }
-    else if (pq->size > 0 && frt_pq_lt(pq->proc, pq->heap[1], elem)) {
+    else if (pq->size > 0 && frb_pq_lt(pq->proc, pq->heap[1], elem)) {
         pq->heap[1] = elem;
         pq_down(pq);
     }
@@ -957,7 +957,7 @@ frt_pq_insert(VALUE self, VALUE elem)
  *  do this by calling the adjust method.
  */
 static VALUE
-frt_pq_adjust(VALUE self)
+frb_pq_adjust(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -973,7 +973,7 @@ frt_pq_adjust(VALUE self)
  *  queue.
  */
 static VALUE
-frt_pq_top(VALUE self)
+frb_pq_top(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -987,7 +987,7 @@ frt_pq_top(VALUE self)
  *  Returns the top element in the queue removing it from the queue.
  */
 static VALUE
-frt_pq_pop(VALUE self)
+frb_pq_pop(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -1013,7 +1013,7 @@ frt_pq_pop(VALUE self)
  *  its _capacity_
  */
 static VALUE
-frt_pq_size(VALUE self)
+frb_pq_size(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -1030,7 +1030,7 @@ frt_pq_size(VALUE self)
  *  _capacity_
  */
 static VALUE
-frt_pq_capa(VALUE self)
+frb_pq_capa(VALUE self)
 {
     PriQ *pq;
     GET_PQ(pq, self);
@@ -1084,18 +1084,18 @@ Init_PriorityQueue(void)
 {
     /* PriorityQueue */
     cPriorityQueue = rb_define_class_under(mUtils, "PriorityQueue", rb_cObject);
-    rb_define_alloc_func(cPriorityQueue, frt_pq_alloc);
+    rb_define_alloc_func(cPriorityQueue, frb_pq_alloc);
 
-    rb_define_method(cPriorityQueue, "initialize", frt_pq_init, -1);
-    rb_define_method(cPriorityQueue, "clone", frt_pq_clone, 0);
-    rb_define_method(cPriorityQueue, "clear", frt_pq_clear, 0);
-    rb_define_method(cPriorityQueue, "insert", frt_pq_insert, 1);
-    rb_define_method(cPriorityQueue, "<<", frt_pq_insert, 1);
-    rb_define_method(cPriorityQueue, "top", frt_pq_top, 0);
-    rb_define_method(cPriorityQueue, "pop", frt_pq_pop, 0);
-    rb_define_method(cPriorityQueue, "size", frt_pq_size, 0);
-    rb_define_method(cPriorityQueue, "capacity", frt_pq_capa, 0);
-    rb_define_method(cPriorityQueue, "adjust", frt_pq_adjust, 0);
+    rb_define_method(cPriorityQueue, "initialize", frb_pq_init, -1);
+    rb_define_method(cPriorityQueue, "clone", frb_pq_clone, 0);
+    rb_define_method(cPriorityQueue, "clear", frb_pq_clear, 0);
+    rb_define_method(cPriorityQueue, "insert", frb_pq_insert, 1);
+    rb_define_method(cPriorityQueue, "<<", frb_pq_insert, 1);
+    rb_define_method(cPriorityQueue, "top", frb_pq_top, 0);
+    rb_define_method(cPriorityQueue, "pop", frb_pq_pop, 0);
+    rb_define_method(cPriorityQueue, "size", frb_pq_size, 0);
+    rb_define_method(cPriorityQueue, "capacity", frb_pq_capa, 0);
+    rb_define_method(cPriorityQueue, "adjust", frb_pq_adjust, 0);
 }
 
 /* rdoc hack

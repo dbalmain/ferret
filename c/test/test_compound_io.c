@@ -2,6 +2,7 @@
 #include "index.h"
 #include "test.h"
 #include "testhelper.h"
+#include "internal.h"
 
 void test_compound_reader(tst_case *tc, void *data)
 {
