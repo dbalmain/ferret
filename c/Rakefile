@@ -156,9 +156,9 @@ end
 # Clean Constants
 ###
 CLEAN  .include([ '*.o',
-                  '*.gcda',
+                  '**/*.gcda',
+                  '**/*.gcno',
                   '*.gcov',
-                  '*.gcno',
                   'y.tab.c'])
 
 CLOBBER.include([ '*.a',
