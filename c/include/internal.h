@@ -505,7 +505,7 @@
 #define get_string_value                        frt_get_string_value
 #define h_clear                                 frt_h_clear
 #define h_clone                                 frt_h_clone
-#define h_clone_func_t                          frt_h_clone_func_t
+#define h_clone_ft                              frt_h_clone_ft
 #define h_del                                   frt_h_del
 #define h_del_int                               frt_h_del_int
 #define h_destroy                               frt_h_destroy

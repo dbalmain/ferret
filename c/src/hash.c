@@ -43,7 +43,7 @@ int ptr_eq(const void *q1, const void *q2)
 
 static int str_eq(const void *q1, const void *q2)
 {
-    return strcmp(q1, q2) == 0;
+    return strcmp((const char *)q1, (const char *)q2) == 0;
 }
 
 static int int_eq(const void *q1, const void *q2)
@@ -490,7 +490,7 @@ void h_each(HashTable *ht,
 }
 
 HashTable *h_clone(HashTable *ht,
-                   h_clone_func_t clone_key, h_clone_func_t clone_value)
+                   h_clone_ft clone_key, h_clone_ft clone_value)
 {
     void *key, *value;
     HashEntry *he;

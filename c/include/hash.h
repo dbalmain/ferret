@@ -442,7 +442,7 @@ extern void frt_h_each(FrtHashTable *self,
                        void (*each_key_val)(void *key, void *value, void *arg),
                        void *arg);
 
-typedef void *(*frt_h_clone_func_t)(void *val);
+typedef void *(*frt_h_clone_ft)(void *val);
 /**
  * Clone the HashTable as well as cloning each of the keys and values if you
  * want to do a deep clone. To do a deep clone you will need to pass a
@@ -454,8 +454,8 @@ typedef void *(*frt_h_clone_func_t)(void *val);
  * @return a clone of the original HashTable
  */
 extern FrtHashTable *frt_h_clone(FrtHashTable *self,
-                                    frt_h_clone_func_t clone_key,
-                                    frt_h_clone_func_t clone_value);
+                                    frt_h_clone_ft clone_key,
+                                    frt_h_clone_ft clone_value);
 
 /*
  * The following functions should only be used in static HashTable

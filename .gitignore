@@ -2,3 +2,6 @@
 .*.swp
 *.a
 tags
+*.gcno
+*.gcda
+*.gcov

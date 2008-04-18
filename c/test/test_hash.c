@@ -286,7 +286,7 @@ static void test_hash_each_and_clone(tst_case *tc, void *data)
     Aiequal(7, ht->fill);
     Aiequal(5, ht->size);
 
-    ht2 = h_clone(ht, (h_clone_func_t)&estrdup, (h_clone_func_t)&estrdup);
+    ht2 = h_clone(ht, (h_clone_ft)&estrdup, (h_clone_ft)&estrdup);
 
     Aiequal(7, ht->fill);
     Aiequal(5, ht->size);

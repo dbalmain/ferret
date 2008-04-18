@@ -17,6 +17,9 @@ TODO
     + task to publish gcov and benchmark results to ferret wiki
   - Fix tmpname warning.
   - Index rebuilding of old versioned indexes.
+  - Add a globally accessable, threadsafe symbol table. This will be very
+    useful for storing field names so that no objects need to strdup the
+    field-names but can just store the symbol representative instead.
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
