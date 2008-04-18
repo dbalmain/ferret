@@ -781,10 +781,10 @@ frb_bc_wrap(BooleanClause *bc)
     return self;
 }
 
-static enum BC_TYPE
+static BCType
 frb_get_occur(VALUE roccur)
 {
-    enum BC_TYPE occur = BC_SHOULD;
+    BCType occur = BC_SHOULD;
 
     if (roccur == sym_should) {
         occur = BC_SHOULD;
@@ -891,7 +891,7 @@ static VALUE
 frb_bc_set_occur(VALUE self, VALUE roccur)
 {
     GET_BC();
-    enum BC_TYPE occur = frb_get_occur(roccur);
+    BCType occur = frb_get_occur(roccur);
     bc_set_occur(bc, occur);
 
     return roccur;
@@ -1001,7 +1001,7 @@ frb_bq_add_query(int argc, VALUE *argv, VALUE self)
 {
     GET_Q();
     VALUE rquery, roccur;
-    enum BC_TYPE occur = BC_SHOULD;
+    BCType occur = BC_SHOULD;
     Query *sub_q;
     VALUE klass;
 

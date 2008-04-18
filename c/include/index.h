@@ -880,7 +880,7 @@ typedef struct FrtDocWriter
     FrtAnalyzer *analyzer;
     FrtHashTable *curr_plists;
     FrtHashTable *fields;
-    Similarity *similarity;
+    FrtSimilarity *similarity;
     FrtOffset *offsets;
     int offsets_size;
     int offsets_capa;
@@ -917,7 +917,7 @@ struct FrtIndexWriter
     FrtSegmentInfos *sis;
     FrtFieldInfos *fis;
     FrtDocWriter *dw;
-    Similarity *similarity;
+    FrtSimilarity *similarity;
     Lock *write_lock;
     FrtDeleter *deleter;
 };

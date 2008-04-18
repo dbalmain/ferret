@@ -1,7 +1,7 @@
 #ifndef FRT_SIMILARITY_H
 #define FRT_SIMILARITY_H
 
-typedef struct Searcher Searcher;
+typedef struct FrtSearcher FrtSearcher;
 
 /****************************************************************************
  *
@@ -37,30 +37,30 @@ typedef struct PhrasePosition
 
 /***************************************************************************
  *
- * Similarity
+ * FrtSimilarity
  *
  ***************************************************************************/
 
-typedef struct Similarity Similarity;
+typedef struct FrtSimilarity FrtSimilarity;
 
-struct Similarity
+struct FrtSimilarity
 {
     void *data;
     float norm_table[256];
-    float (*length_norm)(Similarity *self, const char *field, int num_terms);
-    float (*query_norm)(Similarity *self, float sum_of_squared_weights);
-    float (*tf)(Similarity *self, float freq);
-    float (*sloppy_freq)(Similarity *self, int distance);
-    float (*idf_term)(Similarity *self, const char *field, char *term,
-                      Searcher *searcher);
-    float (*idf_phrase)(Similarity *self, const char *field,
+    float (*length_norm)(FrtSimilarity *self, const char *field, int num_terms);
+    float (*query_norm)(FrtSimilarity *self, float sum_of_squared_weights);
+    float (*tf)(FrtSimilarity *self, float freq);
+    float (*sloppy_freq)(FrtSimilarity *self, int distance);
+    float (*idf_term)(FrtSimilarity *self, const char *field, char *term,
+                      FrtSearcher *searcher);
+    float (*idf_phrase)(FrtSimilarity *self, const char *field,
                         PhrasePosition *positions,
-                        int pp_cnt, Searcher *searcher);
-    float (*idf)(Similarity *self, int doc_freq, int num_docs);
-    float (*coord)(Similarity *self, int overlap, int max_overlap);
-    float (*decode_norm)(Similarity *self, unsigned char b);
-    unsigned char (*encode_norm)(Similarity *self, float f);
-    void  (*destroy)(Similarity *self);
+                        int pp_cnt, FrtSearcher *searcher);
+    float (*idf)(FrtSimilarity *self, int doc_freq, int num_docs);
+    float (*coord)(FrtSimilarity *self, int overlap, int max_overlap);
+    float (*decode_norm)(FrtSimilarity *self, unsigned char b);
+    unsigned char (*encode_norm)(FrtSimilarity *self, float f);
+    void  (*destroy)(FrtSimilarity *self);
 };
 
 #define sim_length_norm(msim, field, num_terms) msim->length_norm(msim, field, num_terms)
@@ -77,6 +77,6 @@ struct Similarity
 #define sim_encode_norm(msim, f) msim->encode_norm(msim, f)
 #define sim_destroy(msim) msim->destroy(msim)
 
-Similarity *sim_create_default();
+FrtSimilarity *sim_create_default();
 
 #endif

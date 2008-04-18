@@ -302,7 +302,7 @@ static const char *QUERY_NAMES[] = {
 
 static const char *UNKNOWN_QUERY_NAME = "UnkownQuery";
     
-const char *q_get_query_name(enum QUERY_TYPE type) {
+const char *q_get_query_name(QueryType type) {
     if (type >= NELEMS(QUERY_NAMES)) {
         return UNKNOWN_QUERY_NAME;
     }

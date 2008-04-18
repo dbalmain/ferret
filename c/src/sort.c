@@ -11,7 +11,7 @@
  ***************************************************************************/
 
 static INLINE SortField *sort_field_alloc(const char *field,
-    enum SORT_TYPE type,
+    SortType type,
     bool reverse,
     int (*compare)(void *index_ptr, Hit *hit1, Hit *hit2),
     void (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable),
@@ -27,7 +27,7 @@ static INLINE SortField *sort_field_alloc(const char *field,
     return self;
 }
 
-SortField *sort_field_new(const char *field, enum SORT_TYPE type, bool reverse)
+SortField *sort_field_new(const char *field, SortType type, bool reverse)
 {
     SortField *sf = NULL;
     switch (type) {
@@ -386,7 +386,7 @@ static void sort_field_auto_evaluate(SortField *sf, char *text)
 }
 /*
 static INLINE void set_auto(SortField *sf,
-    enum SORT_TYPE type,
+    SortType type,
     const FieldIndexClass *field_index_class,
     int  (*compare)(void *index_ptr, Hit *hit1, Hit *hit2),
     void (*get_val)(void *index_ptr, Hit *hit1, Comparable *comparable))

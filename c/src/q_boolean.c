@@ -1268,7 +1268,7 @@ static Weight *bw_new(Query *query, Searcher *searcher)
  *
  ***************************************************************************/
 
-void bc_set_occur(BooleanClause *self, enum BC_TYPE occur)
+void bc_set_occur(BooleanClause *self, BCType occur)
 {
     self->occur = occur;
     switch (occur) {
@@ -1308,7 +1308,7 @@ static int  bc_eq(BooleanClause *self, BooleanClause *o)
     return ((self->occur == o->occur) && q_eq(self->query, o->query)); 
 }
 
-BooleanClause *bc_new(Query *query, enum BC_TYPE occur)
+BooleanClause *bc_new(Query *query, BCType occur)
 {
     BooleanClause *self = ALLOC(BooleanClause);
     self->ref_cnt = 1;
@@ -1598,7 +1598,7 @@ BooleanClause *bq_add_clause(Query *self, BooleanClause *bc)
     return bq_add_clause_nr(self, bc);
 }
 
-BooleanClause *bq_add_query_nr(Query *self, Query *sub_query, enum BC_TYPE occur)
+BooleanClause *bq_add_query_nr(Query *self, Query *sub_query, BCType occur)
 {
     BooleanClause *bc;
     if (BQ(self)->clause_cnt >= BQ(self)->max_clause_cnt) {
@@ -1613,7 +1613,7 @@ BooleanClause *bq_add_query_nr(Query *self, Query *sub_query, enum BC_TYPE occur
     return bc;
 }
 
-BooleanClause *bq_add_query(Query *self, Query *sub_query, enum BC_TYPE occur)
+BooleanClause *bq_add_query(Query *self, Query *sub_query, BCType occur)
 {
     REF(sub_query);
     return bq_add_query_nr(self, sub_query, occur);
