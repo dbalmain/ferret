@@ -104,6 +104,7 @@ ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   FILE2SRC[dep_file(src)] = FILE2SRC[basename] = FILE2SRC[src] = src
   basename
 end
+$gcov_results   = []
 
 ###
 # Dependency Handling
@@ -224,7 +225,22 @@ task :"test++" do
   run_tests
 end
 
-task :gcov do
+desc "Generate and print gcov results"
+task :gcov => :do_gcov do
+  puts "\ngcov Results\n=============\n"
+  $gcov_results.each do |percent, line_cnt, fn|
+    puts "%25s %6.2f%% (%4d)" % [fn, percent, line_cnt]
+  end
+end
+
+task :gcov2html => :do_gcov do
+  puts "Generating .rake/gcov_results.html..."
+  File.open('.rake/gcov_results.html', 'w') do |f|
+    f.write(ERB.new(File.read('.rake/gcov_results.erb')).result(binding))
+  end
+end
+
+task :do_gcov do
   CFLAGS << " -fprofile-arcs -ftest-coverage"
   run_tests
   gcov_results = []
@@ -241,13 +257,10 @@ task :gcov do
     details = IO.popen(gcov_cmd).read.scan(gcov_scanner)
     details.each do |filename, percent, line_cnt|
       next if filename =~ /^\//
-      gcov_results << [percent.to_f, line_cnt, filename]
+      $gcov_results << [percent.to_f, line_cnt, filename]
     end
   end
-  puts "\ngcov Results\n=============\n"
-  gcov_results.sort_by{|res| res[0]}.reverse.each do |percent, line_cnt, fn|
-    puts "%25s %6.2f%% (%4d)" % [fn, percent, line_cnt]
-  end
+  $gcov_results = $gcov_results.sort_by{|res| res[0]}.reverse
 end
 
 desc "Build the benchmark runner"
@@ -423,6 +436,13 @@ namespace :show do
       end.compact
       puts obj, *badnames if badnames.size > 0
     end
+  end
+end
+
+namespace :publish do
+  desc "Publish the gcoverage results"
+  task :gcov => :gcov2html do
+    sh %{scp .rake/gcov_results.html www@davebalmain.com:/var/www/ferret}
   end
 end
 

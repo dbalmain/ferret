@@ -1,3 +1,4 @@
 *.dep
 HAVE_*
 copts
+gcov_results.html
