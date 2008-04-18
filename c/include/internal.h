@@ -62,6 +62,7 @@
 #define FULL_NORWEGIAN_STOP_WORDS          FRT_FULL_NORWEGIAN_STOP_WORDS
 #define FULL_PORTUGUESE_STOP_WORDS         FRT_FULL_PORTUGUESE_STOP_WORDS
 #define FULL_RUSSIAN_STOP_WORDS            FRT_FULL_RUSSIAN_STOP_WORDS
+#define FULL_RUSSIAN_STOP_WORDS_KOI8_R     FRT_FULL_RUSSIAN_STOP_WORDS_KOI8_R
 #define FULL_SPANISH_STOP_WORDS            FRT_FULL_SPANISH_STOP_WORDS
 #define FULL_SWEDISH_STOP_WORDS            FRT_FULL_SWEDISH_STOP_WORDS
 #define FUZZY_QUERY                        FRT_FUZZY_QUERY
@@ -452,6 +453,7 @@
 #define fi_new                                  frt_fi_new
 #define fi_to_s                                 frt_fi_to_s
 #define field_index_get                         frt_field_index_get
+#define file_is_lock                            frt_file_is_lock
 #define file_name_filter_is_index_file          frt_file_name_filter_is_index_file
 #define filt_create                             frt_filt_create
 #define filt_deref                              frt_filt_deref
@@ -601,6 +603,7 @@
 #define is2os_copy_vints                        frt_is2os_copy_vints
 #define is_clone                                frt_is_clone
 #define is_close                                frt_is_close
+#define is_new                                  frt_is_new
 #define is_pos                                  frt_is_pos
 #define is_read_byte                            frt_is_read_byte
 #define is_read_bytes                           frt_is_read_bytes
@@ -699,6 +702,7 @@
 #define open_ram_store_and_copy                 frt_open_ram_store_and_copy
 #define os_close                                frt_os_close
 #define os_flush                                frt_os_flush
+#define os_new                                  frt_os_new
 #define os_pos                                  frt_os_pos
 #define os_seek                                 frt_os_seek
 #define os_write_byte                           frt_os_write_byte
@@ -865,6 +869,8 @@
 #define stop_filter_new_with_words              frt_stop_filter_new_with_words
 #define stop_filter_new_with_words_len          frt_stop_filter_new_with_words_len
 #define store_deref                             frt_store_deref
+#define store_destroy                           frt_store_destroy
+#define store_new                               frt_store_new
 #define store_to_s                              frt_store_to_s
 #define stpe_new                                frt_stpe_new
 #define str_hash                                frt_str_hash

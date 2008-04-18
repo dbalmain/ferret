@@ -772,4 +772,15 @@ extern char *frt_store_to_s(FrtStore *store);
 
 extern FrtLock *frt_open_lock(FrtStore *store, const char *lockname);
 extern void frt_close_lock(FrtLock *lock);
+
+/* required by submodules
+ * FIXME document. Perhaps include in different header?? */
+extern FrtStore *frt_store_new();
+extern void frt_store_destroy(FrtStore *store);
+extern FrtOutStream *frt_os_new();
+extern FrtInStream *frt_is_new();
+extern int frt_file_is_lock(const char *filename);
+extern bool frt_file_name_filter_is_index_file(const char *file_name,
+                                               bool include_locks);
+
 #endif

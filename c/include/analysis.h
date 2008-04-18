@@ -149,6 +149,7 @@ extern const char *FRT_FULL_DANISH_STOP_WORDS[];
 extern const char *FRT_FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FRT_FULL_FINNISH_STOP_WORDS[];
 extern const char *FRT_FULL_HUNGARIAN_STOP_WORDS[];
+extern const char *FRT_FULL_RUSSIAN_STOP_WORDS_KOI8_R[];
 
 extern FrtTokenStream *frt_stop_filter_new_with_words_len(FrtTokenStream *ts,
                                                    const char **words, int len);

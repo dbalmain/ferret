@@ -2,12 +2,6 @@
 #include <string.h>
 #include "internal.h"
 
-extern Store *store_new();
-extern void store_destroy(Store *store);
-extern OutStream *os_new();
-extern InStream *is_new();
-extern int file_is_lock(const char *filename);
-
 static RAMFile *rf_new(const char *name)
 {
     RAMFile *rf = ALLOC(RAMFile);

@@ -55,7 +55,7 @@ void close_lock(Lock *lock)
     hs_del(lock->store->locks, lock);
 }
 
-void close_lock_i(Lock *lock)
+static void close_lock_i(Lock *lock)
 {
     lock->store->close_lock_i(lock);
 }
@@ -201,7 +201,7 @@ InStream *is_new()
  * @raise IO_ERROR if there is a error reading from the filesystem
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-void is_refill(InStream *is)
+static void is_refill(InStream *is)
 {
     off_t start = is->buf.start + is->buf.pos;
     off_t last = start + BUFFER_SIZE;
@@ -442,7 +442,7 @@ INLINE void is_skip_vints(InStream *is, register int cnt)
     }
 }
 
-INLINE void is_read_chars(InStream *is, char *buffer,
+static INLINE void is_read_chars(InStream *is, char *buffer,
                           int off, int len)
 {
     int end, i;

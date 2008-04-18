@@ -45,39 +45,39 @@ unsigned long term_hash(const void *t)
  *
  ****************************************************************************/
 
-float simdef_length_norm(Similarity *s, const char *field, int num_terms)
+static float simdef_length_norm(Similarity *s, const char *field, int num_terms)
 {
     (void)s;
     (void)field;
     return (float)(1.0 / sqrt(num_terms));
 }
 
-float simdef_query_norm(struct Similarity *s, float sum_of_squared_weights)
+static float simdef_query_norm(struct Similarity *s, float sum_of_squared_weights)
 {
     (void)s;
     return (float)(1.0 / sqrt(sum_of_squared_weights));
 }
 
-float simdef_tf(struct Similarity *s, float freq)
+static float simdef_tf(struct Similarity *s, float freq)
 {
     (void)s;
     return (float)sqrt(freq);
 }
 
-float simdef_sloppy_freq(struct Similarity *s, int distance)
+static float simdef_sloppy_freq(struct Similarity *s, int distance)
 {
     (void)s;
     return (float)(1.0 / (double)(distance + 1));
 }
 
-float simdef_idf_term(struct Similarity *s, const char *field, char *term,
+static float simdef_idf_term(struct Similarity *s, const char *field, char *term,
                       Searcher *searcher)
 {
     return s->idf(s, searcher->doc_freq(searcher, field, term),
                   searcher->max_doc(searcher));
 }
 
-float simdef_idf_phrase(struct Similarity *s, const char *field,
+static float simdef_idf_phrase(struct Similarity *s, const char *field,
                         PhrasePosition *positions,
                         int pp_cnt, Searcher *searcher)
 {
@@ -92,30 +92,30 @@ float simdef_idf_phrase(struct Similarity *s, const char *field,
     return idf;
 }
 
-float simdef_idf(struct Similarity *s, int doc_freq, int num_docs)
+static float simdef_idf(struct Similarity *s, int doc_freq, int num_docs)
 {
     (void)s;
     return (float)(log((float)num_docs/(float)(doc_freq+1)) + 1.0);
 }
 
-float simdef_coord(struct Similarity *s, int overlap, int max_overlap)
+static float simdef_coord(struct Similarity *s, int overlap, int max_overlap)
 {
     (void)s;
     return (float)((double)overlap / (double)max_overlap);
 }
 
-float simdef_decode_norm(struct Similarity *s, uchar b)
+static float simdef_decode_norm(struct Similarity *s, uchar b)
 {
     return s->norm_table[b];
 }
 
-uchar simdef_encode_norm(struct Similarity *s, float f)
+static uchar simdef_encode_norm(struct Similarity *s, float f)
 {
     (void)s;
     return float2byte(f);
 }
 
-void simdef_destroy(Similarity *s)
+static void simdef_destroy(Similarity *s)
 {
     (void)s;
     /* nothing to do here */

@@ -34,14 +34,6 @@
 #endif
 #include "internal.h"
 
-extern Store *store_new();
-extern void store_destroy(Store *store);
-extern OutStream *os_new();
-extern InStream *is_new();
-extern int file_is_lock(const char *filename);
-extern bool file_name_filter_is_index_file(const char *file_name,
-                                           bool include_locks);
-
 /**
  * Create a filepath for a file in the store using the operating systems
  * default file seperator.

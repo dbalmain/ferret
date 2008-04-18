@@ -127,7 +127,7 @@ static bool pp_less_than(const PhPos *pp1, const PhPos *pp2)
     */
 }
 
-void pp_destroy(PhPos *pp)
+static void pp_destroy(PhPos *pp)
 {
     if (pp->tpe) {
         pp->tpe->close(pp->tpe);
@@ -135,7 +135,7 @@ void pp_destroy(PhPos *pp)
     free(pp);
 }
 
-PhPos *pp_new(TermDocEnum *tpe, int offset)
+static PhPos *pp_new(TermDocEnum *tpe, int offset)
 {
     PhPos *self = ALLOC(PhPos);
 
@@ -510,7 +510,7 @@ static Scorer *phw_scorer(Weight *self, IndexReader *ir)
     return phsc;
 }
 
-Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
+static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
 {
     Explanation *expl;
     Explanation *idf_expl1;

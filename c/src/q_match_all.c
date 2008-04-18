@@ -111,7 +111,7 @@ static Weight *maw_new(Query *query, Searcher *searcher)
  *
  ***************************************************************************/
 
-char *maq_to_s(Query *self, const char *field)
+static char *maq_to_s(Query *self, const char *field)
 {
     (void)field;
     if (self->boost == 1.0) {
