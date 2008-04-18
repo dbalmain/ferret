@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Ferret::GCov Results</title>
+    <style type="text/css">
+      /* <![CDATA[ */
+      body { font-family: "Lucida Grande", Lucida, Helvetica, sans-serif; }
+      .result { width: 100px; background-color: red; }
+      .bar { background-color: green; }
+      .filename { text-align: right; font-size: 12px; }
+      /* ]]> */
+    </style>
+  </head>
+  <body>
+    <h1>Ferret gcov Results</h1>
+    <table cellpadding="0" cellspacing="5">
+    <% $gcov_results.each do |percent, line_cnt, filename| %>
+      <tr>
+        <th class="filename"><%= filename %></th>
+        <td class="result">
+          <div class="bar" style="width:<%=percent%>%;">&nbsp;<div>
+        </td>
+      </tr>
+    <% end %>
+    </table>
+    <script type="text/javascript">
+      var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+      document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+      var pageTracker = _gat._getTracker("UA-2787682-1");
+      pageTracker._initData();
+      pageTracker._trackPageview();
+    </script>
+  </body>
+</html>
