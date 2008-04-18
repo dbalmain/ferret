@@ -1,5 +1,5 @@
 module ContentGenerator
-  wpath = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}/, '/words')
+  wpath = File.expand_path(File.join(__FILE__, '../../../data/words'))
   WORDS = File.readlines(wpath).collect {|w| w.strip}
   CHARS = 'abcdefghijklmnopqrstuvwxyz1234567890`~!@#$%^&*()_-+={[}]|\\:;"\'<,>.?/'
   ALNUM = 'abcdefghijklmnopqrstuvwxyz1234567890'

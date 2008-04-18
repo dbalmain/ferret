@@ -206,7 +206,7 @@ namespace :build do
   end
 
   file 'src/scanner.c' => 'src/scanner.rl' do
-    sh "ragel -G2 src/scanner.rl -o src/scanner.c"
+    sh "ragel src/scanner.rl -o src/scanner.c"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|

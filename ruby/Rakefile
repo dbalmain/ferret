@@ -47,7 +47,7 @@ namespace :build do
   EXT = "ferret_ext.so"
   # Note: libstemmer.[h] is necessary so that the file isn't included when it
   # doesn't exist. It needs to have one regular expression element.
-  EXT_SRC = FileList["../c/src/*.[c]", "../c/include/*.h",
+  EXT_SRC = FileList["../c/src/*.[ch]", "../c/include/*.h",
                      "../c/lib/bzlib/*.[ch]",
                      "../c/lib/libstemmer_c/src_c/*.[ch]",
                      "../c/lib/libstemmer_c/runtime/*.[ch]",

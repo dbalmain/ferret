@@ -35,8 +35,9 @@
 %%{
     machine StdTok;
 
+    word  = alnum;
     delim = space;
-    token = alpha alnum*;
+    token = alpha word*;
     punc  = [.,\/_\-];
     proto = 'http'[s]? | 'ftp' | 'file';
     urlc  = alnum | punc | [\@\:];
@@ -49,7 +50,7 @@
         token [\'][sS]? { trunc = 2; RET; };
 
         #// Token with hyphens
-        alnum+ ('-' alnum+)* { RET; };
+        alnum+ ([\-_] alnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };
@@ -79,10 +80,10 @@
 
 %% write data nofinal;
 
-void frt_scan(const char *in,
-              char *out, size_t out_size,
-              char **start, char **end,
-              int *len)
+void frt_std_scan(const char *in,
+                  char *out, size_t out_size,
+                  char **start, char **end,
+                  int *len)
 {
     int cs, act;
     char *ts, *te = 0;
