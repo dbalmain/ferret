@@ -806,10 +806,12 @@ free(t);
 
 static void test_multi_term_query_hash(tst_case *tc, void *data)
 {
-    Query *q1 = multi_tq_new_conf(field, 100, 0.0);
+    Query *q1 = multi_tq_new_conf(field, 100, 0.4);
     Query *q2 = multi_tq_new(field);
     (void)data;
 
+
+    check_to_s(tc, q1, "", "field:\"\"");
     Assert(q_hash(q1) == q_hash(q2), "Queries should be equal");
     Assert(q_eq(q1, q1), "Same queries should be equal");
     Assert(q_eq(q1, q2), "Queries should be equal");
