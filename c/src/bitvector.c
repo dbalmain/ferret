@@ -24,7 +24,7 @@ BitVector *bv_new()
     return bv_new_capa(BV_INIT_CAPA);
 }
 
-void bv_destroy(BitVector * bv)
+void bv_destroy(BitVector *bv)
 {
     if (--(bv->ref_cnt) == 0) {
         free(bv->bits);
@@ -32,7 +32,7 @@ void bv_destroy(BitVector * bv)
     }
 }
 
-void bv_set(BitVector * bv, int bit)
+void bv_set(BitVector *bv, int bit)
 {
     u32 *word_p;
     int word = bit >> 5;
@@ -66,14 +66,14 @@ void bv_set(BitVector * bv, int bit)
  * to be set. You need to create the BitVector using bv_new_capa(capa) with
  * a capacity larger than any bit being set.
  */
-INLINE void bv_set_fast(BitVector * bv, int bit)
+INLINE void bv_set_fast(BitVector *bv, int bit)
 {
     bv->count++;
     bv->size = bit + 1;
     bv->bits[bit >> 5] |= 1 << (bit & 31);
 }
 
-int bv_get(BitVector * bv, int bit)
+int bv_get(BitVector *bv, int bit)
 {
     /* out of range so return 0 because it can't have been set */
     if (bit >= bv->size) {
@@ -82,7 +82,7 @@ int bv_get(BitVector * bv, int bit)
     return (bv->bits[bit >> 5] >> (bit & 31)) & 0x01;
 }
 
-void bv_clear(BitVector * bv)
+void bv_clear(BitVector *bv)
 {
     memset(bv->bits, 0, bv->capa * sizeof(u32));
     bv->extends_as_ones = 0;
@@ -95,7 +95,7 @@ void bv_clear(BitVector * bv)
  * cause any bugs in this code but could cause problems if users are relying
  * on the fact that size is accurate.
  */
-void bv_unset(BitVector * bv, int bit)
+void bv_unset(BitVector *bv, int bit)
 {
     u32 *word_p;
     u32 bitmask;
@@ -145,7 +145,7 @@ static const uchar BYTE_COUNTS[] = {
     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
 };
 
-int bv_recount(BitVector * bv)
+int bv_recount(BitVector *bv)
 {
     /* if the vector has been modified */
     int i, c = 0;
@@ -165,7 +165,7 @@ int bv_recount(BitVector * bv)
     return c;
 }
 
-void bv_scan_reset(BitVector * bv)
+void bv_scan_reset(BitVector *bv)
 {
     bv->curr_bit = -1;
 }
@@ -238,7 +238,7 @@ static INLINE int bv_get_1_offset(u32 word)
      *   bit_pos += NUM_TRAILING_ZEROS[word & 0xff];
      */
 
-int bv_scan_next_from(BitVector * bv, register const int from)
+int bv_scan_next_from(BitVector *bv, register const int from)
 {
     register const u32 *const bits = bv->bits;
     register const int word_size = (bv->size >> 5) + 1;
@@ -267,12 +267,12 @@ int bv_scan_next_from(BitVector * bv, register const int from)
     return bv->curr_bit = ((word_pos << 5) + bit_pos);
 }
 
-int bv_scan_next(BitVector * bv)
+int bv_scan_next(BitVector *bv)
 {
     return bv_scan_next_from(bv, bv->curr_bit + 1);
 }
 
-int bv_scan_next_unset_from(BitVector * bv, register const int from)
+int bv_scan_next_unset_from(BitVector *bv, register const int from)
 {
     register const u32 *const bits = bv->bits;
     register const int word_size = (bv->size >> 5) + 1;
@@ -299,7 +299,7 @@ int bv_scan_next_unset_from(BitVector * bv, register const int from)
     return bv->curr_bit = ((word_pos << 5) + bit_pos);
 }
 
-int bv_scan_next_unset(BitVector * bv)
+int bv_scan_next_unset(BitVector *bv)
 {
     return bv_scan_next_unset_from(bv, bv->curr_bit + 1);
 }
