@@ -183,7 +183,7 @@ task :default => :test
 
 desc "Run all tests"
 task :test => 'testall' do
-    sh "./testall -q -v"
+  sh "./testall -q -v"
 end
 
 namespace :build do

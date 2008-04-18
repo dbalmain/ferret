@@ -66,7 +66,7 @@ void bv_set(BitVector * bv, int bit)
  * to be set. You need to create the BitVector using bv_new_capa(capa) with
  * a capacity larger than any bit being set.
  */
-void bv_set_fast(BitVector * bv, int bit)
+INLINE void bv_set_fast(BitVector * bv, int bit)
 {
     bv->count++;
     bv->size = bit + 1;
