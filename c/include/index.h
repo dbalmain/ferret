@@ -769,7 +769,7 @@ struct FrtIndexReader
     int                 ref_cnt;
     FrtDeleter            *deleter;
     FrtStore              *store;
-    Lock               *write_lock;
+    FrtLock               *write_lock;
     FrtSegmentInfos       *sis;
     FrtFieldInfos         *fis;
     FrtHashTable    *cache;
@@ -918,7 +918,7 @@ struct FrtIndexWriter
     FrtFieldInfos *fis;
     FrtDocWriter *dw;
     FrtSimilarity *similarity;
-    Lock *write_lock;
+    FrtLock *write_lock;
     FrtDeleter *deleter;
 };
 
