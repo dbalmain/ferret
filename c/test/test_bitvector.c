@@ -474,6 +474,9 @@ static void test_bv_scan_stress(tst_case * tc, void *data)
 
     for (i = BV_SCAN_INC; i < BV_SCAN_SIZE; i += BV_SCAN_INC) {
         bv_set_fast(bv, i);
+        Aiequal(bv_get(bv, i), 1);
+        Aiequal(bv_get(bv, i-1), 0);
+        Aiequal(bv_get(bv, i+1), 0);
     }
 
     not_bv = bv_not(bv);

@@ -69,7 +69,7 @@ void bv_set(BitVector * bv, int bit)
 void bv_set_fast(BitVector * bv, int bit)
 {
     bv->count++;
-    bv->size = bit;
+    bv->size = bit + 1;
     bv->bits[bit >> 5] |= 1 << (bit & 31);
 }
 
