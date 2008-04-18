@@ -1589,6 +1589,7 @@ int main(int argc, char **argv)
     Analyzer *a = standard_analyzer_new(true);
     TokenStream *ts;
     Token *tk;
+    (void)argc; (void)argv;
     while (fgets(buf, 9999, stdin) != NULL) {
         ts = a_get_ts(a, "hello", buf);
         while ((tk = ts->next(ts)) != NULL) {

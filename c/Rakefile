@@ -54,9 +54,11 @@ def vsh(msg, script)
   sh script
 end
 
-
 ###
 # Path Constants
+#
+# Note: The following may look like a lot of work to do every time Rake is run
+# but it turns out this all runs in less than 0.01 sec.
 ###
 TMP             = '.rake'
 FILE2SRC        = {}
@@ -100,13 +102,13 @@ ALL_BUILD_FILES = INC_FILES + SRC_FILES
 ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   basename = File.basename(src)
   FILE2SRC[dep_file(src)] = FILE2SRC[basename] = FILE2SRC[src] = src
+  basename
 end
 
 ###
 # Create required directories
 ###
-FileUtils.mkdir_p('test/testdir/store')
-FileUtils.mkdir_p(TMP)
+['test/testdir/store', TMP].each {|d| FileUtils.mkdir_p(d)}
 
 ###
 # Dependency Handling
@@ -146,8 +148,8 @@ end
 # Compilation Constants
 ###
 CC       = 'gcc'
-DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2"
-DEFS    << " -D_BSD_SOURCE"
+DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 " +
+           "-D_POSIX_C_SOURCE=2 -D_BSD_SOURCE -DDEBUG"
 AR       = "ar"
 CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
@@ -159,13 +161,22 @@ if (File.exists?(`which gdb 2> /dev/null`.chomp))
   CFLAGS << " -DHAVE_GDB"
 end
 
-if ENV['USE_CPP']
-  CC[1,2] = '++'
-  CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
-  FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
-  CFLAGS << ' -O2'
+def check_coptions
+  copts_file = TMP/'copts'
+  old_copts = if File.exists?(copts_file)
+    Marshal.load(File.read(copts_file))
+  else
+    {}
+  end
+  copts = {
+    :cflags => CFLAGS,
+    :cc => CC
+  }
+  if copts != old_copts
+    File.open(copts_file, 'w') {|f| f.write(Marshal.dump(copts))}
+    Rake::Task[:clean].invoke
+  end
 end
-
 
 ###
 # Clean Constants
@@ -188,10 +199,48 @@ CLOBBER.include([ '*.a',
 
 task :default => :test
 
-desc "Run all tests"
-task :test => 'testall' do
+def run_tests
   sh "./testall -q -v"
 end
+
+def use_cpp
+  CC[1,2] = '++'
+  CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
+  FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
+end
+
+desc "Run all tests"
+task :test do
+  check_coptions
+  Rake::Task[:testall].invoke
+  run_tests
+end
+
+desc "Run all tests with c++"
+task :"test++" do
+  use_cpp
+  check_coptions
+  Rake::Task[:testall].invoke
+  run_tests
+end
+
+desc "Build the benchmark runner"
+task :benchmark do
+  CFLAGS << ' -O2'
+  check_coptions
+  Rake::Task[:bench].invoke
+end
+
+desc "Build the benchmark runner with c++"
+task :"benchmark++" do
+  use_cpp
+  CFLAGS << ' -O2'
+  check_coptions
+  Rake::Task[:bench].invoke
+end
+
+desc "Detect and configure optional dependencies"
+task :config => '.rake/HAVE_SPARSE_HASH'
 
 namespace :build do
   desc "Build the Ferret library 'libferret.a'"
@@ -203,28 +252,26 @@ namespace :build do
         "#{AR} -cru #{t.name} #{t.prerequisites}"
   end
 
-  desc "Build the test binary 'testall'"
-  task :tests => 'testall'
-
-  desc "Build the test runner"
-  #file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
   file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
 
   desc "Build the test tokenizer"
-  file "tokenize" => [LIB_FERRET_OBJS].flatten do |t|
-    qsh "Recompiling src/analysis.c",
-        "#{CC} #{CFLAGS} -DTOKENIZE -c -o analysis.o src/analysis.c"
-    qsh "Building tokenize",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o tokenize"
+  task :tokenize do
+    CFLAGS << ' -O2 -DTOKENIZE'
+    check_coptions
+    Rake::Task[:tokenize].invoke
   end
 
-  desc "Build the benchmark runner"
-  file "bench" => [LIB_FERRET_OBJS, BENCHMARK_OBJS].flatten do |t|
-    qsh "Building benchmarks",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o bench"
+  file "tokenize" => [LIB_FERRET_OBJS].flatten do |t|
+    qsh "Building tokenize",
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o #{t.name}"
+  end
+
+  file "bench" => [BENCHMARK_OBJS, 'libferret.a'].flatten do |t|
+    qsh "Building bench",
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o #{t.name}"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
