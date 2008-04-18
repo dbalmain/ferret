@@ -162,7 +162,6 @@ if ENV['USE_CPP']
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
   FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
-  CFLAGS << ' -O2'
 end
 
 
@@ -212,19 +211,18 @@ namespace :build do
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
 
-  desc "Build the test tokenizer"
-  file "tokenize" => [LIB_FERRET_OBJS].flatten do |t|
-  #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
-    qsh "Recompiling src/analysis.c...",
-        "#{CC} #{CFLAGS} -DTOKENIZE -c -o analysis.o src/analysis.c"
-    qsh "Building tokenize",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o tokenize"
-  end
-
   desc "Build the benchmark runner"
   file "bench" => [LIB_FERRET_OBJS, BENCHMARK_OBJS].flatten do |t|
     vsh "Building benchmarks",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o bench"
+  end
+
+  rule '.c' => '.y' do |t|
+    sh "yacc -o #{t.name} -p frt_ #{t.prerequisites}"
+  end
+
+  rule '.c' => '.rl' do |t|
+    sh "ragel #{t.prerequisites} -o #{t.name}"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
@@ -275,14 +273,6 @@ namespace :build do
   rule '.o' => lambda {|obj| get_dep_srcs(FILE2SRC[obj])} do |t|
     qsh "Compiling #{t.name}",
         "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
-  end
-
-  rule '.c' => '.y' do |t|
-    sh "yacc -o #{t.name} -p frt_ #{t.prerequisites}"
-  end
-
-  rule '.c' => '.rl' do |t|
-    sh "ragel #{t.prerequisites} -o #{t.name}"
   end
 
   file '.rake/HAVE_SPARSE_HASH' => '.rake/have_sparse_hash.cpp' do |t|

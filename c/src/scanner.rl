@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
 #include "global.h"
 #include "internal.h"
 
@@ -16,15 +18,52 @@
 
 %%{
     machine StdTok;
-    alphtype unsigned char;
 
-    frt_alpha = alpha;
-    frt_alnum = alnum;
-    frt_digit = digit;
 
-    include StdTok "src/scanner.in";
 
-    main := any @{ fhold; fcall frt_tokenizer; };
+    delim = space;
+    token = alpha alnum*;
+    punc  = [.,\/_\-];
+    proto = 'http'[s]? | 'ftp' | 'file';
+    urlc  = alnum | punc | [\@\:];
+
+    main := |*
+
+        #// Token, or token with possessive
+        token           { RET; };
+        token [\']      { trunc = 1; RET; };
+        token [\'][sS]? { trunc = 2; RET; };
+
+        #// contractions
+        alpha+ [\'] alpha+ { RET; };
+
+        #// Token with hyphens
+        alnum+ ([\-_] alnum+)* { RET; };
+
+        #// Company name
+        token [\&\@] token* { RET; };
+
+        #// URL
+        proto [:][/]+ %{ skip = p - ts; } urlc+ [/] { trunc = 1; RET; };
+        proto [:][/]+ %{ skip = p - ts; } urlc+     { RET; };
+        alnum+[:][/]+ urlc+ [/] { trunc = 1; RET; };
+        alnum+[:][/]+ urlc+     { RET; };
+
+        #// Email
+        alnum+ '@' alnum+ '.' alpha+ { RET; };
+
+        #// Acronym
+        (alpha '.')+ alpha { STRIP('.'); };
+
+        #// Int+float
+        [\-\+]?digit+            { RET; };
+        [\-\+]?digit+ '.' digit+ { RET; };
+
+        #// Ignore whitespace and other crap
+        0 { return; };
+        (any - alnum);
+
+        *|;
 }%%
 
 %% write data nofinal;
@@ -35,8 +74,7 @@ void frt_std_scan(const char *in,
                   const char **end,
                   int *token_size)
 {
-    int cs, act, top;
-    int stack[32];
+    int cs, act;
     char *ts = 0, *te = 0;
 
     %% write init;
@@ -59,6 +97,7 @@ void frt_std_scan(const char *in,
 
  ret:
     {
+
         size_t __len = te - ts - skip - trunc;
         if (__len > out_size)
             __len = out_size;
@@ -79,6 +118,7 @@ void frt_std_scan(const char *in,
             memcpy(out, ts + skip, __len);
             *token_size = __len;
         }
+
 
         out[*token_size] = 0;
     }

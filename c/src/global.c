@@ -240,37 +240,16 @@ void dummy_free(void *p)
 }
 
 #ifdef HAVE_GDB
-#define CMD_BUF_SIZE (128 + FILENAME_MAX)
-static char *build_shell_command(const char *gdb_filename)
+#define CMD_BUF_SIZE 128
+static char *build_shell_command()
 {
     int   pid = getpid();
-    char *buf = ALLOC_N(char, CMD_BUF_SIZE);
-    char *command =
-        "gdb -quiet -command=%s %s %d 2>/dev/null | grep '^[ #]'";
+    static char buf[CMD_BUF_SIZE];
+    char *command = "echo \"bt\nq\n\" > .gdb-bt && "
+        "gdb -quiet -command=.gdb-bt %s %d 2>/dev/null | grep '^[ #]'";
 
-    snprintf(buf, CMD_BUF_SIZE, command, gdb_filename, progname(), pid);
+    snprintf(buf, CMD_BUF_SIZE, command, progname(), pid);
     return buf;
-}
-
-/* Returns the fd to the tempfile */
-static int build_tempfile(char *name, size_t max_size)
-{
-    char *tmpdir = getenv("TMPDIR");
-
-    snprintf(name, max_size, "%s/frt.XXXXXXXXXX", tmpdir ? tmpdir : "/tmp");
-    return mkstemp(name);
-}
-
-static char *build_gdb_commandfile()
-{
-    const char *commands = "bt\nquit\n";
-    char *filename = ALLOC_N(char, FILENAME_MAX);
-    int fd = build_tempfile(filename, FILENAME_MAX);
-    if (fd < 0)
-        return NULL;
-    write(fd, commands, strlen(commands));
-    close(fd);
-    return filename;
 }
 #endif
 
@@ -281,24 +260,20 @@ char *get_stacktrace()
 {
 #ifdef HAVE_GDB
     FILE *stream;
-    char *gdb_filename = NULL, *buf = NULL, *stack = NULL;
+    char *buf = NULL, *stack = NULL;
     int   offset = -BUFFER_SIZE;
 
-    if ( !(gdb_filename = build_gdb_commandfile()) ) {
-        fprintf(EXCEPTION_STREAM,
-                "Unable to build gdb command file\n");
-        goto cleanup;
-    }
-    if ( !(buf = build_shell_command(gdb_filename)) ) {
+    if ( !(buf = build_shell_command()) ) {
         fprintf(EXCEPTION_STREAM,
                 "Unable to build stacktrace shell command\n");
-        goto cleanup;
+        return NULL;
     }
 
     if ( !(stream = popen(buf, "r")) ) {
         fprintf(EXCEPTION_STREAM,
                 "Unable to exec stacktrace shell command: '%s'\n", buf);
-        goto cleanup;
+        free(buf);
+        return NULL;
     }
 
     do {
@@ -308,10 +283,6 @@ char *get_stacktrace()
     } while(fread(stack + offset, 1, BUFFER_SIZE, stream) == BUFFER_SIZE);
 
     pclose(stream);
-
- cleanup:
-    if (gdb_filename) free(gdb_filename);
-    if (buf) free(buf);
     return stack;
 #else
     return NULL;
