@@ -21,7 +21,7 @@
 
 
 
-#line 25 "scanner_mb.c"
+#line 25 "src/scanner_mb.c"
 static const char _StdTokMb_actions[] = {
 	0, 1, 2, 1, 3, 1, 14, 1, 
 	15, 1, 16, 1, 17, 1, 18, 1, 
@@ -5019,7 +5019,7 @@ void frt_scan_mb(const char *in_mb,
     unsigned long *ts = 0, *te = 0;
 
     
-#line 5023 "scanner_mb.c"
+#line 5023 "src/scanner_mb.c"
 	{
 	cs = StdTokMb_start;
 	ts = 0;
@@ -5041,7 +5041,7 @@ void frt_scan_mb(const char *in_mb,
     *token_size = 0;
 
     
-#line 5045 "scanner_mb.c"
+#line 5045 "src/scanner_mb.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -5060,7 +5060,7 @@ _resume:
 #line 1 "src/scanner_mb.rl"
 	{ts = p;}
 	break;
-#line 5064 "scanner_mb.c"
+#line 5064 "src/scanner_mb.c"
 		}
 	}
 
@@ -5264,7 +5264,7 @@ _eof_trans:
 	}
 	}
 	break;
-#line 5268 "scanner_mb.c"
+#line 5268 "src/scanner_mb.c"
 		}
 	}
 
@@ -5277,7 +5277,7 @@ _again:
 #line 1 "src/scanner_mb.rl"
 	{ts = 0;}
 	break;
-#line 5281 "scanner_mb.c"
+#line 5281 "src/scanner_mb.c"
 		}
 	}
 
