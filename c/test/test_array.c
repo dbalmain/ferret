@@ -1,7 +1,6 @@
 #include "array.h"
-#include "test.h"
 #include <string.h>
-#include "internal.h"
+#include "test.h"
 
 static void ary_free_mock(void *p)
 {

@@ -279,7 +279,7 @@ void tvw_close_doc(TermVectorsWriter *tvw)
 {
     int i;
     OutStream *tvd_out = tvw->tvd_out;
-    os_write_u32(tvw->tvx_out, (f_u32)(os_pos(tvw->tvd_out) - tvw->tvd_ptr));
+    os_write_u32(tvw->tvx_out, (u32)(os_pos(tvw->tvd_out) - tvw->tvd_ptr));
     os_write_vint(tvd_out, ary_size(tvw->fields));
     for (i = 0; i < ary_size(tvw->fields); i++) {
         os_write_vint(tvd_out, tvw->fields[i].field_num);

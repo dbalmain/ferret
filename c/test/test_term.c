@@ -1,6 +1,5 @@
-#include "test.h"
 #include "index.h"
-#include "internal.h"
+#include "test.h"
 
 /***************************************************************************
  *

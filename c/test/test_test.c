@@ -1,6 +1,5 @@
-#include "test.h"
 #include "except.h"
-#include "internal.h"
+#include "test.h"
 
 static void raise_eof()
 {

@@ -1,7 +1,6 @@
-#include "test.h"
 #include "testhelper.h"
 #include "search.h"
-#include "internal.h"
+#include "test.h"
 
 #define FILTER_DOCS_SIZE 10
 #define ARRAY_SIZE 20

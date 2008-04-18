@@ -192,17 +192,17 @@ extern void si_advance_norm_gen(SegmentInfo *si, int field_num);
 typedef struct SegmentInfos
 {
     FieldInfos *fis;
-    f_u64 counter;
-    f_u64 version;
-    f_i64 generation;
-    f_i32 format;
+    frt_u64 counter;
+    frt_u64 version;
+    frt_i64 generation;
+    frt_i32 format;
     Store *store;
     SegmentInfo **segs;
     int size;
     int capa;
 } SegmentInfos;
 
-extern char *fn_for_generation(char *buf, char *base, char *ext, f_i64 gen);
+extern char *fn_for_generation(char *buf, char *base, char *ext, frt_i64 gen);
 
 extern SegmentInfos *sis_new(FieldInfos *fis);
 extern SegmentInfo *sis_new_segment(SegmentInfos *sis, int dcnt, Store *store);
@@ -212,9 +212,9 @@ extern void sis_del_from_to(SegmentInfos *sis, int from, int to);
 extern void sis_clear(SegmentInfos *sis);
 extern SegmentInfos *sis_read(Store *store);
 extern void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter);
-extern f_u64 sis_read_current_version(Store *store);
+extern frt_u64 sis_read_current_version(Store *store);
 extern void sis_destroy(SegmentInfos *sis);
-extern f_i64 sis_current_segment_generation(Store *store);
+extern frt_i64 sis_current_segment_generation(Store *store);
 extern char *sis_curr_seg_file_name(char *buf, Store *store);
 extern void sis_put(SegmentInfos *sis, FILE *stream);
 

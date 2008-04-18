@@ -17,12 +17,12 @@ typedef unsigned int        bool;
 #endif
 typedef unsigned char       uchar;
 
-typedef posh_u16_t f_u16;
-typedef posh_i16_t f_i16;
-typedef posh_u32_t f_u32;
-typedef posh_i32_t f_i32;
-typedef posh_u64_t f_u64;
-typedef posh_i64_t f_i64;
+typedef posh_u16_t frt_u16;
+typedef posh_i16_t frt_i16;
+typedef posh_u32_t frt_u32;
+typedef posh_i32_t frt_i32;
+typedef posh_u64_t frt_u64;
+typedef posh_i64_t frt_i64;
 
 #if ( LONG_MAX == 2147483647 ) && defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
 #define F_OFF_T_PFX "ll"

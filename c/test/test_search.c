@@ -1,10 +1,9 @@
 #include <ctype.h>
-#include "test.h"
 #include "search.h"
 #include "array.h"
 #include "helper.h"
 #include "testhelper.h"
-#include "internal.h"
+#include "test.h"
 
 #define ARRAY_SIZE 40
 

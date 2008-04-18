@@ -304,44 +304,44 @@ InStream *is_clone(InStream *is)
     return new_index_i;
 }
 
-f_i32 is_read_i32(InStream *is)
+i32 is_read_i32(InStream *is)
 {
-    return ((f_i32)is_read_byte(is) << 24) |
-        ((f_i32)is_read_byte(is) << 16) |
-        ((f_i32)is_read_byte(is) << 8) |
-        ((f_i32)is_read_byte(is));
+    return ((i32)is_read_byte(is) << 24) |
+        ((i32)is_read_byte(is) << 16) |
+        ((i32)is_read_byte(is) << 8) |
+        ((i32)is_read_byte(is));
 }
 
-f_i64 is_read_i64(InStream *is)
+i64 is_read_i64(InStream *is)
 {
-    return ((f_i64)is_read_byte(is) << 56) |
-        ((f_i64)is_read_byte(is) << 48) |
-        ((f_i64)is_read_byte(is) << 40) |
-        ((f_i64)is_read_byte(is) << 32) |
-        ((f_i64)is_read_byte(is) << 24) |
-        ((f_i64)is_read_byte(is) << 16) |
-        ((f_i64)is_read_byte(is) << 8) |
-        ((f_i64)is_read_byte(is));
+    return ((i64)is_read_byte(is) << 56) |
+        ((i64)is_read_byte(is) << 48) |
+        ((i64)is_read_byte(is) << 40) |
+        ((i64)is_read_byte(is) << 32) |
+        ((i64)is_read_byte(is) << 24) |
+        ((i64)is_read_byte(is) << 16) |
+        ((i64)is_read_byte(is) << 8) |
+        ((i64)is_read_byte(is));
 }
 
-f_u32 is_read_u32(InStream *is)
+u32 is_read_u32(InStream *is)
 {
-    return ((f_u32)is_read_byte(is) << 24) |
-        ((f_u32)is_read_byte(is) << 16) |
-        ((f_u32)is_read_byte(is) << 8) |
-        ((f_u32)is_read_byte(is));
+    return ((u32)is_read_byte(is) << 24) |
+        ((u32)is_read_byte(is) << 16) |
+        ((u32)is_read_byte(is) << 8) |
+        ((u32)is_read_byte(is));
 }
 
-f_u64 is_read_u64(InStream *is)
+u64 is_read_u64(InStream *is)
 {
-    return ((f_u64)is_read_byte(is) << 56) |
-        ((f_u64)is_read_byte(is) << 48) |
-        ((f_u64)is_read_byte(is) << 40) |
-        ((f_u64)is_read_byte(is) << 32) |
-        ((f_u64)is_read_byte(is) << 24) |
-        ((f_u64)is_read_byte(is) << 16) |
-        ((f_u64)is_read_byte(is) << 8) |
-        ((f_u64)is_read_byte(is));
+    return ((u64)is_read_byte(is) << 56) |
+        ((u64)is_read_byte(is) << 48) |
+        ((u64)is_read_byte(is) << 40) |
+        ((u64)is_read_byte(is) << 32) |
+        ((u64)is_read_byte(is) << 24) |
+        ((u64)is_read_byte(is) << 16) |
+        ((u64)is_read_byte(is) << 8) |
+        ((u64)is_read_byte(is));
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
@@ -405,9 +405,9 @@ INLINE off_t is_read_voff_t(InStream *is)
 }
 
 /* optimized to use unchecked read_byte if there is definitely space */
-INLINE f_u64 is_read_vll(InStream *is)
+INLINE u64 is_read_vll(InStream *is)
 {
-    register f_u64 res, b;
+    register u64 res, b;
     register int shift = 7;
 
     if (is->buf.pos > (is->buf.len - VINT_MAX_LEN)) {
@@ -498,7 +498,7 @@ char *is_read_string_safe(InStream *is)
     return str;
 }
 
-void os_write_i32(OutStream *os, f_i32 num)
+void os_write_i32(OutStream *os, i32 num)
 {
     os_write_byte(os, (uchar)((num >> 24) & 0xFF));
     os_write_byte(os, (uchar)((num >> 16) & 0xFF));
@@ -506,7 +506,7 @@ void os_write_i32(OutStream *os, f_i32 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_i64(OutStream *os, f_i64 num)
+void os_write_i64(OutStream *os, i64 num)
 {
     os_write_byte(os, (uchar)((num >> 56) & 0xFF));
     os_write_byte(os, (uchar)((num >> 48) & 0xFF));
@@ -518,7 +518,7 @@ void os_write_i64(OutStream *os, f_i64 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_u32(OutStream *os, f_u32 num)
+void os_write_u32(OutStream *os, u32 num)
 {
     os_write_byte(os, (uchar)((num >> 24) & 0xFF));
     os_write_byte(os, (uchar)((num >> 16) & 0xFF));
@@ -526,7 +526,7 @@ void os_write_u32(OutStream *os, f_u32 num)
     os_write_byte(os, (uchar)(num & 0xFF));
 }
 
-void os_write_u64(OutStream *os, f_u64 num)
+void os_write_u64(OutStream *os, u64 num)
 {
     os_write_byte(os, (uchar)((num >> 56) & 0xFF));
     os_write_byte(os, (uchar)((num >> 48) & 0xFF));
@@ -577,7 +577,7 @@ INLINE void os_write_voff_t(OutStream *os, register off_t num)
 }
 
 /* optimized to use an unchecked write if there is space */
-INLINE void os_write_vll(OutStream *os, register f_u64 num)
+INLINE void os_write_vll(OutStream *os, register u64 num)
 {
     if (os->buf.pos > VINT_END) {
         while (num > 127) {

@@ -1,7 +1,6 @@
 #include "index.h"
-#include "test.h"
 #include "testhelper.h"
-#include "internal.h"
+#include "test.h"
 
 static char *body = "body";
 static char *title = "title";
@@ -745,7 +744,7 @@ static void test_index_create(tst_case *tc, void *data)
 
 static void test_index_version(tst_case *tc, void *data)
 {
-    f_u64 version;
+    u64 version;
     Store *store = (Store *)data;
     IndexWriter *iw = create_book_iw(store);
     IndexReader *ir;

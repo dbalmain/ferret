@@ -1,8 +1,7 @@
 #include "index.h"
-#include "test.h"
 #include "testhelper.h"
 #include <limits.h>
-#include "internal.h"
+#include "test.h"
 
 static char *content_f = "content";
 static char *id_f = "id";

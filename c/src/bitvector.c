@@ -9,7 +9,7 @@ BitVector *bv_new_capa(int capa)
     /* The capacity passed by the user is number of bits allowed, however we
      * store capacity as the number of words (U32) allocated. */
     bv->capa = (capa >> 5) + 1;
-    bv->bits = ALLOC_AND_ZERO_N(f_u32, bv->capa);
+    bv->bits = ALLOC_AND_ZERO_N(u32, bv->capa);
 
     bv->size = 0;
     bv->count = 0;
@@ -34,9 +34,9 @@ void bv_destroy(BitVector * bv)
 
 void bv_set(BitVector * bv, int bit)
 {
-    f_u32 *word_p;
+    u32 *word_p;
     int word = bit >> 5;
-    f_u32 bitmask = 1 << (bit & 31);
+    u32 bitmask = 1 << (bit & 31);
     
     /* Check to see if we need to grow the BitVector */
     if (bit >= bv->size) {
@@ -46,9 +46,9 @@ void bv_set(BitVector * bv, int bit)
             while (capa <= word) {
                 capa <<= 1;
             }
-            REALLOC_N(bv->bits, f_u32, capa);
+            REALLOC_N(bv->bits, u32, capa);
             memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
-                   sizeof(f_u32) * (capa - bv->capa));
+                   sizeof(u32) * (capa - bv->capa));
             bv->capa = capa;
         }
     }
@@ -84,7 +84,7 @@ int bv_get(BitVector * bv, int bit)
 
 void bv_clear(BitVector * bv)
 {
-    memset(bv->bits, 0, bv->capa * sizeof(f_u32));
+    memset(bv->bits, 0, bv->capa * sizeof(u32));
     bv->extends_as_ones = 0;
     bv->count = 0;
     bv->size = 0;
@@ -97,8 +97,8 @@ void bv_clear(BitVector * bv)
  */
 void bv_unset(BitVector * bv, int bit)
 {
-    f_u32 *word_p;
-    f_u32 bitmask;
+    u32 *word_p;
+    u32 bitmask;
     int word = bit >> 5;
 
     if (bit >= bv->size) {
@@ -109,9 +109,9 @@ void bv_unset(BitVector * bv, int bit)
             while (capa <= word) {
                 capa <<= 1;
             }
-            REALLOC_N(bv->bits, f_u32, capa);
+            REALLOC_N(bv->bits, u32, capa);
             memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
-                   sizeof(f_u32) * (capa - bv->capa));
+                   sizeof(u32) * (capa - bv->capa));
             bv->capa = capa;
         }
     }
@@ -194,7 +194,7 @@ static const int NUM_TRAILING_ZEROS[] = {
 /*
  * This method is highly optimized, hence the loop unrolling
  */
-static INLINE int bv_get_1_offset(f_u32 word)
+static INLINE int bv_get_1_offset(u32 word)
 {
     if (word & 0xff) {
         return NUM_TRAILING_ZEROS[word & 0xff];
@@ -240,11 +240,11 @@ static INLINE int bv_get_1_offset(f_u32 word)
 
 int bv_scan_next_from(BitVector * bv, register const int from)
 {
-    register const f_u32 *const bits = bv->bits;
+    register const u32 *const bits = bv->bits;
     register const int word_size = (bv->size >> 5) + 1;
     register int word_pos = from >> 5;
     register int bit_pos = (from & 31);
-    register f_u32 word = bits[word_pos] >> bit_pos;
+    register u32 word = bits[word_pos] >> bit_pos;
 
     if (from >= bv->size) {
         return -1;
@@ -274,11 +274,11 @@ int bv_scan_next(BitVector * bv)
 
 int bv_scan_next_unset_from(BitVector * bv, register const int from)
 {
-    register const f_u32 *const bits = bv->bits;
+    register const u32 *const bits = bv->bits;
     register const int word_size = (bv->size >> 5) + 1;
     register int word_pos = from >> 5;
     register int bit_pos = (from & 31);
-    register f_u32 word = ~(~(bits[word_pos]) >> bit_pos);
+    register u32 word = ~(~(bits[word_pos]) >> bit_pos);
 
     if (from >= bv->size) {
         return -1;
@@ -313,8 +313,8 @@ int bv_eq(BitVector *bv1, BitVector *bv2)
         return false;
     }
     else {
-        f_u32 *bits = bv1->bits;
-        f_u32 *bits2 = bv2->bits;
+        u32 *bits = bv1->bits;
+        u32 *bits2 = bv2->bits;
         int min_size = min2(bv1->size, bv2->size);
         int word_size = (min_size >> 5) + 1;
         int ext_word_size = 0;
@@ -335,7 +335,7 @@ int bv_eq(BitVector *bv1, BitVector *bv2)
             ext_word_size = (bv2->size >> 5) + 1;
         }
         if (ext_word_size) {
-            const f_u32 expected = (bv1->extends_as_ones ? 0xFFFFFFFF : 0);
+            const u32 expected = (bv1->extends_as_ones ? 0xFFFFFFFF : 0);
             for (i = word_size; i < ext_word_size; i++) {
                 if (bits[i] != expected) {
                     return false;
@@ -349,10 +349,10 @@ int bv_eq(BitVector *bv1, BitVector *bv2)
 unsigned long bv_hash(BitVector *bv)
 {
     unsigned long hash = 0;
-    const f_u32 empty_word = bv->extends_as_ones ? 0xFFFFFFFF : 0;
+    const u32 empty_word = bv->extends_as_ones ? 0xFFFFFFFF : 0;
     int i;
     for (i = (bv->size >> 5); i >= 0; i--) {
-        const f_u32 word = bv->bits[i];
+        const u32 word = bv->bits[i];
         if (word != empty_word) {
             hash = (hash << 1) ^ word;
         }
@@ -364,9 +364,9 @@ unsigned long bv_hash(BitVector *bv)
 static INLINE void bv_recapa(BitVector *bv, int new_capa)
 {
     if (bv->capa < new_capa) {
-        REALLOC_N(bv->bits, f_u32, new_capa);
+        REALLOC_N(bv->bits, u32, new_capa);
         memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
-               sizeof(f_u32) * (new_capa - bv->capa)); 
+               sizeof(u32) * (new_capa - bv->capa)); 
         bv->capa = new_capa;
     }
 }
@@ -397,12 +397,12 @@ static BitVector *bv_and_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     }
     bv_recapa(bv1, capa);
     bv_recapa(bv2, capa);
-    REALLOC_N(bv->bits, f_u32, capa);
+    REALLOC_N(bv->bits, u32, capa);
     bv->capa = capa;
     bv->size = size;
 
     memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(f_u32) * (capa - word_size)); 
+           sizeof(u32) * (capa - word_size)); 
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] & bv2->bits[i];
@@ -431,7 +431,7 @@ static BitVector *bv_or_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     while (capa < word_size) {
         capa <<= 1;
     }
-    REALLOC_N(bv->bits, f_u32, capa);
+    REALLOC_N(bv->bits, u32, capa);
     bv->capa = capa;
     bv->size = max_size;
 
@@ -446,7 +446,7 @@ static BitVector *bv_or_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     }
 
     memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(f_u32) * (capa - word_size)); 
+           sizeof(u32) * (capa - word_size)); 
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] | bv2->bits[i];
@@ -474,7 +474,7 @@ static BitVector *bv_xor_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     while (capa < word_size) {
         capa <<= 1;
     }
-    REALLOC_N(bv->bits, f_u32, capa);
+    REALLOC_N(bv->bits, u32, capa);
     bv->capa = capa;
     bv->size = max_size;
 
@@ -489,7 +489,7 @@ static BitVector *bv_xor_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     }
 
     memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(f_u32) * (capa - word_size)); 
+           sizeof(u32) * (capa - word_size)); 
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] ^ bv2->bits[i];
@@ -516,12 +516,12 @@ static BitVector *bv_not_i(BitVector *bv, BitVector *bv1)
     while (capa < word_size) {
         capa <<= 1;
     }
-    REALLOC_N(bv->bits, f_u32, capa);
+    REALLOC_N(bv->bits, u32, capa);
     bv->capa = capa;
     bv->size = bv1->size;
     bv->extends_as_ones = 1 - bv1->extends_as_ones;
     memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(f_u32) * (capa - word_size)); 
+           sizeof(u32) * (capa - word_size)); 
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = ~(bv1->bits[i]);

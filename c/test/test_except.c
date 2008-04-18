@@ -1,6 +1,5 @@
-#include "test.h"
 #include "except.h"
-#include "internal.h"
+#include "test.h"
 
 static char *msg1 = "Message One";
 static char *msg2 = "Message Two";

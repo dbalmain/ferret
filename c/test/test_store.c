@@ -1,8 +1,7 @@
-#include "test.h"
 #include "store.h"
 #include <string.h>
 #include <limits.h>
-#include "internal.h"
+#include "test.h"
 
 #define TEST_LOCK_NAME "test"
 
@@ -152,7 +151,7 @@ static void test_rw_i32(tst_case *tc, void *data)
     Store *store = (Store *)data;
     OutStream *ostream = store->new_output(store, "_rw_int.cfs");
     InStream *istream;
-    f_i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
+    i32 ints[4] = { POSH_I32_MAX, POSH_I32_MIN, -1, 0 };
 
     for (i = 0; i < 4; i++) {
         os_write_i32(ostream, (int)ints[i]);
@@ -175,7 +174,7 @@ static void test_rw_i64(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    f_u64 longs[4] =
+    u64 longs[4] =
         { POSH_I64_MIN, POSH_I64_MAX, POSH_I64(-1), POSH_I64(0) };
     OutStream *ostream = store->new_output(store, "_rw_long.cfs");
     InStream *istream;
@@ -200,7 +199,7 @@ static void test_rw_u32(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    f_u32 uints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
+    u32 uints[4] = { POSH_U32_MAX, POSH_U32_MIN, 100000, 1 };
     OutStream *ostream = store->new_output(store, "_rw_uint.cfs");
     InStream *istream;
 
@@ -224,7 +223,7 @@ static void test_rw_u64(tst_case *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    f_u64 ulongs[4] =
+    u64 ulongs[4] =
         { POSH_U64_MAX, POSH_U64_MIN, POSH_U64(100000000000000), POSH_U64(1) };
     OutStream *ostream = store->new_output(store, "_rw_ulong.cfs");
     InStream *istream;
@@ -274,7 +273,7 @@ static void test_rw_voff_ts(tst_case *tc, void *data)
     Store *store = (Store *)data;
     OutStream *ostream;
     InStream *istream;
-    f_i64 voff_ts[4] =
+    i64 voff_ts[4] =
         { LONG_MAX, 0, 1000000, 1 };
     if (sizeof(off_t) == 8) {
         voff_ts[0] = POSH_I64_MAX;

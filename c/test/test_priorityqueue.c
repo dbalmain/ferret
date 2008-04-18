@@ -1,8 +1,7 @@
 #include "priorityqueue.h"
-#include "test.h"
 #include "global.h"
 #include <string.h>
-#include "internal.h"
+#include "test.h"
 
 /**
  * Simple string less than function used for testing adding of strings to the

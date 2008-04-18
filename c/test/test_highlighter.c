@@ -1,8 +1,7 @@
 #include "search.h"
 #include "array.h"
-#include "test.h"
 #include "testhelper.h"
-#include "internal.h"
+#include "test.h"
 
 #define ARRAY_SIZE 100
 

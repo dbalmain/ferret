@@ -198,6 +198,9 @@
 #define hs_orig                                 frt_hs_orig
 #define hs_rem                                  frt_hs_rem
 #define hyphen_filter_new                       frt_hyphen_filter_new
+#define i16                                     frt_i16
+#define i32                                     frt_i32
+#define i64                                     frt_i64
 #define icmp                                    frt_icmp
 #define icmp_risky                              frt_icmp_risky
 #define imalloc                                 frt_imalloc
@@ -268,7 +271,10 @@
 #define ts_new                                  frt_ts_new
 #define ts_new_i                                frt_ts_new_i
 #define ts_next                                 frt_ts_next
+#define u16                                     frt_u16
+#define u32                                     frt_u32
 #define u32malloc                               frt_u32malloc
+#define u64                                     frt_u64
 #define u64malloc                               frt_u64malloc
 #define vexit                                   frt_vexit
 #define vstrfmt                                 frt_vstrfmt

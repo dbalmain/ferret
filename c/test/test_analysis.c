@@ -1,9 +1,8 @@
-#include "test.h"
 #include "analysis.h"
 #include <string.h>
 #include <locale.h>
 #include <libstemmer.h>
-#include "internal.h"
+#include "test.h"
 
 #define test_token(mtk, mstr, mstart, mend) \
   tt_token(mtk, mstr, mstart, mend, tc, __LINE__)

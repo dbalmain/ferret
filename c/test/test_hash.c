@@ -1,8 +1,7 @@
-#include "test.h"
 #include "hash.h"
 #include "global.h"
 #include <stdlib.h>
-#include "internal.h"
+#include "test.h"
 
 static int *malloc_int(int val)
 {

@@ -1,6 +1,5 @@
 #include "test.h"
 #include "lang.h"
-#include "internal.h"
 
 typedef void *(*alloc_ft)(size_t);
 

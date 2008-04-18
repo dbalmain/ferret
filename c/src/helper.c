@@ -11,17 +11,17 @@ int hlp_string_diff(register const char *const s1,
     return i;
 }
 
-f_i32 float2int(float f)
+i32 float2int(float f)
 {
-    union { f_i32 i; float f; } tmp;
+    union { i32 i; float f; } tmp;
     tmp.f = f;
     return tmp.i;
 }
 
-float int2float(f_i32 i32)
+float int2float(i32 v)
 {
-    union { f_i32 i; float f; } tmp;
-    tmp.i = i32;
+    union { i32 i; float f; } tmp;
+    tmp.i = v;
     return tmp.f;
 }
 
@@ -31,8 +31,8 @@ float byte2float(unsigned char b)
         return 0.0;
     }
     else {
-        f_u32 mantissa = b & 0x07;
-        f_u32 exponent = (b >> 3) & 0x1f;
+        u32 mantissa = b & 0x07;
+        u32 exponent = (b >> 3) & 0x1f;
 
         return int2float((mantissa << 21) | ((exponent + 48) << 24));
     }
@@ -45,9 +45,9 @@ unsigned char float2byte(float f)
     }
     else {
         /* correctly order the bytes for encoding */
-        f_u32 i32 = float2int(f);
-        int mantissa = (i32 & 0xEf0000) >> 21;
-        int exponent = ((i32 >> 24) - 48);
+        u32 i = float2int(f);
+        int mantissa = (i & 0xEf0000) >> 21;
+        int exponent = ((i >> 24) - 48);
 
         if (exponent > 0x1f) {
             exponent = 0x1f;   /* 0x1f = 31 = 0b00011111 */

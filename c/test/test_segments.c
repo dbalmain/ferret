@@ -1,6 +1,5 @@
-#include "test.h"
 #include "index.h"
-#include "internal.h"
+#include "test.h"
 
 #define T 1
 #define F 0
@@ -109,7 +108,7 @@ void test_sis_add_del(tst_case *tc, void *data)
 
 void test_sis_rw(tst_case *tc, void *data)
 {
-    f_u64 version;
+    u64 version;
     Store *store = (Store *)data;
     SegmentInfos *sis = sis_new(&dummy_fis);
     SegmentInfo *seg0 = sis_new_segment(sis, 51, store);

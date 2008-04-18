@@ -1,6 +1,5 @@
 #include "hashset.h"
 #include "test.h"
-#include "internal.h"
 
 /**
  * Test basic HashSet functions like adding elements and testing for

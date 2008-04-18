@@ -76,16 +76,16 @@ unsigned long *lmalloc(unsigned long value)
   return p;
 }
 
-f_u32 *u32malloc(f_u32 value)
+u32 *u32malloc(u32 value)
 {
-  f_u32 *p = ALLOC(f_u32);
+  u32 *p = ALLOC(u32);
   *p = value;
   return p;
 }
 
-f_u64 *u64malloc(f_u64 value)
+u64 *u64malloc(u64 value)
 {
-  f_u64 *p = ALLOC(f_u64);
+  u64 *p = ALLOC(u64);
   *p = value;
   return p;
 }

@@ -508,7 +508,7 @@ extern void os_write_bytes(OutStream *os, const uchar *buf, int len);
  * @param num the 32-bit signed integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_i32(OutStream *os, f_i32 num);
+extern void os_write_i32(OutStream *os, frt_i32 num);
 
 /**
  * Write a 64-bit signed integer to the OutStream
@@ -518,7 +518,7 @@ extern void os_write_i32(OutStream *os, f_i32 num);
  * @param num the 64-bit signed integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_i64(OutStream *os, f_i64 num);
+extern void os_write_i64(OutStream *os, frt_i64 num);
 
 /**
  * Write a 32-bit unsigned integer to the OutStream
@@ -527,7 +527,7 @@ extern void os_write_i64(OutStream *os, f_i64 num);
  * @param num the 32-bit unsigned integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_u32(OutStream *os, f_u32 num);
+extern void os_write_u32(OutStream *os, frt_u32 num);
 
 /**
  * Write a 64-bit unsigned integer to the OutStream
@@ -536,7 +536,7 @@ extern void os_write_u32(OutStream *os, f_u32 num);
  * @param num the 64-bit unsigned integer to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_u64(OutStream *os, f_u64 num);
+extern void os_write_u64(OutStream *os, frt_u64 num);
 
 /**
  * Write an unsigned integer to OutStream in compressed VINT format.
@@ -566,7 +566,7 @@ extern void os_write_voff_t(OutStream *os, register off_t num);
  * @param num the 64bit int to write
  * @raise IO_ERROR if there is an error writing to the file-system
  */
-extern void os_write_vll(OutStream *os, register f_u64 num);
+extern void os_write_vll(OutStream *os, register frt_u64 num);
 
 /**
  * Write a string to the OutStream. A string is an integer +length+ in VINT
@@ -642,7 +642,7 @@ extern uchar *is_read_bytes(InStream *is, uchar *buf, int len);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i32 is_read_i32(InStream *is);
+extern frt_i32 is_read_i32(InStream *is);
 
 /**
  * Read a 64-bit unsigned integer from the InStream.
@@ -652,7 +652,7 @@ extern f_i32 is_read_i32(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_i64 is_read_i64(InStream *is);
+extern frt_i64 is_read_i64(InStream *is);
 
 /**
  * Read a 32-bit signed integer from the InStream.
@@ -662,7 +662,7 @@ extern f_i64 is_read_i64(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_u32 is_read_u32(InStream *is);
+extern frt_u32 is_read_u32(InStream *is);
 
 /**
  * Read a 64-bit signed integer from the InStream.
@@ -672,7 +672,7 @@ extern f_u32 is_read_u32(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern f_u64 is_read_u64(InStream *is);
+extern frt_u64 is_read_u64(InStream *is);
 
 /**
  * Read a compressed (VINT) unsigned integer from the InStream.
@@ -717,7 +717,7 @@ extern FRT_INLINE off_t is_read_voff_t(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE f_u64 is_read_vll(InStream *is);
+extern FRT_INLINE frt_u64 is_read_vll(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint

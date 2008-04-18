@@ -1,8 +1,7 @@
-#include "test.h"
-#include "testhelper.h"
 #include "search.h"
 #include "ind.h"
-#include "internal.h"
+#include "testhelper.h"
+#include "test.h"
 
 extern char *num_to_str(int num);
 

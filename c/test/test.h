@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <internal.h>
 
 /**
  * A test suite is a linked-list of sub-suites that are made up of test cases
@@ -141,8 +142,8 @@ extern bool tst_raise(int line_num, tst_case *tc, const int err_code,
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_int_equal(int line_num, tst_case * tc, const f_u64 expected,
-                          const f_u64 actual);
+extern bool tst_int_equal(int line_num, tst_case * tc, const u64 expected,
+                          const u64 actual);
 
 /**
  * Test that two floats (or doubles) are equal (within 0.001%). If they are
@@ -389,7 +390,7 @@ extern bool tst_assert(int line_num, tst_case * tc, int condition,
 
 #define Araise(e, f, b)\
     tst_raise(__LINE__, tc, e, (void (*)(void *))(f), (void *)(b))
-#define Aiequal(a, b)      tst_int_equal(__LINE__, tc, (f_u64)(a), (f_u64)(b))
+#define Aiequal(a, b)      tst_int_equal(__LINE__, tc, (u64)(a), (u64)(b))
 #define Afequal(a, b)      tst_flt_equal(__LINE__, tc, (a), (b))
 #define Afdequal(a, b, d)  tst_flt_delta_equal(__LINE__, tc, (a), (b), (d))
 #define Asequal(a, b)      tst_str_equal(__LINE__, tc, (a), (b))

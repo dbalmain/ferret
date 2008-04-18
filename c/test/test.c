@@ -1,8 +1,7 @@
 #include <time.h>
-#include "test.h"
 #include "except.h"
 #include "all_tests.h"
-#include "internal.h"
+#include "test.h"
 
 #define TST_STAT_SIZE 4
 /* chars use in ticker. This is usually too fast to see */
@@ -398,8 +397,8 @@ bool tst_raise(int line_num, tst_case *tc, const int err_code,
 }
 
 #define I64_PFX POSH_I64_PRINTF_PREFIX
-bool tst_int_equal(int line_num, tst_case *tc, const f_u64 expected,
-                   const f_u64 actual)
+bool tst_int_equal(int line_num, tst_case *tc, const u64 expected,
+                   const u64 actual)
 {
     a_cnt++;
     update_status();

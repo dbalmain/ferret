@@ -1,6 +1,5 @@
-#include "test.h"
 #include "index.h"
-#include "internal.h"
+#include "test.h"
 
 #define do_field_prop_test(tc, fi, name, boost, is_stored,\
                            is_compressed, is_indexed, is_tokenized, omit_norms,\

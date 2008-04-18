@@ -57,7 +57,7 @@ const char *COMPOUND_EXTENSIONS[] = {
 
 static const char BASE36_DIGITMAP[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-static char *u64_to_str36(char *buf, int buf_size, f_u64 u)
+static char *u64_to_str36(char *buf, int buf_size, u64 u)
 {
     int i = buf_size - 1;
     buf[i] = '\0';
@@ -75,9 +75,9 @@ static char *u64_to_str36(char *buf, int buf_size, f_u64 u)
     return buf + i;
 }
 
-static f_u64 str36_to_u64(char *p)
+static u64 str36_to_u64(char *p)
 {
-    f_u64 u = 0;
+    u64 u = 0;
     while (true) {
         if ('0' <= *p && '9' >= *p) {
             u = u * 36 + *p - '0';
@@ -104,14 +104,14 @@ static f_u64 str36_to_u64(char *p)
  * @param ext extension of the filename (including .)
  * @param gen generation
  */
-char *fn_for_generation(char *buf, char *base, char *ext, f_i64 gen)
+char *fn_for_generation(char *buf, char *base, char *ext, i64 gen)
 {
     if (-1 == gen) {
         return NULL;
     }
     else {
         char b[SEGMENT_NAME_MAX_LENGTH];
-        char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, (f_u64)gen);
+        char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, (u64)gen);
         if (ext == NULL) {
             sprintf(buf, "%s_%s", base, u);
         }
@@ -122,7 +122,7 @@ char *fn_for_generation(char *buf, char *base, char *ext, f_i64 gen)
     }
 }
 
-char *segfn_for_generation(char *buf, f_u64 generation)
+char *segfn_for_generation(char *buf, u64 generation)
 {
     char b[SEGMENT_NAME_MAX_LENGTH];
     char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, generation);
@@ -145,7 +145,7 @@ char *segfn_for_generation(char *buf, f_u64 generation)
 static char *fn_for_gen_field(char *buf,
                               char *base,
                               char *ext,
-                              f_i64 gen,
+                              i64 gen,
                               int field_num)
 {
     if (-1 == gen) {
@@ -155,7 +155,7 @@ static char *fn_for_gen_field(char *buf,
         char b[SEGMENT_NAME_MAX_LENGTH];
         sprintf(buf, "%s_%s.%s%d",
                 base,
-                u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, (f_u64)gen),
+                u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, (u64)gen),
                 ext,
                 field_num);
         return buf;
@@ -404,7 +404,7 @@ FieldInfos *fis_read(InStream *is)
         do {
             int store_val, index_val, term_vector_val;
             int i;
-            union { f_u32 i; float f; } tmp;
+            union { u32 i; float f; } tmp;
             FieldInfo *volatile fi;
 
             store_val = is_read_vint(is);
@@ -436,7 +436,7 @@ FieldInfos *fis_read(InStream *is)
 void fis_write(FieldInfos *fis, OutStream *os)
 {
     int i;
-    union { f_u32 i; float f; } tmp;
+    union { u32 i; float f; } tmp;
     FieldInfo *fi;
     const int fis_size = fis->size;
 
@@ -713,11 +713,11 @@ static void si_delete_files(SegmentInfo *si, FieldInfos *fis, Deleter *dlr)
  ****************************************************************************/
 
 #include <time.h>
-static char *new_segment(f_i64 generation)
+static char *new_segment(i64 generation)
 {
     char buf[SEGMENT_NAME_MAX_LENGTH];
     char *fn_p = u64_to_str36(buf, SEGMENT_NAME_MAX_LENGTH - 1,
-                              (f_u64)generation);
+                              (u64)generation);
     *(--fn_p) = '_';
     return estrdup(fn_p);
 }
@@ -727,18 +727,18 @@ static char *new_segment(f_i64 generation)
  ****************************************************************************/
 
 typedef struct FindSegmentsFile {
-    f_i64  generation;
-    f_u64  u64_return;
+    i64  generation;
+    u64  u64_return;
     void  *p_return;
 } FindSegmentsFile;
 
 static void which_gen_i(const char *file_name, void *arg)
 {
-    f_i64 *max_generation = (f_i64 *)arg;
+    i64 *max_generation = (i64 *)arg;
     if (0 == strncmp(SEGMENTS_FILE_NAME"_", file_name,
                      sizeof(SEGMENTS_FILE_NAME))) {
         char *p = strrchr(file_name, '_') + 1;
-        f_i64 generation = (f_i64)str36_to_u64(p);
+        i64 generation = (i64)str36_to_u64(p);
         if (generation > *max_generation) *max_generation = generation;
     }
 }
@@ -781,9 +781,9 @@ void sis_put(SegmentInfos *sis, FILE *stream)
  *
  * @param store - the Store to look in
  */
-f_i64 sis_current_segment_generation(Store *store)
+i64 sis_current_segment_generation(Store *store)
 {
-    f_i64 current_generation = -1;
+    i64 current_generation = -1;
     store->each(store, &which_gen_i, &current_generation);
     return current_generation;
 }
@@ -821,8 +821,8 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
     int gen_look_ahead_count = 0;
     bool retry = false;
     int method = 0;
-    f_i64 last_gen = -1;
-    f_i64 gen = 0;
+    i64 last_gen = -1;
+    i64 gen = 0;
 
     /* Loop until we succeed in calling doBody() without hitting an
      * IOException.  An IOException most likely means a commit was in process
@@ -860,7 +860,7 @@ void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                 XENDTRY
 
                 if (NULL != gen_is) {
-                    f_i64 gen0 = -1, gen1 = -1;
+                    i64 gen0 = -1, gen1 = -1;
 
                     TRY
                         gen0 = is_read_u64(gen_is);
@@ -996,7 +996,7 @@ SegmentInfos *sis_new(FieldInfos *fis)
     REF(fis);
     sis->fis = fis;
     sis->format = FORMAT;
-    sis->version = (f_u64)time(NULL);
+    sis->version = (u64)time(NULL);
     sis->size = 0;
     sis->counter = 0;
     sis->generation = -1;
@@ -1154,11 +1154,11 @@ void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
 void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
 {
     InStream *is;
-    f_u32 format = 0;
-    f_u64 version = 0;
+    u32 format = 0;
+    u64 version = 0;
     char seg_file_name[SEGMENT_NAME_MAX_LENGTH];
 
-    segfn_for_generation(seg_file_name, (f_u64)fsf->generation);
+    segfn_for_generation(seg_file_name, (u64)fsf->generation);
     is = store->open_input(store, seg_file_name);
 
     TRY
@@ -1171,7 +1171,7 @@ void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
     fsf->u64_return = version;
 }
 
-f_u64 sis_read_current_version(Store *store)
+u64 sis_read_current_version(Store *store)
 {
     FindSegmentsFile fsf;
     sis_find_segments_file(store, &fsf, &sis_read_ver_i);
@@ -1689,12 +1689,12 @@ TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
         if (store_offsets) {
             int num_positions = tv->offset_cnt = is_read_vint(fdt_in);
             Offset *offsets = tv->offsets = ALLOC_N(Offset, num_positions);
-            f_i64 offset = 0;
+            i64 offset = 0;
             for (i = 0; i < num_positions; i++) {
                 offsets[i].start =
-                    (off_t)(offset += (f_i64)is_read_vll(fdt_in));
+                    (off_t)(offset += (i64)is_read_vll(fdt_in));
                 offsets[i].end =
-                    (off_t)(offset += (f_i64)is_read_vll(fdt_in));
+                    (off_t)(offset += (i64)is_read_vll(fdt_in));
             }
         }
     }
@@ -1927,7 +1927,7 @@ void fw_write_tv_index(FieldsWriter *fw)
     int i;
     const int tv_cnt = ary_size(fw->tv_fields);
     OutStream *fdt_out = fw->fdt_out;
-    os_write_u32(fw->fdx_out, (f_u32)(os_pos(fdt_out) - fw->start_ptr));
+    os_write_u32(fw->fdx_out, (u32)(os_pos(fdt_out) - fw->start_ptr));
     os_write_vint(fdt_out, tv_cnt);
     /* write in reverse order so we can count back from the start position to
      * the beginning of the TermVector's data */
@@ -1986,13 +1986,13 @@ void fw_add_postings(FieldsWriter *fw,
 
     if (fi_store_offsets(fi)) {
         /* use delta encoding for offsets */
-        f_i64 last_end = 0;
+        i64 last_end = 0;
         os_write_vint(fdt_out, offset_count);  /* write shared prefix length */
         for (i = 0; i < offset_count; i++) {
-            f_i64 start = (f_i64)offsets[i].start;
-            f_i64 end = (f_i64)offsets[i].end;
-            os_write_vll(fdt_out, (f_u64)(start - last_end));
-            os_write_vll(fdt_out, (f_u64)(end - start));
+            i64 start = (i64)offsets[i].start;
+            i64 end = (i64)offsets[i].end;
+            os_write_vll(fdt_out, (u64)(start - last_end));
+            os_write_vll(fdt_out, (u64)(end - start));
             last_end = end;
         }
     }
@@ -4344,7 +4344,7 @@ static BitVector *bv_read(Store *store, char *name)
     BitVector *volatile bv = ALLOC_AND_ZERO(BitVector);
     bv->size = (int)is_read_vint(is);
     bv->capa = (bv->size >> 5) + 1;
-    bv->bits = ALLOC_AND_ZERO_N(f_u32, bv->capa);
+    bv->bits = ALLOC_AND_ZERO_N(u32, bv->capa);
     bv->ref_cnt = 1;
     TRY
         for (i = (bv->size >> 5); i >= 0; i--) {
@@ -5857,7 +5857,7 @@ static void sm_merge_fields(SegmentMerger *sm)
             end = (off_t)is_read_u64(fdx_in);
         }
         for (j = 0; j < max_doc; j++) {
-            f_u32 tv_idx_offset = is_read_u32(fdx_in);
+            u32 tv_idx_offset = is_read_u32(fdx_in);
             start = end;
             if (j == max_doc - 1) {
                 end = is_length(fdt_in);
@@ -6555,11 +6555,11 @@ static void iw_cp_fields(IndexWriter *iw, SegmentReader *sr,
             /* write TVs up to TV index */
             is2os_copy_bytes(fdt_in, fdt_out,
                              (int)(is_read_u64(fdx_in)
-                                   + (f_u64)is_read_u32(fdx_in)
-                                   - (f_u64)is_pos(fdt_in)));
+                                   + (u64)is_read_u32(fdx_in)
+                                   - (u64)is_pos(fdt_in)));
 
             /* Write TV index pos */
-            os_write_u32(fdx_out, (f_u32)(os_pos(fdt_out) - doc_start_ptr));
+            os_write_u32(fdx_out, (u32)(os_pos(fdt_out) - doc_start_ptr));
             tv_cnt = is_read_vint(fdt_in);
             os_write_vint(fdt_out, tv_cnt);
             for (j = 0; j < tv_cnt; j++) {

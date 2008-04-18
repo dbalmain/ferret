@@ -1,8 +1,7 @@
 #include "store.h"
 #include "index.h"
-#include "test.h"
 #include "testhelper.h"
-#include "internal.h"
+#include "test.h"
 
 void test_compound_reader(tst_case *tc, void *data)
 {

@@ -8,7 +8,7 @@
 typedef struct FrtBitVector
 {
     /** The bits are held in an array of 32-bit integers */
-    f_u32 *bits;
+    frt_u32 *bits;
 
     /** size is equal to 1 + the highest order bit set */
     int size;
