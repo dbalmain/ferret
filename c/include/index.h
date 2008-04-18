@@ -668,7 +668,7 @@ extern FieldsReader *fr_open(Store *store,
                              const char *segment, FieldInfos *fis);
 extern FieldsReader *fr_clone(FieldsReader *orig);
 extern void fr_close(FieldsReader *fr);
-extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
+extern FrtDocument *fr_get_doc(FieldsReader *fr, int doc_num);
 extern LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num);
 extern FrtHashTable *fr_get_tv(FieldsReader *fr, int doc_num);
 extern TermVector *fr_get_field_tv(FieldsReader *fr, int doc_num,
@@ -693,7 +693,7 @@ typedef struct FieldsWriter
 extern FieldsWriter *fw_open(Store *store,
                              const char *segment, FieldInfos *fis);
 extern void fw_close(FieldsWriter *fw);
-extern void fw_add_doc(FieldsWriter *fw, Document *doc);
+extern void fw_add_doc(FieldsWriter *fw, FrtDocument *doc);
 extern void fw_add_postings(FieldsWriter *fw,
                             int field_num,
                             PostingList **plists,
@@ -740,7 +740,7 @@ struct IndexReader
 {
     int                 (*num_docs)(IndexReader *ir);
     int                 (*max_doc)(IndexReader *ir);
-    Document           *(*get_doc)(IndexReader *ir, int doc_num);
+    FrtDocument           *(*get_doc)(IndexReader *ir, int doc_num);
     LazyDoc            *(*get_lazy_doc)(IndexReader *ir, int doc_num);
     frt_uchar              *(*get_norms)(IndexReader *ir, int field_num);
     frt_uchar              *(*get_norms_into)(IndexReader *ir, int field_num,
@@ -797,7 +797,7 @@ extern frt_uchar *ir_get_norms_i(IndexReader *ir, int field_num);
 extern frt_uchar *ir_get_norms(IndexReader *ir, const char *field);
 extern frt_uchar *ir_get_norms_into(IndexReader *ir, const char *field, frt_uchar *buf);
 extern void ir_destroy(IndexReader *self);
-extern Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
+extern FrtDocument *ir_get_doc_with_term(IndexReader *ir, const char *field,
                                       const char *term);
 extern TermEnum *ir_terms(IndexReader *ir, const char *field);
 extern TermEnum *ir_terms_from(IndexReader *ir, const char *field,
@@ -893,7 +893,7 @@ typedef struct DocWriter
 
 extern DocWriter *dw_open(IndexWriter *is, SegmentInfo *si);
 extern void dw_close(DocWriter *dw);
-extern void dw_add_doc(DocWriter *dw, Document *doc);
+extern void dw_add_doc(DocWriter *dw, FrtDocument *doc);
 extern void dw_new_segment(DocWriter *dw, SegmentInfo *si);
 
 /****************************************************************************
@@ -931,7 +931,7 @@ extern void iw_delete_term(IndexWriter *iw, const char *field,
 extern void iw_delete_terms(IndexWriter *iw, const char *field, 
                             char **terms, const int term_cnt);
 extern void iw_close(IndexWriter *iw);
-extern void iw_add_doc(IndexWriter *iw, Document *doc);
+extern void iw_add_doc(IndexWriter *iw, FrtDocument *doc);
 extern int iw_doc_count(IndexWriter *iw);
 extern void iw_commit(IndexWriter *iw);
 extern void iw_optimize(IndexWriter *iw);

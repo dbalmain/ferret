@@ -6,12 +6,12 @@
 
 /****************************************************************************
  *
- * DocField
+ * FrtDocField
  *
  ****************************************************************************/
 
-#define DF_INIT_CAPA 1
-typedef struct DocField
+#define FRT_DF_INIT_CAPA 1
+typedef struct FrtDocField
 {
     char *name;
     int size;
@@ -21,34 +21,34 @@ typedef struct DocField
     float boost;
     bool destroy_data : 1;
     bool is_compressed : 1;
-} DocField;
+} FrtDocField;
 
-extern DocField *df_new(const char *name);
-extern DocField *df_add_data(DocField *df, char *data);
-extern DocField *df_add_data_len(DocField *df, char *data, int len);
-extern void df_destroy(DocField *df);
-extern char *df_to_s(DocField *df);
+extern FrtDocField *frt_df_new(const char *name);
+extern FrtDocField *frt_df_add_data(FrtDocField *df, char *data);
+extern FrtDocField *frt_df_add_data_len(FrtDocField *df, char *data, int len);
+extern void frt_df_destroy(FrtDocField *df);
+extern char *frt_df_to_s(FrtDocField *df);
 
 /****************************************************************************
  *
- * Document
+ * FrtDocument
  *
  ****************************************************************************/
 
-#define DOC_INIT_CAPA 8
-typedef struct Document
+#define FRT_DOC_INIT_CAPA 8
+typedef struct FrtDocument
 {
     FrtHashTable *field_dict;
     int size;
     int capa;
-    DocField **fields;
+    FrtDocField **fields;
     float boost;
-} Document;
+} FrtDocument;
 
-extern Document *doc_new();
-extern DocField *doc_add_field(Document *doc, DocField *df);
-extern DocField *doc_get_field(Document *doc, const char *fname);
-extern char *doc_to_s(Document *doc);
-extern void doc_destroy(Document *doc);
+extern FrtDocument *frt_doc_new();
+extern FrtDocField *frt_doc_add_field(FrtDocument *doc, FrtDocField *df);
+extern FrtDocField *frt_doc_get_field(FrtDocument *doc, const char *fname);
+extern char *frt_doc_to_s(FrtDocument *doc);
+extern void frt_doc_destroy(FrtDocument *doc);
 
 #endif

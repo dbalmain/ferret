@@ -11,6 +11,8 @@
 #define ARY_META_CNT                FRT_ARY_META_CNT
 #define BV_INIT_CAPA                FRT_BV_INIT_CAPA
 #define DEREF                       FRT_DEREF
+#define DF_INIT_CAPA                FRT_DF_INIT_CAPA
+#define DOC_INIT_CAPA               FRT_DOC_INIT_CAPA
 #define EMPTY_STRING                FRT_EMPTY_STRING
 #define ENGLISH_STOP_WORDS          FRT_ENGLISH_STOP_WORDS
 #define EXCEPT_H                    FRT_EXCEPT_H
@@ -62,6 +64,8 @@
 #define Analyzer                FrtAnalyzer
 #define BitVector               FrtBitVector
 #define CachedTokenStream       FrtCachedTokenStream
+#define DocField                FrtDocField
+#define Document                FrtDocument
 #define HashEntry               FrtHashEntry
 #define HashKeyStatus           FrtHashKeyStatus
 #define HashSet                 FrtHashSet
@@ -148,7 +152,17 @@
 #define bv_xor_x                                frt_bv_xor_x
 #define clean_up                                frt_clean_up
 #define dbl_to_s                                frt_dbl_to_s
+#define df_add_data                             frt_df_add_data
+#define df_add_data_len                         frt_df_add_data_len
+#define df_destroy                              frt_df_destroy
+#define df_new                                  frt_df_new
+#define df_to_s                                 frt_df_to_s
 #define do_clean_up                             frt_do_clean_up
+#define doc_add_field                           frt_doc_add_field
+#define doc_destroy                             frt_doc_destroy
+#define doc_get_field                           frt_doc_get_field
+#define doc_new                                 frt_doc_new
+#define doc_to_s                                frt_doc_to_s
 #define dummy_free                              frt_dummy_free
 #define ecalloc                                 frt_ecalloc
 #define emalloc                                 frt_emalloc

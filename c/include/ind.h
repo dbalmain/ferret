@@ -37,17 +37,17 @@ extern int index_size(Index *self);
 extern void index_optimize(Index *self);
 extern bool index_has_del(Index *self);
 extern bool index_is_deleted(Index *self, int doc_num);
-extern void index_add_doc(Index *self, Document *doc);
+extern void index_add_doc(Index *self, FrtDocument *doc);
 extern void index_add_string(Index *self, char *str);
 extern void index_add_array(Index *self, char **ary);
 extern TopDocs *index_search_str(Index *self, char *query, int first_doc,
                                  int num_docs, Filter *filter,
                                  Sort *sort, PostFilter *post_filter);
 extern Query *index_get_query(Index *self, char *qstr);
-extern Document *index_get_doc(Index *self, int doc_num);
-extern Document *index_get_doc_ts(Index *self, int doc_num);
-extern Document *index_get_doc_id(Index *self, const char *id);
-extern Document *index_get_doc_term(Index *self, const char *field,
+extern FrtDocument *index_get_doc(Index *self, int doc_num);
+extern FrtDocument *index_get_doc_ts(Index *self, int doc_num);
+extern FrtDocument *index_get_doc_id(Index *self, const char *id);
+extern FrtDocument *index_get_doc_term(Index *self, const char *field,
                                     const char *term);
 extern void index_delete(Index *self, int doc_num);
 extern void index_delete_term(Index *self, const char *field, const char *term);

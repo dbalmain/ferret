@@ -766,7 +766,7 @@ struct Searcher
     Similarity  *similarity;
     int          (*doc_freq)(Searcher *self, const char *field,
                              const char *term);
-    Document    *(*get_doc)(Searcher *self, int doc_num);
+    FrtDocument    *(*get_doc)(Searcher *self, int doc_num);
     LazyDoc     *(*get_lazy_doc)(Searcher *self, int doc_num);
     int          (*max_doc)(Searcher *self);
     Weight      *(*create_weight)(Searcher *self, Query *query);
