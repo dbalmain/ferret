@@ -46,12 +46,12 @@ static char *ste_next(TermEnum *te);
 #define ZIP_LEVEL 9
 
 /* *** Must be three characters *** */
-const char *INDEX_EXTENSIONS[] = {
+static const char *INDEX_EXTENSIONS[] = {
     "frq", "prx", "fdx", "fdt", "tfx", "tix", "tis", "del", "gen", "cfs"
 };
 
 /* *** Must be three characters *** */
-const char *COMPOUND_EXTENSIONS[] = {
+static const char *COMPOUND_EXTENSIONS[] = {
     "frq", "prx", "fdx", "fdt", "tfx", "tix", "tis"
 };
 
@@ -122,7 +122,7 @@ char *fn_for_generation(char *buf, char *base, char *ext, i64 gen)
     }
 }
 
-char *segfn_for_generation(char *buf, u64 generation)
+static char *segfn_for_generation(char *buf, u64 generation)
 {
     char b[SEGMENT_NAME_MAX_LENGTH];
     char *u = u64_to_str36(b, SEGMENT_NAME_MAX_LENGTH, generation);
@@ -178,7 +178,7 @@ static int co_eq(const void *key1, const void *key2)
     return (key1 == key2);
 }
 
-void co_destroy(CacheObject *self)
+static void co_destroy(CacheObject *self)
 {
     h_rem(self->ref_tab1, self->ref2, false);
     h_rem(self->ref_tab2, self->ref1, false);
@@ -212,7 +212,7 @@ HashTable *co_hash_create()
  *
  ****************************************************************************/
 
-INLINE void fi_set_store(FieldInfo *fi, int store)
+static INLINE void fi_set_store(FieldInfo *fi, int store)
 {
     switch (store) {
         case STORE_NO:
@@ -226,7 +226,7 @@ INLINE void fi_set_store(FieldInfo *fi, int store)
     }
 }
 
-INLINE void fi_set_index(FieldInfo *fi, int index)
+static INLINE void fi_set_index(FieldInfo *fi, int index)
 {
     switch (index) {
         case INDEX_NO:
@@ -247,7 +247,7 @@ INLINE void fi_set_index(FieldInfo *fi, int index)
     }
 }
 
-INLINE void fi_set_term_vector(FieldInfo *fi, int term_vector)
+static INLINE void fi_set_term_vector(FieldInfo *fi, int term_vector)
 {
     switch (term_vector) {
         case TERM_VECTOR_NO:
@@ -570,7 +570,7 @@ SegmentInfo *si_new(char *name, int doc_cnt, Store *store)
     return si;
 }
 
-SegmentInfo *si_read(Store *store, InStream *is)
+static SegmentInfo *si_read(Store *store, InStream *is)
 {
     SegmentInfo *volatile si = ALLOC_AND_ZERO(SegmentInfo);
     TRY
@@ -595,7 +595,7 @@ SegmentInfo *si_read(Store *store, InStream *is)
     return si;
 }
 
-void si_write(SegmentInfo *si, OutStream *os)
+static void si_write(SegmentInfo *si, OutStream *os)
 {
     os_write_string(os, si->name);
     os_write_vint(os, si->doc_cnt);
@@ -624,7 +624,9 @@ bool si_has_deletions(SegmentInfo *si)
     return si->del_gen >= 0;
 }
 
-char *si_del_file_name(SegmentInfo *si, char *buf)
+/*
+FIXME: not used
+static char *si_del_file_name(SegmentInfo *si, char *buf)
 {
     if (si->del_gen < 0) {
         return NULL;
@@ -633,6 +635,7 @@ char *si_del_file_name(SegmentInfo *si, char *buf)
         return fn_for_generation(buf, si->name, ".del", si->del_gen);
     }
 }
+*/
 
 bool si_has_separate_norms(SegmentInfo *si)
 {
@@ -658,7 +661,7 @@ void si_advance_norm_gen(SegmentInfo *si, int field_num)
     si->norm_gens[field_num]++;
 }
 
-char *si_norm_file_name(SegmentInfo *si, char *buf, int field_num)
+static char *si_norm_file_name(SegmentInfo *si, char *buf, int field_num)
 {
     int norm_gen;
     if (field_num >= si->norm_gens_size
@@ -671,7 +674,7 @@ char *si_norm_file_name(SegmentInfo *si, char *buf, int field_num)
     }
 }
 
-void deleter_queue_file(Deleter *dlr, const char *file_name);
+static void deleter_queue_file(Deleter *dlr, const char *file_name);
 #define DEL(file_name) deleter_queue_file(dlr, file_name)
 
 static void si_delete_files(SegmentInfo *si, FieldInfos *fis, Deleter *dlr)
@@ -807,14 +810,17 @@ char *sis_curr_seg_file_name(char *buf, Store *store)
  * @param store - the Store to look in
  * @return segments_N where N is the +next+ generation
  */
-char *sis_next_seg_file_name(char *buf, Store *store)
+/*
+FIXME: not used
+static char *sis_next_seg_file_name(char *buf, Store *store)
 {
     return segfn_for_generation(buf, sis_current_segment_generation(store) + 1);
 }
+*/
 
 #define GEN_FILE_RETRY_COUNT 10
 #define GEN_LOOK_AHEAD_COUNT 10
-void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
+static void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                             void (*run)(Store *store, FindSegmentsFile *fsf))
 {
     int i;
@@ -1064,7 +1070,7 @@ void sis_clear(SegmentInfos *sis)
     sis->size = 0;
 }
 
-void sis_read_i(Store *store, FindSegmentsFile *fsf)
+static void sis_read_i(Store *store, FindSegmentsFile *fsf)
 {
     int seg_cnt;
     int i;
@@ -1151,7 +1157,7 @@ void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
     }
 }
 
-void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
+static void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
 {
     InStream *is;
     u32 format = 0;
@@ -1642,7 +1648,7 @@ LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
     return lazy_doc;
 }
 
-TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
+static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
 {
     TermVector *tv = ALLOC_AND_ZERO(TermVector);
     InStream *fdt_in = fr->fdt_in;
@@ -2018,7 +2024,7 @@ TermInfo *te_get_ti(TermEnum *te)
     return memcpy(ALLOC(TermInfo), &(te->curr_ti), sizeof(TermInfo));
 }
 
-char *te_skip_to(TermEnum *te, const char *term)
+static char *te_skip_to(TermEnum *te, const char *term)
 {
     char *curr_term = te->curr_term;
     if (strcmp(curr_term, term) < 0) {
@@ -2422,8 +2428,8 @@ static void tew_destroy(TermEnumWrapper *tew)
     tew->te->close(tew->te);
 }
 
-TermEnumWrapper *tew_setup(TermEnumWrapper *tew, int index, TermEnum *te,
-                           IndexReader *ir)
+static TermEnumWrapper *tew_setup(TermEnumWrapper *tew, int index, TermEnum *te,
+                                  IndexReader *ir)
 {
     tew->index = index;
     tew->ir = ir;
@@ -2637,8 +2643,8 @@ TermInfo *tir_get_ti(TermInfosReader *tir, const char *term)
     return NULL;
 }
 
-TermInfo *tir_get_ti_field(TermInfosReader *tir, int field_num,
-                           const char *term)
+static TermInfo *tir_get_ti_field(TermInfosReader *tir, int field_num,
+                                  const char *term)
 {
     TermEnum *te = tir_enum(tir);
     char *match;
@@ -3116,7 +3122,7 @@ static void stpe_seek(TermDocEnum *tde, int field_num, const char *term)
     stde->prx_cnt = 0;
 }
 
-bool stpe_next(TermDocEnum *tde)
+static bool stpe_next(TermDocEnum *tde)
 {
     SegmentTermDocEnum *stde = STDE(tde);
     is_skip_vints(stde->prx_in, stde->prx_cnt);
@@ -3133,7 +3139,7 @@ bool stpe_next(TermDocEnum *tde)
     }
 }
 
-int stpe_read(TermDocEnum *tde, int *docs, int *freqs, int req_num)
+static int stpe_read(TermDocEnum *tde, int *docs, int *freqs, int req_num)
 {
     (void)tde; (void)docs; (void)freqs; (void)req_num;
     RAISE(ARG_ERROR, "TermPosEnum does not handle processing multiple documents"
@@ -3358,7 +3364,7 @@ static void mtde_close(TermDocEnum *tde)
     free(tde);
 }
 
-TermDocEnum *mtxe_new(MultiReader *mr)
+static TermDocEnum *mtxe_new(MultiReader *mr)
 {
     MultiTermDocEnum *mtde  = ALLOC_AND_ZERO(MultiTermDocEnum);
     TermDocEnum *tde        = TDE(mtde);
@@ -3381,7 +3387,7 @@ TermDocEnum *mtxe_new(MultiReader *mr)
     return tde;
 }
 
-TermDocEnum *mtde_new(MultiReader *mr)
+static TermDocEnum *mtde_new(MultiReader *mr)
 {
     int i;
     TermDocEnum *tde        = mtxe_new(mr);
@@ -3397,13 +3403,13 @@ TermDocEnum *mtde_new(MultiReader *mr)
  * MultiTermPosEnum
  ****************************************************************************/
 
-int mtpe_next_position(TermDocEnum *tde)
+static int mtpe_next_position(TermDocEnum *tde)
 {
     CHECK_CURR_TDE("next_position");
     return MTDE(tde)->curr_tde->next_position(MTDE(tde)->curr_tde);
 }
 
-TermDocEnum *mtpe_new(MultiReader *mr)
+static TermDocEnum *mtpe_new(MultiReader *mr)
 {
     int i;
     TermDocEnum *tde        = mtxe_new(mr);
@@ -3506,12 +3512,12 @@ static bool mtdpe_next(TermDocEnum *tde)
     return true;
 }
 
-bool tdpe_less_than(TermDocEnum *p1, TermDocEnum *p2)
+static bool tdpe_less_than(TermDocEnum *p1, TermDocEnum *p2)
 {
     return p1->doc_num(p1) < p2->doc_num(p2);
 }
 
-bool mtdpe_skip_to(TermDocEnum *tde, int target_doc_num)
+static bool mtdpe_skip_to(TermDocEnum *tde, int target_doc_num)
 {
     TermDocEnum *sub_tde;
     PriorityQueue *mtdpe_pq = MTDPE(tde)->pq;
@@ -3674,7 +3680,7 @@ void deleter_destroy(Deleter *dlr)
     free(dlr);
 }
 
-void deleter_queue_file(Deleter *dlr, const char *file_name)
+static void deleter_queue_file(Deleter *dlr, const char *file_name)
 {
     hs_add(dlr->pending, estrdup(file_name));
 }
@@ -3692,7 +3698,7 @@ void deleter_delete_file(Deleter *dlr, char *file_name)
     XENDTRY
 }
 
-void deleter_commit_pending_deletions(Deleter *dlr)
+static void deleter_commit_pending_deletions(Deleter *dlr)
 {
     HashSetEntry *hse, *hse_next = dlr->pending->first;
     while ((hse = hse_next) != NULL) {
@@ -3827,16 +3833,19 @@ void deleter_find_deletable_files(Deleter *dlr)
     h_destroy(dfa.current);
 }
 
-void deleter_delete_deletable_files(Deleter *dlr)
+static void deleter_delete_deletable_files(Deleter *dlr)
 {
     deleter_find_deletable_files(dlr);
     deleter_commit_pending_deletions(dlr);
 }
 
-void deleter_clear_pending_deletions(Deleter *dlr)
+/*
+TODO: currently not used. Why not?
+static void deleter_clear_pending_deletions(Deleter *dlr)
 {
     hs_clear(dlr->pending);
 }
+*/
 
 /****************************************************************************
  *
@@ -3844,13 +3853,13 @@ void deleter_clear_pending_deletions(Deleter *dlr)
  *
  ****************************************************************************/
 
-void ir_acquire_not_necessary(IndexReader *ir)
+static void ir_acquire_not_necessary(IndexReader *ir)
 {
     (void)ir;
 }
 
 #define I64_PFX POSH_I64_PRINTF_PREFIX
-void ir_acquire_write_lock(IndexReader *ir)
+static void ir_acquire_write_lock(IndexReader *ir)
 {
     if (ir->is_stale) {
         RAISE(STATE_ERROR, "IndexReader out of date and no longer valid for "
@@ -3889,7 +3898,7 @@ void ir_acquire_write_lock(IndexReader *ir)
     }
 }
 
-IndexReader *ir_setup(IndexReader *ir, Store *store, SegmentInfos *sis,
+static IndexReader *ir_setup(IndexReader *ir, Store *store, SegmentInfos *sis,
                       FieldInfos *fis, int is_owner)
 {
     mutex_init(&ir->mutex, NULL);
@@ -4067,7 +4076,7 @@ TermDocEnum *ir_term_positions_for(IndexReader *ir, const char *field,
     return tde;
 }
 
-void ir_commit_i(IndexReader *ir)
+static void ir_commit_i(IndexReader *ir)
 {
     if (ir->has_changes) {
         if (NULL == ir->deleter && NULL != ir->store) {
@@ -4689,7 +4698,7 @@ static int mr_reader_index_i(MultiReader *mr, int doc_num)
     return hi;
 }
 
-int mr_num_docs(IndexReader *ir)
+static int mr_num_docs(IndexReader *ir)
 {
     int i, num_docs;
     mutex_lock(&ir->mutex);
@@ -4981,7 +4990,7 @@ static IndexReader *mr_new(IndexReader **sub_readers, const int r_cnt)
     return ir;
 }
 
-IndexReader *mr_open_i(Store *store,
+static IndexReader *mr_open_i(Store *store,
                        SegmentInfos *sis,
                        FieldInfos *fis,
                        IndexReader **sub_readers,
@@ -5179,7 +5188,8 @@ Posting *p_new(MemoryPool *mp, int doc_num, int pos)
  *
  ****************************************************************************/
 
-PostingList *pl_new(MemoryPool *mp, const char *term, int term_len, Posting *p)
+PostingList *pl_new(MemoryPool *mp, const char *term,
+                           int term_len, Posting *p)
 {
     PostingList *pl = MP_ALLOC(mp, PostingList);
     pl->term = mp_memdup(mp, term, term_len + 1);
@@ -5195,7 +5205,7 @@ void pl_add_occ(MemoryPool *mp, PostingList *pl, int pos)
     pl->last->freq++;
 }
 
-void pl_add_posting(PostingList *pl, Posting *p)
+static void pl_add_posting(PostingList *pl, Posting *p)
 {
     pl->last = pl->last->next = p;
     pl->last_occ = p->first_occ;
@@ -5219,7 +5229,8 @@ static FieldInverter *fld_inv_new(DocWriter *dw, FieldInfo *fi)
     fld_inv->store_term_vector = fi_store_term_vector(fi);
     fld_inv->store_offsets = fi_store_offsets(fi);
     if ((fld_inv->has_norms = fi_has_norms(fi)) == true) {
-        fld_inv->norms = MP_ALLOC_AND_ZERO_N(dw->mp, uchar, dw->max_buffered_docs);
+        fld_inv->norms = MP_ALLOC_AND_ZERO_N(dw->mp, uchar,
+                                             dw->max_buffered_docs);
     }
     fld_inv->fi = fi;
 

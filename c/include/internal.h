@@ -425,8 +425,11 @@
 #define dummy_free                              frt_dummy_free
 #define dw_add_doc                              frt_dw_add_doc
 #define dw_close                                frt_dw_close
+#define dw_get_fld_inv                          frt_dw_get_fld_inv
+#define dw_invert_field                         frt_dw_invert_field
 #define dw_new_segment                          frt_dw_new_segment
 #define dw_open                                 frt_dw_open
+#define dw_reset_postings                       frt_dw_reset_postings
 #define ecalloc                                 frt_ecalloc
 #define emalloc                                 frt_emalloc
 #define ensure_reader_open                      frt_ensure_reader_open
@@ -449,6 +452,7 @@
 #define fi_new                                  frt_fi_new
 #define fi_to_s                                 frt_fi_to_s
 #define field_index_get                         frt_field_index_get
+#define file_name_filter_is_index_file          frt_file_name_filter_is_index_file
 #define filt_create                             frt_filt_create
 #define filt_deref                              frt_filt_deref
 #define filt_destroy_i                          frt_filt_destroy_i
@@ -458,6 +462,7 @@
 #define filter_clone_size                       frt_filter_clone_size
 #define filter_ft                               frt_filter_ft
 #define fis_add_field                           frt_fis_add_field
+#define fis_by_number                           frt_fis_by_number
 #define fis_deref                               frt_fis_deref
 #define fis_get_field                           frt_fis_get_field
 #define fis_get_field_num                       frt_fis_get_field_num
@@ -486,6 +491,7 @@
 #define fshq_pq_pop_fd                          frt_fshq_pq_pop_fd
 #define fuzq_new                                frt_fuzq_new
 #define fuzq_new_conf                           frt_fuzq_new_conf
+#define fuzq_score                              frt_fuzq_score
 #define fw_add_doc                              frt_fw_add_doc
 #define fw_add_postings                         frt_fw_add_postings
 #define fw_close                                frt_fw_close
@@ -713,6 +719,7 @@
 #define phq_append_multi_term                   frt_phq_append_multi_term
 #define phq_new                                 frt_phq_new
 #define pl_add_occ                              frt_pl_add_occ
+#define pl_cmp                                  frt_pl_cmp
 #define pl_new                                  frt_pl_new
 #define pq_clear                                frt_pq_clear
 #define pq_clone                                frt_pq_clone
@@ -744,6 +751,8 @@
 #define qfilt_new                               frt_qfilt_new
 #define qfilt_new_nr                            frt_qfilt_new_nr
 #define qp_clean_str                            frt_qp_clean_str
+#define qp_default_fuzzy_min_sim                frt_qp_default_fuzzy_min_sim
+#define qp_default_fuzzy_pre_len                frt_qp_default_fuzzy_pre_len
 #define qp_destroy                              frt_qp_destroy
 #define qp_new                                  frt_qp_new
 #define qp_parse                                frt_qp_parse
@@ -840,6 +849,7 @@
 #define spanoq_add_clause_nr                    frt_spanoq_add_clause_nr
 #define spanoq_new                              frt_spanoq_new
 #define spanprq_new                             frt_spanprq_new
+#define spantq_new                              frt_spantq_new
 #define spanxq_new                              frt_spanxq_new
 #define spanxq_new_nr                           frt_spanxq_new_nr
 #define standard_analyzer_new                   frt_standard_analyzer_new
@@ -916,6 +926,7 @@
 #define tvw_add_postings                        frt_tvw_add_postings
 #define tvw_close                               frt_tvw_close
 #define tvw_close_doc                           frt_tvw_close_doc
+#define tvw_open                                frt_tvw_open
 #define tvw_open_doc                            frt_tvw_open_doc
 #define u16                                     frt_u16
 #define u32                                     frt_u32

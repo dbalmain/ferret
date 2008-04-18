@@ -1180,11 +1180,11 @@ static void isea_search_each(Searcher *self, Query *query, Filter *filter,
  * Note: Unlike the offset_docnum in other search methods, this offset_docnum
  * refers to document number and not hit.
  */
-int isea_search_unscored_w(Searcher *self,
-                           Weight *weight,
-                           int *buf,
-                           int limit,
-                           int offset_docnum)
+static int isea_search_unscored_w(Searcher *self,
+                                  Weight *weight,
+                                  int *buf,
+                                  int limit,
+                                  int offset_docnum)
 {
     int count = 0;
     Scorer *scorer = weight->scorer(weight, ISEA(self)->ir);
@@ -1199,11 +1199,11 @@ int isea_search_unscored_w(Searcher *self,
     return count;
 }
 
-int isea_search_unscored(Searcher *self,
-                         Query *query,
-                         int *buf,
-                         int limit,
-                         int offset_docnum)
+static int isea_search_unscored(Searcher *self,
+                                Query *query,
+                                int *buf,
+                                int limit,
+                                int offset_docnum)
 {
     int count;
     Weight *weight = q_weight(query, self);
@@ -1548,7 +1548,7 @@ struct MultiSearchEachArg {
     void (*fn)(Searcher *, int, float, void *);
 };
 
-void msea_search_each_i(Searcher *self, int doc_num, float score, void *arg)
+static void msea_search_each_i(Searcher *self, int doc_num, float score, void *arg)
 {
     struct MultiSearchEachArg *mse_arg = (struct MultiSearchEachArg *)arg;
 
@@ -1621,11 +1621,11 @@ static int msea_search_unscored_w(Searcher *self,
     return count;
 }
 
-int msea_search_unscored(Searcher *self,
-                         Query *query,
-                         int *buf,
-                         int limit,
-                         int offset_docnum)
+static int msea_search_unscored(Searcher *self,
+                                Query *query,
+                                int *buf,
+                                int limit,
+                                int offset_docnum)
 {
     int count;
     Weight *weight = q_weight(query, self);
@@ -1640,7 +1640,9 @@ struct MultiSearchArg {
     void (*hq_insert)(PriorityQueue *pq, Hit *hit);
 };
 
-void msea_search_i(Searcher *self, int doc_num, float score, void *arg)
+/*
+ * FIXME Not used anywhere. Is it needed?
+static void msea_search_i(Searcher *self, int doc_num, float score, void *arg)
 {
     struct MultiSearchArg *ms_arg = (struct MultiSearchArg *)arg;
     Hit hit;
@@ -1651,6 +1653,7 @@ void msea_search_i(Searcher *self, int doc_num, float score, void *arg)
     hit.score = score;
     ms_arg->hq_insert(ms_arg->hq, &hit);
 }
+*/
 
 static TopDocs *msea_search_w(Searcher *self,
                               Weight *weight,

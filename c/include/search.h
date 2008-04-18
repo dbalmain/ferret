@@ -411,6 +411,7 @@ typedef struct FrtFuzzyQuery
 extern FrtQuery *frt_fuzq_new(const char *term, const char *field);
 extern FrtQuery *frt_fuzq_new_conf(const char *field, const char *term,
                             float min_sim, int pre_len, int max_terms);
+extern float frt_fuzq_score(FrtFuzzyQuery *fuzq, const char *target);
 
 /***************************************************************************
  * FrtConstantScoreQuery
@@ -505,7 +506,7 @@ typedef struct FrtSpanTermQuery
     FrtSpanQuery super;
     char     *term;
 } FrtSpanTermQuery;
-extern FrtQuery *spantq_new(const char *field, const char *term);
+extern FrtQuery *frt_spantq_new(const char *field, const char *term);
 
 /***************************************************************************
  * FrtSpanMultiTermQuery
@@ -929,5 +930,9 @@ extern FrtQParser *frt_qp_new(FrtHashSet *all_fields, FrtHashSet *def_fields,
 extern void frt_qp_destroy(FrtQParser *self);
 extern FrtQuery *frt_qp_parse(FrtQParser *self, char *qstr);
 extern char *frt_qp_clean_str(char *str);
+
+extern float frt_qp_default_fuzzy_min_sim;
+extern int frt_qp_default_fuzzy_pre_len;
+
 
 #endif

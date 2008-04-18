@@ -257,7 +257,7 @@ void ramo_write_to(OutStream *os, OutStream *other_o)
     }
 }
 
-const struct OutStreamMethods RAM_OUT_STREAM_METHODS = {
+static const struct OutStreamMethods RAM_OUT_STREAM_METHODS = {
     ramo_flush_i,
     ramo_seek_i,
     ramo_close_i

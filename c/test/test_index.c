@@ -11,12 +11,6 @@ static char *changing_field = "changing_field";
 static char *compressed_field = "compressed_field";
 static char *tag = "tag";
 
-extern HashTable *dw_invert_field(DocWriter *dw,
-                                  FieldInverter *fld_inv,
-                                  DocField *df);
-extern FieldInverter *dw_get_fld_inv(DocWriter *dw, FieldInfo *fi);
-extern void dw_reset_postings(HashTable *postings);
-
 static FieldInfos *prep_all_fis()
 {
     FieldInfos *fis = fis_new(0, INDEX_YES, TERM_VECTOR_NO);
@@ -893,8 +887,6 @@ static void test_fld_inverter(tst_case *tc, void *data)
     dw_close(dw);
     iw_close(iw);
 }
-
-extern int pl_cmp(Posting *p1, Posting *p2);
 
 #define NUM_POSTINGS TEST_WORD_LIST_SIZE
 static void test_postings_sorter(tst_case *tc, void *data)

@@ -107,7 +107,7 @@ void tvr_close(TermVectorsReader *tvr)
     free(tvr);
 }
 
-TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
+static TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
 {
     TermVector *tv = ALLOC_AND_ZERO(TermVector);
     InStream *tvd_in = tvr->tvd_in;

@@ -16,6 +16,8 @@ typedef struct FrtIndexReader FrtIndexReader;
 typedef struct FrtMultiReader FrtMultiReader;
 typedef struct FrtDeleter FrtDeleter;
 
+extern bool frt_file_name_filter_is_index_file(const char *file_name, bool include_locks);
+
 /****************************************************************************
  *
  * FrtConfig
@@ -149,6 +151,7 @@ extern FrtFieldInfos *frt_fis_new(int store, int index, int term_vector);
 extern FrtFieldInfo *frt_fis_add_field(FrtFieldInfos *fis, FrtFieldInfo *fi);
 extern FrtFieldInfo *frt_fis_get_field(FrtFieldInfos *fis, const char *name);
 extern int frt_fis_get_field_num(FrtFieldInfos *fis, const char *name);
+extern FrtFieldInfo *frt_fis_by_number(FrtFieldInfos *fis, int num);
 extern FrtFieldInfo *frt_fis_get_or_add_field(FrtFieldInfos *fis, const char *name);
 extern void frt_fis_write(FrtFieldInfos *fis, FrtOutStream *os);
 extern FrtFieldInfos *frt_fis_read(FrtInStream *is);
@@ -509,6 +512,7 @@ typedef struct FrtPostingList
 extern FrtPostingList *frt_pl_new(FrtMemoryPool *mp, const char *term,
                            int term_len, FrtPosting *p);
 extern void frt_pl_add_occ(FrtMemoryPool *mp, FrtPostingList *pl, int pos);
+extern int frt_pl_cmp(const FrtPostingList **pl1, const FrtPostingList **pl2);
 
 /****************************************************************************
  *
@@ -572,7 +576,7 @@ typedef struct FrtTermVectorsWriter
     off_t tvd_ptr;
 } FrtTermVectorsWriter;
 
-extern FrtTermVectorsWriter *tvw_open(FrtStore *store,
+extern FrtTermVectorsWriter *frt_tvw_open(FrtStore *store,
                                    const char *segment,
                                    FrtFieldInfos *fis);
 extern void frt_tvw_open_doc(FrtTermVectorsWriter *tvw);
@@ -895,6 +899,12 @@ extern FrtDocWriter *frt_dw_open(FrtIndexWriter *is, FrtSegmentInfo *si);
 extern void frt_dw_close(FrtDocWriter *dw);
 extern void frt_dw_add_doc(FrtDocWriter *dw, FrtDocument *doc);
 extern void frt_dw_new_segment(FrtDocWriter *dw, FrtSegmentInfo *si);
+/* For testing. need to remove somehow. FIXME */
+extern FrtHashTable *frt_dw_invert_field(FrtDocWriter *dw,
+                                  FrtFieldInverter *fld_inv,
+                                  FrtDocField *df);
+extern FrtFieldInverter *frt_dw_get_fld_inv(FrtDocWriter *dw, FrtFieldInfo *fi);
+extern void frt_dw_reset_postings(FrtHashTable *postings);
 
 /****************************************************************************
  *

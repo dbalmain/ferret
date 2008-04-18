@@ -282,7 +282,7 @@ static void spansc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-Scorer *spansc_new(Weight *weight, IndexReader *ir)
+static Scorer *spansc_new(Weight *weight, IndexReader *ir)
 {
     Scorer *self = NULL;
     const int field_num = fis_get_field_num(ir->fis, SpQ(weight->query)->field);
@@ -900,7 +900,7 @@ static void spanoe_destroy(SpanEnum *self)
     free(self);
 }
 
-SpanEnum *spanoe_new(Query *query, IndexReader *ir)
+static SpanEnum *spanoe_new(Query *query, IndexReader *ir)
 {
     Query *clause;
     SpanEnum *self      = (SpanEnum *)ALLOC(SpanOrEnum);

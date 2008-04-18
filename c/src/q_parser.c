@@ -58,6 +58,14 @@
 /* Using locations.  */
 #define YYLSP_NEEDED 0
 
+/* Substitute the variable and function names.  */
+#define yyparse frt_parse
+#define yylex   frt_lex
+#define yyerror frt_error
+#define yylval  frt_lval
+#define yychar  frt_char
+#define yydebug frt_debug
+#define yynerrs frt_nerrs
 
 
 /* Tokens.  */
@@ -149,7 +157,7 @@ typedef union YYSTYPE
     char *str;
 }
 /* Line 187 of yacc.c.  */
-#line 153 "y.tab.c"
+#line 161 "src/q_parser.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -235,7 +243,7 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
 
 
 /* Line 216 of yacc.c.  */
-#line 239 "y.tab.c"
+#line 247 "src/q_parser.c"
 
 #ifdef short
 # undef short
@@ -1204,57 +1212,57 @@ yydestruct (yymsg, yytype, yyvaluep, qp)
       case 27: /* "bool_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1208 "y.tab.c"
+#line 1216 "src/q_parser.c"
 	break;
       case 28: /* "bool_clss" */
 #line 126 "src/q_parser.y"
 	{ if ((yyvaluep->bclss) && qp->destruct) bca_destroy((yyvaluep->bclss)); };
-#line 1213 "y.tab.c"
+#line 1221 "src/q_parser.c"
 	break;
       case 29: /* "bool_cls" */
 #line 125 "src/q_parser.y"
 	{ if ((yyvaluep->bcls) && qp->destruct) bc_deref((yyvaluep->bcls)); };
-#line 1218 "y.tab.c"
+#line 1226 "src/q_parser.c"
 	break;
       case 30: /* "boosted_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1223 "y.tab.c"
+#line 1231 "src/q_parser.c"
 	break;
       case 31: /* "q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1228 "y.tab.c"
+#line 1236 "src/q_parser.c"
 	break;
       case 32: /* "term_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1233 "y.tab.c"
+#line 1241 "src/q_parser.c"
 	break;
       case 33: /* "wild_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1238 "y.tab.c"
+#line 1246 "src/q_parser.c"
 	break;
       case 34: /* "field_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1243 "y.tab.c"
+#line 1251 "src/q_parser.c"
 	break;
       case 39: /* "phrase_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1248 "y.tab.c"
+#line 1256 "src/q_parser.c"
 	break;
       case 40: /* "ph_words" */
 #line 127 "src/q_parser.y"
 	{ if ((yyvaluep->phrase) && qp->destruct) ph_destroy((yyvaluep->phrase)); };
-#line 1253 "y.tab.c"
+#line 1261 "src/q_parser.c"
 	break;
       case 41: /* "range_q" */
 #line 124 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1258 "y.tab.c"
+#line 1266 "src/q_parser.c"
 	break;
 
       default:
@@ -1784,7 +1792,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 1788 "y.tab.c"
+#line 1796 "src/q_parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2001,8 +2009,8 @@ yyreturn:
 #line 190 "src/q_parser.y"
 
 
-const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
-const char *not_word =   " \t()[]{}!\"~^|<>=";
+static const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
+static const char *not_word =   " \t()[]{}!\"~^|<>=";
 
 static int get_word(YYSTYPE *lvalp, QParser *qp)
 {
@@ -2786,7 +2794,7 @@ char *qp_clean_str(char *str)
     return new_str;  
 }
 
-Query *qp_get_bad_query(QParser *qp, char *str)
+static Query *qp_get_bad_query(QParser *qp, char *str)
 {
     Query *volatile q = NULL;
     qp->recovering = true;

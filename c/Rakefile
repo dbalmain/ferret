@@ -13,9 +13,13 @@ def dep_file(src)
   TMP/File.basename(src) + DEP_EXT
 end
 
+def src2obj(src)
+  src.pathmap("%{.*,}p%n.o")
+end
+
 def obj_map(srcs)
   srcs.map do |src|
-    obj = src.pathmap("%{.*,}p%n.o")
+    obj = src2obj(src)
     FILE2SRC[obj] = src
     obj
   end
@@ -144,7 +148,8 @@ GCOV_DIR = ".gcov"
 CLEAN  .include([ '*.o',
                   '*.gcda',
                   '*.gcov',
-                  '*.gcno'])
+                  '*.gcno',
+                  'y.tab.c'])
 
 CLOBBER.include([ '*.a',
                   '**/*.o',
@@ -180,6 +185,10 @@ namespace :build do
   file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
         "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
+  end
+
+  file 'src/q_parser.c' => 'src/q_parser.y' do
+    sh "yacc -o src/q_parser.c -p frt_ src/q_parser.y"
   end
 
   file 'include/internal.h' =>
@@ -232,13 +241,27 @@ namespace :show do
     end
   end
 
-  task :badnames, :file do |t, args|
-    with_file(args.file, 'libferret.a') do |f|
-      Rake::Task[f].invoke
-      `nm -s #{f}`.split(/\n/).each do |l|
-        puts l if l =~ /[0-9a-f]* +([-ABCDGINRSTVW?]) (.*)/ and
+  def badname?(l)
+    l =~ /[0-9a-f]* +([-ABCDGINRSTVW?]) (.*)/ and
                   $2 !~ /^(Ferret|frt_|FRT_)/
+  end
+
+  task :badnames, :file do |t, args|
+    with_file(args.file, 'libferret.a') do |f| Rake::Task[f].invoke
+      `nm -s #{f}`.split(/\n/).each do |l|
+        puts l if badname?(l)
       end
+    end
+  end
+
+  task :'allbadnames' => OBJS do
+    SRCS.each do |src|
+      next if src =~ /posh\.c/
+      obj = src2obj(src)
+      badnames = `nm -s #{obj}`.split(/\n/).map do |l|
+        '  ==> ' + l.sub(/.* /, '') if badname?(l)
+      end.compact
+      puts obj, *badnames if badnames.size > 0
     end
   end
 end

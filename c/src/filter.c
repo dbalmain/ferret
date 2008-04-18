@@ -42,13 +42,13 @@ static char *filt_to_s_i(Filter *filt)
     return estrdup(filt->name);
 }
 
-unsigned long filt_hash_default(Filter *filt)
+static unsigned long filt_hash_default(Filter *filt)
 {
     (void)filt;
     return 0;
 }
 
-int filt_eq_default(Filter *filt, Filter *o)
+static int filt_eq_default(Filter *filt, Filter *o)
 {
     (void)filt; (void)o;
     return false;

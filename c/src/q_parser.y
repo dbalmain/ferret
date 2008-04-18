@@ -189,8 +189,8 @@ range_q   : '[' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  tru
           ;
 %%
 
-const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
-const char *not_word =   " \t()[]{}!\"~^|<>=";
+static const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
+static const char *not_word =   " \t()[]{}!\"~^|<>=";
 
 static int get_word(YYSTYPE *lvalp, QParser *qp)
 {
@@ -974,7 +974,7 @@ char *qp_clean_str(char *str)
     return new_str;  
 }
 
-Query *qp_get_bad_query(QParser *qp, char *str)
+static Query *qp_get_bad_query(QParser *qp, char *str)
 {
     Query *volatile q = NULL;
     qp->recovering = true;

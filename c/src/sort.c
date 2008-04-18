@@ -339,7 +339,7 @@ typedef struct Comparator {
     int   (*compare)(void *index_ptr, Hit *hit1, Hit *hit2);
 } Comparator;
 
-Comparator *comparator_new(void *index, bool reverse,
+static Comparator *comparator_new(void *index, bool reverse,
                   int (*compare)(void *index_ptr, Hit *hit1, Hit *hit2))
 {
     Comparator *self = ALLOC(Comparator);
@@ -421,7 +421,7 @@ static void sort_field_auto_evaluate(SortField *sf, char *text)
 }
 */
 
-Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
+static Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
 {
     void *index = NULL;
 
@@ -445,7 +445,7 @@ Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
     return comparator_new(index, sf->reverse, sf->compare);
 }
 
-void sorter_destroy(Sorter *self)
+static void sorter_destroy(Sorter *self)
 {
     int i;
 
@@ -456,7 +456,7 @@ void sorter_destroy(Sorter *self)
     free(self);
 }
 
-Sorter *sorter_new(Sort *sort)
+static Sorter *sorter_new(Sort *sort)
 {
     Sorter *self = ALLOC(Sorter);
     self->c_cnt = sort->size;
@@ -469,7 +469,7 @@ Sorter *sorter_new(Sort *sort)
  * FieldSortedHitQueue
  ***************************************************************************/
 
-bool fshq_less_than(const void *hit1, const void *hit2)
+static bool fshq_less_than(const void *hit1, const void *hit2)
 {
     int cmp = 0;
     printf("Whoops, shouldn't call this.\n");
@@ -480,7 +480,7 @@ bool fshq_less_than(const void *hit1, const void *hit2)
     }
 }
 
-INLINE bool fshq_lt(Sorter *sorter, Hit *hit1, Hit *hit2)
+static INLINE bool fshq_lt(Sorter *sorter, Hit *hit1, Hit *hit2)
 {
     Comparator *comp;
     int diff = 0, i;
@@ -539,7 +539,7 @@ Hit *fshq_pq_pop(PriorityQueue *pq)
     }
 }
 
-INLINE void fshq_pq_up(PriorityQueue *pq)
+static INLINE void fshq_pq_up(PriorityQueue *pq)
 {
     Hit **heap = (Hit **)pq->heap;
     Hit *node;

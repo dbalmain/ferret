@@ -18,13 +18,13 @@ typedef struct FilteredQueryScorer
     BitVector  *bv;
 } FilteredQueryScorer;
 
-float fqsc_score(Scorer *self)
+static float fqsc_score(Scorer *self)
 {
     Scorer *sub_sc = FQSc(self)->sub_scorer;
     return sub_sc->score(sub_sc);
 }
 
-bool fqsc_next(Scorer *self)
+static bool fqsc_next(Scorer *self)
 {
     Scorer *sub_sc = FQSc(self)->sub_scorer;
     BitVector *bv = FQSc(self)->bv;
@@ -35,7 +35,7 @@ bool fqsc_next(Scorer *self)
     return false;
 }
 
-bool fqsc_skip_to(Scorer *self, int doc_num)
+static bool fqsc_skip_to(Scorer *self, int doc_num)
 {
     Scorer *sub_sc = FQSc(self)->sub_scorer;
     BitVector *bv = FQSc(self)->bv;
@@ -50,20 +50,20 @@ bool fqsc_skip_to(Scorer *self, int doc_num)
     return false;
 }
 
-Explanation *fqsc_explain(Scorer *self, int doc_num)
+static Explanation *fqsc_explain(Scorer *self, int doc_num)
 {
     Scorer *sub_sc = FQSc(self)->sub_scorer;
     return sub_sc->explain(sub_sc, doc_num);
 }
 
-void fqsc_destroy(Scorer *self)
+static void fqsc_destroy(Scorer *self)
 {
     FilteredQueryScorer *fqsc = FQSc(self);
     fqsc->sub_scorer->destroy(fqsc->sub_scorer);
     scorer_destroy_i(self);
 }
 
-Scorer *fqsc_new(Scorer *scorer, BitVector *bv, Similarity *sim)
+static Scorer *fqsc_new(Scorer *scorer, BitVector *bv, Similarity *sim)
 {
     Scorer *self            = scorer_new(FilteredQueryScorer, sim);
 
@@ -182,14 +182,14 @@ static char *fq_to_s(Query *self, const char *field)
     return buffer;;
 }
 
-void fq_destroy(Query *self)
+static void fq_destroy(Query *self)
 {
     filt_deref(FQQ(self)->filter);
     q_deref(FQQ(self)->query);
     q_destroy_i(self);
 }
 
-Weight *fq_new_weight(Query *self, Searcher *searcher)
+static Weight *fq_new_weight(Query *self, Searcher *searcher)
 {
     Query *sub_query = FQQ(self)->query;
     return fqw_new(self, q_weight(sub_query, searcher),

@@ -39,8 +39,8 @@ extern void store_destroy(Store *store);
 extern OutStream *os_new();
 extern InStream *is_new();
 extern int file_is_lock(const char *filename);
-extern bool file_name_filter_is_index_file(const char *file_name, bool include_locks);
-
+extern bool file_name_filter_is_index_file(const char *file_name,
+                                           bool include_locks);
 
 /**
  * Create a filepath for a file in the store using the operating systems
@@ -261,7 +261,7 @@ static void fso_close_i(OutStream *os)
     }
 }
 
-const struct OutStreamMethods FS_OUT_STREAM_METHODS = {
+static const struct OutStreamMethods FS_OUT_STREAM_METHODS = {
     fso_flush_i,
     fso_seek_i,
     fso_close_i
@@ -387,7 +387,7 @@ static int fs_lock_is_locked(Lock *lock)
     }
 }
 
-void fs_lock_release(Lock *lock)
+static void fs_lock_release(Lock *lock)
 {
     remove(lock->name);
 }

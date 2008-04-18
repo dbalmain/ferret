@@ -97,7 +97,7 @@ static int range_eq(Range *filt, Range *o)
             && (filt->include_upper == o->include_upper));
 }
 
-Range *range_new(const char *field, const char *lower_term,
+static Range *range_new(const char *field, const char *lower_term,
                  const char *upper_term, bool include_lower,
                  bool include_upper)
 {
@@ -132,7 +132,7 @@ Range *range_new(const char *field, const char *lower_term,
     return range;
 }
 
-Range *trange_new(const char *field, const char *lower_term,
+static Range *trange_new(const char *field, const char *lower_term,
                   const char *upper_term, bool include_lower,
                   bool include_upper)
 {

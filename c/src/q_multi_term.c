@@ -367,7 +367,7 @@ static Scorer *multi_tw_scorer(Weight *self, IndexReader *ir)
     return multi_tsc;
 }
 
-Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
+static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
 {
     Explanation *expl;
     Explanation *idf_expl1;
