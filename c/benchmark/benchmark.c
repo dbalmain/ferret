@@ -29,8 +29,10 @@ void bm_add(BenchMark *benchmark, bm_run_ft run, const char *name)
     unit->name = estrdup(name);
     unit->run = run;
     unit->next = NULL;
-    for (i = 0; i < benchmark->count; i++) {
-        unit->times[i] = ALLOC(BenchMarkTimes);
+    if (benchmark->count > 1) {
+        for (i = 0; i < benchmark->count; i++) {
+            unit->times[i] = ALLOC(BenchMarkTimes);
+        }
     }
     if (benchmark->tail) {
         benchmark->tail = benchmark->tail->next = unit;
@@ -48,7 +50,7 @@ static void bm_clear(BenchMark *benchmark)
         if (benchmark->count > 1) {
             int i;
             for (i = 0; i < benchmark->count; i++) {
-                unit->times[i] = ALLOC(BenchMarkTimes);
+                free(unit->times[i]);
             }
         }
         free(unit->name);
