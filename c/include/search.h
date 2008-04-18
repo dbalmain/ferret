@@ -101,8 +101,8 @@ extern char *td_to_s(TopDocs *td);
 typedef struct Filter
 {
     char                *name;
-    FerretHashTable     *cache;
-    BitVector           *(*get_bv_i)(struct Filter *self, IndexReader *ir);
+    FrtHashTable     *cache;
+    FrtBitVector           *(*get_bv_i)(struct Filter *self, IndexReader *ir);
     char                *(*to_s)(struct Filter *self);
     unsigned long        (*hash)(struct Filter *self);
     int                  (*eq)(struct Filter *self, struct Filter *o);
@@ -112,7 +112,7 @@ typedef struct Filter
 
 #define filt_new(type) filt_create(sizeof(type), #type)
 extern Filter *filt_create(size_t size, const char *name);
-extern BitVector *filt_get_bv(Filter *filt, IndexReader *ir);
+extern FrtBitVector *filt_get_bv(Filter *filt, IndexReader *ir);
 extern void filt_destroy_i(Filter *filt);
 extern void filt_deref(Filter *filt);
 extern unsigned long filt_hash(Filter *filt);
@@ -214,7 +214,7 @@ struct Query
     float         boost;
     Weight        *weight;
     Query        *(*rewrite)(Query *self, IndexReader *ir);
-    void          (*extract_terms)(Query *self, FerretHashSet *terms);
+    void          (*extract_terms)(Query *self, FrtHashSet *terms);
     Similarity   *(*get_similarity)(Query *self, Searcher *searcher);
     char         *(*to_s)(Query *self, const char *field);
     unsigned long (*hash)(Query *self);
@@ -334,7 +334,7 @@ typedef struct MultiTermQuery
 {
     Query           super;
     char           *field;
-    FerretPriorityQueue  *boosted_terms;
+    FrtPriorityQueue  *boosted_terms;
     float           min_boost;
 } MultiTermQuery;
 
@@ -493,7 +493,7 @@ typedef struct SpanQuery
     Query        super;
     char        *field;
     SpanEnum    *(*get_spans)(Query *self, IndexReader *ir);
-    FerretHashSet     *(*get_terms)(Query *self);
+    FrtHashSet     *(*get_terms)(Query *self);
 } SpanQuery;
 
 /***************************************************************************
@@ -721,12 +721,12 @@ extern char *sort_to_s(Sort *self);
  * FieldSortedHitQueue
  ***************************************************************************/
 
-extern Hit *fshq_pq_pop(FerretPriorityQueue *pq);
-extern void fshq_pq_down(FerretPriorityQueue *pq);
-extern void fshq_pq_insert(FerretPriorityQueue *pq, Hit *hit);
-extern void fshq_pq_destroy(FerretPriorityQueue *pq);
-extern FerretPriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
-extern Hit *fshq_pq_pop_fd(FerretPriorityQueue *pq);
+extern Hit *fshq_pq_pop(FrtPriorityQueue *pq);
+extern void fshq_pq_down(FrtPriorityQueue *pq);
+extern void fshq_pq_insert(FrtPriorityQueue *pq, Hit *hit);
+extern void fshq_pq_destroy(FrtPriorityQueue *pq);
+extern FrtPriorityQueue *fshq_pq_new(int size, Sort *sort, IndexReader *ir);
+extern Hit *fshq_pq_pop_fd(FrtPriorityQueue *pq);
 
 /***************************************************************************
  * FieldDoc
@@ -902,16 +902,16 @@ typedef struct QParser
     char buf[QP_CONC_WORDS][FRT_MAX_WORD_SIZE];
     char *dynbuf;
     int  buf_index;
-    FerretHashTable *field_cache;
-    FerretHashSet *fields;
-    FerretHashSet *fields_buf;
-    FerretHashSet *def_fields;
-    FerretHashSet *all_fields;
-    FerretHashSet *tokenized_fields;
-    FerretAnalyzer *analyzer;
-    FerretHashTable *ts_cache;
+    FrtHashTable *field_cache;
+    FrtHashSet *fields;
+    FrtHashSet *fields_buf;
+    FrtHashSet *def_fields;
+    FrtHashSet *all_fields;
+    FrtHashSet *tokenized_fields;
+    FrtAnalyzer *analyzer;
+    FrtHashTable *ts_cache;
     Query *result;
-    FerretTokenStream *non_tokenizer;
+    FrtTokenStream *non_tokenizer;
     bool or_default : 1;
     bool wild_lower : 1;
     bool clean_str : 1;
@@ -924,8 +924,8 @@ typedef struct QParser
     bool use_typed_range_query : 1;
 } QParser;
 
-extern QParser *qp_new(FerretHashSet *all_fields, FerretHashSet *def_fields,
-                       FerretHashSet *tokenized_fields, FerretAnalyzer *analyzer);
+extern QParser *qp_new(FrtHashSet *all_fields, FrtHashSet *def_fields,
+                       FrtHashSet *tokenized_fields, FrtAnalyzer *analyzer);
 extern void qp_destroy(QParser *self);
 extern Query *qp_parse(QParser *self, char *qstr);
 extern char *qp_clean_str(char *str);

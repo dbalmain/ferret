@@ -172,7 +172,7 @@ void bv_scan_reset(BitVector * bv)
 
 /* Table showing the number of trailing 0s in a char. This is used to optimize
  * the bv_scan_next method.  */
-const int NUM_TRAILING_ZEROS[] = {
+static const int NUM_TRAILING_ZEROS[] = {
     8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 
     4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
     5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,

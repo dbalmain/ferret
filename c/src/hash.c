@@ -91,7 +91,7 @@ static INLINE HashEntry *h_resize_lookup(HashTable *ht,
     }
 }
 
-HashEntry *h_lookup_int(HashTable *ht, const void *key)
+static HashEntry *h_lookup_int(HashTable *ht, const void *key)
 {
     register unsigned long hash = *((int *)key);
     register unsigned long perturb;

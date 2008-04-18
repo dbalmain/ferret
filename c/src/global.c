@@ -10,7 +10,7 @@
 #include <signal.h>
 #include "internal.h"
 
-const unsigned int BUFFER_SIZE = 1024;
+static const unsigned int BUFFER_SIZE = 1024;
 const char *EMPTY_STRING = "";
 
 bool  x_do_logging = false;

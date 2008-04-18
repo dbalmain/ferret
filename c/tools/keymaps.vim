@@ -11,7 +11,7 @@ function! <SID>FerretizeCurrent(word)
     let replace_str = "FRT_".a:word
     echo "Replacing <".a:word."> with <".replace_str.">."
   elseif a:word =~ '^[A-Za-z0-9]\+$'
-    let replace_str = "Ferret".a:word
+    let replace_str = "Frt".a:word
     echo "Replacing <".a:word."> with <".replace_str.">."
   else
     echo "No idea what to do with this one"

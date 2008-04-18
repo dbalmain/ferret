@@ -21,6 +21,24 @@ def obj_map(srcs)
   end
 end
 
+def with_src(file)
+  if src = FILE2SRC[file]
+    yield src
+  else
+    puts "Sorry, I don't know anything about '#{file}'"
+  end
+end
+
+def with_file(file, default=nil)
+  if file.nil? and default
+    yield default
+  elsif File.exists?(file)
+    yield file
+  else
+    puts "Sorry, I don't know anything about '#{file}'"
+  end
+end
+
 def qsh(msg, script)
   puts "#{msg}..."
   `#{script}`
@@ -175,7 +193,7 @@ namespace :build do
 
       [
         ['Constants',  'FRT_'   ],
-        ['Types',      'Ferret' ],
+        ['Types',      'Frt'    ],
         ['Functions',  'frt_'   ]
       ].each do |header, re|
         names = data.scan(/#{re}[A-Za-z0-9_]+/).sort.uniq
@@ -199,10 +217,28 @@ end
 
 namespace :show do
   task :dep, :src do |t, args|
-    if src = FILE2SRC[args.src]
-      puts get_dep_srcs(src).sort.join("\n")
-    else
-      puts "Sorry, I don't know anything about '#{args.src}'"
+    with_src(args.src) {|src| puts get_dep_srcs(src).sort.join("\n")}
+  end
+
+  task :names, :file do |t, args|
+    with_file(args.file, 'libferret.a') do |f|
+      `nm -s #{f}`.split(/\n/).each do |l|
+        if l =~ /[0-9a-f]* +([-ABCDGINRSTUVW?])/
+          puts l
+        end
+      end
+    end
+  end
+
+  task :badnames, :file do |t, args|
+    with_file(args.file, 'libferret.a') do |f|
+      Rake::Task[f].invoke
+      `nm -s #{f}`.split(/\n/).each do |l|
+        if l =~ /[0-9a-f]* +([-ABCDGINRSTVW?]) (.*)/ and
+            $2 !~ /^(Ferret|frt_|FRT_)/
+          puts l
+        end
+      end
     end
   end
 end

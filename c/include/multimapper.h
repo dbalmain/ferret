@@ -34,7 +34,7 @@ typedef struct MultiMapper
     int d_capa;
     unsigned char alphabet[256];
     int a_size;
-    FerretHashTable *dstates_map;
+    FrtHashTable *dstates_map;
     State **nstates;
     int nsize;
     int *next_states;

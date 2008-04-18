@@ -44,8 +44,8 @@ extern const Config default_config;
  ***************************************************************************/
 
 typedef struct CacheObject {
-    FerretHashTable *ref_tab1;
-    FerretHashTable *ref_tab2;
+    FrtHashTable *ref_tab1;
+    FrtHashTable *ref_tab2;
     void *ref1;
     void *ref2;
     void *obj;
@@ -53,10 +53,10 @@ typedef struct CacheObject {
 } CacheObject;
 
 extern void cache_destroy(CacheObject *co);
-extern CacheObject *co_create(FerretHashTable *ref_tab1,
-                              FerretHashTable *ref_tab2,
+extern CacheObject *co_create(FrtHashTable *ref_tab1,
+                              FrtHashTable *ref_tab2,
             void *ref1, void *ref2, void (*destroy)(void *p), void *obj);
-extern FerretHashTable *co_hash_create();
+extern FrtHashTable *co_hash_create();
 
 /****************************************************************************
  *
@@ -141,7 +141,7 @@ typedef struct FieldInfos
     int size;
     int capa;
     FieldInfo **fields;
-    FerretHashTable *field_dict;
+    FrtHashTable *field_dict;
     int ref_cnt;
 } FieldInfos;
 
@@ -295,7 +295,7 @@ typedef struct SegmentFieldIndex
     int         index_interval;
     off_t       index_ptr;
     TermEnum   *index_te;
-    FerretHashTable  *field_dict;
+    FrtHashTable  *field_dict;
 } SegmentFieldIndex;
 
 extern SegmentFieldIndex *sfi_open(Store *store, const char *segment);
@@ -417,7 +417,7 @@ struct SegmentTermDocEnum
     InStream        *frq_in;
     InStream        *prx_in;
     InStream        *skip_in;
-    BitVector       *deleted_docs;
+    FrtBitVector       *deleted_docs;
     int count;               /* number of docs for this term  skipped */
     int doc_freq;            /* number of doc this term appears in */
     int doc_num;
@@ -435,11 +435,11 @@ struct SegmentTermDocEnum
 };
 
 extern TermDocEnum *stde_new(TermInfosReader *tir, InStream *frq_in,
-                             BitVector *deleted_docs, int skip_interval);
+                             FrtBitVector *deleted_docs, int skip_interval);
 
 /* * SegmentTermDocEnum * */
 extern TermDocEnum *stpe_new(TermInfosReader *tir, InStream *frq_in,
-                             InStream *prx_in, BitVector *deleted_docs,
+                             InStream *prx_in, FrtBitVector *deleted_docs,
                              int skip_interval);
 
 /****************************************************************************
@@ -604,7 +604,7 @@ extern TermVectorsReader *tvr_open(Store *store,
                                    FieldInfos *fis);
 extern TermVectorsReader *tvr_clone(TermVectorsReader *orig);
 extern void tvr_close(TermVectorsReader *tvr);
-extern FerretHashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num);
+extern FrtHashTable *tvr_get_tv(TermVectorsReader *tvr, int doc_num);
 extern TermVector *tvr_get_field_tv(TermVectorsReader *tvr,
                                     int doc_num,
                                     int field_num);
@@ -641,7 +641,7 @@ extern void lazy_df_get_bytes(LazyDocField *self, char *buf,
 /* * * LazyDoc * * */
 struct LazyDoc
 {
-    FerretHashTable *field_dict;
+    FrtHashTable *field_dict;
     int size;
     LazyDocField **fields;
     InStream *fields_in;
@@ -670,7 +670,7 @@ extern FieldsReader *fr_clone(FieldsReader *orig);
 extern void fr_close(FieldsReader *fr);
 extern Document *fr_get_doc(FieldsReader *fr, int doc_num);
 extern LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num);
-extern FerretHashTable *fr_get_tv(FieldsReader *fr, int doc_num);
+extern FrtHashTable *fr_get_tv(FieldsReader *fr, int doc_num);
 extern TermVector *fr_get_field_tv(FieldsReader *fr, int doc_num,
                                    int field_num);
 
@@ -716,7 +716,7 @@ struct Deleter
 {
     Store         *store;
     SegmentInfos  *sis;
-    FerretHashSet       *pending;
+    FrtHashSet       *pending;
 };
 
 extern Deleter *deleter_new(SegmentInfos *sis, Store *store);
@@ -754,7 +754,7 @@ struct IndexReader
     TermDocEnum        *(*term_positions)(IndexReader *ir);
     TermVector         *(*term_vector)(IndexReader *ir, int doc_num,
                                        const char *field);
-    FerretHashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
+    FrtHashTable    *(*term_vectors)(IndexReader *ir, int doc_num);
     bool                (*is_deleted)(IndexReader *ir, int doc_num);
     bool                (*has_deletions)(IndexReader *ir);
     void                (*acquire_write_lock)(IndexReader *ir);
@@ -772,8 +772,8 @@ struct IndexReader
     Lock               *write_lock;
     SegmentInfos       *sis;
     FieldInfos         *fis;
-    FerretHashTable    *cache;
-    FerretHashTable    *field_index_cache;
+    FrtHashTable    *cache;
+    FrtHashTable    *field_index_cache;
     mutex_t             field_index_mutex;
     uchar              *fake_norms;
     mutex_t             mutex;
@@ -820,7 +820,7 @@ struct MultiReader {
     int r_cnt;
     int *starts;
     IndexReader **sub_readers;
-    FerretHashTable *norms_cache;
+    FrtHashTable *norms_cache;
     bool has_deletions : 1;
     int **field_num_map;
 };
@@ -850,7 +850,7 @@ typedef struct Boost
 
 typedef struct FieldInverter
 {
-    FerretHashTable *plists;
+    FrtHashTable *plists;
     uchar *norms;
     FieldInfo *fi;
     int length;
@@ -877,9 +877,9 @@ typedef struct DocWriter
     TermVectorsWriter *tvw;
     FieldsWriter *fw;
     MemoryPool *mp;
-    FerretAnalyzer *analyzer;
-    FerretHashTable *curr_plists;
-    FerretHashTable *fields;
+    FrtAnalyzer *analyzer;
+    FrtHashTable *curr_plists;
+    FrtHashTable *fields;
     Similarity *similarity;
     Offset *offsets;
     int offsets_size;
@@ -913,7 +913,7 @@ struct IndexWriter
     Config config;
     mutex_t mutex;
     Store *store;
-    FerretAnalyzer *analyzer;
+    FrtAnalyzer *analyzer;
     SegmentInfos *sis;
     FieldInfos *fis;
     DocWriter *dw;
@@ -924,7 +924,7 @@ struct IndexWriter
 
 extern void index_create(Store *store, FieldInfos *fis);
 extern bool index_is_locked(Store *store);
-extern IndexWriter *iw_open(Store *store, FerretAnalyzer *analyzer,
+extern IndexWriter *iw_open(Store *store, FrtAnalyzer *analyzer,
                             const Config *config);
 extern void iw_delete_term(IndexWriter *iw, const char *field,
                            const char *term);
@@ -955,7 +955,7 @@ typedef struct CWFileEntry
 typedef struct CompoundWriter {
     Store *store;
     const char *name;
-    FerretHashSet *ids;
+    FrtHashSet *ids;
     CWFileEntry *file_entries;
 } CompoundWriter;
 

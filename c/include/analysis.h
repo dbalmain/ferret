@@ -8,131 +8,131 @@
 
 /****************************************************************************
  *
- * FerretToken
+ * FrtToken
  *
  ****************************************************************************/
 
-typedef struct FerretToken
+typedef struct FrtToken
 {
     char text[FRT_MAX_WORD_SIZE];
     int len;
     off_t start;
     off_t end;
     int pos_inc;
-} FerretToken;
+} FrtToken;
 
-extern FerretToken *frt_tk_new();
+extern FrtToken *frt_tk_new();
 extern void frt_tk_destroy(void *p);
-extern FerretToken *frt_tk_set(FerretToken *tk, char *text, int tlen, off_t start, off_t end,
+extern FrtToken *frt_tk_set(FrtToken *tk, char *text, int tlen, off_t start, off_t end,
                      int pos_inc);
-extern FerretToken *frt_tk_set_no_len(FerretToken *tk, char *text, off_t start, off_t end,
+extern FrtToken *frt_tk_set_no_len(FrtToken *tk, char *text, off_t start, off_t end,
                             int pos_inc);
-extern int frt_tk_eq(FerretToken *tk1, FerretToken *tk2);
-extern int frt_tk_cmp(FerretToken *tk1, FerretToken *tk2);
+extern int frt_tk_eq(FrtToken *tk1, FrtToken *tk2);
+extern int frt_tk_cmp(FrtToken *tk1, FrtToken *tk2);
 
 /****************************************************************************
  *
- * FerretTokenStream
+ * FrtTokenStream
  *
  ****************************************************************************/
 
 
-typedef struct FerretTokenStream FerretTokenStream;
-struct FerretTokenStream
+typedef struct FrtTokenStream FrtTokenStream;
+struct FrtTokenStream
 {
     char        *t;             /* ptr used to scan text */
     char        *text;
-    FerretToken       *(*next)(FerretTokenStream *ts);
-    FerretTokenStream *(*reset)(FerretTokenStream *ts, char *text);
-    FerretTokenStream *(*clone_i)(FerretTokenStream *ts);
-    void         (*destroy_i)(FerretTokenStream *ts);
+    FrtToken       *(*next)(FrtTokenStream *ts);
+    FrtTokenStream *(*reset)(FrtTokenStream *ts, char *text);
+    FrtTokenStream *(*clone_i)(FrtTokenStream *ts);
+    void         (*destroy_i)(FrtTokenStream *ts);
     int          ref_cnt;
 };
 
 #define frt_ts_new(type) frt_ts_new_i(sizeof(type))
-extern FerretTokenStream *frt_ts_new_i(size_t size);
-extern FerretTokenStream *frt_ts_clone_size(FerretTokenStream *orig_ts, size_t size);
+extern FrtTokenStream *frt_ts_new_i(size_t size);
+extern FrtTokenStream *frt_ts_clone_size(FrtTokenStream *orig_ts, size_t size);
 
-typedef struct FerretCachedTokenStream
+typedef struct FrtCachedTokenStream
 {
-    FerretTokenStream super;
-    FerretToken       token;
-} FerretCachedTokenStream;
+    FrtTokenStream super;
+    FrtToken       token;
+} FrtCachedTokenStream;
 
-typedef struct FerretMultiByteTokenStream
+typedef struct FrtMultiByteTokenStream
 {
-    FerretCachedTokenStream super;
+    FrtCachedTokenStream super;
     mbstate_t         state;
-} FerretMultiByteTokenStream;
+} FrtMultiByteTokenStream;
 
-typedef struct FerretStandardTokenizer
+typedef struct FrtStandardTokenizer
 {
-    FerretCachedTokenStream super;
-    bool        (*advance_to_start)(FerretTokenStream *ts);
+    FrtCachedTokenStream super;
+    bool        (*advance_to_start)(FrtTokenStream *ts);
     bool        (*is_tok_char)(char *c);
-    int         (*get_alpha)(FerretTokenStream *ts, char *token);
+    int         (*get_alpha)(FrtTokenStream *ts, char *token);
     int         (*get_apostrophe)(char *input);
-} FerretStandardTokenizer;
+} FrtStandardTokenizer;
 
-typedef struct FerretTokenFilter
+typedef struct FrtTokenFilter
 {
-    FerretTokenStream super;
-    FerretTokenStream *sub_ts;
-} FerretTokenFilter;
+    FrtTokenStream super;
+    FrtTokenStream *sub_ts;
+} FrtTokenFilter;
 
-extern FerretTokenStream *frt_filter_clone_size(FerretTokenStream *ts, size_t size);
+extern FrtTokenStream *frt_filter_clone_size(FrtTokenStream *ts, size_t size);
 #define tf_new(type, sub) frt_tf_new_i(sizeof(type), sub)
-extern FerretTokenStream *frt_tf_new_i(size_t size, FerretTokenStream *sub_ts);
+extern FrtTokenStream *frt_tf_new_i(size_t size, FrtTokenStream *sub_ts);
 
-typedef struct FerretStopFilter
+typedef struct FrtStopFilter
 {
-    FerretTokenFilter super;
-    FerretHashTable  *words;
-} FerretStopFilter;
+    FrtTokenFilter super;
+    FrtHashTable  *words;
+} FrtStopFilter;
 
-typedef struct FerretMappingFilter 
+typedef struct FrtMappingFilter 
 {
-    FerretTokenFilter  super;
+    FrtTokenFilter  super;
     MultiMapper *mapper;
-} FerretMappingFilter;
+} FrtMappingFilter;
 
-typedef struct FerretHyphenFilter 
+typedef struct FrtHyphenFilter 
 {
-    FerretTokenFilter super;
+    FrtTokenFilter super;
     char text[FRT_MAX_WORD_SIZE];
     int start;
     int pos;
     int len;
-    FerretToken *tk;
-} FerretHyphenFilter;
+    FrtToken *tk;
+} FrtHyphenFilter;
 
-typedef struct FerretStemFilter
+typedef struct FrtStemFilter
 {
-    FerretTokenFilter        super;
+    FrtTokenFilter        super;
     struct sb_stemmer  *stemmer;
     char               *algorithm;
     char               *charenc;
-} FerretStemFilter;
+} FrtStemFilter;
 
 #define frt_ts_next(mts) mts->next(mts)
 #define frt_ts_clone(mts) mts->clone_i(mts)
 
-extern void frt_ts_deref(FerretTokenStream *ts);
+extern void frt_ts_deref(FrtTokenStream *ts);
 
-extern FerretTokenStream *frt_non_tokenizer_new();
+extern FrtTokenStream *frt_non_tokenizer_new();
 
-extern FerretTokenStream *frt_whitespace_tokenizer_new();
-extern FerretTokenStream *frt_mb_whitespace_tokenizer_new(bool lowercase);
+extern FrtTokenStream *frt_whitespace_tokenizer_new();
+extern FrtTokenStream *frt_mb_whitespace_tokenizer_new(bool lowercase);
 
-extern FerretTokenStream *frt_letter_tokenizer_new();
-extern FerretTokenStream *frt_mb_letter_tokenizer_new(bool lowercase);
+extern FrtTokenStream *frt_letter_tokenizer_new();
+extern FrtTokenStream *frt_mb_letter_tokenizer_new(bool lowercase);
 
-extern FerretTokenStream *frt_standard_tokenizer_new();
-extern FerretTokenStream *frt_mb_standard_tokenizer_new();
+extern FrtTokenStream *frt_standard_tokenizer_new();
+extern FrtTokenStream *frt_mb_standard_tokenizer_new();
 
-extern FerretTokenStream *frt_hyphen_filter_new(FerretTokenStream *ts);
-extern FerretTokenStream *frt_lowercase_filter_new(FerretTokenStream *ts);
-extern FerretTokenStream *frt_mb_lowercase_filter_new(FerretTokenStream *ts);
+extern FrtTokenStream *frt_hyphen_filter_new(FrtTokenStream *ts);
+extern FrtTokenStream *frt_lowercase_filter_new(FrtTokenStream *ts);
+extern FrtTokenStream *frt_mb_lowercase_filter_new(FrtTokenStream *ts);
 
 extern const char *FRT_ENGLISH_STOP_WORDS[];
 extern const char *FRT_FULL_ENGLISH_STOP_WORDS[];
@@ -150,71 +150,71 @@ extern const char *FRT_FULL_RUSSIAN_STOP_WORDS[];
 extern const char *FRT_FULL_FINNISH_STOP_WORDS[];
 extern const char *FRT_FULL_HUNGARIAN_STOP_WORDS[];
 
-extern FerretTokenStream *frt_stop_filter_new_with_words_len(FerretTokenStream *ts,
+extern FrtTokenStream *frt_stop_filter_new_with_words_len(FrtTokenStream *ts,
                                                    const char **words, int len);
-extern FerretTokenStream *frt_stop_filter_new_with_words(FerretTokenStream *ts,
+extern FrtTokenStream *frt_stop_filter_new_with_words(FrtTokenStream *ts,
                                                const char **words);
-extern FerretTokenStream *frt_stop_filter_new(FerretTokenStream *ts);
-extern FerretTokenStream *frt_stem_filter_new(FerretTokenStream *ts, const char *algorithm,
+extern FrtTokenStream *frt_stop_filter_new(FrtTokenStream *ts);
+extern FrtTokenStream *frt_stem_filter_new(FrtTokenStream *ts, const char *algorithm,
                                     const char *charenc);
 
-extern FerretTokenStream *frt_mapping_filter_new(FerretTokenStream *ts);
-extern FerretTokenStream *frt_mapping_filter_add(FerretTokenStream *ts, const char *pattern,
+extern FrtTokenStream *frt_mapping_filter_new(FrtTokenStream *ts);
+extern FrtTokenStream *frt_mapping_filter_add(FrtTokenStream *ts, const char *pattern,
                                        const char *replacement);
 
 /****************************************************************************
  *
- * FerretAnalyzer
+ * FrtAnalyzer
  *
  ****************************************************************************/
 
-typedef struct FerretAnalyzer
+typedef struct FrtAnalyzer
 {
-    FerretTokenStream *current_ts;
-    FerretTokenStream *(*get_ts)(struct FerretAnalyzer *a, char *field, char *text);
-    void (*destroy_i)(struct FerretAnalyzer *a);
+    FrtTokenStream *current_ts;
+    FrtTokenStream *(*get_ts)(struct FrtAnalyzer *a, char *field, char *text);
+    void (*destroy_i)(struct FrtAnalyzer *a);
     int ref_cnt;
-} FerretAnalyzer;
+} FrtAnalyzer;
 
-extern void frt_a_deref(FerretAnalyzer *a);
+extern void frt_a_deref(FrtAnalyzer *a);
 
 #define frt_a_get_ts(ma, field, text) ma->get_ts(ma, field, text)
 
-extern FerretAnalyzer *frt_analyzer_new(FerretTokenStream *ts,
-                              void (*destroy)(FerretAnalyzer *a),
-                              FerretTokenStream *(*get_ts)(FerretAnalyzer *a,
+extern FrtAnalyzer *frt_analyzer_new(FrtTokenStream *ts,
+                              void (*destroy)(FrtAnalyzer *a),
+                              FrtTokenStream *(*get_ts)(FrtAnalyzer *a,
                                                      char *field,
                                                      char *text));
-extern void frt_a_standard_destroy(FerretAnalyzer *a);
-extern FerretAnalyzer *frt_non_analyzer_new();
+extern void frt_a_standard_destroy(FrtAnalyzer *a);
+extern FrtAnalyzer *frt_non_analyzer_new();
 
-extern FerretAnalyzer *frt_whitespace_analyzer_new(bool lowercase);
-extern FerretAnalyzer *frt_mb_whitespace_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_whitespace_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_mb_whitespace_analyzer_new(bool lowercase);
 
-extern FerretAnalyzer *frt_letter_analyzer_new(bool lowercase);
-extern FerretAnalyzer *frt_mb_letter_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_letter_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_mb_letter_analyzer_new(bool lowercase);
 
-extern FerretAnalyzer *frt_standard_analyzer_new(bool lowercase);
-extern FerretAnalyzer *frt_mb_standard_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_standard_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_mb_standard_analyzer_new(bool lowercase);
 
-extern FerretAnalyzer *frt_standard_analyzer_new_with_words(const char **words,
+extern FrtAnalyzer *frt_standard_analyzer_new_with_words(const char **words,
                                                   bool lowercase);
-extern FerretAnalyzer *frt_standard_analyzer_new_with_words_len(const char **words, int len,
+extern FrtAnalyzer *frt_standard_analyzer_new_with_words_len(const char **words, int len,
                                                       bool lowercase);
-extern FerretAnalyzer *frt_mb_standard_analyzer_new_with_words(const char **words,
+extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words(const char **words,
                                                      bool lowercase);
-extern FerretAnalyzer *frt_mb_standard_analyzer_new_with_words_len(const char **words,
+extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words_len(const char **words,
                                                   int len, bool lowercase);
 
-#define PFA(analyzer) ((FerretPerFieldAnalyzer *)(analyzer))
-typedef struct FerretPerFieldAnalyzer
+#define PFA(analyzer) ((FrtPerFieldAnalyzer *)(analyzer))
+typedef struct FrtPerFieldAnalyzer
 {
-    FerretAnalyzer    super;
-    FerretHashTable  *dict;
-    FerretAnalyzer   *default_a;
-} FerretPerFieldAnalyzer;
+    FrtAnalyzer    super;
+    FrtHashTable  *dict;
+    FrtAnalyzer   *default_a;
+} FrtPerFieldAnalyzer;
 
-extern FerretAnalyzer *frt_per_field_analyzer_new(FerretAnalyzer *a);
-extern void frt_pfa_add_field(FerretAnalyzer *self, char *field, FerretAnalyzer *analyzer);
+extern FrtAnalyzer *frt_per_field_analyzer_new(FrtAnalyzer *a);
+extern void frt_pfa_add_field(FrtAnalyzer *self, char *field, FrtAnalyzer *analyzer);
 
 #endif

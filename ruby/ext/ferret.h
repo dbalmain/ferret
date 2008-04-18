@@ -6,7 +6,6 @@
 #include "document.h"
 #include "internal.h"
 
-
 /* IDs */
 extern ID id_new;
 extern ID id_call;

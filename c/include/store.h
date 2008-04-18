@@ -160,7 +160,7 @@ typedef struct CompoundStore
 {
     Store *store;
     const char *name;
-    FerretHashTable *entries;
+    FrtHashTable *entries;
     InStream *stream;
 } CompoundStore;
 
@@ -172,7 +172,7 @@ struct Store
     union
     {
         char *path;             /* for fs_store only */
-        FerretHashTable *ht;    /* for ram_store only */
+        FrtHashTable *ht;    /* for ram_store only */
         CompoundStore *cmpd;    /* for compound_store only */
     } dir;
 
@@ -181,7 +181,7 @@ struct Store
 #else
     mode_t file_mode;
 #endif
-    FerretHashSet *locks;
+    FrtHashSet *locks;
 
     /**
      * Create the file +filename+ in the +store+.

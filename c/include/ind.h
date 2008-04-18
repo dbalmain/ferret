@@ -15,12 +15,12 @@ typedef struct Index
     Config config;
     mutex_t mutex;
     Store *store;
-    FerretAnalyzer *analyzer;
+    FrtAnalyzer *analyzer;
     IndexReader *ir;
     IndexWriter *iw;
     Searcher *sea;
     QParser *qp;
-    FerretHashSet *key;
+    FrtHashSet *key;
     char *id_field;
     char *def_field;
     /* for IndexWriter */
@@ -29,8 +29,8 @@ typedef struct Index
     bool check_latest : 1;
 } Index;
 
-extern Index *index_new(Store *store, FerretAnalyzer *analyzer,
-                        FerretHashSet *def_fields, bool create);
+extern Index *index_new(Store *store, FrtAnalyzer *analyzer,
+                        FrtHashSet *def_fields, bool create);
 extern void index_destroy(Index *self);
 extern void index_flush(Index *self);
 extern int index_size(Index *self);
