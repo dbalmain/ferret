@@ -43,6 +43,7 @@
 #define MIN3                        FRT_MIN3
 #define NELEMS                      FRT_NELEMS
 #define NEXT_NUM                    FRT_NEXT_NUM
+#define OFF_T_PFX                   FRT_OFF_T_PFX
 #define PQ_ADDED                    FRT_PQ_ADDED
 #define PQ_DROPPED                  FRT_PQ_DROPPED
 #define PQ_INSERTED                 FRT_PQ_INSERTED
@@ -276,6 +277,7 @@
 #define u32malloc                               frt_u32malloc
 #define u64                                     frt_u64
 #define u64malloc                               frt_u64malloc
+#define uchar                                   frt_uchar
 #define vexit                                   frt_vexit
 #define vstrfmt                                 frt_vstrfmt
 #define weprintf                                frt_weprintf

@@ -16,7 +16,7 @@
 
 typedef struct Buffer
 {
-    uchar buf[BUFFER_SIZE];
+    frt_uchar buf[BUFFER_SIZE];
     off_t start;
     off_t pos;
     off_t len;
@@ -33,7 +33,7 @@ struct OutStreamMethods {
      * @param len the number of characters to write
      * @raise IO_ERROR if there is an error writing the characters
      */
-    void (*flush_i)(struct OutStream *os, const uchar *buf, int len);
+    void (*flush_i)(struct OutStream *os, const frt_uchar *buf, int len);
 
     /**
      * Seek +pos+ in the output stream
@@ -56,7 +56,7 @@ struct OutStreamMethods {
 typedef struct RAMFile
 {
     char   *name;
-    uchar **buffers;
+    frt_uchar **buffers;
     int     bufcnt;
     off_t   len;
     int     ref_cnt;
@@ -90,7 +90,7 @@ struct InStreamMethods
      * @param len the number of bytes to read
      * @raise IO_ERROR if there is an error reading from the input stream
      */
-    void (*read_i)(struct InStream *is, uchar *buf, int len);
+    void (*read_i)(struct InStream *is, frt_uchar *buf, int len);
 
     /**
      * Seek position +pos+ in input stream +is+
@@ -490,7 +490,7 @@ extern void os_seek(OutStream *os, off_t new_pos);
  * @param os the OutStream to write to @param b  the byte to write @raise
  * IO_ERROR if there is an IO error writing to the file-system
  */
-extern void os_write_byte(OutStream *os, uchar b);
+extern void os_write_byte(OutStream *os, frt_uchar b);
 /**
  * Write +len+ bytes from buffer +buf+ to the OutStream +os+.
  *
@@ -499,7 +499,7 @@ extern void os_write_byte(OutStream *os, uchar b);
  * @param buf the buffer from which to get the bytes to write.
  * @raise IO_ERROR if there is an IO error writing to the file-system
  */
-extern void os_write_bytes(OutStream *os, const uchar *buf, int len);
+extern void os_write_bytes(OutStream *os, const frt_uchar *buf, int len);
 
 /**
  * Write a 32-bit signed integer to the OutStream
@@ -620,7 +620,7 @@ extern InStream *is_clone(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern FRT_INLINE uchar is_read_byte(InStream *is);
+extern FRT_INLINE frt_uchar is_read_byte(InStream *is);
 
 /**
  * Read +len+ bytes from InStream +is+ and write them to buffer +buf+
@@ -632,7 +632,7 @@ extern FRT_INLINE uchar is_read_byte(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern uchar *is_read_bytes(InStream *is, uchar *buf, int len);
+extern frt_uchar *is_read_bytes(InStream *is, frt_uchar *buf, int len);
 
 /**
  * Read a 32-bit unsigned integer from the InStream.

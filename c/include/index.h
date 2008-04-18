@@ -742,9 +742,9 @@ struct IndexReader
     int                 (*max_doc)(IndexReader *ir);
     Document           *(*get_doc)(IndexReader *ir, int doc_num);
     LazyDoc            *(*get_lazy_doc)(IndexReader *ir, int doc_num);
-    uchar              *(*get_norms)(IndexReader *ir, int field_num);
-    uchar              *(*get_norms_into)(IndexReader *ir, int field_num,
-                                          uchar *buf);
+    frt_uchar              *(*get_norms)(IndexReader *ir, int field_num);
+    frt_uchar              *(*get_norms_into)(IndexReader *ir, int field_num,
+                                          frt_uchar *buf);
     TermEnum           *(*terms)(IndexReader *ir, int field_num);
     TermEnum           *(*terms_from)(IndexReader *ir, int field_num,
                                       const char *term);
@@ -759,7 +759,7 @@ struct IndexReader
     bool                (*has_deletions)(IndexReader *ir);
     void                (*acquire_write_lock)(IndexReader *ir);
     void                (*set_norm_i)(IndexReader *ir, int doc_num,
-                                      int field_num, uchar val);
+                                      int field_num, frt_uchar val);
     void                (*delete_doc_i)(IndexReader *ir, int doc_num);
     void                (*undelete_all_i)(IndexReader *ir);
     void                (*set_deleter_i)(IndexReader *ir, Deleter *dlr);
@@ -775,7 +775,7 @@ struct IndexReader
     FrtHashTable    *cache;
     FrtHashTable    *field_index_cache;
     mutex_t             field_index_mutex;
-    uchar              *fake_norms;
+    frt_uchar              *fake_norms;
     mutex_t             mutex;
     bool                has_changes : 1;
     bool                is_stale    : 1;
@@ -792,10 +792,10 @@ extern void ir_delete_doc(IndexReader *ir, int doc_num);
 extern void ir_undelete_all(IndexReader *ir);
 extern int ir_doc_freq(IndexReader *ir, const char *field, const char *term);
 extern void ir_set_norm(IndexReader *ir, int doc_num, const char *field,
-                        uchar val);
-extern uchar *ir_get_norms_i(IndexReader *ir, int field_num);
-extern uchar *ir_get_norms(IndexReader *ir, const char *field);
-extern uchar *ir_get_norms_into(IndexReader *ir, const char *field, uchar *buf);
+                        frt_uchar val);
+extern frt_uchar *ir_get_norms_i(IndexReader *ir, int field_num);
+extern frt_uchar *ir_get_norms(IndexReader *ir, const char *field);
+extern frt_uchar *ir_get_norms_into(IndexReader *ir, const char *field, frt_uchar *buf);
 extern void ir_destroy(IndexReader *self);
 extern Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
                                       const char *term);
@@ -851,7 +851,7 @@ typedef struct Boost
 typedef struct FieldInverter
 {
     FrtHashTable *plists;
-    uchar *norms;
+    frt_uchar *norms;
     FieldInfo *fi;
     int length;
     bool is_tokenized : 1;

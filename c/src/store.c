@@ -213,8 +213,8 @@ void is_refill(InStream *is)
 
     is->buf.len = last - start;
     if (is->buf.len <= 0) {
-        RAISE(EOF_ERROR, "current pos = %"F_OFF_T_PFX"d, "
-              "file length = %"F_OFF_T_PFX"d", start, flen);
+        RAISE(EOF_ERROR, "current pos = %"OFF_T_PFX"d, "
+              "file length = %"OFF_T_PFX"d", start, flen);
     }
 
     is->m->read_i(is, is->buf.buf, is->buf.len);

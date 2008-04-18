@@ -2759,11 +2759,11 @@ static void tw_add(TermWriter *tw,
               tw->last_term, term, *tw->last_term, *term);
     }
     if (ti->frq_ptr < tw->last_term_info.frq_ptr) {
-        RAISE(STATE_ERROR, "%"F_OFF_T_PFX"d > %"F_OFF_T_PFX"d", ti->frq_ptr,
+        RAISE(STATE_ERROR, "%"OFF_T_PFX"d > %"OFF_T_PFX"d", ti->frq_ptr,
               tw->last_term_info.frq_ptr);
     }
     if (ti->prx_ptr < tw->last_term_info.prx_ptr) {
-        RAISE(STATE_ERROR, "%"F_OFF_T_PFX"d > %"F_OFF_T_PFX"d", ti->prx_ptr,
+        RAISE(STATE_ERROR, "%"OFF_T_PFX"d > %"OFF_T_PFX"d", ti->prx_ptr,
               tw->last_term_info.prx_ptr);
     }
 #endif

@@ -249,7 +249,7 @@ static void fso_flush_i(OutStream *os, const uchar *src, int len)
 static void fso_seek_i(OutStream *os, off_t pos)
 {
     if (lseek(os->file.fd, pos, SEEK_SET) < 0) {
-        RAISE(IO_ERROR, "seeking position %"F_OFF_T_PFX"d: <%s>",
+        RAISE(IO_ERROR, "seeking position %"OFF_T_PFX"d: <%s>",
               pos, strerror(errno));
     }
 }
@@ -303,7 +303,7 @@ static void fsi_read_i(InStream *is, uchar *path, int len)
 static void fsi_seek_i(InStream *is, off_t pos)
 {
     if (lseek(is->file.fd, pos, SEEK_SET) < 0) {
-        RAISE(IO_ERROR, "seeking pos %"F_OFF_T_PFX"d: <%s>",
+        RAISE(IO_ERROR, "seeking pos %"OFF_T_PFX"d: <%s>",
               pos, strerror(errno));
     }
 }
