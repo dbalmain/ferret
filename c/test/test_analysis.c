@@ -506,7 +506,7 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
         "underscored_word, won't we're 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ "
         "\200 badchar it's groups' Barnes&Noble file:///home/user/ "
         "svn://www.davebalmain.com/ www,.google.com www.google.com "
-        "dave@balmain@gmail.com \"quoted string\"";
+        "dave@balmain@gmail.com \"quoted string\" continue";
     ts->reset(ts, text);
     test_token(ts_next(ts), "DBalmain@gmail.com", 0, 18);
     test_token(ts_next(ts), "is", 19, 21);
@@ -537,6 +537,9 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
     test_token(ts_next(ts), "www.google.com", 277, 291);
     test_token(ts_next(ts), "dave@balmain", 292, 304);
     test_token(ts_next(ts), "gmail.com", 305, 314);
+    test_token(ts_next(ts), "quoted", 316, 322);
+    test_token(ts_next(ts), "string", 323, 329);
+    test_token(ts_next(ts), "continue", 331, 339);
     Assert(ts_next(ts) == NULL, "Should be no more tokens");
     tk_destroy(tk);
     REF(ts);                    /* test ref_cnt */
