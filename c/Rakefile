@@ -147,6 +147,7 @@ end
 ###
 CC       = 'gcc'
 DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2"
+DEFS    << " -D_BSD_SOURCE"
 AR       = "ar"
 CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
