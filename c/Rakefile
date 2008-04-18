@@ -194,6 +194,7 @@ namespace :build do
   task :tests => 'testall'
 
   #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
+  desc "Build the test runner"
   file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
@@ -235,6 +236,22 @@ namespace :build do
         "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
   end
 end
+
+task :valgrind => 'testall' do
+	sh "valgrind --suppressions=valgrind.supp " +
+                "--leak-check=yes             " +
+                "--show-reachable=yes         " +
+                "--workaround-gcc296-bugs=yes -v ./testall -q"
+end
+
+task :gen_valgrind => 'build:testall' do
+	sh "valgrind --suppressions=valgrind.supp " +
+                "--leak-check=yes             " +
+                "--show-reachable=yes         " +
+                "--gen-suppressions=yes       " +
+                "--workaround-gcc296-bugs=yes -v ./testall -q"
+end
+
 
 namespace :show do
   task :dep, :src do |t, args|
