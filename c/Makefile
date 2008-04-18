@@ -6,6 +6,7 @@
 #  -g                         // set -g for debugging purposes
 #  -pg                        // use this option if you want to use gprof
 #  -DDEBUG                    // some error checking only occurs in DEBUG mode
+#  -DHAVE_GDB                 // defined on platforms that have gdb
 #  -DBZ_NO_STDIO              // There really is no need for bzlib to use stdio
 #  -DUSE_ZLIB                 // use zlib instead of bzlib
 #  -D_POSIX_C_SOURCE=2        // for popen which is used to print stacktraces
@@ -21,6 +22,7 @@ BZLIB_INC = $(BZLIB_DIR)
 CC       = gcc
 CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
 DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2
+DEFS    += -DHAVE_GDB
 CFLAGS   = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
 LDFLAGS  = -lm -lpthread -lz
 DEP_DIR  = .deps
