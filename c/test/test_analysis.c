@@ -506,7 +506,7 @@ static void do_mb_standard_tokenizer(TestCase *tc, TokenStream *ts)
         "underscored_word, won't we're 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ "
         "\200 badchar it's groups' Barnes&Noble file:///home/user/ "
         "svn://www.davebalmain.com/ www,.google.com www.google.com "
-        "dave@balmain@gmail.com";
+        "dave@balmain@gmail.com \"quoted string\"";
     ts->reset(ts, text);
     test_token(ts_next(ts), "DBalmain@gmail.com", 0, 18);
     test_token(ts_next(ts), "is", 19, 21);
