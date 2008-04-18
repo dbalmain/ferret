@@ -122,7 +122,7 @@ TokenStream *ts_clone_size(TokenStream *orig_ts, size_t size)
 
 TokenStream *ts_new_i(size_t size)
 {
-    TokenStream *ts = ecalloc(size);
+    TokenStream *ts = (TokenStream *)ecalloc(size);
 
     ts->destroy_i = (void (*)(TokenStream *))&free;
     ts->reset = &ts_reset;
@@ -1536,7 +1536,7 @@ static void pfa_destroy_i(Analyzer *self)
 
 static TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
 {
-    Analyzer *a = h_get(PFA(self)->dict, field);
+    Analyzer *a = (Analyzer *)h_get(PFA(self)->dict, field);
     if (a == NULL) {
         a = PFA(self)->default_a;
     }

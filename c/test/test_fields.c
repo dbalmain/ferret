@@ -192,7 +192,7 @@ static void test_fis_rw(tst_case *tc, void *data)
     (void)data; /* suppress unused argument warning */
 
     fis = fis_new(STORE_YES, INDEX_UNTOKENIZED_OMIT_NORMS, 
-                     TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+                  TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     fis_add_field(fis, fi_new("FFFFFFFF", STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
     fis_add_field(fis, fi_new("TFTTFTFF", STORE_YES, INDEX_YES,
@@ -354,8 +354,7 @@ static Document *prepare_doc()
 
 static FieldInfos *prepare_fis()
 {
-    FieldInfos *fis;
-    fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
+    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
     fis_add_field(fis, fi_new("ignored", STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
     fis_add_field(fis, fi_new("unstored", STORE_NO, INDEX_YES,
@@ -545,7 +544,7 @@ static void test_lazy_field_loading(tst_case *tc, void *data)
     fis_deref(fis);
     store_deref(store);
 
-    lazy_df = h_get(lazy_doc->field_dict, "stored");
+    lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "stored");
     Apnull(lazy_doc->fields[0]->data[0].text);
     Asequal("this is a stored field", text=lazy_df_get_data(lazy_df, 0));
     Asequal("this is a stored field", lazy_doc->fields[0]->data[0].text);

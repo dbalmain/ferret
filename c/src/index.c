@@ -143,8 +143,8 @@ static char *segfn_for_generation(char *buf, u64 generation)
  * @param field_num field number
  */
 static char *fn_for_gen_field(char *buf,
-                              char *base,
-                              char *ext,
+                              const char *base,
+                              const char *ext,
                               i64 gen,
                               int field_num)
 {
@@ -278,9 +278,9 @@ static void fi_check_params(int store, int index, int term_vector)
 }
 
 FieldInfo *fi_new(const char *name,
-                  StoreValues store,
-                  IndexValues index,
-                  TermVectorValues term_vector)
+                  StoreValue store,
+                  IndexValue index,
+                  TermVectorValue term_vector)
 {
     FieldInfo *fi = ALLOC(FieldInfo);
     fi_check_params(store, index, term_vector);
@@ -330,7 +330,8 @@ char *fi_to_s(FieldInfo *fi)
  *
  ****************************************************************************/
 
-FieldInfos *fis_new(int store, int index, int term_vector)
+FieldInfos *fis_new(StoreValue store, IndexValue index,
+                    TermVectorValue term_vector)
 {
     FieldInfos *fis = ALLOC(FieldInfos);
     fi_check_params(store, index, term_vector);
@@ -363,12 +364,12 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
 
 FieldInfo *fis_get_field(FieldInfos *fis, const char *name)
 {
-    return h_get(fis->field_dict, name);
+    return (FieldInfo *)h_get(fis->field_dict, name);
 }
 
 int fis_get_field_num(FieldInfos *fis, const char *name)
 {
-    FieldInfo *fi = h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (fi) {
         return fi->number;
     }
@@ -379,9 +380,9 @@ int fis_get_field_num(FieldInfos *fis, const char *name)
 
 FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name)
 {
-    FieldInfo *fi = h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (!fi) {
-        fi = fi_new(name, fis->store, fis->index, fis->term_vector);
+        fi = (FieldInfo*)fi_new(name, fis->store, fis->index, fis->term_vector);
         fis_add_field(fis, fi);
     }
     return fi;
@@ -402,14 +403,16 @@ FieldInfos *fis_read(InStream *is)
     FieldInfos *volatile fis;
     TRY
         do {
-            int store_val, index_val, term_vector_val;
+            StoreValue store_val;
+            IndexValue index_val;
+            TermVectorValue term_vector_val;
             int i;
             union { u32 i; float f; } tmp;
             FieldInfo *volatile fi;
 
-            store_val = is_read_vint(is);
-            index_val = is_read_vint(is);
-            term_vector_val = is_read_vint(is);
+            store_val = (StoreValue)is_read_vint(is);
+            index_val = (IndexValue)is_read_vint(is);
+            term_vector_val = (TermVectorValue)is_read_vint(is);
             fis = fis_new(store_val, index_val, term_vector_val);
             for (i = is_read_vint(is); i > 0; i--) {
                 fi = ALLOC_AND_ZERO(FieldInfo);
@@ -669,7 +672,7 @@ static char *si_norm_file_name(SegmentInfo *si, char *buf, int field_num)
         return NULL;
     }
     else {
-        char *ext = (si->use_compound_file && norm_gen > 0) ? "s" : "f";
+        const char *ext = (si->use_compound_file && norm_gen > 0) ? "s" : "f";
         return fn_for_gen_field(buf, si->name, ext, norm_gen, field_num);
     }
 }
@@ -731,8 +734,11 @@ static char *new_segment(i64 generation)
 
 typedef struct FindSegmentsFile {
     i64  generation;
-    u64  u64_return;
-    void  *p_return;
+    union {
+      SegmentInfos *sis;
+      IndexReader  *ir;
+      u64           uint64;
+    } ret;
 } FindSegmentsFile;
 
 static void which_gen_i(const char *file_name, void *arg)
@@ -1079,7 +1085,7 @@ static void sis_read_i(Store *store, FindSegmentsFile *fsf)
     InStream *volatile is = NULL;
     SegmentInfos *volatile sis = ALLOC_AND_ZERO(SegmentInfos);
     segfn_for_generation(seg_file_name, fsf->generation);
-    fsf->p_return = NULL;
+    fsf->ret.sis = NULL;
     TRY
         is = store->open_input(store, seg_file_name);
         sis->store = store;
@@ -1107,14 +1113,14 @@ static void sis_read_i(Store *store, FindSegmentsFile *fsf)
             sis_destroy(sis);
         }
     XENDTRY
-    fsf->p_return = sis;
+    fsf->ret.sis = sis;
 }
 
 SegmentInfos *sis_read(Store *store)
 {
     FindSegmentsFile fsf;
     sis_find_segments_file(store, &fsf, &sis_read_i);
-    return fsf.p_return;
+    return fsf.ret.sis;
 }
 
 void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
@@ -1174,14 +1180,14 @@ static void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
         is_close(is);
     XENDTRY
 
-    fsf->u64_return = version;
+    fsf->ret.uint64 = version;
 }
 
 u64 sis_read_current_version(Store *store)
 {
     FindSegmentsFile fsf;
     sis_find_segments_file(store, &fsf, &sis_read_ver_i);
-    return fsf.u64_return;
+    return fsf.ret.uint64;
 }
 
 /****************************************************************************
@@ -1676,7 +1682,8 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
             total_len = delta_start + delta_len;
             is_read_bytes(fdt_in, buffer + delta_start, delta_len);
             buffer[total_len++] = '\0';
-            term->text = memcpy(ALLOC_N(char, total_len), buffer, total_len);
+            term->text = (char *)memcpy(ALLOC_N(char, total_len),
+                                        buffer, total_len);
 
             /* read freq */
             freq = term->freq = is_read_vint(fdt_in);
@@ -2015,13 +2022,13 @@ void fw_add_postings(FieldsWriter *fw,
 
 char *te_get_term(TermEnum *te)
 {
-    return memcpy(ALLOC_N(char, te->curr_term_len + 1),
-                  te->curr_term, te->curr_term_len + 1);
+    return (char *)memcpy(ALLOC_N(char, te->curr_term_len + 1),
+                          te->curr_term, te->curr_term_len + 1);
 }
 
 TermInfo *te_get_ti(TermEnum *te)
 {
-    return memcpy(ALLOC(TermInfo), &(te->curr_ti), sizeof(TermInfo));
+    return (TermInfo*)memcpy(ALLOC(TermInfo), &(te->curr_ti), sizeof(TermInfo));
 }
 
 static char *te_skip_to(TermEnum *te, const char *term)
@@ -2221,7 +2228,8 @@ static void ste_reset(TermEnum *te)
 
 static TermEnum *ste_set_field(TermEnum *te, int field_num)
 {
-    SegmentTermIndex *sti = h_get_int(STE(te)->sfi->field_dict, field_num);
+    SegmentTermIndex *sti
+        = (SegmentTermIndex *)h_get_int(STE(te)->sfi->field_dict, field_num);
     ste_reset(te);
     te->field_num = field_num;
     if (sti) {
@@ -2249,7 +2257,8 @@ static void ste_index_seek(TermEnum *te, SegmentTermIndex *sti, int idx_offset)
 static char *ste_scan_to(TermEnum *te, const char *term)
 {
     SegmentFieldIndex *sfi = STE(te)->sfi;
-    SegmentTermIndex *sti = h_get_int(sfi->field_dict, te->field_num);
+    SegmentTermIndex *sti
+        = (SegmentTermIndex *)h_get_int(sfi->field_dict, te->field_num);
     if (sti && sti->size > 0) {
         SFI_ENSURE_INDEX_IS_READ(sfi, sti);
         if (term[0] == '\0') {
@@ -2323,8 +2332,8 @@ static char *ste_get_term(TermEnum *te, int pos)
     else if (pos != ste->pos) {
         int idx_int = ste->sfi->index_interval;
         if ((pos < ste->pos) || pos > (1 + ste->pos / idx_int) * idx_int) {
-            SegmentTermIndex *sti = h_get_int(ste->sfi->field_dict,
-                                              te->field_num);
+            SegmentTermIndex *sti = (SegmentTermIndex *)h_get_int(
+                ste->sfi->field_dict, te->field_num);
             SFI_ENSURE_INDEX_IS_READ(ste->sfi, sti);
             ste_index_seek(te, sti, pos / idx_int);
         }
@@ -2613,7 +2622,7 @@ TermInfosReader *tir_open(Store *store,
 static INLINE TermEnum *tir_enum(TermInfosReader *tir)
 {
     TermEnum *te;
-    if (NULL == (te = thread_getspecific(tir->thread_te))) {
+    if (NULL == (te = (TermEnum *)thread_getspecific(tir->thread_te))) {
         te = ste_clone(tir->orig_te);
         ste_set_field(te, tir->field_num);
         ary_push(tir->te_bucket, te);
@@ -3497,7 +3506,7 @@ static bool mtdpe_next(TermDocEnum *tde)
             pq_down(mtdpe->pq);
         }
         else {
-            sub_tde = pq_pop(mtdpe->pq);
+            sub_tde = (TermDocEnum *)pq_pop(mtdpe->pq);
             sub_tde->close(sub_tde);
         }
         sub_tde = (TermDocEnum *)pq_top(mtdpe->pq);
@@ -3528,7 +3537,7 @@ static bool mtdpe_skip_to(TermDocEnum *tde, int target_doc_num)
             pq_down(mtdpe_pq);
         }
         else {
-            sub_tde = pq_pop(mtdpe_pq);
+            sub_tde = (TermDocEnum *)pq_pop(mtdpe_pq);
             sub_tde->close(sub_tde);
         }
     }
@@ -3756,7 +3765,7 @@ static void deleter_find_deletable_files_i(const char *file_name, void *arg)
 
         /* Delete this file if it's not a "current" segment, or, it is a
          * single index file but there is now a corresponding compound file: */
-        if (NULL == (si = h_get(dfa->current, segment_name))) {
+        if (NULL == (si = (SegmentInfo *)h_get(dfa->current, segment_name))) {
             /* Delete if segment is not referenced: */
             do_delete = true;
         }
@@ -4248,7 +4257,7 @@ static INLINE FieldsReader *sr_fr(SegmentReader *sr)
 {
     FieldsReader *fr;
 
-    if (NULL == (fr = thread_getspecific(sr->thread_fr))) {
+    if (NULL == (fr = (FieldsReader *)thread_getspecific(sr->thread_fr))) {
         fr = fr_clone(sr->fr);
         ary_push(sr->fr_bucket, fr);
         thread_setspecific(sr->thread_fr, fr);
@@ -4264,7 +4273,7 @@ static INLINE bool sr_is_deleted_i(SegmentReader *sr, int doc_num)
 static INLINE void sr_get_norms_into_i(SegmentReader *sr, int field_num,
                                        uchar *buf)
 {
-    Norm *norm = h_get_int(sr->norms, field_num);
+    Norm *norm = (Norm *)h_get_int(sr->norms, field_num);
     if (NULL == norm) {
         memset(buf, 0, SR_SIZE(sr));
     }
@@ -4282,7 +4291,7 @@ static INLINE void sr_get_norms_into_i(SegmentReader *sr, int field_num,
 
 static INLINE uchar *sr_get_norms_i(SegmentReader *sr, int field_num)
 {
-    Norm *norm = h_get_int(sr->norms, field_num);
+    Norm *norm = (Norm *)h_get_int(sr->norms, field_num);
     if (NULL == norm) {                           /* not an indexed field */
         return NULL;
     }
@@ -4297,7 +4306,7 @@ static INLINE uchar *sr_get_norms_i(SegmentReader *sr, int field_num)
 
 static void sr_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar b)
 {
-    Norm *norm = h_get_int(SR(ir)->norms, field_num);
+    Norm *norm = (Norm *)h_get_int(SR(ir)->norms, field_num);
     if (NULL != norm) { /* has_norms */
         ir->has_changes = true;
         norm->is_dirty = true; /* mark it dirty */
@@ -4403,7 +4412,7 @@ static void sr_commit_i(IndexReader *ir)
         for (i = field_cnt - 1; i >= 0; i--) {
             fi = ir->fis->fields[i];
             if (fi_is_indexed(fi)) {
-                Norm *norm = h_get_int(SR(ir)->norms, fi->number);
+                Norm *norm = (Norm *)h_get_int(SR(ir)->norms, fi->number);
                 if (norm && norm->is_dirty) {
                     norm_rewrite(norm, ir->store, ir->deleter, SR(ir)->si,
                                  SR_SIZE(ir));
@@ -4533,7 +4542,7 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
                                   const char *field)
 {
-    FieldInfo *fi = h_get(ir->fis->field_dict, field);
+    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, field);
     FieldsReader *fr;
 
     if (!fi || !fi_store_term_vector(fi) || !SR(ir)->fr ||
@@ -4752,7 +4761,7 @@ static uchar *mr_get_norms(IndexReader *ir, int field_num)
     uchar *bytes;
 
     mutex_lock(&ir->mutex);
-    bytes = h_get_int(MR(ir)->norms_cache, field_num);
+    bytes = (uchar *)h_get_int(MR(ir)->norms_cache, field_num);
     if (NULL == bytes) {
         int i;
         const int mr_reader_cnt = MR(ir)->r_cnt;
@@ -4778,7 +4787,7 @@ static uchar *mr_get_norms_into(IndexReader *ir, int field_num, uchar *buf)
     uchar *bytes;
 
     mutex_lock(&ir->mutex);
-    bytes = h_get_int(MR(ir)->norms_cache, field_num);
+    bytes = (uchar *)h_get_int(MR(ir)->norms_cache, field_num);
     if (NULL != bytes) {
         memcpy(buf, bytes, MR(ir)->max_doc);
     }
@@ -5019,7 +5028,7 @@ IndexReader *mr_open(IndexReader **sub_readers, const int r_cnt)
     IndexReader *ir = mr_new(sub_readers, r_cnt);
     MultiReader *mr = MR(ir);
     /* defaults don't matter, this is just for reading fields, not adding */
-    FieldInfos *fis = fis_new(0, 0, 0);
+    FieldInfos *fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
     int i, j;
     bool need_field_map = false;
 
@@ -5089,7 +5098,7 @@ static void ir_open_i(Store *store, FindSegmentsFile *fsf)
 
         mutex_lock(&store->mutex);
         sis_read_i(store, fsf);
-        sis = fsf->p_return;
+        sis = fsf->ret.sis;
         fis = sis->fis;
 
         if (sis->size == 1) {
@@ -5111,7 +5120,7 @@ static void ir_open_i(Store *store, FindSegmentsFile *fsf)
             }
             ir = mr_open_i(store, sis, fis, readers, sis->size);
         }
-        fsf->p_return = ir;
+        fsf->ret.ir = ir;
         success = true;
     } while (0);
     XFINALLY
@@ -5135,7 +5144,7 @@ IndexReader *ir_open(Store *store)
 {
     FindSegmentsFile fsf;
     sis_find_segments_file(store, &fsf, &ir_open_i);
-    return (IndexReader *)fsf.p_return;
+    return fsf.ret.ir;
 }
 
 /****************************************************************************
@@ -5192,7 +5201,7 @@ PostingList *pl_new(MemoryPool *mp, const char *term,
                            int term_len, Posting *p)
 {
     PostingList *pl = MP_ALLOC(mp, PostingList);
-    pl->term = mp_memdup(mp, term, term_len + 1);
+    pl->term = (char *)mp_memdup(mp, term, term_len + 1);
     pl->term_len = term_len;
     pl->first = pl->last = p;
     pl->last_occ = p->first_occ;
@@ -5379,8 +5388,8 @@ static void dw_flush(DocWriter *dw)
 
     for (i = 0; i < fields_count; i++) {
         fi = fis->fields[i];
-        if (!fi_is_indexed(fi)
-            || NULL == (fld_inv = h_get_int(dw->fields, fi->number))) {
+        if (!fi_is_indexed(fi) || NULL ==
+            (fld_inv = (FieldInverter*)h_get_int(dw->fields, fi->number))) {
             continue;
         }
         if (!fi_omit_norms(fi)) {
@@ -5487,7 +5496,7 @@ void dw_close(DocWriter *dw)
 
 FieldInverter *dw_get_fld_inv(DocWriter *dw, FieldInfo *fi)
 {
-    FieldInverter *fld_inv = h_get_int(dw->fields, fi->number);
+    FieldInverter *fld_inv = (FieldInverter*)h_get_int(dw->fields, fi->number);
 
     if (!fld_inv) {
         fld_inv = fld_inv_new(dw, fi);
@@ -5506,14 +5515,14 @@ static void dw_add_posting(MemoryPool *mp,
 {
     HashEntry *pl_he = h_set_ext(curr_plists, text);
     if (pl_he->value) {
-        pl_add_occ(mp, pl_he->value, pos);
+        pl_add_occ(mp, (PostingList *)pl_he->value, pos);
     }
     else {
         HashEntry *fld_pl_he = h_set_ext(fld_plists, text);
-        PostingList *pl = fld_pl_he->value;
+        PostingList *pl = (PostingList *)fld_pl_he->value;
         Posting *p =  p_new(mp, doc_num, pos);
         if (!pl) {
-            pl = fld_pl_he->value = pl_new(mp, text, len, p);
+            fld_pl_he->value = pl = pl_new(mp, text, len, p);
             pl_he->key = fld_pl_he->key = (char *)pl->term;
         }
         else {
@@ -5596,7 +5605,7 @@ HashTable *dw_invert_field(DocWriter *dw,
             char *data_ptr = df->data[i];
             if (len > MAX_WORD_SIZE) {
                 len = MAX_WORD_SIZE - 1;
-                data_ptr = memcpy(buf, df->data[i], len);
+                data_ptr = (char *)memcpy(buf, df->data[i], len);
             }
             dw_add_posting(mp, curr_plists, fld_plists, doc_num, data_ptr,
                            len, i);
@@ -5952,7 +5961,7 @@ static int sm_append_postings(SegmentMerger *sm, SegmentMergeInfo **matches,
 
 static char *sm_cache_term(SegmentMerger *sm, char *term, int term_len)
 {
-    term = memcpy(sm->term_buf + sm->term_buf_ptr, term, term_len + 1);
+    term = (char *)memcpy(sm->term_buf + sm->term_buf_ptr, term, term_len + 1);
     sm->term_buf_ptr += term_len + 1;
     if (sm->term_buf_ptr > sm->term_buf_size) {
         sm->term_buf_ptr = 0;
@@ -6013,14 +6022,14 @@ static void sm_merge_term_infos(SegmentMerger *sm)
                }printf("\n\n");
                */
             match_size = 0;     /* pop matching terms */
-            matches[0] = pq_pop(sm->queue);
+            matches[0] = (SegmentMergeInfo *)pq_pop(sm->queue);
             match_size++;
             term = matches[0]->term;
-            top = pq_top(sm->queue);
+            top = (SegmentMergeInfo *)pq_top(sm->queue);
             while ((NULL != top) && (0 == strcmp(term, top->term))) {
-                matches[match_size] = pq_pop(sm->queue);
+                matches[match_size] = (SegmentMergeInfo *)pq_pop(sm->queue);
                 match_size++;
-                top = pq_top(sm->queue);
+                top = (SegmentMergeInfo *)pq_top(sm->queue);
             }
 
             /* printf(">%s:%s<\n", matches[0]->tb->field, matches[0]->tb->text); */
@@ -6734,7 +6743,7 @@ static void iw_add_segment(IndexWriter *iw, SegmentReader *sr)
         FieldInfo *fi = sub_fis->fields[j];
         FieldInfo *new_fi = fis_get_field(fis, fi->name);
         if (NULL == new_fi) {
-            new_fi = fi_new(fi->name, 0, 0, 0);
+            new_fi = fi_new(fi->name, STORE_NO, INDEX_NO, TERM_VECTOR_NO);
             new_fi->bits = fi->bits;
             fis_add_field(fis, new_fi);
         }

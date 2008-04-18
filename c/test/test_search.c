@@ -62,27 +62,27 @@ static void test_default_similarity(tst_case *tc, void *data)
     (void)data;
     positions[0].pos = 0;
     positions[0].terms = ary_new_type(char *);
-    ary_push(positions[0].terms, "term1");
-    ary_push(positions[0].terms, "term2");
-    ary_push(positions[0].terms, "term3");
+    ary_push(positions[0].terms, (char *)"term1");
+    ary_push(positions[0].terms, (char *)"term2");
+    ary_push(positions[0].terms, (char *)"term3");
 
     positions[1].pos = 0;
     positions[1].terms = ary_new_type(char *);
-    ary_push(positions[0].terms, "term1");
-    ary_push(positions[0].terms, "term2");
+    ary_push(positions[0].terms, (char *)"term1");
+    ary_push(positions[0].terms, (char *)"term2");
 
     positions[2].pos = -100;
     positions[2].terms = ary_new_type(char *);
-    ary_push(positions[0].terms, "term1");
+    ary_push(positions[0].terms, (char *)"term1");
 
     positions[3].pos = 100;
     positions[3].terms = ary_new_type(char *);
-    ary_push(positions[3].terms, "term1");
-    ary_push(positions[3].terms, "term2");
-    ary_push(positions[3].terms, "term2");
-    ary_push(positions[3].terms, "term3");
-    ary_push(positions[3].terms, "term4");
-    ary_push(positions[3].terms, "term5");
+    ary_push(positions[3].terms, (char *)"term1");
+    ary_push(positions[3].terms, (char *)"term2");
+    ary_push(positions[3].terms, (char *)"term2");
+    ary_push(positions[3].terms, (char *)"term3");
+    ary_push(positions[3].terms, (char *)"term4");
+    ary_push(positions[3].terms, (char *)"term5");
 
     Afequal(1.0/4, sim_length_norm(dsim, "field", 16));
     Afequal(1.0/4, sim_query_norm(dsim, 16));
@@ -208,7 +208,7 @@ static void prepare_search_index(Store *store)
     index_create(store, fis);
     fis_deref(fis);
 
-    iw = iw_open(store, dbl_analyzer_new(false), NULL);
+    iw = iw_open(store, dbl_analyzer_new(), NULL);
     for (i = 0; i < SEARCH_DOCS_SIZE; i++) {
         Document *doc = doc_new();
         doc->boost = (float)(i+1);
@@ -1136,6 +1136,7 @@ static void test_typed_range_query_hash(tst_case *tc, void *data)
 static void test_wildcard_match(tst_case *tc, void *data)
 {
     (void)data;
+    (void)tc;
     Assert(!wc_match("", "abc"), "Empty pattern matches nothing");
     Assert(wc_match("*", "asdasdg"), "Star matches everything");
     Assert(wc_match("asd*", "asdasdg"), "Star matches everything after");
@@ -1364,7 +1365,7 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
     index_create(store, fis);
     fis_deref(fis);
 
-    iw = iw_open(store, dbl_analyzer_new(false), NULL);
+    iw = iw_open(store, dbl_analyzer_new(), NULL);
     for (i = 0; i < d_cnt; i++) {
         Document *doc = doc_new();
         doc->boost = (float)(i+w);

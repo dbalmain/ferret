@@ -31,12 +31,13 @@ static void test_number_to_str(tst_case *tc, void *data)
 
 }
 
+void dummy_log(const void *fmt, ...) {(void)fmt;}
 #define ITERATIONS 10
 #define NTHREADS 10
 #ifdef FRT_HAS_VARARGS
 #define tlog(...)
 #else
-#define tlog (void)
+#define tlog dummy_log
 #endif
 /*#define tlog printf */
 
@@ -52,10 +53,11 @@ static void do_delete_doc(Index *index)
     if ((size=index_size(index)) > 0) {
         int doc_num = rand() % size;
         tlog("Deleting %d from index which has%s deletions\n",
-             doc_num, index_has_del(index) ? "" : " no");
+             doc_num, (index_has_del(index) ? "" : " no"));
         if (index_is_deleted(index, doc_num)) {
             tlog("document was already deleted\n");
-        } else {
+        }
+        else {
             index_delete(index, doc_num);
         }
     }

@@ -16,14 +16,14 @@
 #define Asi_has_vals(si, name, doc_cnt, store)\
     tst_si_eql(__LINE__, tc, si, name, doc_cnt, store)
 static FieldInfos dummy_fis = {
-    0,      /* store */
-    0,      /* index */
-    0,      /* term_vector */
-    0,      /* size */
-    0,      /* capa */
-    NULL,   /* fields */
-    NULL,   /* field_dict */
-    1000000 /* ref_cnt so that it is never destroyed */
+    STORE_NO,       /* store */
+    INDEX_NO,       /* index */
+    TERM_VECTOR_NO, /* term_vector */
+    0,              /* size */
+    0,              /* capa */
+    NULL,           /* fields */
+    NULL,           /* field_dict */
+    1000000         /* ref_cnt so that it is never destroyed */
 };
 
 static int tst_si_eql(int line_num,

@@ -68,8 +68,8 @@ static void test_hs_add_safe(tst_case *tc, void *data)
     (void)data; /* suppress unused argument warning */
 
     Atrue(hs_add_safe(hs, str));
-    Atrue(hs_add_safe(hs, str));
-    Atrue(!hs_add_safe(hs, "one"));
+    Atrue(hs_add_safe(hs, (char *)str));
+    Atrue(!hs_add_safe(hs, (char *)"one"));
 
     int to_add = 100;
     int idx = 0;
@@ -149,9 +149,9 @@ static void test_hs_free(tst_case *tc, void *data)
 
     strcpy(str1, "one");
     strcpy(str2, "one");
-    Atrue(hs_add_safe(hs1, str1));
-    Atrue(hs_add_safe(hs1, str1));
-    Atrue(!hs_add_safe(hs1, "one"));
+    Atrue(hs_add_safe(hs1, (char *)str1));
+    Atrue(hs_add_safe(hs1, (char *)str1));
+    Atrue(!hs_add_safe(hs1, (char *)"one"));
     Asequal("one", str1);
 
     hs_add(hs1, str2);

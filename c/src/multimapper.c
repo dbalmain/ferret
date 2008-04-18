@@ -162,7 +162,8 @@ static INLINE void mulmap_bv_set_states(BitVector *bv, int *states, int cnt)
 
 static DeterministicState *mulmap_process_state(MultiMapper *self, BitVector *bv)
 {
-    DeterministicState *current_state = h_get(self->dstates_map, bv);
+    DeterministicState *current_state
+        = (DeterministicState *)h_get(self->dstates_map, bv);
     if (current_state == NULL) {
         int bit, i;
         int match_len = 0, max_match_len = 0;
@@ -299,7 +300,7 @@ char *mulmap_dynamic_map(MultiMapper *self, char *from)
     DeterministicState *start = self->dstates[0];
     DeterministicState *state = start;
     int capa = strlen(from);
-    char *to = ecalloc(capa);
+    char *to = (char *)ecalloc(capa);
     char *s = from, *d = to, *end = to + capa - 1;
     if (self->d_size == 0) {
         mulmap_compile(self);

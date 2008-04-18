@@ -406,7 +406,7 @@ static float sphsc_phrase_freq(Scorer *self)
     }
 
     do {
-        pp = pq_pop(pq);
+        pp = (PhPos *)pq_pop(pq);
         pos = start = pp->position;
         next_pos = PP(pq_top(pq))->position;
         while (pos <= next_pos) {
@@ -644,7 +644,7 @@ typedef struct TVPosEnum
     int size;
     int offset;
     int pos;
-    int positions[];
+    int positions[1];
 } TVPosEnum;
 
 static bool tvpe_next(TVPosEnum *self)
@@ -684,7 +684,7 @@ static bool tvpe_lt(TVPosEnum *tvpe1, TVPosEnum *tvpe2)
 
 static TVPosEnum *tvpe_new(int *positions, int size, int offset)
 {
-    TVPosEnum *self = emalloc(sizeof(TVPosEnum) + size * sizeof(int));
+    TVPosEnum *self = (TVPosEnum*)emalloc(sizeof(TVPosEnum) + size*sizeof(int));
     memcpy(self->positions, positions, size * sizeof(int));
     self->size = size;
     self->offset = offset;
@@ -718,7 +718,8 @@ static TVPosEnum *tvpe_new_merge(char **terms, int t_cnt, TermVector *tv,
     }
     else {
         int index = 0;
-        self = emalloc(sizeof(TVPosEnum) + total_positions * sizeof(int));
+        self = (TVPosEnum *)emalloc(sizeof(TVPosEnum)
+                                    + total_positions * sizeof(int));
         self->size = total_positions;
         self->offset = offset;
         self->index = -1;
@@ -783,7 +784,7 @@ static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
                 }
             }
             while (! done) {
-                TVPosEnum *tvpe = pq_pop(tvpe_pq);
+                TVPosEnum *tvpe = (TVPosEnum *)pq_pop(tvpe_pq);
                 int pos;
                 int start = pos = tvpe->pos;
                 int next_pos = ((TVPosEnum *)pq_top(tvpe_pq))->pos;

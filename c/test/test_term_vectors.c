@@ -35,14 +35,20 @@ static void test_posting(tst_case *tc, void *data)
 
 static FieldInfos *create_tv_fis()
 {
-    FieldInfos *fis = fis_new(0, 1, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_new("tv", 0, 1, TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv2", 0, 1, TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv_with_positions", 0, 1,
+    FieldInfos *fis = fis_new(FRT_STORE_NO, FRT_INDEX_UNTOKENIZED,
+                              TERM_VECTOR_NO);
+    fis_add_field(fis, fi_new("tv", FRT_STORE_NO, FRT_INDEX_UNTOKENIZED,
+                              TERM_VECTOR_YES));
+    fis_add_field(fis, fi_new("tv2", FRT_STORE_NO, FRT_INDEX_UNTOKENIZED,
+                              TERM_VECTOR_YES));
+    fis_add_field(fis, fi_new("tv_with_positions", FRT_STORE_NO,
+                              FRT_INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_new("tv_with_offsets", 0, 1,
+    fis_add_field(fis, fi_new("tv_with_offsets", FRT_STORE_NO,
+                              FRT_INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("tv_with_positions_offsets", 0, 1,
+    fis_add_field(fis, fi_new("tv_with_positions_offsets", FRT_STORE_NO,
+                              FRT_INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS));
     return fis;
 
@@ -208,12 +214,12 @@ static void test_tv_single_doc(tst_case *tc, void *data)
     /* test document's term vectors */
     tvs = fr_get_tv(fr, 0);
     Aiequal(4, tvs->size);
-    tv = h_get_int(tvs, fis_get_or_add_field(fis, "tv2")->number);
+    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"tv2")->number);
     Apnull(tv);
-    tv = h_get_int(tvs, fis_get_or_add_field(fis, "other")->number);
+    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"other")->number);
     Apnull(tv);
 
-    tv = h_get(tvs, "tv_with_positions_offsets");
+    tv = (TermVector*)h_get(tvs, "tv_with_positions_offsets");
     if (Apnotnull(tv)) {
         Aiequal(fis_get_field(fis, "tv_with_positions_offsets")->number,
                 tv->field_num);
@@ -343,12 +349,12 @@ static void test_tv_multi_doc(tst_case *tc, void *data)
 
     tvs = fr_get_tv(fr, 4);
     Aiequal(4, tvs->size);
-    tv = h_get_int(tvs, fis_get_or_add_field(fis, "tv2")->number);
+    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"tv2")->number);
     Apnull(tv);
-    tv = h_get_int(tvs, fis_get_or_add_field(fis, "other")->number);
+    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"other")->number);
     Apnull(tv);
 
-    tv = h_get(tvs, "tv_with_positions_offsets");
+    tv = (TermVector*)h_get(tvs, "tv_with_positions_offsets");
     if (Apnotnull(tv)) {
         Aiequal(fis_get_field(fis, "tv_with_positions_offsets")->number,
                 tv->field_num);

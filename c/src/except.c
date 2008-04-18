@@ -37,7 +37,7 @@ void xpush_context(xcontext_t *context)
 {
     xcontext_t *top_context;
     thread_once(&exception_stack_key_once, *exception_stack_alloc);
-    top_context = thread_getspecific(exception_stack_key);
+    top_context = (xcontext_t *)thread_getspecific(exception_stack_key);
     context->next = top_context;
     thread_setspecific(exception_stack_key, context);
     context->handled = true;
@@ -69,7 +69,7 @@ void xraise(int excode, const char *const msg)
 {
     xcontext_t *top_context;
     thread_once(&exception_stack_key_once, *exception_stack_alloc);
-    top_context = thread_getspecific(exception_stack_key);
+    top_context = (xcontext_t *)thread_getspecific(exception_stack_key);
 
     if (!top_context) {
         XEXIT(ERROR_TYPES[excode], msg);
@@ -88,7 +88,7 @@ void xpop_context()
 {
     xcontext_t *top_cxt, *context;
     thread_once(&exception_stack_key_once, *exception_stack_alloc);
-    top_cxt = thread_getspecific(exception_stack_key);
+    top_cxt = (xcontext_t *)thread_getspecific(exception_stack_key);
     context = top_cxt->next;
     thread_setspecific(exception_stack_key, context);
     if (!top_cxt->handled) {

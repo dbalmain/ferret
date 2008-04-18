@@ -7,6 +7,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <signal.h>
 #include "internal.h"
 
@@ -238,8 +239,6 @@ void dummy_free(void *p)
 {
     (void)p; /* suppress unused argument warning */
 }
-
-extern pid_t getpid(void);
 
 static char *build_gdb_commandfile()
 {

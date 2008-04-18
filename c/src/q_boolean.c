@@ -111,7 +111,7 @@ static bool dssc_advance_after_current(Scorer *self)
                     break;
                 }
             }
-            top = pq_top(scorer_queue);
+            top = (Scorer *)pq_top(scorer_queue);
             if (top->doc != self->doc) {
                 /* All remaining subscorers are after self->doc */
                 break;
@@ -162,7 +162,7 @@ static bool dssc_skip_to(Scorer *self, int doc_num)
         doc_num = self->doc + 1;
     }
     while (true) { 
-        Scorer *top = pq_top(scorer_queue);
+        Scorer *top = (Scorer *)pq_top(scorer_queue);
         if (top->doc >= doc_num) {
             return dssc_advance_after_current(self);
         }

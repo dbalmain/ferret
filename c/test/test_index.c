@@ -13,13 +13,13 @@ static char *tag = "tag";
 
 static FieldInfos *prep_all_fis()
 {
-    FieldInfos *fis = fis_new(0, INDEX_YES, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_new("tv", 0, INDEX_YES, TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv un-t", 0, INDEX_UNTOKENIZED,
+    FieldInfos *fis = fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_NO);
+    fis_add_field(fis, fi_new("tv", STORE_NO, INDEX_YES, TERM_VECTOR_YES));
+    fis_add_field(fis, fi_new("tv un-t", STORE_NO, INDEX_UNTOKENIZED,
                               TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv+offsets", 0, INDEX_YES,
+    fis_add_field(fis, fi_new("tv+offsets", STORE_NO, INDEX_YES,
                               TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("tv+offsets un-t", 0, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new("tv+offsets un-t", STORE_NO, INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_OFFSETS));
     return fis;
 
@@ -726,6 +726,7 @@ static void test_index_create(tst_case *tc, void *data)
 {
     Store *store = (Store *)data;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    (void)tc;
 
     store->clear_all(store);
     Assert(!store->exists(store, "segments"),
@@ -820,7 +821,7 @@ static void test_fld_inverter(tst_case *tc, void *data)
             dw->fields, fis_get_field(dw->fis, df->name)->number))->plists;
 
 
-    pl = h_get(curr_plists, "one");
+    pl = (PostingList *)h_get(curr_plists, "one");
     if (Apnotnull(pl)) {
         Asequal("one", pl->term);
         Aiequal(3, pl->term_len);
@@ -833,7 +834,7 @@ static void test_fld_inverter(tst_case *tc, void *data)
         Apequal(pl, ((PostingList *)h_get(plists, "one")));
     }
 
-    pl = h_get(curr_plists, "five");
+    pl = (PostingList *)h_get(curr_plists, "five");
     if (Apnotnull(pl)) {
         Asequal("five", pl->term);
         Aiequal(4, pl->term_len);
@@ -864,7 +865,7 @@ static void test_fld_inverter(tst_case *tc, void *data)
 
     Aiequal(13, curr_plists->size);
 
-    pl = h_get(curr_plists, "one");
+    pl = (PostingList *)h_get(curr_plists, "one");
     if (Apnotnull(pl)) {
         Asequal("one", pl->term);
         Aiequal(3, pl->term_len);
@@ -893,7 +894,7 @@ static void test_postings_sorter(tst_case *tc, void *data)
 {
     int i;
     PostingList plists[NUM_POSTINGS], *p_ptr[NUM_POSTINGS];
-    (void)data;
+    (void)data, (void)tc;
     for (i = 0; i < NUM_POSTINGS; i++) {
         plists[i].term = (char *)test_word_list[i];
         p_ptr[i] = &plists[i];
@@ -1741,19 +1742,19 @@ static void test_ir_term_vectors(tst_case *tc, void *data)
 
     tvs = ir->term_vectors(ir, 3);
     Aiequal(3, tvs->size);
-    tv = h_get(tvs, "author");
+    tv = (TermVector *)h_get(tvs, "author");
     if (Apnotnull(tv)) {
         Asequal("author", tv->field);
         Aiequal(2, tv->term_cnt);
         Aiequal(0, tv->offset_cnt);
         Apnull(tv->offsets);
     }
-    tv = h_get(tvs, "body");
+    tv = (TermVector *)h_get(tvs, "body");
     if (Apnotnull(tv)) {
         Asequal("body", tv->field);
         Aiequal(4, tv->term_cnt);
     }
-    tv = h_get(tvs, "title");
+    tv = (TermVector *)h_get(tvs, "title");
     if (Apnotnull(tv)) {
         Asequal("title", tv->field);
         Aiequal(1, tv->term_cnt); /* untokenized */

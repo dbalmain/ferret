@@ -4,7 +4,7 @@
 #include "config.h"
 
 extern int frt_hlp_string_diff(register const char *const s1,
-                                  register const char *const s2);
+                               register const char *const s2);
 extern frt_i32 frt_float2int(float f);
 extern float frt_int2float(frt_i32 i32);
 extern float frt_byte2float(unsigned char b);

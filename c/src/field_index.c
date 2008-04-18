@@ -40,6 +40,7 @@ FieldIndex *field_index_get(IndexReader *ir, const char *field,
     FieldInfo *fi = fis_get_field(ir->fis, field);
     const int field_num = fi ? fi->number : -1;
     FieldIndex *self = NULL;
+    FieldIndex key;
 
     if (field_num < 0) {
         RAISE(ARG_ERROR,
@@ -52,8 +53,9 @@ FieldIndex *field_index_get(IndexReader *ir, const char *field,
                                       NULL, &field_index_destroy);
     }
 
-    self = h_get(ir->field_index_cache,
-                 &(const FieldIndex){field, klass, NULL});
+    key.field = field;
+    key.klass = klass;
+    self = (FieldIndex *)h_get(ir->field_index_cache, &key);
 
     if (self == NULL) {
         self = ALLOC(FieldIndex);
@@ -251,7 +253,7 @@ const FieldIndexClass STRING_FIELD_INDEX_CLASS = {
 const char *get_string_value(FieldIndex *field_index, long doc_num)
 {
     if (field_index->klass == &STRING_FIELD_INDEX_CLASS) {
-        StringIndex *string_index = field_index->index;
+        StringIndex *string_index = (StringIndex *)field_index->index;
         if (doc_num >= 0 && doc_num < string_index->size) {
             return string_index->values[string_index->index[doc_num]];
         }

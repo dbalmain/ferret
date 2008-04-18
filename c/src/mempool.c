@@ -10,7 +10,7 @@ MemoryPool *mp_new_capa(int chuck_size, int init_buf_capa)
     mp->buf_capa = init_buf_capa;
     mp->buffers = ALLOC_N(char *, init_buf_capa);
 
-    mp->buffers[0] = mp->curr_buffer = emalloc(mp->chunk_size);
+    mp->buffers[0] = mp->curr_buffer = (char *)emalloc(mp->chunk_size);
     mp->buf_alloc = 1;
     mp->buf_pointer = 0;
     mp->pointer = 0;
@@ -39,7 +39,7 @@ INLINE void *mp_alloc(MemoryPool *mp, int size)
                 mp->buf_capa <<= 1;
                 REALLOC_N(mp->buffers, char *, mp->buf_capa);
             }
-            mp->buffers[mp->buf_pointer] = emalloc(mp->chunk_size);
+            mp->buffers[mp->buf_pointer] = (char *)emalloc(mp->chunk_size);
         }
         p = mp->curr_buffer = mp->buffers[mp->buf_pointer];
         mp->pointer = size;
@@ -50,12 +50,12 @@ INLINE void *mp_alloc(MemoryPool *mp, int size)
 char *mp_strdup(MemoryPool *mp, const char *str)
 {
     int len = strlen(str) + 1;
-    return memcpy(mp_alloc(mp, len), str, len);
+    return (char *)memcpy(mp_alloc(mp, len), str, len);
 }
 
 char *mp_strndup(MemoryPool *mp, const char *str, int len)
 {
-    char *s = memcpy(mp_alloc(mp, len + 1), str, len);
+    char *s = (char *)memcpy(mp_alloc(mp, len + 1), str, len);
     s[len] = '\0';
     return s;
 }

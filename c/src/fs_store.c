@@ -462,7 +462,7 @@ Store *open_fs_store(const char *pathname)
     }
 
     mutex_lock(&stores_mutex);
-    store = h_get(stores, pathname);
+    store = (Store *)h_get(stores, pathname);
     if (store) {
         mutex_lock(&store->mutex);
         store->ref_cnt++;

@@ -30,13 +30,13 @@ typedef posh_i64_t frt_i64;
 #define FRT_OFF_T_PFX "l"
 #endif
 
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) && !defined(__cplusplus)
 #define FRT_IS_C99
 #define FRT_HAS_ISO_VARARGS
 #define FRT_HAS_VARARGS
 #endif
 
-#if defined(__GNUC__) && !defined(__STRICT_ANSI__)
+#if defined(__GNUC__) && !defined(__STRICT_ANSI__) && !defined(__cplusplus)
 #define FRT_HAS_GNUC_VARARGS
 #define FRT_HAS_VARARGS
 #endif

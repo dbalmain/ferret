@@ -232,7 +232,7 @@
 #define Index                   FrtIndex
 #define IndexReader             FrtIndexReader
 #define IndexSearcher           FrtIndexSearcher
-#define IndexValues             FrtIndexValues
+#define IndexValue              FrtIndexValue
 #define IndexWriter             FrtIndexWriter
 #define LazyDoc                 FrtLazyDoc
 #define LazyDocField            FrtLazyDocField
@@ -294,7 +294,7 @@
 #define StemFilter              FrtStemFilter
 #define StopFilter              FrtStopFilter
 #define Store                   FrtStore
-#define StoreValues             FrtStoreValues
+#define StoreValue              FrtStoreValue
 #define StringIndex             FrtStringIndex
 #define TVField                 FrtTVField
 #define TVTerm                  FrtTVTerm
@@ -306,7 +306,7 @@
 #define TermInfosWriter         FrtTermInfosWriter
 #define TermQuery               FrtTermQuery
 #define TermVector              FrtTermVector
-#define TermVectorValues        FrtTermVectorValues
+#define TermVectorValue         FrtTermVectorValue
 #define TermVectorsReader       FrtTermVectorsReader
 #define TermVectorsWriter       FrtTermVectorsWriter
 #define TermWriter              FrtTermWriter

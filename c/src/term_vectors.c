@@ -135,7 +135,8 @@ static TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
             total_len = delta_start + delta_len;
             is_read_bytes(tvd_in, buffer + delta_start, delta_len);
             buffer[total_len++] = '\0';
-            term->text = memcpy(ALLOC_N(char, total_len), buffer, total_len);
+            term->text = (char *)memcpy(ALLOC_N(char, total_len), buffer,
+                                        total_len);
 
             /* read freq */
             freq = term->freq = is_read_vint(tvd_in);

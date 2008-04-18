@@ -269,7 +269,7 @@ typedef struct FrtBooleanClause
 {
     int ref_cnt;
     FrtQuery *query;
-    unsigned int occur : 4;
+    FrtBCType occur;
     bool is_prohibited : 1;
     bool is_required : 1;
 } FrtBooleanClause;

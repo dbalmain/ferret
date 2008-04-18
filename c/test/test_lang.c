@@ -27,7 +27,7 @@ static void test_emalloc(tst_case *tc, void *data)
     char *p;
     (void)data; /* suppress warning */
 
-    p = emalloc(100);
+    p = (char *)emalloc(100);
     Apnotnull(p);
     free(p);
 
@@ -40,7 +40,7 @@ static void test_ecalloc(tst_case *tc, void *data)
     char *p;
     (void)data; /* suppress warning */
 
-    p = ecalloc(100);
+    p = (char *)ecalloc(100);
     Apnotnull(p);
     for (i = 0; i < 100; ++i) {
         Aiequal(p[i], 0);
@@ -55,7 +55,7 @@ static void test_erealloc(tst_case *tc, void *data)
     char *p = NULL;
     (void)data; /* suppress warning */
 
-    p = erealloc(p, 100);
+    p = (char *)erealloc(p, 100);
     Apnotnull(p);
     free(p);
 

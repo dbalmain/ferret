@@ -21,16 +21,16 @@ static void test_ary(tst_case *tc, void *data)
     ary_free(ary);
 
     ary = ary_new();
-    ary_push(ary, "one");
+    ary_push(ary, (char *)"one");
     Aiequal(1, ary_sz(ary));
-    ary_unshift(ary, "zero");
+    ary_unshift(ary, (char *)"zero");
     Aiequal(2, ary_sz(ary));
     Asequal("zero", ary[0]);
     Asequal("one", ary[1]);
     Apnull(ary_remove(ary, 2));
 
     TRY
-        ary_set(ary, -3, "minusone");
+        ary_set(ary, -3, (char *)"minusone");
     XCATCHALL
         HANDLED();
         raised = 1;
@@ -41,7 +41,7 @@ static void test_ary(tst_case *tc, void *data)
     ary = ary_new_capa(10);
     Aiequal(0, ary_sz(ary));
     Aiequal(10, ary_capa(ary));
-    ary_set(ary, 1, "one");
+    ary_set(ary, 1, (char *)"one");
     Aiequal(2, ary_sz(ary));
     Asequal("one", ary[1]);
     Apnull(ary[0]);
@@ -54,7 +54,7 @@ static void test_ary(tst_case *tc, void *data)
     Apnull(ary_get(ary, 22));
     Apnull(ary_get(ary, -22));
 
-    ary_set(ary, 2, "two");
+    ary_set(ary, 2, (char *)"two");
     Aiequal(3, ary_sz(ary));
     Asequal("one", ary[1]);
     Asequal("two", ary[2]);
@@ -62,21 +62,21 @@ static void test_ary(tst_case *tc, void *data)
     Apnull(ary[3]);
     Asequal("one", ary_get(ary, -2));
     Asequal("two", ary_get(ary, -1));
-    ary_set(ary, -1, "two");
-    ary_set(ary, -3, "zero");
+    ary_set(ary, -1, (char *)"two");
+    ary_set(ary, -3, (char *)"zero");
 
     Asequal("zero", ary[0]);
     Asequal("one", ary[1]);
     Asequal("two", ary[2]);
     Aiequal(3, ary_sz(ary));
 
-    ary_set(ary, 19, "nineteen");
+    ary_set(ary, 19, (char *)"nineteen");
     Aiequal(20, ary_sz(ary));
     for (i = 4; i < 19; i++) {
         Apnull(ary[i]);
     }
 
-    ary_push(ary, "twenty");
+    ary_push(ary, (char *)"twenty");
     Aiequal(21, ary_sz(ary));
     Asequal("twenty", ary_pop(ary));
     Aiequal(20, ary_sz(ary));
@@ -87,7 +87,7 @@ static void test_ary(tst_case *tc, void *data)
     Apnull(ary_pop(ary));
     Aiequal(18, ary_sz(ary));
 
-    ary_push(ary, "eighteen");
+    ary_push(ary, (char *)"eighteen");
     Aiequal(19, ary_sz(ary));
     Asequal("eighteen", ary[18]);
     Asequal("eighteen", ary_get(ary, -1));
@@ -115,9 +115,9 @@ static void test_ary(tst_case *tc, void *data)
     Apnull(ary_get(ary, -16));
     Apnull(ary_get(ary, -18));
 
-    ary[5] = "five";
-    ary[6] = "six";
-    ary[7] = "seven";
+    ary[5] = (char *)"five";
+    ary[6] = (char *)"six";
+    ary[7] = (char *)"seven";
 
     Asequal("five", ary_get(ary, 5));
     Asequal("six", ary_get(ary, 6));
@@ -139,7 +139,7 @@ static void test_ary(tst_case *tc, void *data)
 
     tmp = estrdup("sixsix");
     ary[6] = tmp;
-    ary[7] = "seven";
+    ary[7] = (char *)"seven";
     Asequal("sixsix", ary_get(ary, 6));
     Asequal("seven", ary_get(ary, 7));
 
@@ -193,7 +193,7 @@ void stress_ary(tst_case *tc, void *data)
 
     for (i = 0; i < ARY_STRESS_SIZE; i++) {
         sprintf(buf, "<%d>", i);
-        t = ary_shift(ary);
+        t = (char *)ary_shift(ary);
         Asequal(buf, t);
         free(t);
     }

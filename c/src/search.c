@@ -847,7 +847,7 @@ char **searcher_highlight(Searcher *self,
     LazyDoc *lazy_doc = self->get_lazy_doc(self, doc_num);
     LazyDocField *lazy_df = NULL;
     if (lazy_doc) {
-        lazy_df = h_get(lazy_doc->field_dict, field);
+        lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, field);
     }
     if (tv && lazy_df && tv->term_cnt > 0 && tv->terms[0].positions != NULL
         && tv->offsets != NULL) {
@@ -891,7 +891,7 @@ char **searcher_highlight(Searcher *self,
             }
 
             for (i = 0; i < num_excerpts && excerpt_pq->size > 0; i++) {
-                excerpts[i] = pq_pop(excerpt_pq);
+                excerpts[i] = (Excerpt *)pq_pop(excerpt_pq);
                 if (i < num_excerpts - 1) {
                     /* set match ranges alread included to 0 */
                     Excerpt *e = excerpts[i];
@@ -900,7 +900,7 @@ char **searcher_highlight(Searcher *self,
                     }
                     e = NULL;
                     while (e != (Excerpt *)pq_top(excerpt_pq)) {
-                        e = pq_top(excerpt_pq);
+                        e = (Excerpt *)pq_top(excerpt_pq);
                         excerpt_recalc_score(e, mv);
                         pq_down(excerpt_pq);
                     }

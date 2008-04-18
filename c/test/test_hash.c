@@ -126,7 +126,7 @@ static void test_hash_int(tst_case *tc, void *data)
     h_set_int(ht, 1000, estrdup("thousand"));
     Aiequal(3, ht->size);
     Atrue(h_has_key_int(ht, 1000));
-    Asequal("thousand", word = h_rem_int(ht, 1000));
+    Asequal("thousand", word = (char *)h_rem_int(ht, 1000));
     Aiequal(2, ht->size);
     Atrue(!h_has_key_int(ht, 1000));
     Atrue(h_has_key_int(ht, 10));

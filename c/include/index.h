@@ -71,7 +71,7 @@ typedef enum
     FRT_STORE_NO = 0,
     FRT_STORE_YES = 1,
     FRT_STORE_COMPRESS = 2
-} FrtStoreValues;
+} FrtStoreValue;
 
 typedef enum
 {
@@ -80,7 +80,7 @@ typedef enum
     FRT_INDEX_YES = 3,
     FRT_INDEX_UNTOKENIZED_OMIT_NORMS = 5,
     FRT_INDEX_YES_OMIT_NORMS = 7
-} FrtIndexValues;
+} FrtIndexValue;
 
 typedef enum
 {
@@ -89,7 +89,7 @@ typedef enum
     FRT_TERM_VECTOR_WITH_POSITIONS = 3,
     FRT_TERM_VECTOR_WITH_OFFSETS = 5,
     FRT_TERM_VECTOR_WITH_POSITIONS_OFFSETS = 7
-} FrtTermVectorValues;
+} FrtTermVectorValue;
 
 #define FRT_FI_IS_STORED_BM         0x001
 #define FRT_FI_IS_COMPRESSED_BM     0x002
@@ -110,9 +110,9 @@ typedef struct FrtFieldInfo
 } FrtFieldInfo;
 
 extern FrtFieldInfo *frt_fi_new(const char *name,
-                         FrtStoreValues store,
-                         FrtIndexValues index,
-                         FrtTermVectorValues term_vector);
+                         FrtStoreValue store,
+                         FrtIndexValue index,
+                         FrtTermVectorValue term_vector);
 extern char *frt_fi_to_s(FrtFieldInfo *fi);
 extern void frt_fi_deref(FrtFieldInfo *fi);
 
@@ -137,9 +137,9 @@ extern void frt_fi_deref(FrtFieldInfo *fi);
 /* carry changes over to dummy_fis in test/test_segments.c */
 typedef struct FrtFieldInfos
 {
-    int store;
-    int index;
-    int term_vector;
+    FrtStoreValue store;
+    FrtIndexValue index;
+    FrtTermVectorValue term_vector;
     int size;
     int capa;
     FrtFieldInfo **fields;
@@ -147,12 +147,14 @@ typedef struct FrtFieldInfos
     int ref_cnt;
 } FrtFieldInfos;
 
-extern FrtFieldInfos *frt_fis_new(int store, int index, int term_vector);
+FrtFieldInfos *frt_fis_new(FrtStoreValue store, FrtIndexValue index,
+                                  FrtTermVectorValue term_vector);
 extern FrtFieldInfo *frt_fis_add_field(FrtFieldInfos *fis, FrtFieldInfo *fi);
 extern FrtFieldInfo *frt_fis_get_field(FrtFieldInfos *fis, const char *name);
 extern int frt_fis_get_field_num(FrtFieldInfos *fis, const char *name);
 extern FrtFieldInfo *frt_fis_by_number(FrtFieldInfos *fis, int num);
-extern FrtFieldInfo *frt_fis_get_or_add_field(FrtFieldInfos *fis, const char *name);
+extern FrtFieldInfo *frt_fis_get_or_add_field(FrtFieldInfos *fis,
+                                              const char *name);
 extern void frt_fis_write(FrtFieldInfos *fis, FrtOutStream *os);
 extern FrtFieldInfos *frt_fis_read(FrtInStream *is);
 extern char *frt_fis_to_s(FrtFieldInfos *fis);

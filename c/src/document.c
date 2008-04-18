@@ -126,7 +126,7 @@ DocField *doc_add_field(Document *doc, DocField *df)
 
 DocField *doc_get_field(Document *doc, const char *name)
 {
-    return h_get(doc->field_dict, name);
+    return (DocField *)h_get(doc->field_dict, name);
 }
 
 char *doc_to_s(Document *doc)

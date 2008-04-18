@@ -175,7 +175,7 @@ static void test_span_multi_term_hash(tst_case *tc, void *data)
 {
     Query *q1 = spanmtq_new_conf(field, 100);
     Query *q2 = spanmtq_new(field);
-    (void)data;
+    (void)data, (void)tc;
 
     Assert(q_hash(q1) == q_hash(q2), "Queries should be equal");
     Assert(q_eq(q1, q1), "Same queries should be equal");

@@ -577,7 +577,7 @@ void fshq_pq_insert(PriorityQueue *pq, Hit *hit)
 
 void fshq_pq_destroy(PriorityQueue *self)
 {
-    sorter_destroy(self->heap[0]);
+    sorter_destroy((Sorter *)self->heap[0]);
     pq_destroy(self);
 }
 
@@ -616,7 +616,8 @@ Hit *fshq_pq_pop_fd(PriorityQueue *pq)
         pq->size--;
         fshq_pq_down(pq);                   /* adjust heap */
 
-        field_doc = emalloc(sizeof(FieldDoc) + sizeof(Comparable) * cmp_cnt);
+        field_doc = (FieldDoc *)emalloc(sizeof(FieldDoc)
+                                        + sizeof(Comparable) * cmp_cnt);
         comparables = field_doc->comparables;
         memcpy(field_doc, hit, sizeof(Hit));
         field_doc->size = cmp_cnt;

@@ -155,8 +155,9 @@ static MatchVector *spanq_get_matchv_i(Query *self, MatchVector *mv,
         IndexReader *ir = ALLOC(IndexReader);
         MatchVector *full_mv = matchv_new();
         HashSet *terms = SpQ(self)->get_terms(self);
-        ir->fis = fis_new(0, 0, 0);
-        fis_add_field(ir->fis, fi_new(tv->field, 0, 0, 0));
+        ir->fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+        fis_add_field(ir->fis,
+                      fi_new(tv->field, STORE_NO, INDEX_NO, TERM_VECTOR_NO));
         ir->store = (Store *)tv;
         ir->term_positions = &spanq_ir_term_positions;
         sp_enum = SpQ(self)->get_spans(self, ir);

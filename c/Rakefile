@@ -68,10 +68,15 @@ STEMMER_SRCS    = FileList[STEMMER_DIR / 'src_c/*.c',
                            STEMMER_DIR / 'libstemmer/libstemmer.c']
 STEMMER_OBJS    = obj_map(STEMMER_SRCS)
 
-BZLIB_DIR       = 'lib/bzlib'
-BZLIB_INC_DIR   = BZLIB_DIR
-BZLIB_SRCS      = FileList[BZLIB_DIR / '*.c']
-BZLIB_OBJS      = obj_map(BZLIB_SRCS)
+if ENV['USE_ZLIB'] or ENV['USE_CPP']
+  BZLIB_INC_DIR = nil
+  BZLIB_OBJS    = nil
+else
+  BZLIB_DIR       = 'lib/bzlib'
+  BZLIB_INC_DIR   = BZLIB_DIR
+  BZLIB_SRCS      = FileList[BZLIB_DIR / '*.c']
+  BZLIB_OBJS      = obj_map(BZLIB_SRCS)
+end
 
 SRCS            = FileList['src/*.c']
 OBJS            = obj_map(SRCS)
@@ -80,7 +85,7 @@ INC_DIR         = 'include'
 TEST_SRCS       = FileList['test/*.c']
 TEST_OBJS       = obj_map(TEST_SRCS)
 
-INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR, 'test']
+INC_DIRS        = [STEMMER_INC_DIR, BZLIB_INC_DIR, INC_DIR, 'test'].compact
 INC_FILES       = FileList[*INC_DIRS.map{|dir| File.join(dir, '*.h')}]
 INC_MAP         = INC_FILES.inject({}) {|h, f| h[File.basename(f)] = f;h}
 
@@ -132,15 +137,20 @@ end
 ###
 # Compilation Constants
 ###
-AR       = "ar"
-CC       = "gcc"
-CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
+CC       = 'gcc'
 DEFS     = "-DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2"
-CFLAGS   = "-std=c99 -pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS}"
+
+if ENV['USE_CPP']
+  CC[1,2] = '++'
+  DEFS << ' -DUSE_ZLIB'
+end
+
+AR       = "ar"
+CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
-
+CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS} -std=c99"
 
 ###
 # Clean Constants
@@ -167,14 +177,15 @@ task :default => :test
 
 desc "Run all tests"
 task :test => 'testall' do
-    sh "./testall"
+    sh "./testall -q -v"
 end
 
 namespace :build do
   desc "Build the Ferret library 'libferret.a'"
   task :lib => 'libferret.a'
 
-  file "libferret.a" => [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten do |t|
+  LIB_FERRET_OBJS = [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten.compact
+  file "libferret.a" => LIB_FERRET_OBJS do |t|
     qsh "Generating library: #{t.name}",
         "#{AR} -cru #{t.name} #{t.prerequisites}"
   end
@@ -182,7 +193,8 @@ namespace :build do
   desc "Build the test binary 'testall'"
   task :tests => 'testall'
 
-  file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
+  #file "testall" => ['libferret.a', TEST_OBJS].flatten do |t|
+  file "testall" => [LIB_FERRET_OBJS, TEST_OBJS].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
@@ -201,9 +213,9 @@ namespace :build do
       f.write "\n"
 
       [
-        ['Constants',  'FRT_'   ],
-        ['Types',      'Frt'    ],
-        ['Functions',  'frt_'   ]
+        ['Constants', 'FRT_'],
+        ['Types',     'Frt' ],
+        ['Functions', 'frt_']
       ].each do |header, re|
         names = data.scan(/#{re}[A-Za-z0-9_]+/).sort.uniq
         next unless names and names.size > 0
@@ -219,7 +231,7 @@ namespace :build do
   end
 
   rule '.o' => lambda {|obj| get_dep_srcs(FILE2SRC[obj])} do |t|
-    vsh "Compiling #{t.name}",
+    qsh "Compiling #{t.name}",
         "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
   end
 end

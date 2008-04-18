@@ -23,7 +23,7 @@ void filt_deref(Filter *filt)
 
 BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
 {
-    CacheObject *co = h_get(filt->cache, ir);
+    CacheObject *co = (CacheObject *)h_get(filt->cache, ir);
 
     if (!co) {
         BitVector *bv;

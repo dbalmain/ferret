@@ -122,7 +122,7 @@ extern int frt_hs_add_safe(FrtHashSet *self, void *elem);
  * @return true if the element was deleted or false if the element never
  *   existed
  */
-extern int frt_hs_del(FrtHashSet *self, void *elem);
+extern int frt_hs_del(FrtHashSet *self, const void *elem);
 
 /**
  * Remove an item from the FrtHashSet without actually freeing the item. This
@@ -133,7 +133,7 @@ extern int frt_hs_del(FrtHashSet *self, void *elem);
  * @param elem the element to remove
  * @param the element that was removed or NULL otherwise
  */
-extern void *frt_hs_rem(FrtHashSet *self, void *elem);
+extern void *frt_hs_rem(FrtHashSet *self, const void *elem);
 
 /**
  * Check if the element exists and return the appropriate value described
@@ -153,7 +153,7 @@ extern void *frt_hs_rem(FrtHashSet *self, void *elem);
  *                              free_elem was set
  *   </pre>
  */
-extern FrtHashKeyStatus frt_hs_exists(FrtHashSet *self, void *elem);
+extern FrtHashKeyStatus frt_hs_exists(FrtHashSet *self, const void *elem);
 
 /**
  * Merge two HashSets. When a merge is done the merger (self) HashTable is
@@ -172,7 +172,7 @@ extern FrtHashSet *frt_hs_merge(FrtHashSet *self, FrtHashSet *other);
  * which are equal and add the first to the FrtHashSet, calling this function
  * with the second element will return the first element from the FrtHashSet.
  */
-extern void *frt_hs_orig(FrtHashSet *self, void *elem);
+extern void *frt_hs_orig(FrtHashSet *self, const void *elem);
 
 /**
  * Clear all elements from the FrtHashSet. If free_elem was set then use it to

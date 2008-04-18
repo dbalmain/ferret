@@ -43,10 +43,11 @@ static Query *get_bool_q(BCArray *bca);
 static BCArray *first_cls(BooleanClause *boolean_clause);
 static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause);
 static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause);
-static BCArray *add_default_cls(QParser *qp, BCArray *bca, BooleanClause *clause);
+static BCArray *add_default_cls(QParser *qp, BCArray *bca,
+                                BooleanClause *clause);
 static void bca_destroy(BCArray *bca);
 
-static BooleanClause *get_bool_cls(Query *q, unsigned int occur);
+static BooleanClause *get_bool_cls(Query *q, BCType occur);
 
 static Query *get_term_q(QParser *qp, char *field, char *word);
 static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop);
@@ -329,7 +330,7 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
 {
     TokenStream *ts;
     if (!qp->tokenized_fields || hs_exists(qp->tokenized_fields, field)) {
-        ts = h_get(qp->ts_cache, field);
+        ts = (TokenStream *)h_get(qp->ts_cache, field);
         if (!ts) {
             ts = a_get_ts(qp->analyzer, field, text);
             h_set(qp->ts_cache, estrdup(field), ts);
@@ -347,7 +348,7 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
 
 static char *get_cached_field(HashTable *field_cache, const char *field)
 {
-    char *cached_field = h_get(field_cache, field);
+    char *cached_field = (char *)h_get(field_cache, field);
     if (!cached_field) {
         cached_field = estrdup(field);
         h_set(field_cache, cached_field, cached_field);
@@ -457,7 +458,7 @@ static void bca_destroy(BCArray *bca)
     free(bca);
 }
 
-static BooleanClause *get_bool_cls(Query *q, unsigned int occur)
+static BooleanClause *get_bool_cls(Query *q, BCType occur)
 {
     if (q) {
         return bc_new(q, occur);
@@ -851,7 +852,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->def_fields = def_fields;
         for (hse = def_fields->first; hse; hse = hse->next) {
             if (!hs_exists(self->all_fields, hse->elem)) {
-                hs_add(self->all_fields, estrdup(hse->elem));
+                hs_add(self->all_fields, estrdup((char *)hse->elem));
             }
         }
         self->close_def_fields = true;
@@ -862,7 +863,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     }
     self->field_cache = h_new_str((free_ft)NULL, &free);
     for (hse = self->all_fields->first; hse; hse = hse->next) {
-        char *field = estrdup(hse->elem);
+        char *field = estrdup((char *)hse->elem);
         h_set(self->field_cache, field, field);
     }
     self->fields = self->def_fields;

@@ -314,7 +314,7 @@ static char *trfilt_to_s(Filter *filt)
     return rfstr;
 }
 
-enum TYPED_RANGE_CHECK {
+typedef enum {
     TRC_NONE    = 0x00,
     TRC_LE      = 0x01,
     TRC_LT      = 0x02,
@@ -324,7 +324,7 @@ enum TYPED_RANGE_CHECK {
     TRC_GT      = 0x08,
     TRC_GT_LE   = 0x09,
     TRC_GT_LT   = 0x0a
-};
+} TypedRangeCheck;
 
 #define SET_DOCS(cond)\
 do {\
@@ -361,7 +361,7 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
             double num;
             TermEnum* te;
             TermDocEnum *tde;
-            enum TYPED_RANGE_CHECK check = TRC_NONE;
+            TypedRangeCheck check = TRC_NONE;
 
             te = ir->terms(ir, field_num);
             if (te->skip_to(te, "+.") == NULL) {
@@ -376,7 +376,9 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
                 check = range->include_lower ? TRC_GE : TRC_GT;
             }
             if (ut) {
-                check |= range->include_upper ? TRC_LE : TRC_LT;
+               check = (TypedRangeCheck)(check | (range->include_upper
+                                                  ? TRC_LE
+                                                  : TRC_LT));
             }
 
             switch(check) {
@@ -573,14 +575,16 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
         if ((!lt || (sscanf(lt,"%lg%n",&lnum,&len) && (int)strlen(lt) == len))&&
             (!ut || (sscanf(ut,"%lg%n",&unum,&len) && (int)strlen(ut) == len)))
         {
-            enum TYPED_RANGE_CHECK check = TRC_NONE;
+            TypedRangeCheck check = TRC_NONE;
             int i = 0, j = 0;
 
             if (lt) {
                check = range->include_lower ? TRC_GE : TRC_GT;
             }
             if (ut) {
-               check |= range->include_upper ? TRC_LE : TRC_LT;
+               check = (TypedRangeCheck)(check | (range->include_upper
+                                                  ? TRC_LE
+                                                  : TRC_LT));
             }
 
             switch(check) {

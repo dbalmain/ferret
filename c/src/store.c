@@ -442,6 +442,8 @@ INLINE void is_skip_vints(InStream *is, register int cnt)
     }
 }
 
+/*
+ * FIXME: Not used. Do we need/want this?
 static INLINE void is_read_chars(InStream *is, char *buffer,
                           int off, int len)
 {
@@ -453,6 +455,7 @@ static INLINE void is_read_chars(InStream *is, char *buffer,
         buffer[i] = is_read_byte(is);
     }
 }
+*/
 
 char *is_read_string(InStream *is)
 {

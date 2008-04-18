@@ -99,7 +99,7 @@ static void cmpd_close_i(Store *store)
 
 static off_t cmpd_length(Store *store, const char *file_name)
 {
-    FileEntry *fe = h_get(store->dir.cmpd->entries, file_name);
+    FileEntry *fe = (FileEntry *)h_get(store->dir.cmpd->entries, file_name);
     if (fe != NULL) {
         return fe->length;
     }
@@ -176,7 +176,7 @@ static InStream *cmpd_open_input(Store *store, const char *file_name)
               "stream is closed.");
     }
 
-    entry = h_get(cmpd->entries, file_name);
+    entry = (FileEntry *)h_get(cmpd->entries, file_name);
     if (entry == NULL) {
         mutex_unlock(&store->mutex);
         RAISE(IO_ERROR, "File %s does not exist: ", file_name);

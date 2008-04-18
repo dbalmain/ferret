@@ -207,7 +207,7 @@ static void test_uncaught_except(tst_case *tc, void *data)
     bool old_abort_setting = x_abort_on_exception;
     FILE *old_stream_setting = x_exception_stream;
     FILE *exception_output = tmpfile();
-    (void)data; /* suppress warning */
+    (void)data, (void)tc; /* suppress warning */
 
 
     x_abort_on_exception = false;

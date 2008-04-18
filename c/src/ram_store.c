@@ -56,7 +56,7 @@ static int ram_exists(Store *store, const char *filename)
 
 static int ram_remove(Store *store, const char *filename)
 {
-    RAMFile *rf = h_rem(store->dir.ht, filename, false);
+    RAMFile *rf = (RAMFile *)h_rem(store->dir.ht, filename, false);
     if (rf != NULL) {
         DEREF(rf);
         rf_close(rf);

@@ -12,7 +12,7 @@
 #define FRT_MAX_WORD_SIZE 255
 #define FRT_MAX_FILE_PATH 1024
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__cplusplus)
 # define FRT_INLINE __inline__
 #else
 # define FRT_INLINE
@@ -51,7 +51,7 @@ typedef void (*frt_free_ft)(void *key);
       } else {\
         self->capa = 4;\
       }\
-      self->ptr = frt_erealloc(self->ptr, sizeof(type) * self->capa);\
+      self->ptr = (type *)frt_erealloc(self->ptr, sizeof(type) * self->capa);\
     }\
   } while (0)
 

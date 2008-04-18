@@ -132,7 +132,7 @@ tst_suite *tst_add_suite(tst_suite * suite, const char *suite_name_full)
     }
 
     /* Create a new subsuite */
-    subsuite = malloc(sizeof(sub_suite));
+    subsuite = (sub_suite *)malloc(sizeof(sub_suite));
     subsuite->num_test = 0;
     subsuite->failed = 0;
     subsuite->next = NULL;
@@ -152,8 +152,8 @@ tst_suite *tst_add_suite(tst_suite * suite, const char *suite_name_full)
     if (!p) {
         p = strrchr(suite_name, '\0');
     }
-    subsuite->name = memcpy(calloc(p - suite_name + 1, 1),
-                            suite_name, p - suite_name);
+    subsuite->name = (char *)memcpy(calloc(p - suite_name + 1, 1),
+                                    suite_name, p - suite_name);
 
     /* If we are listing tests, just write the name of the test */
     if (list_tests) {
@@ -166,7 +166,7 @@ tst_suite *tst_add_suite(tst_suite * suite, const char *suite_name_full)
     if (suite == NULL) {
         /* This is the first call to tst_add_suite so we need to create the
          * suite */
-        suite = malloc(sizeof(*suite));
+        suite = (tst_suite *)malloc(sizeof(*suite));
         suite->head = subsuite;
         suite->tail = subsuite;
     }
@@ -521,8 +521,8 @@ bool tst_arr_int_equal(int line_num, tst_case *tc, const int *expected,
     return false;
 }
 
-bool tst_arr_str_equal(int line_num, tst_case *tc, char **expected,
-                       char **actual, int size)
+bool tst_arr_str_equal(int line_num, tst_case *tc, const char **expected,
+                       const char **actual, int size)
 {
     a_cnt++;
     update_status();
@@ -768,7 +768,7 @@ int main(int argc, const char *const argv[])
     if (list_provided) {
         /* Waste a little space here, because it is easier than counting the
          * number of tests listed.  Besides it is not going to be much */
-        testlist = calloc(argc + 1, sizeof(char *));
+        testlist = (char **)calloc(argc + 1, sizeof(char *));
         for (i = 1; i < argc; i++) {
             testlist[i - 1] = (char *) argv[i];
         }

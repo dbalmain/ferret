@@ -20,7 +20,7 @@ const Config lucene_config = {
 
 static FieldInfos *prep_fis()
 {
-    return fis_new(0, INDEX_YES, TERM_VECTOR_NO);
+    return fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_NO);
 }
 
 static void create_index(Store *store)

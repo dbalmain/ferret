@@ -51,6 +51,7 @@ static void test_stacktrace(tst_case *tc, void *data)
 {
     FILE *old_stream = x_exception_stream;
     (void)data; /* suppress warning */
+    (void)tc;   /* won't be used when no variadic arg macro support */
 
     x_exception_stream = tmpfile();
     print_stacktrace();

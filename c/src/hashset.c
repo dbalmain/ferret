@@ -122,7 +122,7 @@ int hs_add_safe(HashSet *hs, void *elem)
     return true;
 }
 
-void *hs_rem(HashSet *hs, void *elem)
+void *hs_rem(HashSet *hs, const void *elem)
 {
     void *return_elem;
     HashSetEntry *entry = (HashSetEntry *)h_get(hs->ht, elem);
@@ -150,7 +150,7 @@ void *hs_rem(HashSet *hs, void *elem)
     return return_elem;
 }
 
-int hs_del(HashSet *hs, void *elem)
+int hs_del(HashSet *hs, const void *elem)
 {
     void *tmp_elem = hs_rem(hs, elem);
     if (tmp_elem != NULL) {
@@ -160,7 +160,7 @@ int hs_del(HashSet *hs, void *elem)
     return 0;
 }
 
-HashKeyStatus hs_exists(HashSet *hs, void *elem)
+HashKeyStatus hs_exists(HashSet *hs, const void *elem)
 {
     return h_has_key(hs->ht, elem);
 }
@@ -178,8 +178,8 @@ HashSet *hs_merge(HashSet *hs, HashSet * other)
     return hs;
 }
 
-void *hs_orig(HashSet *hs, void *elem)
+void *hs_orig(HashSet *hs, const void *elem)
 {
-    HashSetEntry *entry = h_get(hs->ht, elem);
+    HashSetEntry *entry = (HashSetEntry *)h_get(hs->ht, elem);
     return entry ? entry->elem : NULL;
 }

@@ -507,11 +507,11 @@ static const int K = 1000;
 static char *under_1000(int val)
 {
     const char *hundreds = (val >= 100) ? DIGITS[val/100] : "";
-    const char *and = "";
+    const char *_and = "";
     const char *tens = "";
     const char *digits = "";
     int mod100 = val%100;
-    if (val >= 100) and = ((val%100) > 0) ? "hundred and " : "hundred ";
+    if (val >= 100) _and = ((val%100) > 0) ? "hundred and " : "hundred ";
     if (mod100 > 0 && mod100 < 10) {
         tens = DIGITS[mod100];
     } else if (mod100 >= 10 && mod100 < 20) {
@@ -520,7 +520,7 @@ static char *under_1000(int val)
         tens = TENS[mod100/10];
         if (mod100%10) digits = DIGITS[mod100%10];
     }
-    return strfmt("%s%s%s%s", hundreds, and, tens, digits);
+    return strfmt("%s%s%s%s", hundreds, _and, tens, digits);
 }
 
 static char *group(int val, int level)

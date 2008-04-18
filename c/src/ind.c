@@ -197,7 +197,8 @@ bool index_is_deleted(Index *self, int doc_num)
     return is_del;
 }
 
-static INLINE void index_del_doc_with_key_i(Index *self, Document *doc, HashSet *key)
+static INLINE void index_del_doc_with_key_i(Index *self, Document *doc,
+                                            HashSet *key)
 {
     Query *q;
     TopDocs *td;
@@ -205,7 +206,7 @@ static INLINE void index_del_doc_with_key_i(Index *self, Document *doc, HashSet 
     HashSetEntry *hse;
 
     if (key->size == 1) {
-        char *field = key->first->elem;
+        char *field = (char *)key->first->elem;
         ensure_writer_open(self);
         df = doc_get_field(doc, field);
         if (df) {
@@ -218,7 +219,7 @@ static INLINE void index_del_doc_with_key_i(Index *self, Document *doc, HashSet 
     ensure_searcher_open(self);
 
     for (hse = key->first; hse; hse = hse->next) {
-        char *field = hse->elem;
+        char *field = (char *)hse->elem;
         df = doc_get_field(doc, field);
         if (!df) continue;
         bq_add_query(q, tq_new(field, df->data[0]), BC_MUST);

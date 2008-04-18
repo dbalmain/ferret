@@ -13,7 +13,7 @@ static void test_mp_default_capa(tst_case *tc, void *data)
 
 struct MemChecker {
     int size;
-    char vals[];
+    char vals[1];
 };
 
 #define NUM_ALLOCS 10000
@@ -29,7 +29,7 @@ static void do_mp_test(tst_case *tc, MemoryPool *mp)
     for (i = 0; i < NUM_ALLOCS; i++) {
         int size = rand() % MAX_SIZE;
         total_bytes += size + sizeof(int);
-        mem_checkers[i] = mp_alloc(mp, size + sizeof(int));
+        mem_checkers[i] = (struct MemChecker *)mp_alloc(mp, size + sizeof(int));
         mem_checkers[i]->size =  size;
     }
     for (i = 0; i < NUM_ALLOCS; i++) {
@@ -79,11 +79,11 @@ static void test_mp_alloc(tst_case *tc, void *data)
     Asequal("012345678901234", t);
     Aiequal(strlen(t) + 1, mp_used(mp));
 
-    t = mp_memdup(mp, "012345678901234", 10);
+    t = (char *)mp_memdup(mp, "012345678901234", 10);
     Asnequal("012345678901234", t, 10);
     Aiequal(30, mp_used(mp));
 
-    t = mp_strndup(mp, "012345678", 9);
+    t = (char *)mp_strndup(mp, "012345678", 9);
     Asequal("012345678", t);
     Aiequal(40, mp_used(mp)); /* Stays in the same chunk */
 

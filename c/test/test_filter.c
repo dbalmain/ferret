@@ -247,7 +247,7 @@ static float odd_number_filter(int doc_num, float score, Searcher *sea, void *ar
 {
     float is_ok = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
     (void)arg;
@@ -265,7 +265,7 @@ static float distance_filter(int doc_num, float score, Searcher *sea, void *arg)
     int start_point = *((int *)arg);
     float distance = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
 
@@ -280,7 +280,9 @@ static void test_filter_func(tst_case *tc, void *data)
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
     Filter *rf = rfilt_new(num, "2", "6", true, true);
-    PostFilter odd_filter = (PostFilter){&odd_number_filter, NULL};
+    PostFilter odd_filter;
+    odd_filter.filter_func = odd_number_filter;
+    odd_filter.arg = NULL;
 
     check_filtered_hits(tc, searcher, q, NULL,
                         &odd_filter, "0,2,4,6,8", -1);
@@ -296,7 +298,9 @@ static void test_score_altering_filter_func(tst_case *tc, void *data)
     Query *q = maq_new();
     Filter *rf = rfilt_new(num, "4", "8", true, true);
     int start_point = 7;
-    PostFilter dist_filter = (PostFilter){&distance_filter, &start_point};
+    PostFilter dist_filter;
+    dist_filter.filter_func = &distance_filter;
+    dist_filter.arg = &start_point;
 
     check_filtered_hits(tc, searcher, q, NULL,
                         &dist_filter, "7,6,8,5,9,4,3,2,1,0", -1);
