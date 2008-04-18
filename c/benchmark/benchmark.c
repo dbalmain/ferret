@@ -81,6 +81,9 @@ static void bm_single_run(BenchMarkUnit *unit, BenchMarkTimes *bm_times)
         ((double)(tms_after.tms_stime - tms_before.tms_stime))/hertz;
 }
 
+#define DO_SETUP(bm) if (bm->setup) bm->setup();
+#define DO_TEARDOWN(bm) if (bm->teardown) bm->teardown();
+
 static void bm_run(BenchMark *benchmark)
 {
     int i;
@@ -94,9 +97,11 @@ static void bm_run(BenchMark *benchmark)
     }
     if (benchmark->count > 1) {
         for (i = 0; i < benchmark->count; i++) {
+            DO_SETUP(benchmark);
             for (unit = benchmark->head; unit; unit = unit->next) {
                 bm_single_run(unit, unit->times[i]);
             }
+            DO_TEARDOWN(benchmark);
         }
         for (unit = benchmark->head; unit; unit = unit->next) {
             double rtime = 0.0, utime = 0.0, stime = 0.0;
@@ -118,9 +123,11 @@ static void bm_run(BenchMark *benchmark)
         }
     }
     else {
+        DO_SETUP(benchmark);
         for (unit = benchmark->head; unit; unit = unit->next) {
             bm_single_run(unit, &(unit->final_times));
         }
+        DO_TEARDOWN(benchmark);
     }
     
     /* get maximum unit name length for print out */
@@ -153,9 +160,15 @@ int main(int argc, const char *const argv[])
     hertz = sysconf(_SC_CLK_TCK);
 
     for (i = 0; i < NELEMS(all_benchmarks); i++) {
+        if (argc == 2) {
+            if (!strstr(all_benchmarks[i].name, argv[1])) {
+                continue;
+            }
+        }
         printf("\nBenching [%s]...\n", all_benchmarks[i].name);
         benchmark.count = 1;
         benchmark.discard = 0;
+        benchmark.setup = benchmark.teardown = NULL;
         all_benchmarks[i].initialize(&benchmark);
         bm_run(&benchmark);
         bm_clear(&benchmark);

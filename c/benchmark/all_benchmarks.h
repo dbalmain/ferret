@@ -7,6 +7,7 @@
 void bm_strcmp_when_length_is_known(BenchMark *bm);
 void bm_hash_implementations(BenchMark *bm);
 void bm_specialized_string_hash(BenchMark *bm);
+void bm_bitvector_implementations(BenchMark *bm);
 
 const struct BenchMarkList
 {
@@ -15,7 +16,8 @@ const struct BenchMarkList
 } all_benchmarks[] = {
     {bm_strcmp_when_length_is_known, "strcmp_when_length_is_known"},
     {bm_hash_implementations, "hash_implementations"},
-    {bm_specialized_string_hash, "specialized_string_hash"}
+    {bm_specialized_string_hash, "specialized_string_hash"},
+    {bm_bitvector_implementations, "bitvector_implementations"}
 };
 
 #endif

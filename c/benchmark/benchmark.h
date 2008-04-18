@@ -31,12 +31,16 @@ typedef struct BenchMarkUnit {
 typedef struct BenchMark {
     int            count;   /* the number of bench runs to complete */
     int            discard; /* the number of outliers to discard */
+    void           (*setup)();
+    void           (*teardown)();
     BenchMarkUnit *head;
     BenchMarkUnit *tail;
 } BenchMark;
 
 void bm_add(BenchMark *benchmark, bm_run_ft call, const char *name);
 
+#define BM_SETUP(func) bm->setup = &func;
+#define BM_TEARDOWN(func) bm->teardown = &func;
 #define BM_ADD(call) bm_add(bm, &call, #call)
 #define BM_COUNT(num) bm->count = num;
 #define BM_DISCARD(num) bm->discard = num;

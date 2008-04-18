@@ -57,6 +57,7 @@ static void stdcpp_hash()
     }
 }
 
+# ifdef HAVE_SPARSE_HASH
 using google::dense_hash_map;
 
 static void google_dense_hash()
@@ -91,6 +92,7 @@ static void google_sparse_hash()
         }
     }
 }
+# endif
 
 //using std::hash_map;
 //
@@ -116,8 +118,10 @@ BENCH(hash_implementations)
     BM_ADD(ferret_hash);
 #ifdef __cplusplus
     BM_ADD(stdcpp_hash);
+# ifdef HAVE_SPARSE_HASH
     BM_ADD(google_dense_hash);
     BM_ADD(google_sparse_hash);
+# endif
     //BM_ADD(stlport_hash);
 #endif
 }
