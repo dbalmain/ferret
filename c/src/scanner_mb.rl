@@ -14,7 +14,7 @@ static char *position_in_mb( const unsigned long *orig_wc,
                              const unsigned long *curr_wc )
 {
     char          *mb = (char *)orig_mb;
-    unsigned long *wc = (char *)orig_wc;
+    unsigned long *wc = (unsigned long *)orig_wc;
 
     while (wc < curr_wc)
     {
@@ -26,32 +26,11 @@ static char *position_in_mb( const unsigned long *orig_wc,
     return mb;
 }
 
-#define RET do {                        \
-    *start   = position_in_mb(buf, in, ts); \
-    *end     = position_in_mb(buf, in, te); \
-    size_t __len = *end - *start - skip - trunc; \
-    *len     = __len;                   \
-    if (__len > out_size)               \
-        __len = out_size;               \
-     memcpy(out, *start + skip, __len);     \
-     out[__len] = 0;                    \
-     return;                            \
-} while(0)
+#define RET goto ret;
 
-#define STRIP(c) do {                         \
-    unsigned long *__p = ts;                  \
-    unsigned long *__o = out;                 \
-    unsigned long *__max = __p + out_size;    \
-    for (; __p <= te && __p < __max; ++__p) { \
-        if (*__p != c)                        \
-            *__o++ = *__p;                    \
-    }                                         \
-    *__o = 0;                                 \
-                                              \
-    *start = position_in_mb(buf, in, ts);                              \
-    *end   = position_in_mb(buf, in, te);                              \
-    *len   = (char *)__o - (char *)out;                       \
-    return;                                   \
+#define STRIP(c) do { \
+    strip_char = c;   \
+    goto strip;       \
 } while(0)
 
 %%{
@@ -103,7 +82,7 @@ static char *position_in_mb( const unsigned long *orig_wc,
 
 %% write data nofinal;
 
-static int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
+static int mb_next_char(unsigned long *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
     if ((num_bytes = (int)mbrtowc(wchr, s, MB_CUR_MAX, state)) < 0) {
@@ -119,63 +98,146 @@ static int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
     return num_bytes;
 }
 
-/* Function takes in a multibyte string, converts it to wide-chars and
-   then tokenizes that. */
-void frt_std_scan_mb(const char *in, size_t in_size,
-                 char *out, size_t out_size,
-                 char **start, char **end,
-                 int *len)
+static int wc_next_char(char *s, const unsigned long *wchr, mbstate_t *state)
 {
-    int cs, act;
-    unsigned long *ts, *te = 0;
+    return (int)wcrtomb(s, *wchr, state);
+}
 
-    %% write init;
+/*
+ * All input to Ragel must be in a buffer of 32bit unicode codepoints.
+ * To that end, we require that the input to the scanner must be in a
+ * codepage that mbtowc will convert to unicode codepoints.  The easy
+ * way to do this is to supply the scanner with UTF8.  It will call
+ * mbtowc on the buffer, pass it to the tokenizer which will extract
+ * one token out.  This token will then be converted back with wctomb.
+ *
+ * frt_std_scan_mb takes in a pointer to the mb buffer +inmb+ that has
+ * max size +in_size+.  The resulting token will be stored in +outmb+,
+ * with at most +out_size+ bytes written.
+ *
+ * While tokenizing, part of the token may be stripped out. Eg,
+ * 'foo!!' will become 'foo', and 'http://www.bar.com' will become
+ * 'www.bar.com'.  So that the caller can track what exactly has been
+ * tokenized in +inmb+, +startmb+ and +endmb+ are set to point to the
+ * extremeties of the original unmodified token in +inmb+.
+ *
+ * The size of the token written out to +outmb+ is stored in
+ * +token_size+.
+ */
 
-    unsigned long buf[4096] = {0};
-    unsigned long *bufp = buf;
-    char *inp = (char *)in;
+static void mb_to_wc(const char *in, size_t in_size,
+                     unsigned long *out, size_t out_size)
+{
     mbstate_t state;
+    char *in_p           = (char *)in;
+    unsigned long *out_p = out;
     ZEROSET(&state, mbstate_t);
-    printf ("TRYING TO PARSE: '%s'\n", in);
-    while (inp < (in + in_size) && bufp < (buf + sizeof(buf)/sizeof(*buf)))
+
+    while (in_p < (in + in_size) && out_p < (out + out_size/sizeof(*out)))
     {
-        if (!*inp)
+        if (!*in_p)
             break;
 
-        int n = mb_next_char((wchar_t *)bufp, inp, &state);
+        int n = mb_next_char(out_p, in_p, &state);
         if (n < 0)
         {
-            printf ("Error parsing input\n");
-            ++inp;
+            ++in_p;
             continue;
         }
 
         /* We can break out early here on, say, a space XXX */
-        inp += n;
-        ++bufp;
+        in_p += n;
+        ++out_p;
+    }
+}
+
+static void wc_to_mb(char *out, size_t out_size, int *token_size,
+                     const unsigned long *in_wc, size_t in_wc_size)
+{
+    mbstate_t state;
+    char *out_p = out;
+    const unsigned long *in_wc_p = in_wc;
+    ZEROSET(&state, mbstate_t);
+    *token_size = 0;
+
+    while (out_p < (out + out_size) && in_wc_p < (in_wc + in_wc_size))
+    {
+        if (!*in_wc_p)
+            break;
+
+        int n = wc_next_char(out_p, in_wc_p, &state);
+        if (n < 0)
+        {
+            ++in_wc_p;
+            continue;
+        }
+
+        out_p += n;
+        ++in_wc_p;
     }
 
-    printf ("parsed: %d\n", inp - in);
-    wprintf (L"%ls\n", buf);
-    printf ("%04x\n", buf[5]);
+    *token_size = out_p - out;
+}
 
-    unsigned long *p = (unsigned long *)buf;
+void frt_std_scan_mb(const char *in_mb, size_t in_mb_size,
+                 char *out_mb, size_t out_mb_size,
+                 char **start_mb, char **end_mb,
+                 int *token_size)
+{
+    int cs, act;
+    unsigned long *ts = 0, *te = 0;
+
+    %% write init;
+
+    unsigned long in_wc[4096] = {0};
+    unsigned long out_wc[4096] = {0};
+    mb_to_wc(in_mb, in_mb_size, in_wc, sizeof(in_wc));
+
+    unsigned long *p = in_wc;
     unsigned long *pe = 0;
     unsigned long *eof = pe;
-    *len = 0;
     int skip = 0;
     int trunc = 0;
+    unsigned long strip_char = 0;
+
+    *end_mb = 0;
+    *start_mb = 0;
+    *token_size = 0;
 
     %% write exec;
 
     if ( cs == StdTokMb_error )
+                   fwprintf(stderr, L"PARSE ERROR\n");
+    else if ( ts ) fwprintf(stderr, L"STUFF LEFT: '%ls'\n", ts);
+    return;
+
+ ret:
     {
-        fprintf(stderr, "PARSE ERROR\n" );
+        *start_mb   = position_in_mb(in_wc, in_mb, ts);
+        *end_mb     = position_in_mb(in_wc, in_mb, te);
+
+        size_t __len = te - ts - skip - trunc;
+        memcpy(out_wc, ts + skip, __len*sizeof(unsigned long));
+
+        wc_to_mb(out_mb, out_mb_size, token_size, out_wc, sizeof(out_wc));
+        out_mb[*token_size] = 0;
         return;
     }
 
-    if ( ts )
+ strip:
     {
-        fwprintf(stderr, L"STUFF LEFT: '%ls'\n", ts);
+        *start_mb = position_in_mb(in_wc, in_mb, ts);
+        *end_mb   = position_in_mb(in_wc, in_mb, te);
+
+        size_t __len = te - ts - skip - trunc;
+        unsigned long *__p = ts + skip;
+        unsigned long *__o = out_wc;
+        for (; __p < (ts + skip + __len); ++__p) {
+            if (*__p != strip_char)
+                *__o++ = *__p;
+        }
+
+        wc_to_mb(out_mb, out_mb_size, token_size, out_wc, sizeof(out_wc));
+        out_mb[*token_size] = 0;
     }
 }
