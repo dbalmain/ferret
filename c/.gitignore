@@ -3,3 +3,4 @@ search_bench
 bench
 .rake
 .deps
+.gcov
