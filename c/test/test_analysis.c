@@ -3,6 +3,7 @@
 #include <string.h>
 #include <locale.h>
 #include <libstemmer.h>
+#include "internal.h"
 
 #define test_token(mtk, mstr, mstart, mend) \
   tt_token(mtk, mstr, mstart, mend, tc, __LINE__)

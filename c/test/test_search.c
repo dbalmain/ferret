@@ -4,6 +4,7 @@
 #include "array.h"
 #include "helper.h"
 #include "testhelper.h"
+#include "internal.h"
 
 #define ARRAY_SIZE 40
 
