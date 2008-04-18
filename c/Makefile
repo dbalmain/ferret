@@ -65,6 +65,9 @@ BZLIB_OBJS = $(BZLIB_SRCS:%.c=$(BZLIB_DIR)/%.o)
 include $(STEMMER_DIR)/mkinc.mak
 STEMMER_OBJS = $(snowball_sources:%.c=$(STEMMER_DIR)/%.o)
 
+FRT_OBJS = $(OBJS) $(TEST_OBJS)
+EXT_OBJS = $(BZLIB_OBJS) $(STEMMER_OBJS)
+
 ###
 # Common Targets
 ###
@@ -84,8 +87,13 @@ testall: $(TEST_OBJS) libferret.a
 	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
-	@rm -rf *.o *.a *.gcda *.gcov *.gcno testall gmon.out \
-                load_bench bench search_bench sort_bench $(DEP_DIR) $(GCOV_DIR)
+	@rm -f  $(FRT_OBJS) $(FRT_OBJS:%.o=%.gcov) $(FRT_OBJS:%.o=%.gcno)
+	@rm -f  libferret.a testall gmon.out
+	@rm -f  load_bench bench search_bench sort_bench
+	@rm -rf $(DEP_DIR) $(GCOV_DIR)
+
+realclean: clean
+	@rm -f $(EXT_OBJS) $(EXT_OBJS:%.o=%.gcov) $(EXT_OBJS:%.o=%.gcno)
 
 ###
 # Profiling + coverage
@@ -126,7 +134,7 @@ load_bench bench search_bench sort_bench: libferret.a
 ###
 
 %.o : %.c
-	@mkdir -p $(DEP_DIR)
+	@mkdir -p `dirname $(DEP_DIR)/$*.P`
 	@echo Compiling: $< ...
 	@$(COMPILE.c) -MD -o $@ $<
 	@cp $*.d $(DEP_DIR)/$*.P; \
