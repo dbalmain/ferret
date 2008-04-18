@@ -144,7 +144,11 @@ CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread -lz"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
-CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common #{DEFS} -std=c99"
+CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS}"
+
+if (File.exists?(`which gdb 2> /dev/null`.chomp))
+  CFLAGS << " -DHAVE_GDB"
+end
 
 if ENV['USE_CPP']
   CC[1,2] = '++'

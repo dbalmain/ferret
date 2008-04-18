@@ -11,6 +11,7 @@
 
 #define FRT_MAX_WORD_SIZE 255
 #define FRT_MAX_FILE_PATH 1024
+#define FRT_BUFFER_SIZE 1024
 
 #if defined(__GNUC__) && !defined(__cplusplus)
 # define FRT_INLINE __inline__

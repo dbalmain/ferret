@@ -4,3 +4,4 @@ bench
 .rake
 .deps
 .gcov
+.gdb-bt

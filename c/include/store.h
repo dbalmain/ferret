@@ -7,7 +7,6 @@
 #include "hashset.h"
 #include "threading.h"
 
-#define FRT_BUFFER_SIZE 1024
 #define FRT_LOCK_PREFIX "ferret-"
 #define FRT_LOCK_EXT ".lck"
 
