@@ -246,6 +246,7 @@
 #define Offset                  FrtOffset
 #define OutStream               FrtOutStream
 #define PerFieldAnalyzer        FrtPerFieldAnalyzer
+#define PhrasePosition          FrtPhrasePosition
 #define PhraseQuery             FrtPhraseQuery
 #define PostFilter              FrtPostFilter
 #define Posting                 FrtPosting
@@ -286,6 +287,7 @@
 #define StringIndex             FrtStringIndex
 #define TVField                 FrtTVField
 #define TVTerm                  FrtTVTerm
+#define Term                    FrtTerm
 #define TermDocEnum             FrtTermDocEnum
 #define TermEnum                FrtTermEnum
 #define TermInfo                FrtTermInfo
@@ -733,6 +735,18 @@
 #define si_has_separate_norms                   frt_si_has_separate_norms
 #define si_new                                  frt_si_new
 #define si_uses_compound_file                   frt_si_uses_compound_file
+#define sim_coord                               frt_sim_coord
+#define sim_create_default                      frt_sim_create_default
+#define sim_decode_norm                         frt_sim_decode_norm
+#define sim_destroy                             frt_sim_destroy
+#define sim_encode_norm                         frt_sim_encode_norm
+#define sim_idf                                 frt_sim_idf
+#define sim_idf_phrase                          frt_sim_idf_phrase
+#define sim_idf_term                            frt_sim_idf_term
+#define sim_length_norm                         frt_sim_length_norm
+#define sim_query_norm                          frt_sim_query_norm
+#define sim_sloppy_freq                         frt_sim_sloppy_freq
+#define sim_tf                                  frt_sim_tf
 #define sis_add_si                              frt_sis_add_si
 #define sis_clear                               frt_sis_clear
 #define sis_curr_seg_file_name                  frt_sis_curr_seg_file_name
@@ -795,6 +809,11 @@
 #define td_to_s                                 frt_td_to_s
 #define te_get_term                             frt_te_get_term
 #define te_get_ti                               frt_te_get_ti
+#define term_destroy                            frt_term_destroy
+#define term_eq                                 frt_term_eq
+#define term_hash                               frt_term_hash
+#define term_new                                frt_term_new
+#define term_set_new                            frt_term_set_new
 #define tf_new_i                                frt_tf_new_i
 #define thread_exit                             frt_thread_exit
 #define thread_getspecific                      frt_thread_getspecific

@@ -315,7 +315,7 @@ typedef struct FrtPhraseQuery
     FrtQuery           super;
     int             slop;
     char           *field;
-    PhrasePosition *positions;
+    FrtPhrasePosition *positions;
     int             pos_cnt;
     int             pos_capa;
 } FrtPhraseQuery;
