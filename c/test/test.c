@@ -270,28 +270,41 @@ static int report(TestSuite *suite)
         dptr = dptr->next;
     }
     fprintf(stdout, "===================================================\n");
+    msg_bufp = '\0';
     fprintf(stdout, "\n%s\n", msg_buf);
     return 1;
 }
 
 static const char *curr_err_func = "";
+
 #define MSG_BUF_HAVE sizeof(msg_buf) - (msg_bufp - msg_buf) - 1
-#define APPEND(fmt) msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt)
-#define APPEND1(fmt, arg1)\
-    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1)
-#define APPEND2(fmt, arg1, arg2)\
-    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1, arg2);
-#define APPEND3(fmt, arg1, arg2, arg3)\
-    msg_bufp += snprintf(msg_bufp, MSG_BUF_HAVE, fmt, arg1, arg2, arg3);
-#define VAPPEND(args)\
-    msg_bufp += vsnprintf(msg_bufp, MSG_BUF_HAVE, fmt, args);
+static void vappend_to_msg_buf(const char *fmt, va_list args)
+{
+    int v = vsnprintf(msg_bufp, MSG_BUF_HAVE, fmt, args);
+    if (v < 0) {
+        RAISE(EXCEPTION, "Error: can't write to test message buffer\n");
+    }
+    else {
+        msg_bufp += v;
+    }
+}
+
+static void append_to_msg_buf(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    vappend_to_msg_buf(fmt, args);
+    va_end(args);
+}
+
 
 static void Tstack()
 {
     if (show_stack) {
         char *stack = get_stacktrace();
         if (stack) {
-            APPEND1("\n\nStack trace:\n%s\n", stack);
+            append_to_msg_buf("\n\nStack trace:\n%s\n", stack);
             free(stack);
         }
     }
@@ -300,7 +313,7 @@ static void Tstack()
 static void vTmsg_nf(const char *fmt, va_list args)
 {
     if (verbose) {
-        VAPPEND(args);
+        vappend_to_msg_buf(fmt, args);
         Tstack();
     }
 }
@@ -308,10 +321,10 @@ static void vTmsg_nf(const char *fmt, va_list args)
 void vTmsg(const char *fmt, va_list args)
 {
     if (verbose) {
-        APPEND("\t");
-        VAPPEND(args);
+        append_to_msg_buf("\t");
+        vappend_to_msg_buf(fmt, args);
         va_end(args);
-        APPEND("\n");
+        append_to_msg_buf("\n");
 
         Tstack();
     }
@@ -346,16 +359,16 @@ void tst_msg(const char *func, const char *fname, int line_num,
 
     if (verbose) {
         if (strcmp(curr_err_func, func) != 0) {
-            APPEND1("\n%s\n", func);
+            append_to_msg_buf("\n%s\n", func);
             for (i = strlen(func) + 2; i > 0; --i)
-                APPEND("=");
-            APPEND("\n");
+                append_to_msg_buf("=");
+            append_to_msg_buf("\n");
             curr_err_func = func;
         }
-        APPEND3("%3d)\n\t%s:%d\n\t", f_cnt, fname, line_num);
+        append_to_msg_buf("%3d)\n\t%s:%d\n\t", f_cnt, fname, line_num);
 
         va_start(args, fmt);
-        VAPPEND(args);
+        vappend_to_msg_buf(fmt, args);
         va_end(args);
 
         Tstack();
