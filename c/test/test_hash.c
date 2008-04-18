@@ -13,7 +13,7 @@ static int *malloc_int(int val)
 /**
  * Basic test for string HashTable. Make sure string can be retrieved
  */
-static void test_hash_str(tst_case *tc, void *data)
+static void test_hash_str(TestCase *tc, void *data)
 {
     HashTable *ht = h_new_str(NULL, &free);
     (void)data; /* suppress unused argument warning */
@@ -64,7 +64,7 @@ static Point *point_new(int x, int y)
  * Basic test for standard HashTable. Make sure a non-string structure can be
  * used to key the HashTable
  */
-static void test_hash_point(tst_case *tc, void *data)
+static void test_hash_point(TestCase *tc, void *data)
 {
     Point *p1 = point_new(1, 2);
     Point *p2 = point_new(2, 1);
@@ -108,7 +108,7 @@ static void test_hash_point(tst_case *tc, void *data)
  * integers as the key.
  */
 #define HASH_INT_TEST_SIZE 1000
-static void test_hash_int(tst_case *tc, void *data)
+static void test_hash_int(TestCase *tc, void *data)
 {
     int i;
     HashTable *ht = h_new_int(&free);
@@ -160,7 +160,7 @@ static void test_hash_int(tst_case *tc, void *data)
  * don't take too long.
  */
 #define STRESS_SIZE 1000
-static void stress_hash(tst_case *tc, void *data)
+static void stress_hash(TestCase *tc, void *data)
 {
     int i, j, k;
     char buf[20];
@@ -210,7 +210,7 @@ static void stress_hash(tst_case *tc, void *data)
  * Test that the hash table is ok while constantly growing and shrinking in
  * size
  */
-static void test_hash_up_and_down(tst_case *tc, void *data)
+static void test_hash_up_and_down(TestCase *tc, void *data)
 {
     int i, j;
     char buf[20];
@@ -267,7 +267,7 @@ static void test_each_ekv(void *key, void *value, HashTable *ht)
  *
  * There is also a test in here of the h_each method.
  */
-static void test_hash_each_and_clone(tst_case *tc, void *data)
+static void test_hash_each_and_clone(TestCase *tc, void *data)
 {
     char *strs[] =
         { "one", "two", "three", "four", "five", "six", "seven", NULL };
@@ -353,7 +353,7 @@ static struct StringArray *h_extract_strings(HashTable *ht)
  * Again, test the h_each function, this time testing the example given in the
  * documentation for the each function.
  */
-static void test_hash_extract_strings(tst_case *tc, void *data)
+static void test_hash_extract_strings(TestCase *tc, void *data)
 {
     int i;
     struct StringArray *str_arr;
@@ -385,7 +385,7 @@ static void test_hash_extract_strings(tst_case *tc, void *data)
     free(str_arr);
 }
 
-tst_suite *ts_hash(tst_suite *suite)
+TestSuite *ts_hash(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

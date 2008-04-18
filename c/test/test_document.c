@@ -1,7 +1,7 @@
 #include "document.h"
 #include "test.h"
 
-void test_df_standard(tst_case * tc, void *data)
+void test_df_standard(TestCase *tc, void *data)
 {
     char *s;
     DocField *df;
@@ -26,7 +26,7 @@ void test_df_standard(tst_case * tc, void *data)
     df_destroy(df);
 }
 
-void test_df_multi_fields(tst_case * tc, void *data)
+void test_df_multi_fields(TestCase *tc, void *data)
 {
     int i;
     char *s;
@@ -66,7 +66,7 @@ void test_df_multi_fields(tst_case * tc, void *data)
     df_destroy(df);
 }
 
-void test_doc(tst_case * tc, void *data)
+void test_doc(TestCase *tc, void *data)
 {
     int i;
     Document *doc;
@@ -114,7 +114,7 @@ void test_doc(tst_case * tc, void *data)
     doc_destroy(doc);
 } 
 
-void test_double_field_exception(tst_case * tc, void *data)
+void test_double_field_exception(TestCase *tc, void *data)
 {
     volatile bool exception_thrown = false;
     Document *doc;
@@ -141,7 +141,7 @@ void test_double_field_exception(tst_case * tc, void *data)
     doc_destroy(doc);
 }
 
-tst_suite *ts_document(tst_suite * suite)
+TestSuite *ts_document(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

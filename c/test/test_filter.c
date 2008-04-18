@@ -51,7 +51,7 @@ void prepare_filter_index(Store *store)
     return;
 }
 
-static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
+static void check_filtered_hits(TestCase *tc, Searcher *searcher, Query *query,
                                 Filter *f, PostFilter *post_filter,
                                 char *expected_hits, char top)
 {
@@ -90,7 +90,7 @@ static void check_filtered_hits(tst_case *tc, Searcher *searcher, Query *query,
     td_destroy(top_docs);
 }
 
-extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                        char *expected_hits, char top);
 
 #define TEST_TO_S(mstr, mfilt) \
@@ -100,7 +100,7 @@ extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
         free(fstr);\
     } while (0)
 
-static void test_range_filter(tst_case *tc, void *data)
+static void test_range_filter(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
@@ -139,7 +139,7 @@ static void test_range_filter(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_range_filter_hash(tst_case *tc, void *data)
+static void test_range_filter_hash(TestCase *tc, void *data)
 {
     Filter *f1, *f2;
     (void)data;
@@ -195,7 +195,7 @@ static void test_range_filter_hash(tst_case *tc, void *data)
     filt_deref(f1);
 }
 
-static void test_query_filter(tst_case *tc, void *data)
+static void test_query_filter(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *bq;
@@ -218,7 +218,7 @@ static void test_query_filter(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_query_filter_hash(tst_case *tc, void *data)
+static void test_query_filter_hash(TestCase *tc, void *data)
 {
     Filter *f1, *f2;
     (void)data;
@@ -275,7 +275,7 @@ static float distance_filter(int doc_num, float score, Searcher *sea, void *arg)
     return distance;
 }
 
-static void test_filter_func(tst_case *tc, void *data)
+static void test_filter_func(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
@@ -292,7 +292,7 @@ static void test_filter_func(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_score_altering_filter_func(tst_case *tc, void *data)
+static void test_score_altering_filter_func(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q = maq_new();
@@ -310,7 +310,7 @@ static void test_score_altering_filter_func(tst_case *tc, void *data)
     q_deref(q);
 }
 
-tst_suite *ts_filter(tst_suite *suite)
+TestSuite *ts_filter(TestSuite *suite)
 {
     Store *store;
     IndexReader *ir;

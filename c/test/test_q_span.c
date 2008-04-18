@@ -3,8 +3,8 @@
 
 #define ARRAY_SIZE 20
 #define TEST_SE(query, ir, expected) do { \
-    SpanEnum * __se = ((SpanQuery *)query)->get_spans(query, ir); \
-    char * __tmp = __se->to_s(__se);                              \
+    SpanEnum *__se = ((SpanQuery *)query)->get_spans(query, ir); \
+    char *__tmp = __se->to_s(__se);                              \
     Asequal(expected, __tmp);                                     \
     __se->destroy(__se);                                          \
     free(__tmp);                                                  \
@@ -71,10 +71,10 @@ static void span_test_setup(Store *store)
     iw_close(iw);
 }
 
-extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                        char *expected_hits, char top);
 
-static void test_span_term(tst_case *tc, void *data)
+static void test_span_term(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -102,7 +102,7 @@ static void test_span_term(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_term_hash(tst_case *tc, void *data)
+static void test_span_term_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -128,7 +128,7 @@ static void test_span_term_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-static void test_span_multi_term(tst_case *tc, void *data)
+static void test_span_multi_term(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -171,7 +171,7 @@ static void test_span_multi_term(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_multi_term_hash(tst_case *tc, void *data)
+static void test_span_multi_term_hash(TestCase *tc, void *data)
 {
     Query *q1 = spanmtq_new_conf(field, 100);
     Query *q2 = spanmtq_new(field);
@@ -201,13 +201,13 @@ static void test_span_multi_term_hash(tst_case *tc, void *data)
     q_deref(q2);
 }
 
-static void test_span_prefix(tst_case *tc, void *data)
+static void test_span_prefix(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
     Searcher *sea;
     Query *prq;
-    char * tmp;
+    char *tmp;
 
     ir = ir_open(store);
     sea = isea_new(ir);
@@ -232,7 +232,7 @@ static void test_span_prefix(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_prefix_hash(tst_case *tc, void *data)
+static void test_span_prefix_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -257,7 +257,7 @@ static void test_span_prefix_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-static void test_span_first(tst_case *tc, void *data)
+static void test_span_first(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -281,7 +281,7 @@ static void test_span_first(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_first_hash(tst_case *tc, void *data)
+static void test_span_first_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -307,7 +307,7 @@ static void test_span_first_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-static void test_span_or(tst_case *tc, void *data)
+static void test_span_or(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -333,7 +333,7 @@ static void test_span_or(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_or_hash(tst_case *tc, void *data)
+static void test_span_or_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -365,7 +365,7 @@ static void test_span_or_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-static void test_span_near(tst_case *tc, void *data)
+static void test_span_near(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -413,7 +413,7 @@ static void test_span_near(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_near_hash(tst_case *tc, void *data)
+static void test_span_near_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -466,7 +466,7 @@ static void test_span_near_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-static void test_span_not(tst_case *tc, void *data)
+static void test_span_not(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexReader *ir;
@@ -520,7 +520,7 @@ static void test_span_not(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_span_not_hash(tst_case *tc, void *data)
+static void test_span_not_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -556,7 +556,7 @@ static void test_span_not_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-tst_suite *ts_q_span(tst_suite *suite)
+TestSuite *ts_q_span(TestSuite *suite)
 {
     Store *store = open_ram_store();
     span_test_setup(store);

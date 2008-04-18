@@ -1,7 +1,7 @@
 #include "helper.h"
 #include "test.h"
 
-static void test_hlp_string_diff(tst_case *tc, void *data)
+static void test_hlp_string_diff(TestCase *tc, void *data)
 {
     (void)data; /* suppress unused argument warning */
 
@@ -12,7 +12,7 @@ static void test_hlp_string_diff(tst_case *tc, void *data)
     Aiequal(4, hlp_string_diff("bookstop", "bookworm"));
 }
 
-void test_byte2float(tst_case *tc, void *data)
+void test_byte2float(TestCase *tc, void *data)
 {
     int i;
     (void)data;
@@ -22,7 +22,7 @@ void test_byte2float(tst_case *tc, void *data)
     }
 }
 
-void test_int2float(tst_case *tc, void *data)
+void test_int2float(TestCase *tc, void *data)
 {
     int i;
     (void)data;
@@ -35,7 +35,7 @@ void test_int2float(tst_case *tc, void *data)
     }
 }
 
-tst_suite *ts_helper(tst_suite *suite)
+TestSuite *ts_helper(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

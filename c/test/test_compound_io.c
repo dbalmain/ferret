@@ -3,7 +3,7 @@
 #include "testhelper.h"
 #include "test.h"
 
-void test_compound_reader(tst_case *tc, void *data)
+void test_compound_reader(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     char *p;
@@ -32,7 +32,7 @@ void test_compound_reader(tst_case *tc, void *data)
     store_deref(c_reader);
 }
 
-void test_compound_writer(tst_case *tc, void *data)
+void test_compound_writer(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     char *p;
@@ -62,7 +62,7 @@ void test_compound_writer(tst_case *tc, void *data)
     is_close(is);
 }
 
-void test_compound_io(tst_case *tc, void *data)
+void test_compound_io(TestCase *tc, void *data)
 {
     Store *c_reader;
     InStream *is1, *is2, *is3;
@@ -115,7 +115,7 @@ void test_compound_io(tst_case *tc, void *data)
 #define MAX_TEST_WORDS 50
 #define TEST_FILE_CNT 100
 
-void test_compound_io_many_files(tst_case *tc, void *data)
+void test_compound_io_many_files(TestCase *tc, void *data)
 {
     static const int MAGIC = 250777;
 
@@ -153,7 +153,7 @@ void test_compound_io_many_files(tst_case *tc, void *data)
     store_deref(c_reader);
 }
 
-tst_suite *ts_compound_io(tst_suite *suite)
+TestSuite *ts_compound_io(TestSuite *suite)
 {
     Store *store = open_ram_store();
 

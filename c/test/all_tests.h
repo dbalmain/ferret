@@ -3,45 +3,45 @@
 
 #include "test.h"
 
-extern tst_suite *ts_test(tst_suite *suite);
-extern tst_suite *ts_global(tst_suite *suite);
-extern tst_suite *ts_except(tst_suite *suite);
-extern tst_suite *ts_array(tst_suite *suite);
-extern tst_suite *ts_hash(tst_suite *suite);
-extern tst_suite *ts_hashset(tst_suite *suite);
-extern tst_suite *ts_bitvector(tst_suite *suite);
-extern tst_suite *ts_priorityqueue(tst_suite *suite);
-extern tst_suite *ts_helper(tst_suite *suite);
-extern tst_suite *ts_mem_pool(tst_suite *suite);
-extern tst_suite *ts_fs_store(tst_suite *suite);
-extern tst_suite *ts_ram_store(tst_suite *suite);
-extern tst_suite *ts_compound_io(tst_suite *suite);
-extern tst_suite *ts_fields(tst_suite *suite);
-extern tst_suite *ts_segments(tst_suite *suite);
-extern tst_suite *ts_document(tst_suite *suite);
-extern tst_suite *ts_multimapper(tst_suite *suite);
-extern tst_suite *ts_analysis(tst_suite *suite);
-extern tst_suite *ts_term(tst_suite *suite);
-extern tst_suite *ts_term_vectors(tst_suite *suite);
-extern tst_suite *ts_similarity(tst_suite *suite);
-extern tst_suite *ts_index(tst_suite *suite);
-extern tst_suite *ts_file_deleter(tst_suite *suite);
-extern tst_suite *ts_search(tst_suite *suite);
-extern tst_suite *ts_multi_search(tst_suite *suite);
-extern tst_suite *ts_q_fuzzy(tst_suite *suite);
-extern tst_suite *ts_q_filtered(tst_suite *suite);
-extern tst_suite *ts_q_span(tst_suite *suite);
-extern tst_suite *ts_q_const_score(tst_suite *suite);
-extern tst_suite *ts_filter(tst_suite *suite);
-extern tst_suite *ts_sort(tst_suite *suite);
-extern tst_suite *ts_q_parser(tst_suite *suite);
-extern tst_suite *ts_highlighter(tst_suite *suite);
-extern tst_suite *ts_threading(tst_suite *suite);
-extern tst_suite *ts_lang(tst_suite *suite);
+extern TestSuite *ts_test(TestSuite *suite);
+extern TestSuite *ts_global(TestSuite *suite);
+extern TestSuite *ts_except(TestSuite *suite);
+extern TestSuite *ts_array(TestSuite *suite);
+extern TestSuite *ts_hash(TestSuite *suite);
+extern TestSuite *ts_hashset(TestSuite *suite);
+extern TestSuite *ts_bitvector(TestSuite *suite);
+extern TestSuite *ts_priorityqueue(TestSuite *suite);
+extern TestSuite *ts_helper(TestSuite *suite);
+extern TestSuite *ts_mem_pool(TestSuite *suite);
+extern TestSuite *ts_fs_store(TestSuite *suite);
+extern TestSuite *ts_ram_store(TestSuite *suite);
+extern TestSuite *ts_compound_io(TestSuite *suite);
+extern TestSuite *ts_fields(TestSuite *suite);
+extern TestSuite *ts_segments(TestSuite *suite);
+extern TestSuite *ts_document(TestSuite *suite);
+extern TestSuite *ts_multimapper(TestSuite *suite);
+extern TestSuite *ts_analysis(TestSuite *suite);
+extern TestSuite *ts_term(TestSuite *suite);
+extern TestSuite *ts_term_vectors(TestSuite *suite);
+extern TestSuite *ts_similarity(TestSuite *suite);
+extern TestSuite *ts_index(TestSuite *suite);
+extern TestSuite *ts_file_deleter(TestSuite *suite);
+extern TestSuite *ts_search(TestSuite *suite);
+extern TestSuite *ts_multi_search(TestSuite *suite);
+extern TestSuite *ts_q_fuzzy(TestSuite *suite);
+extern TestSuite *ts_q_filtered(TestSuite *suite);
+extern TestSuite *ts_q_span(TestSuite *suite);
+extern TestSuite *ts_q_const_score(TestSuite *suite);
+extern TestSuite *ts_filter(TestSuite *suite);
+extern TestSuite *ts_sort(TestSuite *suite);
+extern TestSuite *ts_q_parser(TestSuite *suite);
+extern TestSuite *ts_highlighter(TestSuite *suite);
+extern TestSuite *ts_threading(TestSuite *suite);
+extern TestSuite *ts_lang(TestSuite *suite);
 
 const struct test_list
 {
-    tst_suite *(*func)(tst_suite *suite);
+    TestSuite *(*func)(TestSuite *suite);
 } all_tests[] = {
     {ts_test},
     {ts_global},

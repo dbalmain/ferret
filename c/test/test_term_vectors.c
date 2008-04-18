@@ -5,7 +5,7 @@
 #define TERM_LEN 10
 
 
-static void test_posting(tst_case *tc, void *data)
+static void test_posting(TestCase *tc, void *data)
 {
     MemoryPool *mp = (MemoryPool *)data;
     PostingList *pl;
@@ -92,7 +92,7 @@ static Offset *create_tv_offsets(MemoryPool *mp)
     return offsets;
 }
 
-static void test_tv_single_doc(tst_case *tc, void *data)
+static void test_tv_single_doc(TestCase *tc, void *data)
 {
     int i, j;
     Store *store = open_ram_store();
@@ -244,7 +244,7 @@ static void test_tv_single_doc(tst_case *tc, void *data)
     store_deref(store);
 }
 
-static void test_tv_multi_doc(tst_case *tc, void *data)
+static void test_tv_multi_doc(TestCase *tc, void *data)
 {
     int i, j;
     Store *store = open_ram_store();
@@ -384,7 +384,7 @@ static void test_tv_multi_doc(tst_case *tc, void *data)
 }
 
 
-tst_suite *ts_term_vectors(tst_suite *suite)
+TestSuite *ts_term_vectors(TestSuite *suite)
 {
     MemoryPool *mp = mp_new();
 
