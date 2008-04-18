@@ -1,0 +1,16 @@
+#ifndef ALL_TEST_H
+#define ALL_TEST_H
+
+#include "test.h"
+
+<% tests.each do |test| %>
+TestSuite *<%= test %>(TestSuite *suite);<% end %>
+
+const struct test_list
+{
+    TestSuite *(*func)(TestSuite *suite);
+} all_tests[] = {
+<%= tests.map{|test| "    {#{test}}"}.join(",\n") %>
+};
+
+#endif
