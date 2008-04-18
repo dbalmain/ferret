@@ -242,7 +242,6 @@ void dummy_free(void *p)
 #ifdef HAVE_GDB
 #define CMD_BUF_SIZE (128 + FILENAME_MAX)
 /* need to declare this as it is masked by default in linux */
-int mkstemp(char *template);
 
 static char *build_shell_command(const char *gdb_filename)
 {
