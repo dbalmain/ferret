@@ -90,7 +90,6 @@ testall: $(TEST_OBJS) libferret.a
 clean:
 	@rm -f  $(FRT_OBJS) $(FRT_OBJS:%.o=%.gcov) $(FRT_OBJS:%.o=%.gcno)
 	@rm -f  libferret.a testall gmon.out
-	@rm -f  load_bench bench search_bench sort_bench
 	@rm -rf $(DEP_DIR) $(GCOV_DIR)
 
 realclean: clean
@@ -127,7 +126,7 @@ gen_valsupp: testall
 # Benchmarking
 ###
 
-load_bench bench search_bench sort_bench: libferret.a
+# TODO
 
 ###
 # Dependency build

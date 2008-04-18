@@ -1,4 +1,5 @@
 require 'set'
+require 'erb'
 require 'rake'
 require 'rake/clean'
 
@@ -17,9 +18,9 @@ def src2obj(src)
   src.pathmap("%{.*,}p%n.o")
 end
 
-def obj_map(srcs)
+def obj_map(srcs, prefix = '')
   srcs.map do |src|
-    obj = src2obj(src)
+    obj = prefix + src2obj(src)
     FILE2SRC[obj] = src
     obj
   end
@@ -66,7 +67,7 @@ STEMMER_SRCS    = FileList[STEMMER_DIR / 'src_c/*.c',
                            STEMMER_DIR / 'runtime/api.c',
                            STEMMER_DIR / 'runtime/utilities.c',
                            STEMMER_DIR / 'libstemmer/libstemmer.c']
-STEMMER_OBJS    = obj_map(STEMMER_SRCS)
+STEMMER_OBJS    = obj_map(STEMMER_SRCS, 'lib/')
 
 if ENV['USE_ZLIB'] or ENV['USE_CPP']
   BZLIB_INC_DIR = nil
@@ -75,7 +76,7 @@ else
   BZLIB_DIR     = 'lib/bzlib'
   BZLIB_INC_DIR = BZLIB_DIR
   BZLIB_SRCS    = FileList[BZLIB_DIR / '*.c']
-  BZLIB_OBJS    = obj_map(BZLIB_SRCS)
+  BZLIB_OBJS    = obj_map(BZLIB_SRCS, 'lib/')
 end
 
 SRCS            = FileList['src/*.c']
@@ -168,10 +169,6 @@ CLEAN  .include([ '*.o',
 CLOBBER.include([ '*.a',
                   '**/*.o',
                   'testall',
-                  'load_bench',
-                  'bench',
-                  'search_bench',
-                  'sort_bench',
                   '.rake/*',
                   'gmon.out',
                   DEP_DIR,
@@ -210,6 +207,14 @@ namespace :build do
 
   file 'src/scanner.c' => 'src/scanner.rl' do
     sh "ragel -G2 src/scanner.rl -o src/scanner.c"
+  end
+
+  file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
+    tests = []
+    t.prerequisites.each{|fn| tests += File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z]+)/)}
+    File.open(t.name, 'w') do |f|
+      f.write(ERB.new(File.read('test/all_tests.erb')).result(x))
+    end
   end
 
   file 'include/internal.h' =>
