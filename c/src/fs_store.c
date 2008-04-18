@@ -405,7 +405,7 @@ static void fs_close_lock_i(Lock *lock)
     free(lock);
 }
 
-static HashTable *stores = NULL;
+static Hash *stores = NULL;
 
 #ifndef UNTHREADED
 static mutex_t stores_mutex = MUTEX_INITIALIZER;

@@ -38,7 +38,7 @@ extern char *frt_df_to_s(FrtDocField *df);
 #define FRT_DOC_INIT_CAPA 8
 typedef struct FrtDocument
 {
-    FrtHashTable *field_dict;
+    FrtHash *field_dict;
     int size;
     int capa;
     FrtDocField **fields;

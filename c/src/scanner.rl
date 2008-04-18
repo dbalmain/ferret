@@ -35,7 +35,7 @@
         token [\'][sS]? { trunc = 2; RET; };
 
         #// Token with hyphens
-        alnum+ ('-' alnum+)* { RET; };
+        alnum+ ([\-_] alnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };
@@ -65,11 +65,11 @@
 
 %% write data nofinal;
 
-void frt_scan(const char *in,
-              char *out, size_t out_size,
-              const char **start,
-              const char **end,
-              int *token_size)
+void frt_std_scan(const char *in,
+                  char *out, size_t out_size,
+                  const char **start,
+                  const char **end,
+                  int *token_size)
 {
     int cs, act;
     char *ts = 0, *te = 0;

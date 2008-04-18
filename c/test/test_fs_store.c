@@ -5,7 +5,7 @@
 /**
  * Test a FileSystem store
  */
-tst_suite *ts_fs_store(tst_suite * suite)
+TestSuite *ts_fs_store(TestSuite *suite)
 {
 
 #ifdef POSH_OS_WIN32

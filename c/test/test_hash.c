@@ -11,11 +11,11 @@ static int *malloc_int(int val)
 }
 
 /**
- * Basic test for string HashTable. Make sure string can be retrieved
+ * Basic test for string Hash. Make sure string can be retrieved
  */
-static void test_hash_str(tst_case *tc, void *data)
+static void test_hash_str(TestCase *tc, void *data)
 {
-    HashTable *ht = h_new_str(NULL, &free);
+    Hash *ht = h_new_str(NULL, &free);
     (void)data; /* suppress unused argument warning */
 
     Assert(h_get(ht, "one") == NULL, "No entries added yet");
@@ -61,15 +61,15 @@ static Point *point_new(int x, int y)
 }
 
 /**
- * Basic test for standard HashTable. Make sure a non-string structure can be
- * used to key the HashTable
+ * Basic test for standard Hash. Make sure a non-string structure can be
+ * used to key the Hash
  */
-static void test_hash_point(tst_case *tc, void *data)
+static void test_hash_point(TestCase *tc, void *data)
 {
     Point *p1 = point_new(1, 2);
     Point *p2 = point_new(2, 1);
     Point *p3 = point_new(1, 2);
-    HashTable *ht = h_new(&point_hash, &point_eq, NULL, &free);
+    Hash *ht = h_new(&point_hash, &point_eq, NULL, &free);
     (void)data; /* suppress unused argument warning */
 
     Assert(point_eq(p1, p3), "should be equal");
@@ -108,10 +108,10 @@ static void test_hash_point(tst_case *tc, void *data)
  * integers as the key.
  */
 #define HASH_INT_TEST_SIZE 1000
-static void test_hash_int(tst_case *tc, void *data)
+static void test_hash_int(TestCase *tc, void *data)
 {
     int i;
-    HashTable *ht = h_new_int(&free);
+    Hash *ht = h_new_int(&free);
     char buf[100];
     char *word;
     (void)data; /* suppress unused argument warning */
@@ -154,20 +154,20 @@ static void test_hash_int(tst_case *tc, void *data)
 }
 
 /**
- * Stress test the HashTable. This test makes sure that the HashTable still
+ * Stress test the Hash. This test makes sure that the Hash still
  * works as it grows in size. The test has been run with 20,000,000 elements
  * on a 1Gb machine, but STRESS_SIZE is kept lower generally so that the tests
  * don't take too long.
  */
 #define STRESS_SIZE 1000
-static void stress_hash(tst_case *tc, void *data)
+static void stress_hash(TestCase *tc, void *data)
 {
     int i, j, k;
     char buf[20];
     (void)data; /* suppress unused argument warning */
 
     for (k = 0; k < 1; k++) {
-        HashTable *ht = h_new_str(&free, &free);
+        Hash *ht = h_new_str(&free, &free);
         for (i = 0; i < STRESS_SIZE; i++) {
             sprintf(buf, "(%d)", i);
             if (h_get(ht, buf) != NULL) {
@@ -210,12 +210,12 @@ static void stress_hash(tst_case *tc, void *data)
  * Test that the hash table is ok while constantly growing and shrinking in
  * size
  */
-static void test_hash_up_and_down(tst_case *tc, void *data)
+static void test_hash_up_and_down(TestCase *tc, void *data)
 {
     int i, j;
     char buf[20];
 
-    HashTable *ht = h_new_str(&free, &free);
+    Hash *ht = h_new_str(&free, &free);
     (void)data; /* suppress unused argument warning */
 
     for (j = 0; j < 50; j++) {
@@ -252,7 +252,7 @@ static void test_hash_up_and_down(tst_case *tc, void *data)
 /**
  * Method used in h_each test
  */
-static void test_each_ekv(void *key, void *value, HashTable *ht)
+static void test_each_ekv(void *key, void *value, Hash *ht)
 {
     if ((strlen((char *)key) % 2) == 0) {
         h_del(ht, key);
@@ -263,17 +263,17 @@ static void test_each_ekv(void *key, void *value, HashTable *ht)
 }
 
 /**
- * Test HashTable cloning, ie. the h_clone function
+ * Test Hash cloning, ie. the h_clone function
  *
  * There is also a test in here of the h_each method.
  */
-static void test_hash_each_and_clone(tst_case *tc, void *data)
+static void test_hash_each_and_clone(TestCase *tc, void *data)
 {
     char *strs[] =
         { "one", "two", "three", "four", "five", "six", "seven", NULL };
     char **s = strs;
-    HashTable *ht = h_new_str(&free, &free);
-    HashTable *ht2;
+    Hash *ht = h_new_str(&free, &free);
+    Hash *ht2;
     (void)data; /* suppress unused argument warning */
 
     while (*s) {
@@ -336,7 +336,7 @@ static void add_string_ekv(void *key, void *value, struct StringArray *str_arr)
     str_arr->cnt++;
 }
 
-static struct StringArray *h_extract_strings(HashTable *ht)
+static struct StringArray *h_extract_strings(Hash *ht)
 {
     struct StringArray *str_arr = ALLOC(struct StringArray);
 
@@ -353,12 +353,12 @@ static struct StringArray *h_extract_strings(HashTable *ht)
  * Again, test the h_each function, this time testing the example given in the
  * documentation for the each function.
  */
-static void test_hash_extract_strings(tst_case *tc, void *data)
+static void test_hash_extract_strings(TestCase *tc, void *data)
 {
     int i;
     struct StringArray *str_arr;
     const char *strs[] = {"one", "two", "three", "four", "five"};
-    HashTable *ht = h_new_str(NULL, NULL);
+    Hash *ht = h_new_str(NULL, NULL);
     (void)data; /* suppress unused argument warning */
 
     for (i = 0; i < (int)NELEMS(strs); i++) {
@@ -385,7 +385,7 @@ static void test_hash_extract_strings(tst_case *tc, void *data)
     free(str_arr);
 }
 
-tst_suite *ts_hash(tst_suite *suite)
+TestSuite *ts_hash(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

@@ -8,7 +8,7 @@ static void ary_free_mock(void *p)
     strcpy(str, "free");
 }
 
-static void test_ary(tst_case *tc, void *data)
+static void test_ary(TestCase *tc, void *data)
 {
     int i;
     int raised = 0;
@@ -156,7 +156,7 @@ static void test_ary(tst_case *tc, void *data)
     ary_free(ary);
 }
 
-void test_ary_destroy(tst_case *tc, void *data)
+void test_ary_destroy(TestCase *tc, void *data)
 {
     void **ary = ary_new();
     char str1[10] = "alloc1";
@@ -179,7 +179,7 @@ void test_ary_destroy(tst_case *tc, void *data)
 }
 
 #define ARY_STRESS_SIZE 1000
-void stress_ary(tst_case *tc, void *data)
+void stress_ary(TestCase *tc, void *data)
 {
     int i;
     char buf[100], *t;
@@ -217,7 +217,7 @@ struct TestPoint {
     ary[i].y = y_val;\
 } while (0)
 
-void test_typed_ary(tst_case *tc, void *data)
+void test_typed_ary(TestCase *tc, void *data)
 {
     struct TestPoint *points = ary_new_type_capa(struct TestPoint, 5);
     (void)data;
@@ -259,7 +259,7 @@ void test_typed_ary(tst_case *tc, void *data)
     ary_free(points);
 }
 
-tst_suite *ts_array(tst_suite *suite)
+TestSuite *ts_array(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

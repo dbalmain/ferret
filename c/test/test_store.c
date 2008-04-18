@@ -8,7 +8,7 @@
 /**
  * Test that the lock is created and deleted correctly
  */
-static void test_lock(tst_case *tc, void *data)
+static void test_lock(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Lock *lock1, *lock2;
@@ -31,7 +31,7 @@ static void test_lock(tst_case *tc, void *data)
 /**
  * Do basic file operations test.
  */
-static void test_basic_file_ops(tst_case *tc, void *data)
+static void test_basic_file_ops(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
 
@@ -78,7 +78,7 @@ static void concat_filenames(const char *fname, struct EachArg *ea)
 /**
  * Test the store->each function
  */
-static void test_each(tst_case *tc, void *data)
+static void test_each(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
 
@@ -102,7 +102,7 @@ static void test_each(tst_case *tc, void *data)
 /**
  * Test the store->rename function
  */
-static void test_rename(tst_case *tc, void *data)
+static void test_rename(TestCase *tc, void *data)
 {
     int cnt_before, cnt_after;
     Store *store = (Store *)data;
@@ -120,7 +120,7 @@ static void test_rename(tst_case *tc, void *data)
 /**
  * Test the reading and writing of bytes (8 bit)
  */
-static void test_rw_bytes(tst_case *tc, void *data)
+static void test_rw_bytes(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -145,7 +145,7 @@ static void test_rw_bytes(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 32-bit integers
  */
-static void test_rw_i32(tst_case *tc, void *data)
+static void test_rw_i32(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -170,7 +170,7 @@ static void test_rw_i32(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 64-bit integers
  */
-static void test_rw_i64(tst_case *tc, void *data)
+static void test_rw_i64(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -195,7 +195,7 @@ static void test_rw_i64(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 32-bit unsigned integers
  */
-static void test_rw_u32(tst_case *tc, void *data)
+static void test_rw_u32(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -219,7 +219,7 @@ static void test_rw_u32(tst_case *tc, void *data)
 /**
  * Test the reading and writing of 64-bit unsigned integers
  */
-static void test_rw_u64(tst_case *tc, void *data)
+static void test_rw_u64(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -244,7 +244,7 @@ static void test_rw_u64(tst_case *tc, void *data)
 /**
  * Test reading and writing of variable size integers
  */
-static void test_rw_vints(tst_case *tc, void *data)
+static void test_rw_vints(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -267,7 +267,7 @@ static void test_rw_vints(tst_case *tc, void *data)
 /**
  * Test reading and writing of variable size 64-bit integers
  */
-static void test_rw_voff_ts(tst_case *tc, void *data)
+static void test_rw_voff_ts(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -298,7 +298,7 @@ static void test_rw_voff_ts(tst_case *tc, void *data)
 /**
  * Test reading and writing of strings
  */
-static void test_rw_strings(tst_case *tc, void *data)
+static void test_rw_strings(TestCase *tc, void *data)
 {
     int i;
     char *tmp;
@@ -333,7 +333,7 @@ static void test_rw_strings(tst_case *tc, void *data)
 /**
  * Test reading and writing of non-ascii characters
  */
-static void test_rw_funny_strings(tst_case *tc, void *data)
+static void test_rw_funny_strings(TestCase *tc, void *data)
 {
     int i;
     char *tmp;
@@ -367,7 +367,7 @@ static void test_rw_funny_strings(tst_case *tc, void *data)
  * Test seek in both input stream and output stream, ie test the os_seek and
  * is_seek functions
  */
-static void test_buffer_seek(tst_case *tc, void *data)
+static void test_buffer_seek(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -407,7 +407,7 @@ static void test_buffer_seek(tst_case *tc, void *data)
 /**
  * Test cloning of InputStream
  */
-static void test_is_clone(tst_case *tc, void *data)
+static void test_is_clone(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -438,7 +438,7 @@ static void test_is_clone(tst_case *tc, void *data)
  * Test the read_bytes method. This method reads a number of bytes into a
  * buffer.
  */
-static void test_read_bytes(tst_case *tc, void *data)
+static void test_read_bytes(TestCase *tc, void *data)
 {
     char str[11] = "0000000000";
     Store *store = (Store *)data;
@@ -460,7 +460,7 @@ static void test_read_bytes(tst_case *tc, void *data)
  * suite for both a FileSystem store and a RAM store and any other type of
  * store that you might want to create.
  */
-void create_test_store_suite(tst_suite *suite, Store *store)
+void create_test_store_suite(TestSuite *suite, Store *store)
 {
     store->clear_all(store);
 

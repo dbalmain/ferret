@@ -6,10 +6,10 @@ static const char *flipflop = "flipflop";
 
 extern void prepare_filter_index(Store *store);
 
-extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                        char *expected_hits, char top);
 
-static void test_filtered_query(tst_case *tc, void *data)
+static void test_filtered_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q;
@@ -43,7 +43,7 @@ static void test_filtered_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-tst_suite *ts_q_filtered(tst_suite *suite)
+TestSuite *ts_q_filtered(TestSuite *suite)
 {
     Store *store = open_ram_store();
     IndexReader *ir;

@@ -5,10 +5,10 @@ static const char *num = "num";
 
 extern void prepare_filter_index(Store *store);
 
-extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                        char *expected_hits, char top);
 
-static void test_const_score_query(tst_case *tc, void *data)
+static void test_const_score_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *q;
@@ -38,7 +38,7 @@ static void test_const_score_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_const_score_query_hash(tst_case *tc, void *data)
+static void test_const_score_query_hash(TestCase *tc, void *data)
 {
     Filter *f;
     Query *q1, *q2;
@@ -64,7 +64,7 @@ static void test_const_score_query_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-tst_suite *ts_q_const_score(tst_suite *suite)
+TestSuite *ts_q_const_score(TestSuite *suite)
 {
     Store *store = open_ram_store();
     IndexReader *ir;

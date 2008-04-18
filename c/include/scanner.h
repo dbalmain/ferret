@@ -1,5 +1,5 @@
-#ifndef FRT_SCANNER
-#define FRT_SCANNER
+#ifndef FRT_SCANNER_H
+#define FRT_SCANNER_H
 
 /*
  * Scan +in+ and copy the token into +out+, up until +out_size+ bytes.
@@ -9,10 +9,10 @@
  * be truncated down to just google.com during the copy.
  * +token_length+ is the size of the resulting token.
  */
-void frt_scan(const char *in,
-              char *out, size_t out_size,
-              char **start, char **end,
-              int *token_length);
+void frt_std_scan(const char *in,
+                  char *out, size_t out_size,
+                  char **start, char **end,
+                  int *token_length);
 
 
 void frt_scan_mb(const char *in,

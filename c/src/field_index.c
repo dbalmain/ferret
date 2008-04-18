@@ -38,8 +38,8 @@ FieldIndex *field_index_get(IndexReader *ir, const char *field,
     TermEnum *volatile te = NULL;
     TermDocEnum *volatile tde = NULL;
     FieldInfo *fi = fis_get_field(ir->fis, field);
-    const int field_num = fi ? fi->number : -1;
-    FieldIndex *self = NULL;
+    const volatile int field_num = fi ? fi->number : -1;
+    FieldIndex *volatile self = NULL;
     FieldIndex key;
 
     if (field_num < 0) {

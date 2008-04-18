@@ -11,7 +11,6 @@
 #include <signal.h>
 #include "internal.h"
 
-static const unsigned int BUFFER_SIZE = 1024;
 const char *EMPTY_STRING = "";
 
 bool  x_do_logging = false;
@@ -240,42 +239,26 @@ void dummy_free(void *p)
     (void)p; /* suppress unused argument warning */
 }
 
-static char *build_gdb_commandfile()
-{
-    const char *commands = "bt\nquit\n";
-    char *tempfilename = tmpnam(0); /* Static buffer, no need to free */
-    FILE *tempfile = fopen(tempfilename, "w");
-    if (!tempfile)
-        return NULL;
-    fwrite(commands, strlen(commands), 1, tempfile);
-    fclose(tempfile);
-    return tempfilename;
-}
-
+#ifdef HAVE_GDB
+#define CMD_BUF_SIZE 128
 static char *build_shell_command()
 {
     int   pid = getpid();
-    char *buf = ALLOC_N(char, BUFFER_SIZE);
-    char *gdbfile = build_gdb_commandfile();
-    char *command = "gdb -quiet -command=%s %s %d 2>/dev/null | grep '^#'";
+    static char buf[CMD_BUF_SIZE];
+    char *command = "echo \"bt\nq\n\" > .gdb-bt && "
+        "gdb -quiet -command=.gdb-bt %s %d 2>/dev/null | grep '^[ #]'";
 
-    if (!gdbfile) {
-        free(buf);
-        return NULL;
-    }
-
-    snprintf(buf, BUFFER_SIZE, command, gdbfile, progname(), pid);
+    snprintf(buf, CMD_BUF_SIZE, command, progname(), pid);
     return buf;
 }
+#endif
 
 /**
  * Call out to gdb to get our stacktrace.
  */
 char *get_stacktrace()
 {
-#ifdef POSH_OS_WIN32
-    return NULL;
-#else
+#ifdef HAVE_GDB
     FILE *stream;
     char *buf = NULL, *stack = NULL;
     int   offset = -BUFFER_SIZE;
@@ -300,8 +283,9 @@ char *get_stacktrace()
     } while(fread(stack + offset, 1, BUFFER_SIZE, stream) == BUFFER_SIZE);
 
     pclose(stream);
-    free(buf);
     return stack;
+#else
+    return NULL;
 #endif
 }
 

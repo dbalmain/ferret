@@ -76,7 +76,7 @@ static char *rev(char *str)
  *
  *****************************************************************************/
 
-static void test_segment_field_index_single_field(tst_case *tc, void *data)
+static void test_segment_field_index_single_field(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -122,7 +122,7 @@ static void add_multi_field_terms(Store *store)
     tiw_close(tiw);
 }
 
-static void test_segment_field_index_multi_field(tst_case *tc, void *data)
+static void test_segment_field_index_multi_field(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     SegmentFieldIndex *sfi;
@@ -151,7 +151,7 @@ static void test_segment_field_index_multi_field(tst_case *tc, void *data)
     sfi_close(sfi);
 }
 
-void test_segment_term_enum(tst_case *tc, void *data)
+void test_segment_term_enum(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
@@ -282,7 +282,7 @@ void test_segment_term_enum(tst_case *tc, void *data)
     sfi_close(sfi);
 }
 
-static void test_term_infos_reader(tst_case *tc, void *data)
+static void test_term_infos_reader(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     SegmentFieldIndex *sfi;
@@ -336,7 +336,7 @@ static void test_term_infos_reader(tst_case *tc, void *data)
     sfi_close(sfi);
 }
 
-tst_suite *ts_term(tst_suite *suite)
+TestSuite *ts_term(TestSuite *suite)
 {
     Store *store = open_ram_store();
 

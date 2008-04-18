@@ -7,7 +7,7 @@ extern char *num_to_str(int num);
 
 #define test_num(n, expected) num = num_to_str(n); Asequal(expected, num); free(num)
 
-static void test_number_to_str(tst_case *tc, void *data)
+static void test_number_to_str(TestCase *tc, void *data)
 {
     char *num;
     (void)data;
@@ -123,7 +123,7 @@ static void *indexing_thread(void *p)
     return NULL;
 }
 
-static void test_threading_test(tst_case *tc, void *data)
+static void test_threading_test(TestCase *tc, void *data)
 {
     Index *index = (Index *)data;
     (void)data;
@@ -131,7 +131,7 @@ static void test_threading_test(tst_case *tc, void *data)
     indexing_thread(index);
 }
 
-static void test_threading(tst_case *tc, void *data)
+static void test_threading(TestCase *tc, void *data)
 {
     int i;
     pthread_t thread_id[NTHREADS];
@@ -148,7 +148,7 @@ static void test_threading(tst_case *tc, void *data)
     }
 }
 
-tst_suite *ts_threading(tst_suite *suite)
+TestSuite *ts_threading(TestSuite *suite)
 {
     Analyzer *a = letter_analyzer_new(true);
     Store *store = open_fs_store("./test/testdir/store");

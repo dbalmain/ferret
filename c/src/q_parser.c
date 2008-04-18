@@ -210,7 +210,7 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
             field = (char *)qp->fields->first->elem;\
             q = func;\
         } else {\
-            Query *sq;HashSetEntry *hse;\
+            Query *volatile sq;HashSetEntry *volatile hse;\
             q = bq_new_max(false, qp->max_clauses);\
             for (hse = qp->fields->first; hse; hse = hse->next) {\
                 field = (char *)hse->elem;\
@@ -2166,7 +2166,7 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
     return ts;
 }
 
-static char *get_cached_field(HashTable *field_cache, const char *field)
+static char *get_cached_field(Hash *field_cache, const char *field)
 {
     char *cached_field = (char *)h_get(field_cache, field);
     if (!cached_field) {
@@ -2593,7 +2593,7 @@ static Query *get_phrase_query(QParser *qp, char *field,
 
 static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
 {
-    Query *q = NULL;
+    Query *volatile q = NULL;
     FLDS(q, get_phrase_query(qp, field, phrase, slop_str));
     ph_destroy(phrase);
     return q;

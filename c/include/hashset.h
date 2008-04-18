@@ -25,8 +25,8 @@ typedef struct FrtHashSet
      * internally to add elements to the list. */
     FrtHashSetEntry *last;
 
-    /* HashTable used internally */
-    FrtHashTable *ht;
+    /* Hash used internally */
+    FrtHash *ht;
 
     /* Internal: Frees elements added to the FrtHashSet. Should never be NULL */
     frt_free_ft free_elem_i;
@@ -83,7 +83,7 @@ extern void frt_hs_destroy(FrtHashSet *self);
  * Add the element to the FrtHashSet whether or not it was already in the
  * FrtHashSet.
  *
- * When a element is added to the HashTable where it already exists, free_elem
+ * When a element is added to the Hash where it already exists, free_elem
  * is called on it, ie the element you tried to add might get destroyed.
  *
  * @param hs the FrtHashSet to add the element to
@@ -156,7 +156,7 @@ extern void *frt_hs_rem(FrtHashSet *self, const void *elem);
 extern FrtHashKeyStatus frt_hs_exists(FrtHashSet *self, const void *elem);
 
 /**
- * Merge two HashSets. When a merge is done the merger (self) HashTable is
+ * Merge two HashSets. When a merge is done the merger (self) Hash is
  * returned and the mergee is destroyed. All elements from mergee that were
  * not found in merger (self) will be added to self, otherwise they will be
  * destroyed.

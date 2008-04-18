@@ -6,43 +6,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <internal.h>
+#include "internal.h"
 
 /**
  * A test suite is a linked-list of sub-suites that are made up of test cases
  * which contain a list of assertions.
  */
-typedef struct sub_suite
+typedef struct TestSubSuite
 {
     char *name;
     int num_test;
     int failed;
     int not_run;
     int not_impl;
-    struct sub_suite *next;
-} sub_suite;
+    struct TestSubSuite *next;
+} TestSubSuite;
 
-typedef struct tst_suite
+typedef struct TestSuite
 {
-    sub_suite *head;
-    sub_suite *tail;
-} tst_suite;
+    TestSubSuite *head;
+    TestSubSuite *tail;
+} TestSuite;
 
-typedef struct tst_case
+typedef struct TestCase
 {
     char *name;
     int failed;
-    sub_suite *suite;
-} tst_case;
+    TestSubSuite *suite;
+} TestCase;
 
 /* a test function needs to match this signature */
-typedef void (*test_func)(tst_case *tc, void *data);
+typedef void (*test_func)(TestCase *tc, void *data);
 
 /**
  * Add a sub-suite to the linked-list of test suites. This function is usually
  * used like this;
  * 
- * tst_suite *ts_<sub-suite-name>(tst_suite *suite)
+ * TestSuite *ts_<sub-suite-name>(TestSuite *suite)
  * {
  *     suite = ADD_SUITE(suite);
  * 
@@ -59,7 +59,7 @@ typedef void (*test_func)(tst_case *tc, void *data);
  *   suite. This will suffice in most cases.
  * @return the current suite
  */
-extern tst_suite *tst_add_suite(tst_suite *suite, const char *suite_name);
+extern TestSuite *tst_add_suite(TestSuite *suite, const char *suite_name);
 #define ADD_SUITE(suite) tst_add_suite(suite, __FILE__);
 
 
@@ -75,7 +75,7 @@ extern tst_suite *tst_add_suite(tst_suite *suite, const char *suite_name);
  *   output. Use the tst_run_tests macro if you just want the name of the
  *   function to be used. This will suffice in most cases.
  */
-extern void tst_run_test_with_name(tst_suite *suite, test_func func,
+extern void tst_run_test_with_name(TestSuite *suite, test_func func,
                                    void *value, char *test_name);
 #define tst_run_test(ts, f, val) tst_run_test_with_name(ts, f, (val), #f)
 
@@ -83,7 +83,7 @@ extern void tst_run_test_with_name(tst_suite *suite, test_func func,
  * Add a message to the test output diagnostics. This function should be used
  * like this;
  *
- * static void test_something(tst_case *tc, void *data)
+ * static void test_something(TestCase *tc, void *data)
  * {
  *   // do some stuff
  *
@@ -128,7 +128,7 @@ extern void vTmsg(const char *fmt, va_list args);
  * @param args the args to pass to the function
  * @return true if the test passed
  */
-extern bool tst_raise(int line_num, tst_case *tc, const int err_code,
+extern bool tst_raise(int line_num, TestCase *tc, const int err_code,
                       void (*func)(void *args), void *args);
 
 /**
@@ -142,7 +142,7 @@ extern bool tst_raise(int line_num, tst_case *tc, const int err_code,
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_int_equal(int line_num, tst_case *tc, const u64 expected,
+extern bool tst_int_equal(int line_num, TestCase *tc, const u64 expected,
                           const u64 actual);
 
 /**
@@ -170,7 +170,7 @@ extern bool tst_int_equal(int line_num, tst_case *tc, const u64 expected,
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_flt_equal(int line_num, tst_case *tc, const double expected,
+extern bool tst_flt_equal(int line_num, TestCase *tc, const double expected,
                           const double actual);
 
 /**
@@ -197,7 +197,7 @@ extern bool tst_flt_equal(int line_num, tst_case *tc, const double expected,
  * @param delta the allowed fraction of difference
  * @return true if the test passed
  */
-extern bool tst_flt_delta_equal(int line_num, tst_case *tc, const double expected,
+extern bool tst_flt_delta_equal(int line_num, TestCase *tc, const double expected,
                                 const double actual, const double delta);
 
 /**
@@ -211,7 +211,7 @@ extern bool tst_flt_delta_equal(int line_num, tst_case *tc, const double expecte
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_str_equal(int line_num, tst_case *tc, const char *expected,
+extern bool tst_str_equal(int line_num, TestCase *tc, const char *expected,
                           const char *actual);
 
 /**
@@ -227,7 +227,7 @@ extern bool tst_str_equal(int line_num, tst_case *tc, const char *expected,
  * @param needle the string to search for
  * @return true if the test passed
  */
-extern bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
+extern bool tst_strstr(int line_num, TestCase *tc, const char *haystack,
                        const char *needle);
 
 /**
@@ -244,7 +244,7 @@ extern bool tst_strstr(int line_num, tst_case *tc, const char *haystack,
  *   least this number of elements allocated or you will get memory overflow
  * @return true if the test passed
  */
-extern bool tst_arr_int_equal(int line_num, tst_case *tc, const int *expected,
+extern bool tst_arr_int_equal(int line_num, TestCase *tc, const int *expected,
                               const int *actual, int size);
 
 /**
@@ -261,7 +261,7 @@ extern bool tst_arr_int_equal(int line_num, tst_case *tc, const int *expected,
  *   least this number of elements allocated or you will get memory overflow
  * @return true if the test passed
  */
-extern bool tst_arr_str_equal(int line_num, tst_case *tc, const char **expected,
+extern bool tst_arr_str_equal(int line_num, TestCase *tc, const char **expected,
                               const char **actual, int size);
 
 /**
@@ -280,7 +280,7 @@ extern bool tst_arr_str_equal(int line_num, tst_case *tc, const char **expected,
  *   least this number of bytes allocated or you will get memory overflow
  * @return true if the test passed
  */
-extern bool tst_str_nequal(int line_num, tst_case *tc, const char *expected,
+extern bool tst_str_nequal(int line_num, TestCase *tc, const char *expected,
                            const char *actual, size_t n);
 
 /**
@@ -293,7 +293,7 @@ extern bool tst_str_nequal(int line_num, tst_case *tc, const char *expected,
  * @param ptr fail if this is NULL
  * @return true if the test passed, ie +ptr+ was NULL.
  */
-extern bool tst_ptr_null(int line_num, tst_case *tc, const void *ptr);
+extern bool tst_ptr_null(int line_num, TestCase *tc, const void *ptr);
 
 /**
  * Test that +ptr+ is not NULL. If it is NULL then add an error to the test
@@ -305,7 +305,7 @@ extern bool tst_ptr_null(int line_num, tst_case *tc, const void *ptr);
  * @param ptr fail if this is NULL
  * @return true if the test passed, ie +ptr+ was NULL.
  */
-extern bool tst_ptr_notnull(int line_num, tst_case *tc, const void *ptr);
+extern bool tst_ptr_notnull(int line_num, TestCase *tc, const void *ptr);
 
 /**
  * Test that two ptrs point to the same memory (ie, they are equal). If they
@@ -319,7 +319,7 @@ extern bool tst_ptr_notnull(int line_num, tst_case *tc, const void *ptr);
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_ptr_equal(int line_num, tst_case *tc, const void *expected,
+extern bool tst_ptr_equal(int line_num, TestCase *tc, const void *expected,
                           const void *actual);
 
 /**
@@ -333,7 +333,7 @@ extern bool tst_ptr_equal(int line_num, tst_case *tc, const void *expected,
  * @param actual the actual value
  * @return true if the test passed
  */
-extern bool tst_true(int line_num, tst_case *tc, int condition);
+extern bool tst_true(int line_num, TestCase *tc, int condition);
 
 /**
  * Fail. Add an error to the test diagnostics. You should use the Afail(msg)
@@ -347,7 +347,7 @@ extern bool tst_true(int line_num, tst_case *tc, int condition);
  * @param ... variables to interpolate into the format
  * @return false always (for consistency with other test functions)
  */
-extern bool tst_fail(int line_num, tst_case *tc, const char *fmt, ...);
+extern bool tst_fail(int line_num, TestCase *tc, const char *fmt, ...);
 
 /**
  * Add an error to the test diagnotistics specifying that this test has not
@@ -360,7 +360,7 @@ extern bool tst_fail(int line_num, tst_case *tc, const char *fmt, ...);
  *   "Not Implemented" message
  * @return true if the test passed
  */
-extern bool tst_not_impl(int line_num, tst_case *tc, const char *message);
+extern bool tst_not_impl(int line_num, TestCase *tc, const char *message);
 
 /**
  * Test that +condition+ is true. If it isn't, add an error to the test
@@ -385,7 +385,7 @@ extern bool tst_not_impl(int line_num, tst_case *tc, const char *message);
  * @param ... variables to interpolate into the format
  * @return true if the test passed
  */
-extern bool tst_assert(int line_num, tst_case *tc, int condition,
+extern bool tst_assert(int line_num, TestCase *tc, int condition,
                        const char *fmt, ...);
 
 #define Araise(e, f, b)\

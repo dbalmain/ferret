@@ -5,7 +5,7 @@
 
 #define ARRAY_SIZE 100
 
-static void test_match_vector(tst_case *tc, void *data)
+static void test_match_vector(TestCase *tc, void *data)
 {
     const int match_test_count = 100;
     int i;
@@ -101,7 +101,7 @@ static void add_string_docs(Store *store, const char *string[])
 
 #define Chk_sea_mv(query, doc_num, expected)\
     check_searcher_match_vector(tc, store, query, doc_num, expected)
-static void check_searcher_match_vector(tst_case *tc, Store *store,
+static void check_searcher_match_vector(TestCase *tc, Store *store,
                                         Query *query, int doc_num,
                                         char *expected)
 {
@@ -124,7 +124,7 @@ static void check_searcher_match_vector(tst_case *tc, Store *store,
 
 #define Chk_mv(query, doc_num, expected)\
     check_match_vector(tc, store, query, doc_num, expected)
-static void check_match_vector(tst_case *tc, Store *store, Query *query, int doc_num,
+static void check_match_vector(TestCase *tc, Store *store, Query *query, int doc_num,
                                char *expected)
 {
     IndexReader *ir = ir_open(store);
@@ -147,7 +147,7 @@ static void check_match_vector(tst_case *tc, Store *store, Query *query, int doc
     check_searcher_match_vector(tc, store, query, doc_num, expected);
 }
 
-static void test_term_query(tst_case *tc, void *data)
+static void test_term_query(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q;
@@ -170,7 +170,7 @@ static void test_term_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_phrase_query(tst_case *tc, void *data)
+static void test_phrase_query(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q;
@@ -233,7 +233,7 @@ static void test_phrase_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_boolean_query(tst_case *tc, void *data)
+static void test_boolean_query(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q, *phq;
@@ -257,7 +257,7 @@ static void test_boolean_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_multi_term_query(tst_case *tc, void *data)
+static void test_multi_term_query(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q;
@@ -277,7 +277,7 @@ static void test_multi_term_query(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_span_queries(tst_case *tc, void *data)
+static void test_span_queries(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q, *oq;
@@ -332,7 +332,7 @@ static void test_span_queries(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_searcher_get_match_vector(tst_case *tc, void *data)
+static void test_searcher_get_match_vector(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q;
@@ -355,7 +355,7 @@ static void test_searcher_get_match_vector(tst_case *tc, void *data)
     q_deref(q);
 }
 
-static void test_searcher_highlight(tst_case *tc, void *data)
+static void test_searcher_highlight(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     Query *q, *phq;
@@ -532,7 +532,7 @@ static void test_searcher_highlight(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-tst_suite *ts_highlighter(tst_suite *suite)
+TestSuite *ts_highlighter(TestSuite *suite)
 {
     Store *store = open_ram_store();
 

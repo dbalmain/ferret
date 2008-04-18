@@ -6,7 +6,7 @@
  * Test ramo_write_to which basically writes the contents of a RAM output
  * stream to another output stream, usually a FileSystem output stream.
  */
-void test_write_to(tst_case * tc, void *data)
+void test_write_to(TestCase *tc, void *data)
 {
     int i;
     char *tmp;
@@ -61,7 +61,7 @@ void test_write_to(tst_case * tc, void *data)
 /**
  * Create the RAMStore test suite
  */
-tst_suite *ts_ram_store(tst_suite * suite)
+TestSuite *ts_ram_store(TestSuite *suite)
 {
     Store *store = open_ram_store();
 

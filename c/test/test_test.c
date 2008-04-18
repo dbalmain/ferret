@@ -9,7 +9,7 @@ static void raise_eof()
 /**
  * Test the basic test functions
  */
-static void test_asserts(tst_case *tc, void *data)
+static void test_asserts(TestCase *tc, void *data)
 {
     char *p[10];
 
@@ -43,7 +43,7 @@ static void raise_nothing(void *nothing)
  * passing but if you want to check the tests work in case of failure, run
  * this test.
  */
-static void test_failures(tst_case *tc, void *data)
+static void test_failures(TestCase *tc, void *data)
 {
     void *q = NULL;
     void *p = emalloc(10);
@@ -70,7 +70,7 @@ static void test_failures(tst_case *tc, void *data)
     Araise(EXCEPTION, &raise_nothing, NULL);
 }
 
-tst_suite *ts_test(tst_suite *suite)
+TestSuite *ts_test(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

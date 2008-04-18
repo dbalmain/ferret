@@ -17,12 +17,12 @@ static void huge_ecalloc(void *data)
 
 static void huge_erealloc(void *data)
 {
-    char * p = NULL;
+    char *p = NULL;
     (void)data;
     erealloc(p, (size_t)-1);
 }
 
-static void test_emalloc(tst_case *tc, void *data)
+static void test_emalloc(TestCase *tc, void *data)
 {
     char *p;
     (void)data; /* suppress warning */
@@ -34,7 +34,7 @@ static void test_emalloc(tst_case *tc, void *data)
     Araise(MEM_ERROR, huge_emalloc, NULL);
 }
 
-static void test_ecalloc(tst_case *tc, void *data)
+static void test_ecalloc(TestCase *tc, void *data)
 {
     int i;
     char *p;
@@ -50,7 +50,7 @@ static void test_ecalloc(tst_case *tc, void *data)
     Araise(MEM_ERROR, huge_ecalloc, NULL);
 }
 
-static void test_erealloc(tst_case *tc, void *data)
+static void test_erealloc(TestCase *tc, void *data)
 {
     char *p = NULL;
     (void)data; /* suppress warning */
@@ -62,7 +62,7 @@ static void test_erealloc(tst_case *tc, void *data)
     Araise(MEM_ERROR, huge_erealloc, NULL);
 }
 
-tst_suite *ts_lang(tst_suite *suite)
+TestSuite *ts_lang(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

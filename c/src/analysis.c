@@ -559,22 +559,24 @@ Analyzer *mb_letter_analyzer_new(bool lowercase)
 static Token *std_next(TokenStream *ts)
 {
     StandardTokenizer *std_tz = STDTS(ts);
-    char *start = NULL;
-    char *end = NULL;
+    const char *start = NULL;
+    const char *end = NULL;
     int len;
     Token *tk = &(CTS(ts)->token);
 
     if (std_tz->is_ascii) {
-        frt_scan(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
+        frt_std_scan(ts->t, tk->text, sizeof(tk->text) - 1,
+                     &start, &end, &len);
     }
     else {
-        frt_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1, &start, &end, &len);
+        frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1,
+                        &start, &end, &len);
     }
 
     if (len == 0)
         return NULL;
 
-    ts->t       = end;
+    ts->t       = (char *)end;
     tk->len     = len;
     tk->start   = start - ts->text;
     tk->end     = end   - ts->text;
@@ -679,7 +681,7 @@ static TokenStream *sf_clone_i(TokenStream *orig_ts)
 static Token *sf_next(TokenStream *ts)
 {
     int pos_inc = 0;
-    HashTable *words = StopFilt(ts)->words;
+    Hash *words = StopFilt(ts)->words;
     TokenFilter *tf = TkFilt(ts);
     Token *tk = tf->sub_ts->next(tf->sub_ts);
 
@@ -700,7 +702,7 @@ TokenStream *stop_filter_new_with_words_len(TokenStream *sub_ts,
 {
     int i;
     char *word;
-    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
+    Hash *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     for (i = 0; i < len; i++) {
@@ -718,7 +720,7 @@ TokenStream *stop_filter_new_with_words(TokenStream *sub_ts,
                                         const char **words)
 {
     char *word;
-    HashTable *word_table = h_new_str(&free, (free_ft) NULL);
+    Hash *word_table = h_new_str(&free, (free_ft) NULL);
     TokenStream *ts = tf_new(StopFilter, sub_ts);
 
     while (*words) {

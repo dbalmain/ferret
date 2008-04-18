@@ -13,10 +13,10 @@ static void add_doc(char *text, IndexWriter *iw)
     doc_destroy(doc);
 }
 
-extern void check_hits(tst_case *tc, Searcher *searcher, Query *query,
+extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                        char *expected_hits, char top);
 
-static void do_prefix_test(tst_case *tc, Searcher *searcher, char *qstr,
+static void do_prefix_test(TestCase *tc, Searcher *searcher, char *qstr,
                     char *expected_hits, int pre_len, float min_sim)
 {
     Query *fq = fuzq_new_conf(field, qstr, min_sim, pre_len, 10);
@@ -24,7 +24,7 @@ static void do_prefix_test(tst_case *tc, Searcher *searcher, char *qstr,
     q_deref(fq);
 }
 
-static void test_fuzziness(tst_case *tc, void *data)
+static void test_fuzziness(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw;
@@ -95,7 +95,7 @@ static void test_fuzziness(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_fuzziness_long(tst_case *tc, void *data)
+static void test_fuzziness_long(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
     IndexWriter *iw;
@@ -150,7 +150,7 @@ static void test_fuzziness_long(tst_case *tc, void *data)
     searcher_close(sea);
 }
 
-static void test_fuzzy_query_hash(tst_case *tc, void *data)
+static void test_fuzzy_query_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
@@ -186,7 +186,7 @@ static void test_fuzzy_query_hash(tst_case *tc, void *data)
     q_deref(q1);
 }
 
-tst_suite *ts_q_fuzzy(tst_suite *suite)
+TestSuite *ts_q_fuzzy(TestSuite *suite)
 {
     Store *store = open_ram_store();
 
