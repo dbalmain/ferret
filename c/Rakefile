@@ -15,13 +15,13 @@ def dep_file(src)
 end
 
 def src2obj(src)
-  src.pathmap("%{.*,}p%n.o")
+  src.pathmap("%n.o")
 end
 
 def obj_map(srcs, prefix = '')
   srcs.map do |src|
     obj = prefix + src2obj(src)
-    FILE2SRC[obj] = src
+    FILE2SRC[obj] = src.pathmap('%X.c')
     obj
   end
 end
@@ -80,7 +80,8 @@ else
 end
 
 SRCS            = FileList['src/*.c']
-OBJS            = obj_map(SRCS)
+OBJS            = obj_map(SRCS + 
+                          FileList['src/scanner*.rl', 'src/*.y'])
 INC_DIR         = 'include'
 
 TEST_SRCS       = FileList['test/*.c']
@@ -111,6 +112,7 @@ FileUtils.mkdir_p(TMP)
 # Dependency Handling
 ###
 DEP_L1_CACHE = Hash.new do |h, src|
+  Rake::Task[src].invoke unless File.exists?(src)
   h[src] = File.read(src).scan(/# *include [<"](.*)[">]/).flatten.sort.uniq.
     map {|bn| FILE2SRC[bn]}.compact
 end
@@ -128,7 +130,8 @@ end
 
 def get_dep_srcs(src)
   df = dep_file(src)
-  if File.exists?(df) and File.stat(src).mtime < (mtime = File.stat(df).mtime)
+  if File.exists?(df) and File.exists?(src) and
+      File.stat(src).mtime < (mtime = File.stat(df).mtime)
     dep_srcs = Marshal.load(File.read(df))
     return dep_srcs unless dep_srcs.find {|f| File.stat(f).mtime > mtime}
   end
@@ -166,6 +169,7 @@ end
 # Clean Constants
 ###
 CLEAN  .include([ '*.o',
+                  '.rake/*.dep',
                   '**/*.gcda',
                   '**/*.gcno',
                   '*.gcov',
@@ -173,9 +177,10 @@ CLEAN  .include([ '*.o',
 
 CLOBBER.include([ '*.a',
                   '**/*.o',
+                  '.rake/HAVE_',
                   'testall',
-                  '.rake/*',
                   'gmon.out',
+                  FileList['src/*.rl'].pathmap('%X.c'),
                   DEP_DIR,
                   GCOV_DIR])
 
@@ -212,12 +217,12 @@ namespace :build do
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o bench"
   end
 
-  file 'src/q_parser.c' => 'src/q_parser.y' do
-    sh "yacc -o src/q_parser.c -p frt_ src/q_parser.y"
+  rule '.c' => '.y' do |t|
+    sh "yacc -o #{t.name} -p frt_ #{t.prerequisites}"
   end
 
-  file 'src/scanner.c' => 'src/scanner.rl' do
-    sh "ragel src/scanner.rl -o src/scanner.c"
+  rule '.c' => '.rl' do |t|
+    sh "ragel #{t.prerequisites} -o #{t.name}"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|

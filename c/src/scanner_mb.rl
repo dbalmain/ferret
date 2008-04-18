@@ -18,7 +18,7 @@
 
 %%{
     machine StdTokMb;
-    alphtype unsigned long;
+    alphtype unsigned int;
     include WChar "src/wchar.rl";
 
     delim = space;
@@ -35,7 +35,7 @@
         token [\'][sS]? { trunc = 2; RET; };
 
         #// Token with hyphens
-        walnum+ ('-' walnum+)* { RET; };
+        walnum+ ([\-_] walnum+)* { RET; };
 
         #// Company name
         token [\&\@] token* { RET; };

@@ -126,6 +126,7 @@
 #define RECAPA                             FRT_RECAPA
 #define REF                                FRT_REF
 #define RETURN_EARLY                       FRT_RETURN_EARLY
+#define SCANNER                            FRT_SCANNER
 #define SCORER_NULLIFY                     FRT_SCORER_NULLIFY
 #define SEGMENTS_FILE_NAME                 FRT_SEGMENTS_FILE_NAME
 #define SEGMENT_NAME_MAX_LENGTH            FRT_SEGMENT_NAME_MAX_LENGTH
@@ -860,6 +861,8 @@
 #define standard_analyzer_new_with_words        frt_standard_analyzer_new_with_words
 #define standard_analyzer_new_with_words_len    frt_standard_analyzer_new_with_words_len
 #define standard_tokenizer_new                  frt_standard_tokenizer_new
+#define std_scan                                frt_std_scan
+#define std_scan_mb                             frt_std_scan_mb
 #define stde_new                                frt_stde_new
 #define ste_clone                               frt_ste_clone
 #define ste_close                               frt_ste_close

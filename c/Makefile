@@ -146,8 +146,6 @@ gen_valsupp: testall
 
 src/q_parser.c: src/q_parser.y
 
-src/scanner.c: src/scanner.rl
-
 %.c : %.rl
 	ragel $< -o $@
 
