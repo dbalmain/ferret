@@ -184,7 +184,7 @@ namespace :build do
 
   file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
-        "gcc #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
   end
 
   file 'src/q_parser.c' => 'src/q_parser.y' do
@@ -219,8 +219,8 @@ namespace :build do
   end
 
   rule '.o' => lambda {|obj| get_dep_srcs(FILE2SRC[obj])} do |t|
-    qsh "Compiling #{t.name}",
-        "gcc #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
+    vsh "Compiling #{t.name}",
+        "#{CC} #{CFLAGS} -c -o #{t.name} #{FILE2SRC[t.name]}"
   end
 end
 
