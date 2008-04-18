@@ -162,6 +162,7 @@ if ENV['USE_CPP']
   CC[1,2] = '++'
   CFLAGS.sub!(/-std=c99/, ' -DUSE_ZLIB')
   FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
+  CFLAGS << ' -O2'
 end
 
 
