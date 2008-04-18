@@ -899,7 +899,7 @@ typedef struct QParser
     int phq_pos_inc;
     char *qstr;
     char *qstrp;
-    char buf[QP_CONC_WORDS][MAX_WORD_SIZE];
+    char buf[QP_CONC_WORDS][FRT_MAX_WORD_SIZE];
     char *dynbuf;
     int  buf_index;
     FerretHashTable *field_cache;

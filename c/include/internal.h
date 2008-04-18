@@ -2,6 +2,13 @@
 #define FRT_INTERNAL_H
 
 /* Constants */
+#define ABS                         FRT_ABS
+#define ALLOC                       FRT_ALLOC
+#define ALLOC_AND_ZERO              FRT_ALLOC_AND_ZERO
+#define ALLOC_AND_ZERO_N            FRT_ALLOC_AND_ZERO_N
+#define ALLOC_N                     FRT_ALLOC_N
+#define DEREF                       FRT_DEREF
+#define EMPTY_STRING                FRT_EMPTY_STRING
 #define ENGLISH_STOP_WORDS          FRT_ENGLISH_STOP_WORDS
 #define EXCEPT_H                    FRT_EXCEPT_H
 #define EXTENDED_ENGLISH_STOP_WORDS FRT_EXTENDED_ENGLISH_STOP_WORDS
@@ -23,14 +30,29 @@
 #define HAS_ISO_VARARGS             FRT_HAS_ISO_VARARGS
 #define HAS_VARARGS                 FRT_HAS_VARARGS
 #define HS_MIN_SIZE                 FRT_HS_MIN_SIZE
-#define IS_C                        FRT_IS_C
+#define INLINE                      FRT_INLINE
+#define IS_C99                      FRT_IS_C99
+#define MAX                         FRT_MAX
+#define MAX3                        FRT_MAX3
+#define MAX_FILE_PATH               FRT_MAX_FILE_PATH
+#define MAX_WORD_SIZE               FRT_MAX_WORD_SIZE
+#define MIN                         FRT_MIN
+#define MIN3                        FRT_MIN3
+#define NELEMS                      FRT_NELEMS
+#define NEXT_NUM                    FRT_NEXT_NUM
 #define PQ_ADDED                    FRT_PQ_ADDED
 #define PQ_DROPPED                  FRT_PQ_DROPPED
 #define PQ_INSERTED                 FRT_PQ_INSERTED
+#define PREV_NUM                    FRT_PREV_NUM
+#define REALLOC_N                   FRT_REALLOC_N
+#define RECAPA                      FRT_RECAPA
+#define REF                         FRT_REF
 #define SLOW_DOWN                   FRT_SLOW_DOWN
 #define VEXIT                       FRT_VEXIT
-#define WIN                         FRT_WIN
+#define WIN32_H                     FRT_WIN32_H
 #define XEXIT                       FRT_XEXIT
+#define ZEROSET                     FRT_ZEROSET
+#define ZEROSET_N                   FRT_ZEROSET_N
 
 /* Types */
 #define Analyzer                FerretAnalyzer
@@ -59,12 +81,18 @@
 #define a_standard_destroy                      frt_a_standard_destroy
 #define analyzer_new                            frt_analyzer_new
 #define clean_up                                frt_clean_up
+#define dbl_to_s                                frt_dbl_to_s
+#define do_clean_up                             frt_do_clean_up
+#define dummy_free                              frt_dummy_free
 #define ecalloc                                 frt_ecalloc
 #define emalloc                                 frt_emalloc
 #define eq_ft                                   frt_eq_ft
 #define erealloc                                frt_erealloc
+#define estrcat                                 frt_estrcat
+#define estrdup                                 frt_estrdup
 #define filter_clone_size                       frt_filter_clone_size
 #define free_ft                                 frt_free_ft
+#define get_stacktrace                          frt_get_stacktrace
 #define h_clear                                 frt_h_clear
 #define h_clone                                 frt_h_clone
 #define h_clone_func_t                          frt_h_clone_func_t
@@ -104,13 +132,19 @@
 #define hs_orig                                 frt_hs_orig
 #define hs_rem                                  frt_hs_rem
 #define hyphen_filter_new                       frt_hyphen_filter_new
+#define icmp                                    frt_icmp
+#define icmp_risky                              frt_icmp_risky
+#define imalloc                                 frt_imalloc
 #define init                                    frt_init
 #define letter_analyzer_new                     frt_letter_analyzer_new
 #define letter_tokenizer_new                    frt_letter_tokenizer_new
+#define lmalloc                                 frt_lmalloc
 #define lowercase_filter_new                    frt_lowercase_filter_new
 #define lt_ft                                   frt_lt_ft
 #define mapping_filter_add                      frt_mapping_filter_add
 #define mapping_filter_new                      frt_mapping_filter_new
+#define max2                                    frt_max2
+#define max3                                    frt_max3
 #define mb_letter_analyzer_new                  frt_mb_letter_analyzer_new
 #define mb_letter_tokenizer_new                 frt_mb_letter_tokenizer_new
 #define mb_lowercase_filter_new                 frt_mb_lowercase_filter_new
@@ -121,6 +155,8 @@
 #define mb_whitespace_analyzer_new              frt_mb_whitespace_analyzer_new
 #define mb_whitespace_tokenizer_new             frt_mb_whitespace_tokenizer_new
 #define micro_sleep                             frt_micro_sleep
+#define min2                                    frt_min2
+#define min3                                    frt_min3
 #define non_analyzer_new                        frt_non_analyzer_new
 #define non_tokenizer_new                       frt_non_tokenizer_new
 #define per_field_analyzer_new                  frt_per_field_analyzer_new
@@ -136,9 +172,12 @@
 #define pq_pop                                  frt_pq_pop
 #define pq_push                                 frt_pq_push
 #define pq_top                                  frt_pq_top
+#define print_stacktrace                        frt_print_stacktrace
 #define progname                                frt_progname
 #define ptr_eq                                  frt_ptr_eq
 #define ptr_hash                                frt_ptr_hash
+#define register_for_cleanup                    frt_register_for_cleanup
+#define scmp                                    frt_scmp
 #define setprogname                             frt_setprogname
 #define standard_analyzer_new                   frt_standard_analyzer_new
 #define standard_analyzer_new_with_words        frt_standard_analyzer_new_with_words
@@ -149,6 +188,7 @@
 #define stop_filter_new_with_words              frt_stop_filter_new_with_words
 #define stop_filter_new_with_words_len          frt_stop_filter_new_with_words_len
 #define str_hash                                frt_str_hash
+#define strfmt                                  frt_strfmt
 #define tf_new_i                                frt_tf_new_i
 #define tk_cmp                                  frt_tk_cmp
 #define tk_destroy                              frt_tk_destroy
@@ -162,9 +202,16 @@
 #define ts_new                                  frt_ts_new
 #define ts_new_i                                frt_ts_new_i
 #define ts_next                                 frt_ts_next
+#define u32malloc                               frt_u32malloc
+#define u64malloc                               frt_u64malloc
 #define vexit                                   frt_vexit
+#define vstrfmt                                 frt_vstrfmt
 #define whitespace_analyzer_new                 frt_whitespace_analyzer_new
 #define whitespace_tokenizer_new                frt_whitespace_tokenizer_new
+#define x_abort_on_exception                    frt_x_abort_on_exception
+#define x_do_logging                            frt_x_do_logging
+#define x_exception_stream                      frt_x_exception_stream
+#define x_has_aborted                           frt_x_has_aborted
 #define xexit                                   frt_xexit
 
 #endif

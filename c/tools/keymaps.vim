@@ -4,13 +4,13 @@ map <F12> :call <SID>FerretizeCurrent(expand("<cword>"))<CR>
 function! <SID>FerretizeCurrent(word)
   normal msHmt
   let bn = bufname('%')
-  if a:word =~ '^[a-z_]\+$'
+  if a:word =~ '^[a-z0-9_]\+$'
     let replace_str = "frt_".a:word
     echo "Replacing <".a:word."> with <".replace_str.">."
-  elseif a:word =~ '^[A-Z_]\+$'
+  elseif a:word =~ '^[A-Z0-9_]\+$'
     let replace_str = "FRT_".a:word
     echo "Replacing <".a:word."> with <".replace_str.">."
-  elseif a:word =~ '^[A-Za-z]\+$'
+  elseif a:word =~ '^[A-Za-z0-9]\+$'
     let replace_str = "Ferret".a:word
     echo "Replacing <".a:word."> with <".replace_str.">."
   else

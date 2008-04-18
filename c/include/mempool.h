@@ -16,7 +16,7 @@ typedef struct MemoryPool {
 
 extern MemoryPool *mp_new();
 extern MemoryPool *mp_new_capa(int chunk_size, int init_capa);
-extern INLINE void *mp_alloc(MemoryPool *mp, int size);
+extern FRT_INLINE void *mp_alloc(MemoryPool *mp, int size);
 extern void mp_reset(MemoryPool *mp);
 extern void mp_destroy(MemoryPool *mp);
 extern char *mp_strdup(MemoryPool *mp, const char *str);
@@ -30,6 +30,6 @@ extern int mp_used(MemoryPool *mp);
 #define MP_ALLOC_AND_ZERO(mp,type)\
     (type*)memset(mp_alloc(mp, sizeof(type)), 0, sizeof(type))
 #define MP_ALLOC_AND_ZERO_N(mp,type,n)\
-    (type*)ZEROSET_N(mp_alloc(mp, sizeof(type)*(n)), type, n)
+    (type*)FRT_ZEROSET_N(mp_alloc(mp, sizeof(type)*(n)), type, n)
 
 #endif

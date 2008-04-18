@@ -620,7 +620,7 @@ extern InStream *is_clone(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE uchar is_read_byte(InStream *is);
+extern FRT_INLINE uchar is_read_byte(InStream *is);
 
 /**
  * Read +len+ bytes from InStream +is+ and write them to buffer +buf+
@@ -683,7 +683,7 @@ extern f_u64 is_read_u64(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE unsigned int is_read_vint(InStream *is);
+extern FRT_INLINE unsigned int is_read_vint(InStream *is);
 
 /**
  * Skip _cnt_ vints. This is a convenience method used for performance reasons
@@ -695,7 +695,7 @@ extern INLINE unsigned int is_read_vint(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE void is_skip_vints(InStream *is, register int cnt);
+extern FRT_INLINE void is_skip_vints(InStream *is, register int cnt);
 
 /**
  * Read a compressed (VINT) unsigned off_t from the InStream.
@@ -706,7 +706,7 @@ extern INLINE void is_skip_vints(InStream *is, register int cnt);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE off_t is_read_voff_t(InStream *is);
+extern FRT_INLINE off_t is_read_voff_t(InStream *is);
 
 /**
  * Read a compressed (VINT) unsigned 64bit int from the InStream.
@@ -717,7 +717,7 @@ extern INLINE off_t is_read_voff_t(InStream *is);
  * @raise IO_ERROR if there is a error reading from the file-system
  * @raise EOF_ERROR if there is an attempt to read past the end of the file
  */
-extern INLINE f_u64 is_read_vll(InStream *is);
+extern FRT_INLINE f_u64 is_read_vll(InStream *is);
 
 /**
  * Read a string from the InStream. A string is an integer +length+ in vint

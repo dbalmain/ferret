@@ -422,9 +422,9 @@ typedef void (*frt_h_each_key_val_ft)(void *key, void *value, void *arg);
  *
  * struct StringArray *h_extract_strings(HashTable *ht)
  * {
- *   struct StringArray *str_arr = ALLOC(struct StringArray);
+ *   struct StringArray *str_arr = FRT_ALLOC(struct StringArray);
  *
- *   str_arr->strings = ALLOC_N(char *, ht->size);
+ *   str_arr->strings = FRT_ALLOC_N(char *, ht->size);
  *   str_arr->cnt = 0;
  *   str_arr->size = ht->size;
  *

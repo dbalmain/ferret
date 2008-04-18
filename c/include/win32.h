@@ -19,8 +19,8 @@ typedef struct DIR
 
 DIR *opendir(const char *dirname)
 {
-    DIR *d = ALLOC_AND_ZERO(DIR);
-    char dirname_buf[MAX_FILE_PATH];
+    DIR *d = FRT_ALLOC_AND_ZERO(DIR);
+    char dirname_buf[FRT_MAX_FILE_PATH];
     long ff_res;
     sprintf(dirname_buf, "%s\\*", dirname);
     ff_res = _findfirst(dirname_buf, &d->find_data);

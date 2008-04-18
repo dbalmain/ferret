@@ -7,9 +7,9 @@ extern void *frt_emalloc(size_t n);
 extern void *frt_ecalloc(size_t n);
 extern void *frt_erealloc(void *ptr, size_t n);
 
-#define ALLOC(type) (type *)frt_emalloc(sizeof(type))
-#define ALLOC_N(type,n) (type *)frt_emalloc(sizeof(type)*(n))
-#define REALLOC_N(ptr, type, n)\
+#define FRT_ALLOC(type) (type *)frt_emalloc(sizeof(type))
+#define FRT_ALLOC_N(type,n) (type *)frt_emalloc(sizeof(type)*(n))
+#define FRT_REALLOC_N(ptr, type, n)\
     (ptr)=(type *)frt_erealloc((ptr),sizeof(type)*(n))
 
 #ifdef FRT_HAS_ISO_VARARGS

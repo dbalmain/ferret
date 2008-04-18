@@ -14,7 +14,7 @@
 
 typedef struct FerretToken
 {
-    char text[MAX_WORD_SIZE];
+    char text[FRT_MAX_WORD_SIZE];
     int len;
     off_t start;
     off_t end;
@@ -99,7 +99,7 @@ typedef struct FerretMappingFilter
 typedef struct FerretHyphenFilter 
 {
     FerretTokenFilter super;
-    char text[MAX_WORD_SIZE];
+    char text[FRT_MAX_WORD_SIZE];
     int start;
     int pos;
     int len;

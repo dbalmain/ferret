@@ -249,8 +249,8 @@ typedef struct TermEnum TermEnum;
 
 struct TermEnum
 {
-    char        curr_term[MAX_WORD_SIZE];
-    char        prev_term[MAX_WORD_SIZE];
+    char        curr_term[FRT_MAX_WORD_SIZE];
+    char        prev_term[FRT_MAX_WORD_SIZE];
     TermInfo    curr_ti;
     int         curr_term_len;
     int         field_num;
