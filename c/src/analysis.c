@@ -590,43 +590,6 @@ static int mb_std_get_alpha(TokenStream *ts, char *token)
     return i;
 }
 
-/*
-static int std_get_alnum(TokenStream *ts, char *token)
-{
-    int i = 0;
-    char *t = ts->t;
-    while (t[i] != '\0' && isalnum(t[i])) {
-        if (i < MAX_WORD_SIZE) {
-            token[i] = t[i];
-        }
-        i++;
-    }
-    return i;
-}
-
-static int mb_std_get_alnum(TokenStream *ts, char *token)
-{
-    char *t = ts->t;
-    wchar_t wchr;
-    int i;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    i = mb_next_char(&wchr, t, &state);
-
-    while (wchr != 0 && iswalnum(wchr)) {
-        t += i;
-        i = mb_next_char(&wchr, t, &state);
-    }
-
-    i = (int)(t - ts->t);
-    if (i > MAX_WORD_SIZE) {
-        i = MAX_WORD_SIZE - 1;
-    }
-    memcpy(token, ts->t, i);
-    return i;
-}
-*/
-
 static int isnumpunc(char c)
 {
     return (c == '.' || c == ',' || c == '\\' || c == '/' || c == '_'
@@ -676,7 +639,7 @@ static bool mb_std_is_tok_char(char *t)
 {
     wchar_t c;
     mbstate_t state; ZEROSET(&state, mbstate_t);
-    
+
     if (((int)mbrtowc(&c, t, MB_CUR_MAX, &state)) < 0) {
         /* error which we can handle next time round. For now just return
          * false so that we can return a token */
@@ -800,24 +763,6 @@ static int std_get_company_name(char *input)
 
     return i;
 }
-
-/*
-static int mb_std_get_company_name(char *input, TokenStream *ts)
-{
-    char *t = input;
-    wchar_t wchr;
-    int i;
-    mbstate_t state; ZEROSET(&state, mbstate_t);
-
-    i = mb_next_char(&wchr, t, &state);
-    while (iswalpha(wchr) || wchr == L'@' || wchr == L'&') {
-        t += i;
-        i = mb_next_char(&wchr, t, &state);
-    }
-
-    return (int)(t - input);
-}
-*/
 
 static bool std_advance_to_start(TokenStream *ts)
 {
@@ -1243,7 +1188,7 @@ static Token *hf_next(TokenStream *ts)
     HyphenFilter *hf = HyphenFilt(ts);
     TokenFilter *tf = TkFilt(ts);
     Token *tk = hf->tk;
-    
+
     if (hf->pos < hf->len) {
         const int pos = hf->pos;
         const int text_len = strlen(hf->text + pos);
@@ -1564,7 +1509,7 @@ Analyzer *per_field_analyzer_new(Analyzer *default_a)
     a->destroy_i = &pfa_destroy_i;
     a->get_ts    = pfa_get_ts;
     a->ref_cnt   = 1;
-    
+
     return a;
 }
 
