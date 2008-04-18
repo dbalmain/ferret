@@ -62,9 +62,9 @@ void bv_set(BitVector *bv, int bit)
 }
 
 /*
- * This method relies on the fact that enough space has been set for the bits
- * to be set. You need to create the BitVector using bv_new_capa(capa) with
- * a capacity larger than any bit being set.
+ * This method relies on the fact that enough space has been allocated for the
+ * bits to be set. You need to create the BitVector using bv_new_capa(capa)
+ * with a capacity larger than any bit being set.
  */
 INLINE void bv_set_fast(BitVector *bv, int bit)
 {
