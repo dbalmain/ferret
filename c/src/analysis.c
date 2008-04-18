@@ -28,8 +28,8 @@ INLINE Token *tk_set(Token *tk,
     return tk;
 }
 
-INLINE Token *tk_set_ts(Token *tk,
-                        char *start, char *end, char *text, int pos_inc)
+static INLINE Token *tk_set_ts(Token *tk, char *start, char *end,
+                               char *text, int pos_inc)
 {
     return tk_set(tk, start, (int)(end - start),
                   (off_t)(start - text), (off_t)(end - text), pos_inc);
@@ -41,8 +41,8 @@ INLINE Token *tk_set_no_len(Token *tk,
     return tk_set(tk, text, (int)strlen(text), start, end, pos_inc);
 }
 
-INLINE Token *w_tk_set(Token *tk, wchar_t *text, off_t start, off_t end,
-                       int pos_inc)
+static INLINE Token *w_tk_set(Token *tk, wchar_t *text, off_t start,
+                              off_t end, int pos_inc)
 {
     int len = wcstombs(tk->text, text, MAX_WORD_SIZE - 1);
     tk->text[len] = '\0';
@@ -153,7 +153,7 @@ static TokenStream *cts_new()
 
 #define MBTS(token_stream) ((MultiByteTokenStream *)(token_stream))
 
-INLINE int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
+static INLINE int mb_next_char(wchar_t *wchr, const char *s, mbstate_t *state)
 {
     int num_bytes;
     if ((num_bytes = (int)mbrtowc(wchr, s, MB_CUR_MAX, state)) < 0) {
@@ -181,7 +181,7 @@ static TokenStream *mb_ts_clone_i(TokenStream *orig_ts)
     return ts_clone_size(orig_ts, sizeof(MultiByteTokenStream));
 }
 
-TokenStream *mb_ts_new()
+static TokenStream *mb_ts_new()
 {
     TokenStream *ts = ts_new(MultiByteTokenStream);
     ts->reset = &mb_ts_reset;
@@ -415,7 +415,7 @@ Analyzer *mb_whitespace_analyzer_new(bool lowercase)
 /*
  * LetterTokenizer
  */
-Token *lt_next(TokenStream *ts)
+static Token *lt_next(TokenStream *ts)
 {
     char *start;
     char *t = ts->t;
@@ -447,7 +447,7 @@ TokenStream *letter_tokenizer_new()
 /*
  * Multi-byte LetterTokenizer
  */
-Token *mb_lt_next(TokenStream *ts)
+static Token *mb_lt_next(TokenStream *ts)
 {
     int i;
     char *start;
@@ -479,7 +479,7 @@ Token *mb_lt_next(TokenStream *ts)
 /*
  * Lowercasing Multi-byte LetterTokenizer
  */
-Token *mb_lt_next_lc(TokenStream *ts)
+static Token *mb_lt_next_lc(TokenStream *ts)
 {
     int i;
     char *start;
@@ -1310,7 +1310,7 @@ TokenStream *hyphen_filter_new(TokenStream *sub_ts)
  ****************************************************************************/
 
 
-Token *mb_lcf_next(TokenStream *ts)
+static Token *mb_lcf_next(TokenStream *ts)
 {
     wchar_t wbuf[MAX_WORD_SIZE + 1], *wchr;
     Token *tk = TkFilt(ts)->sub_ts->next(TkFilt(ts)->sub_ts);
@@ -1343,7 +1343,7 @@ TokenStream *mb_lowercase_filter_new(TokenStream *sub_ts)
     return ts;
 }
 
-Token *lcf_next(TokenStream *ts)
+static Token *lcf_next(TokenStream *ts)
 {
     int i = 0;
     Token *tk = TkFilt(ts)->sub_ts->next(TkFilt(ts)->sub_ts);
@@ -1370,7 +1370,7 @@ TokenStream *lowercase_filter_new(TokenStream *sub_ts)
 
 #define StemFilt(filter) ((StemFilter *)(filter))
 
-void stemf_destroy_i(TokenStream *ts)
+static void stemf_destroy_i(TokenStream *ts)
 {
     sb_stemmer_delete(StemFilt(ts)->stemmer);
     free(StemFilt(ts)->algorithm);
@@ -1378,7 +1378,7 @@ void stemf_destroy_i(TokenStream *ts)
     filter_destroy_i(ts);
 }
 
-Token *stemf_next(TokenStream *ts)
+static Token *stemf_next(TokenStream *ts)
 {
     int len;
     const sb_symbol *stemmed;
@@ -1400,7 +1400,7 @@ Token *stemf_next(TokenStream *ts)
     return tk;
 }
 
-TokenStream *stemf_clone_i(TokenStream *orig_ts)
+static TokenStream *stemf_clone_i(TokenStream *orig_ts)
 {
     TokenStream *new_ts      = filter_clone_size(orig_ts, sizeof(StemFilter));
     StemFilter *stemf        = StemFilt(new_ts);
@@ -1526,7 +1526,7 @@ Analyzer *mb_standard_analyzer_new(bool lowercase)
  *
  ****************************************************************************/
 
-void pfa_destroy_i(Analyzer *self)
+static void pfa_destroy_i(Analyzer *self)
 {
     h_destroy(PFA(self)->dict);
 
@@ -1534,7 +1534,7 @@ void pfa_destroy_i(Analyzer *self)
     free(self);
 }
 
-TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
+static TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
 {
     Analyzer *a = h_get(PFA(self)->dict, field);
     if (a == NULL) {
@@ -1543,7 +1543,7 @@ TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
     return a_get_ts(a, field, text);
 }
 
-void pfa_sub_a_destroy_i(void *p)
+static void pfa_sub_a_destroy_i(void *p)
 {
     Analyzer *a = (Analyzer *) p;
     a_deref(a);

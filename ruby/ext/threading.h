@@ -5,7 +5,7 @@
 #define UNTHREADED 1
 
 typedef void * mutex_t;
-typedef struct FerretHashTable *thread_key_t;
+typedef struct FrtHashTable *thread_key_t;
 typedef int thread_once_t;
 #define MUTEX_INITIALIZER NULL
 #define MUTEX_RECURSIVE_INITIALIZER NULL
