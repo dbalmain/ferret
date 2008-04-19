@@ -4,7 +4,7 @@ class AnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_analyzer()
-    input = 'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#@$'
+    input = 'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#!$'
     a = Analyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -44,7 +44,7 @@ class AsciiLetterAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_letter_analyzer()
-    input = 'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#@$'
+    input = 'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#!$'
     a = AsciiLetterAnalyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -85,7 +85,7 @@ class LetterAnalyzerTest < Test::Unit::TestCase
 
   def test_letter_analyzer()
     Ferret.locale = ""
-    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     a = LetterAnalyzer.new(false)
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -137,7 +137,7 @@ class AsciiWhiteSpaceAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_white_space_analyzer()
-    input = 'DBalmain@gmail.com is My E-Mail 52   #$ ADDRESS. 23#@$'
+    input = 'DBalmain@gmail.com is My E-Mail 52   #$ ADDRESS. 23#!$'
     a = AsciiWhiteSpaceAnalyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -148,7 +148,7 @@ class AsciiWhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('ADDRESS.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
     assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t2.next)
     assert_equal(Token.new('is', 19, 21), t2.next)
@@ -157,7 +157,7 @@ class AsciiWhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t2.next)
     assert_equal(Token.new('#$', 37, 39), t2.next)
     assert_equal(Token.new('ADDRESS.', 40, 48), t2.next)
-    assert_equal(Token.new('23#@$', 49, 54), t2.next)
+    assert_equal(Token.new('23#!$', 49, 54), t2.next)
     assert(! t2.next())
     a = AsciiWhiteSpaceAnalyzer.new(true)
     t = a.token_stream("fieldname", input)
@@ -168,7 +168,7 @@ class AsciiWhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
   end
 end
@@ -177,7 +177,7 @@ class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_white_space_analyzer()
-    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     a = WhiteSpaceAnalyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -188,7 +188,7 @@ class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert_equal(Token.new('ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ', 55, 86), t.next)
     assert(! t.next())
     assert_equal(Token.new('DBalmän@gmail.com', 0, 18), t2.next)
@@ -198,7 +198,7 @@ class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t2.next)
     assert_equal(Token.new('#$', 37, 39), t2.next)
     assert_equal(Token.new('address.', 40, 48), t2.next)
-    assert_equal(Token.new('23#@$', 49, 54), t2.next)
+    assert_equal(Token.new('23#!$', 49, 54), t2.next)
     assert_equal(Token.new('ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ', 55, 86), t2.next)
     assert(! t2.next())
     a = WhiteSpaceAnalyzer.new(true)
@@ -210,7 +210,7 @@ class WhiteSpaceAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert_equal(Token.new('áägç®êëì¯úøã¬öîí', 55, 86), t.next)
     assert(! t.next())
   end
@@ -220,7 +220,7 @@ class AsciiStandardAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_standard_analyzer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234'
     a = AsciiStandardAnalyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -268,7 +268,7 @@ class StandardAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_standard_analyzer()
-    input = 'DBalmán@gmail.com is My e-mail and the Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmán@gmail.com is My e-mail and the Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     a = StandardAnalyzer.new()
     t = a.token_stream("fieldname", input)
     t2 = a.token_stream("fieldname", input)
@@ -355,7 +355,7 @@ end if (/utf-8/i =~ Ferret.locale)
 class PerFieldAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
   def test_per_field_analyzer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ address. 23#@$'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$'
     pfa = PerFieldAnalyzer.new(StandardAnalyzer.new())
     pfa['white'] = WhiteSpaceAnalyzer.new(false)
     pfa['white_l'] = WhiteSpaceAnalyzer.new(true)
@@ -370,7 +370,7 @@ class PerFieldAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
     t = pfa.token_stream('white_l', input)
     assert_equal(Token.new('dbalmain@gmail.com', 0, 18), t.next)
@@ -380,7 +380,7 @@ class PerFieldAnalyzerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
     t = pfa.token_stream('letter_u', input)
     assert_equal(Token.new('DBalmain', 0, 8), t.next)
@@ -418,7 +418,7 @@ class RegExpAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_reg_exp_analyzer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
     a = RegExpAnalyzer.new()
     t = a.token_stream('XXX', input)
     t2 = a.token_stream('XXX', "one_Two three")
@@ -510,7 +510,7 @@ class CustomAnalyzerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_custom_filter()
-    input = 'DBalmán@gmail.com is My e-mail and the Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmán@gmail.com is My e-mail and the Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     a = StemmingStandardAnalyzer.new()
     t = a.token_stream("fieldname", input)
     assert_equal(Token.new('dbalmán@gmail.com', 0, 18), t.next)

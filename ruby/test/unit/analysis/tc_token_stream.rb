@@ -27,7 +27,7 @@ class AsciiLetterTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_letter_tokenizer()
-    input = 'DBalmain@gmail.com is My e-mail 523@#$ ADDRESS. 23#@$'
+    input = 'DBalmain@gmail.com is My e-mail 523@#$ ADDRESS. 23#!$'
     t = AsciiLetterTokenizer.new(input)
     assert_equal(Token.new("DBalmain", 0, 8), t.next())
     assert_equal(Token.new("gmail", 9, 14), t.next())
@@ -60,7 +60,7 @@ class LetterTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_letter_tokenizer()
-    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     t = LetterTokenizer.new(input)
     assert_equal(Token.new('DBalmän', 0, 8), t.next)
     assert_equal(Token.new('gmail', 9, 14), t.next)
@@ -115,7 +115,7 @@ class AsciiWhiteSpaceTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_whitespace_tokenizer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ ADDRESS. 23#@$'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ ADDRESS. 23#!$'
     t = AsciiWhiteSpaceTokenizer.new(input)
     assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
@@ -124,7 +124,7 @@ class AsciiWhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('ADDRESS.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
     t.text = "one_two three"
     assert_equal(Token.new("one_two", 0, 7), t.next())
@@ -138,7 +138,7 @@ class AsciiWhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert(! t.next())
   end
 end
@@ -147,7 +147,7 @@ class WhiteSpaceTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_whitespace_tokenizer()
-    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     t = WhiteSpaceTokenizer.new(input)
     assert_equal(Token.new('DBalmän@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
@@ -156,7 +156,7 @@ class WhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert_equal(Token.new('ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ', 55, 86), t.next)
     assert(! t.next())
     t.text = "one_two three"
@@ -171,7 +171,7 @@ class WhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert_equal(Token.new('áägç®êëì¯úøã¬öîí', 55, 86), t.next)
     assert(! t.next())
     t = WhiteSpaceTokenizer.new(input, true)
@@ -182,7 +182,7 @@ class WhiteSpaceTokenizerTest < Test::Unit::TestCase
     assert_equal(Token.new('52', 32, 34), t.next)
     assert_equal(Token.new('#$', 37, 39), t.next)
     assert_equal(Token.new('address.', 40, 48), t.next)
-    assert_equal(Token.new('23#@$', 49, 54), t.next)
+    assert_equal(Token.new('23#!$', 49, 54), t.next)
     assert_equal(Token.new('áägç®êëì¯úøã¬öîí', 55, 86), t.next)
     assert(! t.next())
   end
@@ -192,7 +192,7 @@ class AsciiStandardTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_standard_tokenizer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234'
     t = AsciiStandardTokenizer.new(input)
     assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
@@ -228,7 +228,7 @@ class StandardTokenizerTest < Test::Unit::TestCase
   include Ferret::Analysis
 
   def test_standard_tokenizer()
-    input = 'DBalmán@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/res_345/ T.N.T. 123-1235-ASD-1234 23#@$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
+    input = 'DBalmán@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/res_345/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ'
     t = StandardTokenizer.new(input)
     assert_equal(Token.new('DBalmán@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)
@@ -287,7 +287,7 @@ class RegExpTokenizerTest < Test::Unit::TestCase
   APOSTROPHE_WORD = /^#{APOSTROPHE}$/
 
   def test_reg_exp_tokenizer()
-    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#@$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
+    input = 'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob\'s'
     t = RegExpTokenizer.new(input)
     assert_equal(Token.new('DBalmain@gmail.com', 0, 18), t.next)
     assert_equal(Token.new('is', 19, 21), t.next)

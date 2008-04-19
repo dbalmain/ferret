@@ -368,7 +368,11 @@ namespace :build do
   end
 
   rule '.c' => '.rl' do |t|
-    sh "ragel #{t.prerequisites} -o #{t.name}"
+    sh "ragel -G2 #{t.prerequisites} -o #{t.name}"
+  end
+
+  file 'src/scanner_mb.rl' => 'src/scanner.in' do
+    FileUtils.touch('src/scanner_mb.rl')
   end
 
   file '.rake/HAVE_SPARSE_HASH' => '.rake/have_sparse_hash.cpp' do |t|
