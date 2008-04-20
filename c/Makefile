@@ -20,14 +20,14 @@ BZLIB_DIR = lib/bzlib
 BZLIB_INC = $(BZLIB_DIR)
 
 CC       = gcc
-CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC)
+CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC) -Itest
 DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2
 DEFS    += -DHAVE_GDB
 CFLAGS   = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
 LDFLAGS  = -lm -lpthread -lz
 DEP_DIR  = .deps
 GCOV_DIR = .gcov
-VPATH    = test:src
+VPATH    = test:src:benchmark
 
 ###
 # Objects
@@ -61,6 +61,9 @@ test_analysis.o          test_filter.o            test_priorityqueue.o \
 test_sort.o              test_ram_store.o         test_file_deleter.o  \
 test_lang.o
 
+BENCH_OBJS = benchmark.o bm_bitvector.o bm_hash.o \
+             bm_micro_string.o bm_store.o         \
+
 BZLIB_SRCS = \
 bzlib.c blocksort.c compress.c crctable.c decompress.c huffman.c randtable.c
 BZLIB_OBJS = $(BZLIB_SRCS:%.c=$(BZLIB_DIR)/%.o)
@@ -68,7 +71,7 @@ BZLIB_OBJS = $(BZLIB_SRCS:%.c=$(BZLIB_DIR)/%.o)
 include $(STEMMER_DIR)/mkinc.mak
 STEMMER_OBJS = $(snowball_sources:%.c=$(STEMMER_DIR)/%.o)
 
-FRT_OBJS = $(OBJS) $(TEST_OBJS)
+FRT_OBJS = $(OBJS) $(TEST_OBJS) $(BENCH_OBJS)
 EXT_OBJS = $(BZLIB_OBJS) $(STEMMER_OBJS)
 
 ###
@@ -87,7 +90,14 @@ test: testall
 
 testall: $(TEST_OBJS) libferret.a
 	@echo Building task: $@ ...
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+benchall: $(BENCH_OBJS) libferret.a
+	@echo Building task: $@ ...
+	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+bench: benchall
+	@./benchall
 
 clean:
 	@rm -f  $(FRT_OBJS) $(FRT_OBJS:%.o=%.gcov) $(FRT_OBJS:%.o=%.gcno)
@@ -123,12 +133,6 @@ gen_valsupp: testall
                  --show-reachable=yes         \
                  --gen-suppressions=yes       \
                  --workaround-gcc296-bugs=yes -v ./testall -q
-
-###
-# Benchmarking
-###
-
-# TODO
 
 ###
 # Dependency build
@@ -175,4 +179,4 @@ src/q_parser.c: src/q_parser.y
 # Etc
 ###
 
-.PHONY: clean all test gcov gprof valgrind gen_valsupp
+.PHONY: clean all test bench gcov gprof valgrind gen_valsupp

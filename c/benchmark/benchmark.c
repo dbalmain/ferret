@@ -14,7 +14,7 @@ static int bmtcmp(const void *p1, const void *p2)
 {
     BenchMarkTimes *bmt1 = *(BenchMarkTimes **)p1;
     BenchMarkTimes *bmt2 = *(BenchMarkTimes **)p2;
-    
+
     if (bmt1->rtime > bmt2->rtime) return 1;
     else if (bmt1->rtime < bmt2->rtime) return -1;
     else return 0;
@@ -131,7 +131,7 @@ static void bm_run(BenchMark *benchmark)
         }
         DO_TEARDOWN(benchmark);
     }
-    
+
     /* get maximum unit name length for print out */
     for (unit = benchmark->head; unit; unit = unit->next) {
         int name_len = (int)strlen(unit->name);
