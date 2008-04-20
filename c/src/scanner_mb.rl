@@ -19,11 +19,11 @@
 %%{
     machine StdTok;
     alphtype unsigned int;
-    include WChar "src/wchar.rl";
+    include WChar "src/uchar-ucs4.rl";
 
-    frt_alpha = walpha;
-    frt_alnum = walnum;
-    frt_digit = wdigit;
+    frt_alpha = ualpha;
+    frt_alnum = ualnum;
+    frt_digit = udigit;
 
     include StdTok "src/scanner.in";
 
