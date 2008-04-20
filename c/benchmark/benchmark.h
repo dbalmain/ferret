@@ -8,7 +8,11 @@
 #include <sys/time.h>
 
 #define BM_RUN_COUNT 6
+#ifdef __cplusplus
+#define BENCH(name) extern "C" void bm_##name(BenchMark *bm)
+#else
 #define BENCH(name) void bm_##name(BenchMark *bm)
+#endif
 
 extern const char *WORD_LIST[];
 
