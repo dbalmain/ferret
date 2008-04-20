@@ -1,13 +1,9 @@
 #!/usr/bin/env ruby
 # 
-# This script generates a Ragel state machine that recognizes the
-# walpha, wdigit, walnum unicode character classes.  By default, the
-# output is a recognizer for UTF8 encoded data, but it can output a
-# recognizer for ucs4 encoded data as well.
-#
-# The script pulls down the unicode spec from unicode.org and looks at
-# the defined properties in order to determine what the character
-# classes are.
+# This script uses the unicode spec to generate a Ragel state machine
+# that recognizes unicode alphanumeric characters.  It generates 3
+# character classes: ualpha, udigit, and ualnum.  Currently supported
+# encodings are UTF-8 [default] and UCS-4.
 #
 # Usage: unicode2ragel.rb [options]
 #    -e, --encoding [ucs4 | utf8]     Data encoding
@@ -15,26 +11,27 @@
 #
 # Rakan El-Khalil <rakan@well.com>
 
-ENCODINGS = [ "utf8", "ucs4" ]
-CHART_URL = "http://www.unicode.org/Public/5.1.0/ucd/DerivedCoreProperties.txt"
-
 require 'optparse'
 require 'open-uri'
 
-###
-# Default option
+ENCODINGS = [ :utf8, :ucs4 ]
+ALPHTYPES = { :utf8 => "unsigned char", :ucs4 => "unsigned int" }
+CHART_URL = "http://www.unicode.org/Public/5.1.0/ucd/DerivedCoreProperties.txt"
 
-options = {}
-options[:encoding] = "utf8"
+###
+# Display vars & default option
+
+TOTAL_WIDTH = 80
+RANGE_WIDTH = 23
+@encoding = :utf8
 
 ###
 # Option parsing
 
 cli_opts = OptionParser.new do |opts|
   opts.on("-e", "--encoding [ucs4 | utf8]", "Data encoding") do |o|
-    options[:encoding] = o.downcase
+    @encoding = o.downcase.to_sym
   end
-
   opts.on("-h", "--help", "Show this message") do
     puts opts
     exit
@@ -42,60 +39,51 @@ cli_opts = OptionParser.new do |opts|
 end
 
 cli_opts.parse(ARGV)
-unless ENCODINGS.member? options[:encoding]
-  puts "Invalid encoding: #{options[:encoding]}"
+unless ENCODINGS.member? @encoding
+  puts "Invalid encoding: #{@encoding}"
   puts cli_opts
   exit
 end
 
 ##
-# Downloads the document at url and yields every line that has the
-# given property.
+# Downloads the document at url and yields every alpha line's hex
+# range and description.
 
-def for_each_line(url, property) 
-  open(url) do |file|
+def each_alpha( url ) 
+  open( url ) do |file|
     file.each_line do |line|
       next if line =~ /^#/;
-      next if line !~ /; #{property} #/;
+      next if line !~ /; Alphabetic #/;
 
       range, description = line.split(/;/)
       range.strip!
-      description.gsub!(/.*#/, '')
-      description.strip!
+      description.gsub!(/.*#/, '').strip!
 
       if range =~ /\.\./
            start, stop = range.split '..'
       else start = stop = range
       end
 
-      yield start.hex..stop.hex, description
+      yield start.hex .. stop.hex, description
     end
   end
 end
 
 ###
-# Formats the hex to have a minimum width without sign confusion
+# Formats to hex at minimum width
 
 def to_hex( n )
-  width = if    n <= 0x7f : 2
-          elsif n <= 0x7ff : 3
-          elsif n <= 0x7fff : 4
-          elsif n <= 0x7ffff : 5
-          elsif n <= 0x7fffff : 6
-          elsif n <= 0x7ffffff : 7
-          else 8
-          end
-  "0x%0#{width}X" % n
+  r = "%0X" % n
+  r = "0#{r}" unless (r.length % 2).zero?
+  r
 end
 
 ###
-# Returns a list of range strings.  In the UCS4 case, the range is
-# always the same as the original.  For UTF8, we may need to split the
-# range if it encompasses encoding boundaries.
+# UCS4 is just a straight hex conversion of the unicode codepoint.
 
 def to_ucs4( range )
-  rangestr = to_hex(range.begin)
-  rangestr << ".." << to_hex(range.end) if range.begin != range.end
+  rangestr  =   "0x" + to_hex(range.begin)
+  rangestr << "..0x" + to_hex(range.end) if range.begin != range.end
   [ rangestr ]
 end
 
@@ -127,7 +115,32 @@ def to_utf8_enc( n )
     z = 0x80 |  n        & 0x3f
     r = w << 24 | x << 16 | y << 8 | z
   end
+
   to_hex(r)
+end
+
+def from_utf8_enc( n )
+  n = n.hex
+  r = 0
+  if n <= 0x7f
+    r = n
+  elsif n <= 0xdfff
+    y = (n >> 8) & 0x1f
+    z =  n       & 0x3f
+    r = y << 6 | z
+  elsif n <= 0xefffff
+    x = (n >> 16) & 0x0f
+    y = (n >>  8) & 0x3f
+    z =  n        & 0x3f
+    r = x << 10 | y << 6 | z
+  elsif n <= 0xf7ffffff
+    w = (n >> 24) & 0x07
+    x = (n >> 16) & 0x3f
+    y = (n >>  8) & 0x3f
+    z =  n        & 0x3f
+    r = w << 18 | x << 12 | y << 6 | z
+  end
+  r
 end
 
 ###
@@ -147,18 +160,90 @@ def utf8_ranges( range )
       range = (max + 1) .. range.end
     end
   end
+  ranges
+end
+
+def build_range( start, stop )
+  size = start.size/2
+  left = size - 1
+  return [""] if size < 1
+
+  a = start[0..1]
+  b = stop[0..1]
+
+  ###
+  # Shared prefix
+
+  if a == b
+    return build_range(start[2..-1], stop[2..-1]).map do |elt|
+      "0x#{a} " + elt
+    end
+  end
+
+  ###
+  # Unshared prefix, end of run
+
+  return ["0x#{a}..0x#{b} "] if left.zero?
+  
+  ###
+  # Unshared prefix, not end of run
+  # Range can be 0x123456..0x56789A
+  # Which is equivalent to:
+  #     0x123456 .. 0x12FFFF
+  #     0x130000 .. 0x55FFFF
+  #     0x560000 .. 0x56789A
+
+  ret = []
+  ret << build_range(start, a + "FF" * left)
+
+  ###
+  # Only generate middle range if need be.
+
+  if a.hex+1 != b.hex
+    max = to_hex(b.hex - 1)
+    max = "FF" if b == "FF"
+    ret << "0x#{to_hex(a.hex+1)}..0x#{max} " + "0x00..0xFF " * left
+  end
+
+  ###
+  # Don't generate last range if it is covered by first range
+  
+  ret << build_range(b + "00" * left, stop) unless b == "FF"
+  ret.flatten!
 end
 
 def to_utf8( range )
-  utf8_ranges( range ).map do |r|
-    rangestr = to_utf8_enc(r.begin)
-    rangestr << ".." << to_utf8_enc(r.end) if r.begin != r.end
-    rangestr
+  utf8_ranges( range ).map do |r|    
+    build_range to_utf8_enc(r.begin), to_utf8_enc(r.end) 
+  end.flatten!
+end
+
+##
+# Perform a 3-way comparison of the number of codepoints advertised by
+# the unicode spec for the given range, the originally parsed range,
+# and the resulting utf8 encoded range.
+
+def count_codepoints( code )
+  code.split(' ').inject(1) do |acc, elt|
+    if elt =~ /0x(.+)\.\.0x(.+)/
+      if @encoding == :utf8
+        acc * (from_utf8_enc($2) - from_utf8_enc($1) + 1)
+      else
+        acc * ($2.hex - $1.hex + 1)
+      end
+    else
+      acc
+    end
   end
 end
 
-def encode(range, encoding)
-  encoding == "ucs4" ? to_ucs4(range) : to_utf8(range)
+def is_valid?( range, desc, codes )
+  spec_count  = 1
+  spec_count  = $1.to_i if desc =~ /\[(\d+)\]/
+  range_count = range.end - range.begin + 1
+
+  sum = codes.inject(0) { |acc, elt| acc + count_codepoints(elt) }
+  sum == spec_count and sum == range_count
 end
 
 ##
@@ -168,26 +253,38 @@ puts <<EOF
 # The following Ragel file was autogenerated with #{$0} 
 # from: #{CHART_URL}
 #
-# It defines walpha, wdigit, walnum.
+# It defines ualpha, udigit, ualnum.
 #
-# To use this, make sure that your alphtype is set to unsigned int, and
-# that your input is in #{options[:encoding]}.
+# To use this, make sure that your alphtype is set to #{ALPHTYPES[@encoding]},
+# and that your input is in #{@encoding}.
 
 %%{
     machine WChar;
-    walpha = 
+    ualpha = 
 EOF
 
 pipe = " "
-for_each_line( CHART_URL, "Alphabetic" ) do |range, description|
+each_alpha( CHART_URL ) do |range, desc|
 
-  if description.size > 46
-    description = description.slice(0..42) + "..."
+  codes = (@encoding == :ucs4) ? to_ucs4(range) : to_utf8(range)
+
+  raise "Invalid encoding of range #{range}: #{codes.inspect}" unless 
+    is_valid? range, desc, codes
+
+  range_width = codes.map { |a| a.size }.max
+  range_width = RANGE_WIDTH if range_width < RANGE_WIDTH
+
+  desc_width  = TOTAL_WIDTH - RANGE_WIDTH - 11
+  desc_width -= (range_width - RANGE_WIDTH) if range_width > RANGE_WIDTH
+
+  if desc.size > desc_width
+    desc = desc[0..desc_width - 4] + "..."
   end
 
-  encode(range, options[:encoding]).each_with_index do |r, idx|
-    description = "" unless idx.zero?
-    puts "      #{pipe} #{'%-23s' % r} ##{description}"
+  codes.each_with_index do |r, idx|
+    desc = "" unless idx.zero?
+    code = "%-#{range_width}s" % r
+    puts "      #{pipe} #{code} ##{desc}"
     pipe = "|"
   end
 end
@@ -195,7 +292,7 @@ end
 puts <<EOF
       ;
 
-    wdigit = '0'..'9';
-    walnum = walpha | wdigit;
+    udigit = '0'..'9';
+    ualnum = ualpha | udigit;
 }%%
 EOF
