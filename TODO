@@ -15,7 +15,6 @@ TODO
   - Add benchmark suite
   - Add Rakefile for development purposes
     + task to publish gcov and benchmark results to ferret wiki
-  - Fix tmpname warning.
   - Index rebuilding of old versioned indexes.
   - Add a globally accessable, threadsafe symbol table. This will be very
     useful for storing field names so that no objects need to strdup the
