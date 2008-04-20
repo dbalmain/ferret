@@ -1,14 +1,11 @@
-#include <sys/times.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <unistd.h>
-#include <limits.h>
 #include <string.h>
 #include "global.h"
 #include "benchmark.h"
 #include "all_benchmarks.h"
 #include "word_list.h"
-
-static int hertz;
 
 static int bmtcmp(const void *p1, const void *p2)
 {
@@ -59,28 +56,28 @@ static void bm_clear(BenchMark *benchmark)
     benchmark->head = benchmark->tail = NULL;
 }
 
+#define TVAL_TO_SEC(before, after) \
+  ((double)after.tv_sec  + ((double)after.tv_usec/1000000)) - \
+  ((double)before.tv_sec + ((double)before.tv_usec/1000000))
+
 static void bm_single_run(BenchMarkUnit *unit, BenchMarkTimes *bm_times)
 {
     struct timeval tv_before, tv_after;
-    struct tms tms_before, tms_after;
-    double before, after;
+    struct rusage ru_before, ru_after;
 
     if (gettimeofday(&tv_before, NULL) == -1)
         RAISE(FRT_UNSUPPORTED_ERROR, "gettimeofday failed\n");
-    (void)times(&tms_before);
+    getrusage(RUSAGE_SELF, &ru_before);
 
     unit->run();
 
     if (gettimeofday(&tv_after, NULL) == -1)
         RAISE(FRT_UNSUPPORTED_ERROR, "gettimeofday failed\n");
-    (void)times(&tms_after);
-    before = (double)tv_before.tv_sec + ((double)tv_before.tv_usec/1000000);
-    after = (double)tv_after.tv_sec + ((double)tv_after.tv_usec/1000000);
-    bm_times->rtime = after - before;
-    bm_times->utime =
-        ((double)(tms_after.tms_utime - tms_before.tms_utime))/hertz;
-    bm_times->stime =
-        ((double)(tms_after.tms_stime - tms_before.tms_stime))/hertz;
+    getrusage(RUSAGE_SELF, &ru_after);
+
+    bm_times->rtime = TVAL_TO_SEC(tv_before, tv_after);
+    bm_times->utime = TVAL_TO_SEC(ru_before.ru_utime, ru_after.ru_utime);
+    bm_times->stime = TVAL_TO_SEC(ru_before.ru_stime, ru_after.ru_stime);
 }
 
 #define DO_SETUP(bm) if (bm->setup) bm->setup();
@@ -158,8 +155,6 @@ int main(int argc, const char *const argv[])
     BenchMark benchmark;
     (void)argc; (void)argv;
     benchmark.head = benchmark.tail = NULL;
-    /* set the clock speed used for calculating run times */
-    hertz = sysconf(_SC_CLK_TCK);
 
     for (i = 0; i < NELEMS(all_benchmarks); i++) {
         if (argc == 2) {
