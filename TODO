@@ -24,6 +24,16 @@ TODO
     Perhaps we could use some type of buffered read for this.
   - Make BitVector run as fast as bitset from C++ STL. See;
       c/benchmark/bm_bitvector.c
+  - Add a symbol table for field names. This will mean that we won't need to
+    worry about mallocing and freeing field names which happens all over the
+    place.
+  - Divide the headers into public and private (the private headers to be
+    stored in the src directory).
+  - Group-by search. ie you should be able to pass a field to group search
+    results by
+  - Auto-loading of documents during search. ie actual documents get returned
+    instead of document numbers.
+  - update benchmark suite to use getrusage.u
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
@@ -63,6 +73,7 @@ Someday Maybe
 * investigate unscored searching
 * user defined sorting
 * Fix highlighting to work for external fields
+* investigate faster string hashing method
 
 Done
 ====
