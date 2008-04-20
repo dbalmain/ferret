@@ -23,6 +23,8 @@ TODO
   - Make threading optional at compile time
   - to_json should limit output to prevent memory overflow on large indexes.
     Perhaps we could use some type of buffered read for this.
+  - Make BitVector run as fast as bitset from C++ STL. See;
+      c/benchmark/bm_bitvector.c
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
