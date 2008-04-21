@@ -44,7 +44,7 @@ q_parser.o          q_phrase.o           q_prefix.o         q_range.o         \
 q_span.o            q_term.o             q_wildcard.o       ram_store.o       \
 search.o            similarity.o         sort.o             stopwords.o       \
 store.o             term_vectors.o       field_index.o      lang.o            \
-scanner.o           scanner_mb.o		 intern.o
+scanner.o           scanner_mb.o         intern.o
 
 TEST_OBJS = \
 test_multimapper.o       test_q_const_score.o     test_threading.o     \
@@ -59,7 +59,7 @@ test_array.o             test_document.o          test_helper.o        \
 test_test.o              test.o                   test_q_span.o        \
 test_analysis.o          test_filter.o            test_priorityqueue.o \
 test_sort.o              test_ram_store.o         test_file_deleter.o  \
-test_lang.o				 test_intern.o
+test_lang.o              test_intern.o
 
 BENCH_OBJS = benchmark.o bm_bitvector.o bm_hash.o \
              bm_micro_string.o bm_store.o         \
