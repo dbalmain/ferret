@@ -13,7 +13,7 @@ void intern_init()
 
 const char *intern(const char *str)
 {
-    char *symbol = h_get(symbol_table, str);
+    char *symbol = (char *)h_get(symbol_table, str);
     if (!symbol) {
         symbol = estrdup(str);
         h_set(symbol_table, symbol, symbol);
@@ -23,7 +23,7 @@ const char *intern(const char *str)
 
 const char *intern_and_free(char *str)
 {
-    char *symbol = h_get(symbol_table, str);
+    char *symbol = (char *)h_get(symbol_table, str);
     if (!symbol) {
         symbol = str;
         h_set(symbol_table, symbol, symbol);
