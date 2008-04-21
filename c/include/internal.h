@@ -216,6 +216,7 @@
 #define FieldInfo               FrtFieldInfo
 #define FieldInfos              FrtFieldInfos
 #define FieldInverter           FrtFieldInverter
+#define FieldStack              FrtFieldStack
 #define FieldsReader            FrtFieldsReader
 #define FieldsWriter            FrtFieldsWriter
 #define Filter                  FrtFilter

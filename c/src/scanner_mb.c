@@ -6633,11 +6633,10 @@ _eof_trans:
 	case 13:
 	{{p = ((te))-1;}}
 	break;
-	default: break;
 	}
 	}
 	break;
-#line 6641 "src/scanner_mb.c"
+#line 6640 "src/scanner_mb.c"
 		}
 	}
 
@@ -6650,7 +6649,7 @@ _again:
 #line 1 "src/scanner_mb.rl"
 	{ts = 0;}
 	break;
-#line 6654 "src/scanner_mb.c"
+#line 6653 "src/scanner_mb.c"
 		}
 	}
 
