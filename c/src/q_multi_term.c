@@ -1,6 +1,7 @@
 #include <string.h>
 #include "search.h"
 #include "helper.h"
+#include "intern.h"
 #include "internal.h"
 
 #define MTQ(query) ((MultiTermQuery *)(query))
@@ -507,7 +508,7 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms, *bt_pq_clone;
     BoostedTerm *bt;
     char *buffer, *bptr;
-    char *field = MTQ(self)->field;
+    const char *field = MTQ(self)->field;
     int flen = (int)strlen(field);
     int tlen = 0;
 
@@ -553,7 +554,6 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
 
 static void multi_tq_destroy_i(Query *self)
 {
-    free(MTQ(self)->field);
     pq_destroy(MTQ(self)->boosted_terms);
     q_destroy_i(self);
 }
@@ -561,7 +561,7 @@ static void multi_tq_destroy_i(Query *self)
 static void multi_tq_extract_terms(Query *self, HashSet *terms)
 {
     int i;
-    char *field = MTQ(self)->field;
+    const char *field = MTQ(self)->field;
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
     for (i = boosted_terms->size; i > 0; i--) {
         BoostedTerm *bt = (BoostedTerm *)boosted_terms->heap[i];
@@ -604,6 +604,7 @@ static int multi_tq_eq(Query *self, Query *o)
 static MatchVector *multi_tq_get_matchv_i(Query *self, MatchVector *mv,
                                           TermVector *tv)
 {
+    // TODO use ==
     if (strcmp(tv->field, MTQ(self)->field) == 0) {
         int i;
         PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
@@ -633,7 +634,7 @@ Query *multi_tq_new_conf(const char *field, int max_terms, float min_boost)
 
     self                     = q_new(MultiTermQuery);
 
-    MTQ(self)->field         = estrdup(field);
+    MTQ(self)->field         = intern(field);
     MTQ(self)->boosted_terms = pq_new(max_terms,
                                       (lt_ft)&boosted_term_less_than,
                                       (free_ft)&boosted_term_destroy);

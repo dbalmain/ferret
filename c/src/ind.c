@@ -46,7 +46,7 @@ void index_auto_flush_iw(Index *self)
 Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
                  bool create)
 {
-    HashSet *all_fields = hs_new_str(&free);
+    HashSet *all_fields = hs_new_str(NULL);
     Index *self = ALLOC_AND_ZERO(Index);
     self->config = default_config;
     mutex_init(&self->mutex, NULL);
@@ -74,8 +74,8 @@ Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
 
     /* options */
     self->key = NULL;
-    self->id_field = estrdup(ID_STRING);
-    self->def_field = estrdup(ID_STRING);
+    self->id_field = ID_STRING;
+    self->def_field = ID_STRING;
     self->auto_flush = false;
     self->check_latest = true;
 
@@ -98,8 +98,6 @@ void index_destroy(Index *self)
     a_deref(self->analyzer);
     if (self->qp) qp_destroy(self->qp);
     if (self->key) hs_destroy(self->key);
-    free(self->id_field);
-    free(self->def_field);
     free(self);
 }
 
@@ -281,8 +279,7 @@ Query *index_get_query(Index *self, char *qstr)
     ensure_searcher_open(self);
     fis = self->ir->fis;
     for (i = fis->size - 1; i >= 0; i--) {
-        char *field = fis->fields[i]->name;
-        hs_add(self->qp->all_fields, estrdup(field));
+        hs_add(self->qp->all_fields, (char *)fis->fields[i]->name);
     }
     return qp_parse(self->qp, qstr);
 }

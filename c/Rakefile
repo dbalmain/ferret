@@ -199,7 +199,7 @@ CLOBBER.include([ '*.a',
                   DEP_DIR,
                   GCOV_DIR])
 
-task :default => :test
+task :default => :testall
 
 def run_tests
   check_coptions
@@ -368,7 +368,7 @@ namespace :build do
   end
 
   rule '.c' => '.rl' do |t|
-    sh "ragel -G2 #{t.prerequisites} -o #{t.name}"
+    sh "ragel #{t.prerequisites} -o #{t.name}"
   end
 
   file 'src/scanner_mb.rl' => 'src/scanner.in' do

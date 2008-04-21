@@ -1,4 +1,5 @@
 #include "search.h"
+#include "intern.h"
 #include <string.h>
 #include "internal.h"
 
@@ -11,7 +12,6 @@
 void filt_destroy_i(Filter *filt)
 {
     h_destroy(filt->cache);
-    free(filt->name);
     free(filt);
 }
 void filt_deref(Filter *filt)
@@ -58,7 +58,7 @@ Filter *filt_create(size_t size, const char *name)
 {
     Filter *filt    = (Filter *)emalloc(size);
     filt->cache     = co_hash_create();
-    filt->name      = estrdup(name);
+    filt->name      = intern(name);
     filt->to_s      = &filt_to_s_i;
     filt->hash      = &filt_hash_default;
     filt->eq        = &filt_eq_default;

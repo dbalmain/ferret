@@ -86,17 +86,17 @@ static void test_span_term(TestCase *tc, void *data)
 
     tq = spantq_new("notafield", "nine");
     check_hits(tc, sea, tq, "", -1);
-    TEST_SE(tq, ir, "SpanTermEnum(span_terms(nine))@START");
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(notafield:nine))@START");
     q_deref(tq);
 
     tq = spantq_new(field, "nine");
     check_hits(tc, sea, tq, "7,23", -1);
-    TEST_SE(tq, ir, "SpanTermEnum(span_terms(nine))@START");
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(field:nine))@START");
     q_deref(tq);
 
     tq = spantq_new(field, "eight");
     check_hits(tc, sea, tq, "6,7,8,22,23,24", -1);
-    TEST_SE(tq, ir, "SpanTermEnum(span_terms(eight))@START");
+    TEST_SE(tq, ir, "SpanTermEnum(span_terms(field:eight))@START");
     q_deref(tq);
 
     searcher_close(sea);
@@ -140,32 +140,32 @@ static void test_span_multi_term(TestCase *tc, void *data)
 
     mtq = spanmtq_new("notafield");
     check_hits(tc, sea, mtq, "", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(notafield:[]))@START");
 
     spanmtq_add_term(mtq, "nine");
     check_hits(tc, sea, mtq, "", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(notafield:[nine]))@START");
 
     spanmtq_add_term(mtq, "finish");
     check_hits(tc, sea, mtq, "", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,finish]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(notafield:[nine,finish]))@START");
     q_deref(mtq);
 
     mtq = spanmtq_new_conf(field, 4);
     check_hits(tc, sea, mtq, "", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(field:[]))@START");
 
     spanmtq_add_term(mtq, "nine");
     check_hits(tc, sea, mtq, "7, 23", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(field:[nine]))@START");
 
     spanmtq_add_term(mtq, "flop");
     check_hits(tc, sea, mtq, "7, 12, 16, 21, 23, 27", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,flop]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(field:[nine,flop]))@START");
 
     spanmtq_add_term(mtq, "toot");
     check_hits(tc, sea, mtq, "7, 12, 14, 16, 21, 23, 27", -1);
-    TEST_SE(mtq, ir, "SpanTermEnum(span_terms([nine,flop,toot]))@START");
+    TEST_SE(mtq, ir, "SpanTermEnum(span_terms(field:[nine,flop,toot]))@START");
     q_deref(mtq);
 
     searcher_close(sea);
@@ -240,18 +240,18 @@ static void test_span_prefix_hash(TestCase *tc, void *data)
 
     q2 = spanprq_new("A", "a");
     Aiequal(q_hash(q1), q_hash(q2));
-    Assert(q_eq(q1, q2), "TermQueries are equal");
-    Assert(q_eq(q1, q1), "TermQueries are same");
+    Assert(q_eq(q1, q2), "SpanPrefixQueries are equal");
+    Assert(q_eq(q1, q1), "SpanPrefixQueries are same");
     q_deref(q2);
 
     q2 = spanprq_new("A", "b");
-    Assert(q_hash(q1) != q_hash(q2), "TermQueries are not equal");
-    Assert(!q_eq(q1, q2), "TermQueries are not equal");
+    Assert(q_hash(q1) != q_hash(q2), "SpanPrefixQueries are not equal");
+    Assert(!q_eq(q1, q2), "SpanPrefixQueries are not equal");
     q_deref(q2);
 
     q2 = spanprq_new("B", "a");
-    Assert(q_hash(q1) != q_hash(q2), "TermQueries are not equal");
-    Assert(!q_eq(q1, q2), "TermQueries are not equal");
+    Assert(q_hash(q1) != q_hash(q2), "SpanPrefixQueries are not equal");
+    Assert(!q_eq(q1, q2), "SpanPrefixQueries are not equal");
     q_deref(q2);
 
     q_deref(q1);
@@ -323,7 +323,7 @@ static void test_span_or(TestCase *tc, void *data)
 
     spanoq_add_clause_nr(q, spantq_new(field, "flip"));
     check_hits(tc, sea, q, "2, 4, 16, 19, 21, 29", -1);
-    TEST_SE(q, ir, "SpanTermEnum(span_terms(flip))@START");
+    TEST_SE(q, ir, "SpanTermEnum(span_terms(field:flip))@START");
 
     spanoq_add_clause_nr(q, spantq_new(field, "flop"));
     check_hits(tc, sea, q, "2, 4, 12, 16, 19, 21, 27, 29", -1);
@@ -378,7 +378,7 @@ static void test_span_near(TestCase *tc, void *data)
     q = spannq_new(0, true);
     TEST_SE(q, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(q, spantq_new(field, "start"));
-    TEST_SE(q, ir, "SpanTermEnum(span_terms(start))@START");
+    TEST_SE(q, ir, "SpanTermEnum(span_terms(field:start))@START");
     spannq_add_clause_nr(q, spantq_new(field, "finish"));
     TEST_SE(q, ir, "SpanNearEnum(span_near[span_terms(field:start),span_terms(field:finish)])@START");
     check_hits(tc, sea, q, "0, 14", -1);
@@ -479,14 +479,14 @@ static void test_span_not(TestCase *tc, void *data)
     nearq0 = spannq_new(4, true);
     TEST_SE(nearq0, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(nearq0, spantq_new(field, "start"));
-    TEST_SE(nearq0, ir, "SpanTermEnum(span_terms(start))@START");
+    TEST_SE(nearq0, ir, "SpanTermEnum(span_terms(field:start))@START");
     spannq_add_clause_nr(nearq0, spantq_new(field, "finish"));
     TEST_SE(nearq0, ir, "SpanNearEnum(span_near[span_terms(field:start),span_terms(field:finish)])@START");
 
     nearq1 = spannq_new(4, true);
     TEST_SE(nearq1, ir, "SpanNearEnum(span_near[])@START");
     spannq_add_clause_nr(nearq1, spantq_new(field, "two"));
-    TEST_SE(nearq1, ir, "SpanTermEnum(span_terms(two))@START");
+    TEST_SE(nearq1, ir, "SpanTermEnum(span_terms(field:two))@START");
     spannq_add_clause_nr(nearq1, spantq_new(field, "five"));
     TEST_SE(nearq1, ir, "SpanNearEnum(span_near[span_terms(field:two),span_terms(field:five)])@START");
 

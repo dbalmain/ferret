@@ -1295,16 +1295,16 @@ Searcher *isea_new(IndexReader *ir)
 #define CDFSEA(searcher) ((CachedDFSearcher *)(searcher))
 typedef struct CachedDFSearcher
 {
-    Searcher    super;
-    Hash  *df_map;
-    int         max_doc;
+    Searcher super;
+    Hash     *df_map;
+    int      max_doc;
 } CachedDFSearcher;
 
 static int cdfsea_doc_freq(Searcher *self, const char *field, const char *text)
 {
     Term term;
     int *df;
-    term.field = (char *)field;
+    term.field = field;
     term.text = (char *)text;
     df = (int *)h_get(CDFSEA(self)->df_map, &term);
     return df ? *df : 0;

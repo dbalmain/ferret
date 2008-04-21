@@ -5,6 +5,7 @@
 #include "except.h"
 #include "search.h"
 #include "array.h"
+#include "intern.h"
 #include "internal.h"
 
 typedef struct Phrase {
@@ -333,7 +334,7 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
         ts = (TokenStream *)h_get(qp->ts_cache, field);
         if (!ts) {
             ts = a_get_ts(qp->analyzer, field, text);
-            h_set(qp->ts_cache, estrdup(field), ts);
+            h_set(qp->ts_cache, field, ts);
         }
         else {
             ts->reset(ts, text);
@@ -344,16 +345,6 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
         ts->reset(ts, text);
     }
     return ts;
-}
-
-static char *get_cached_field(Hash *field_cache, const char *field)
-{
-    char *cached_field = (char *)h_get(field_cache, field);
-    if (!cached_field) {
-        cached_field = estrdup(field);
-        h_set(field_cache, cached_field, cached_field);
-    }
-    return cached_field;
 }
 
 static Query *get_bool_q(BCArray *bca)
@@ -591,7 +582,7 @@ static Query *get_wild_q(QParser *qp, char *field, char *pattern)
 static HashSet *add_field(QParser *qp, char *field)
 {
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
-        hs_add(qp->fields, get_cached_field(qp->field_cache, field));
+        hs_add(qp->fields, (char *)intern(field));
     }
     return qp->fields;
 }
@@ -852,7 +843,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->def_fields = def_fields;
         for (hse = def_fields->first; hse; hse = hse->next) {
             if (!hs_exists(self->all_fields, hse->elem)) {
-                hs_add(self->all_fields, estrdup((char *)hse->elem));
+                hs_add(self->all_fields, hse->elem);
             }
         }
         self->close_def_fields = true;
@@ -861,15 +852,15 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->def_fields = all_fields;
         self->close_def_fields = false;
     }
-    self->field_cache = h_new_str((free_ft)NULL, &free);
+    self->field_cache = h_new_str((free_ft)NULL, (free_ft)NULL);
     for (hse = self->all_fields->first; hse; hse = hse->next) {
-        char *field = estrdup((char *)hse->elem);
+        char *field = (char *)hse->elem;
         h_set(self->field_cache, field, field);
     }
     self->fields = self->def_fields;
     /* make sure all_fields contains the default fields */
     self->analyzer = analyzer;
-    self->ts_cache = h_new_str(&free, (free_ft)&ts_deref);
+    self->ts_cache = h_new_str(NULL, (free_ft)&ts_deref);
     self->buf_index = 0;
     self->dynbuf = 0;
     self->non_tokenizer = non_tokenizer_new();

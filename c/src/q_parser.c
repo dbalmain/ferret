@@ -106,6 +106,7 @@
 #include "except.h"
 #include "search.h"
 #include "array.h"
+#include "intern.h"
 #include "internal.h"
 
 typedef struct Phrase {
@@ -147,7 +148,7 @@ int qp_default_fuzzy_pre_len = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 28 "src/q_parser.y"
+#line 29 "src/q_parser.y"
 {
     Query *query;
     BooleanClause *bcls;
@@ -157,7 +158,7 @@ typedef union YYSTYPE
     char *str;
 }
 /* Line 187 of yacc.c.  */
-#line 161 "src/q_parser.c"
+#line 162 "src/q_parser.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -167,7 +168,7 @@ typedef union YYSTYPE
 
 
 /* Copy the second part of user declarations.  */
-#line 36 "src/q_parser.y"
+#line 37 "src/q_parser.y"
 
 static int yylex(YYSTYPE *lvalp, QParser *qp);
 static int yyerror(QParser *qp, char const *msg);
@@ -244,7 +245,7 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
 
 
 /* Line 216 of yacc.c.  */
-#line 248 "src/q_parser.c"
+#line 249 "src/q_parser.c"
 
 #ifdef short
 # undef short
@@ -547,12 +548,12 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,   130,   130,   131,   133,   134,   135,   136,   138,   139,
-     140,   142,   143,   145,   146,   147,   148,   149,   150,   151,
-     153,   154,   155,   157,   159,   159,   161,   161,   161,   164,
-     165,   167,   168,   169,   170,   172,   173,   174,   175,   176,
-     178,   179,   180,   181,   182,   183,   184,   185,   186,   187,
-     188,   189
+       0,   131,   131,   132,   134,   135,   136,   137,   139,   140,
+     141,   143,   144,   146,   147,   148,   149,   150,   151,   152,
+     154,   155,   156,   158,   160,   160,   162,   162,   162,   165,
+     166,   168,   169,   170,   171,   173,   174,   175,   176,   177,
+     179,   180,   181,   182,   183,   184,   185,   186,   187,   188,
+     189,   190
 };
 #endif
 
@@ -1211,59 +1212,59 @@ yydestruct (yymsg, yytype, yyvaluep, qp)
   switch (yytype)
     {
       case 27: /* "bool_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1217 "src/q_parser.c"
+#line 1218 "src/q_parser.c"
 	break;
       case 28: /* "bool_clss" */
-#line 127 "src/q_parser.y"
+#line 128 "src/q_parser.y"
 	{ if ((yyvaluep->bclss) && qp->destruct) bca_destroy((yyvaluep->bclss)); };
-#line 1222 "src/q_parser.c"
+#line 1223 "src/q_parser.c"
 	break;
       case 29: /* "bool_cls" */
-#line 126 "src/q_parser.y"
+#line 127 "src/q_parser.y"
 	{ if ((yyvaluep->bcls) && qp->destruct) bc_deref((yyvaluep->bcls)); };
-#line 1227 "src/q_parser.c"
+#line 1228 "src/q_parser.c"
 	break;
       case 30: /* "boosted_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1232 "src/q_parser.c"
+#line 1233 "src/q_parser.c"
 	break;
       case 31: /* "q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1237 "src/q_parser.c"
+#line 1238 "src/q_parser.c"
 	break;
       case 32: /* "term_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1242 "src/q_parser.c"
+#line 1243 "src/q_parser.c"
 	break;
       case 33: /* "wild_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1247 "src/q_parser.c"
+#line 1248 "src/q_parser.c"
 	break;
       case 34: /* "field_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1252 "src/q_parser.c"
+#line 1253 "src/q_parser.c"
 	break;
       case 39: /* "phrase_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1257 "src/q_parser.c"
+#line 1258 "src/q_parser.c"
 	break;
       case 40: /* "ph_words" */
-#line 128 "src/q_parser.y"
+#line 129 "src/q_parser.y"
 	{ if ((yyvaluep->phrase) && qp->destruct) ph_destroy((yyvaluep->phrase)); };
-#line 1262 "src/q_parser.c"
+#line 1263 "src/q_parser.c"
 	break;
       case 41: /* "range_q" */
-#line 125 "src/q_parser.y"
+#line 126 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1267 "src/q_parser.c"
+#line 1268 "src/q_parser.c"
 	break;
 
       default:
@@ -1572,228 +1573,228 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 130 "src/q_parser.y"
+#line 131 "src/q_parser.y"
     {   qp->result = (yyval.query) = NULL; }
     break;
 
   case 3:
-#line 131 "src/q_parser.y"
+#line 132 "src/q_parser.y"
     { T qp->result = (yyval.query) = get_bool_q((yyvsp[(1) - (1)].bclss)); E }
     break;
 
   case 4:
-#line 133 "src/q_parser.y"
+#line 134 "src/q_parser.y"
     { T (yyval.bclss) = first_cls((yyvsp[(1) - (1)].bcls)); E }
     break;
 
   case 5:
-#line 134 "src/q_parser.y"
+#line 135 "src/q_parser.y"
     { T (yyval.bclss) = add_and_cls((yyvsp[(1) - (3)].bclss), (yyvsp[(3) - (3)].bcls)); E }
     break;
 
   case 6:
-#line 135 "src/q_parser.y"
+#line 136 "src/q_parser.y"
     { T (yyval.bclss) = add_or_cls((yyvsp[(1) - (3)].bclss), (yyvsp[(3) - (3)].bcls)); E }
     break;
 
   case 7:
-#line 136 "src/q_parser.y"
+#line 137 "src/q_parser.y"
     { T (yyval.bclss) = add_default_cls(qp, (yyvsp[(1) - (2)].bclss), (yyvsp[(2) - (2)].bcls)); E }
     break;
 
   case 8:
-#line 138 "src/q_parser.y"
+#line 139 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(2) - (2)].query), BC_MUST); E }
     break;
 
   case 9:
-#line 139 "src/q_parser.y"
+#line 140 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(2) - (2)].query), BC_MUST_NOT); E }
     break;
 
   case 10:
-#line 140 "src/q_parser.y"
+#line 141 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(1) - (1)].query), BC_SHOULD); E }
     break;
 
   case 12:
-#line 143 "src/q_parser.y"
+#line 144 "src/q_parser.y"
     { T if ((yyvsp[(1) - (3)].query)) sscanf((yyvsp[(3) - (3)].str),"%f",&((yyvsp[(1) - (3)].query)->boost));  (yyval.query)=(yyvsp[(1) - (3)].query); E }
     break;
 
   case 14:
-#line 146 "src/q_parser.y"
+#line 147 "src/q_parser.y"
     { T (yyval.query) = bq_new_max(true, qp->max_clauses); E }
     break;
 
   case 15:
-#line 147 "src/q_parser.y"
+#line 148 "src/q_parser.y"
     { T (yyval.query) = get_bool_q((yyvsp[(2) - (3)].bclss)); E }
     break;
 
   case 20:
-#line 153 "src/q_parser.y"
+#line 154 "src/q_parser.y"
     { FLDS((yyval.query), get_term_q(qp, field, (yyvsp[(1) - (1)].str))); Y}
     break;
 
   case 21:
-#line 154 "src/q_parser.y"
+#line 155 "src/q_parser.y"
     { FLDS((yyval.query), get_fuzzy_q(qp, field, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].str))); Y}
     break;
 
   case 22:
-#line 155 "src/q_parser.y"
+#line 156 "src/q_parser.y"
     { FLDS((yyval.query), get_fuzzy_q(qp, field, (yyvsp[(1) - (2)].str), NULL)); Y}
     break;
 
   case 23:
-#line 157 "src/q_parser.y"
+#line 158 "src/q_parser.y"
     { FLDS((yyval.query), get_wild_q(qp, field, (yyvsp[(1) - (1)].str))); Y}
     break;
 
   case 24:
-#line 159 "src/q_parser.y"
+#line 160 "src/q_parser.y"
     { qp->fields = qp->def_fields; }
     break;
 
   case 25:
-#line 160 "src/q_parser.y"
+#line 161 "src/q_parser.y"
     { (yyval.query) = (yyvsp[(3) - (4)].query); }
     break;
 
   case 26:
-#line 161 "src/q_parser.y"
+#line 162 "src/q_parser.y"
     { qp->fields = qp->all_fields; }
     break;
 
   case 27:
-#line 161 "src/q_parser.y"
+#line 162 "src/q_parser.y"
     {qp->fields = qp->def_fields;}
     break;
 
   case 28:
-#line 162 "src/q_parser.y"
+#line 163 "src/q_parser.y"
     { (yyval.query) = (yyvsp[(4) - (5)].query); }
     break;
 
   case 29:
-#line 164 "src/q_parser.y"
+#line 165 "src/q_parser.y"
     { (yyval.hashset) = first_field(qp, (yyvsp[(1) - (1)].str)); }
     break;
 
   case 30:
-#line 165 "src/q_parser.y"
+#line 166 "src/q_parser.y"
     { (yyval.hashset) = add_field(qp, (yyvsp[(3) - (3)].str));}
     break;
 
   case 31:
-#line 167 "src/q_parser.y"
+#line 168 "src/q_parser.y"
     { (yyval.query) = get_phrase_q(qp, (yyvsp[(2) - (3)].phrase), NULL); }
     break;
 
   case 32:
-#line 168 "src/q_parser.y"
+#line 169 "src/q_parser.y"
     { (yyval.query) = get_phrase_q(qp, (yyvsp[(2) - (5)].phrase), (yyvsp[(5) - (5)].str)); }
     break;
 
   case 33:
-#line 169 "src/q_parser.y"
+#line 170 "src/q_parser.y"
     { (yyval.query) = NULL; }
     break;
 
   case 34:
-#line 170 "src/q_parser.y"
+#line 171 "src/q_parser.y"
     { (yyval.query) = NULL; (void)(yyvsp[(4) - (4)].str);}
     break;
 
   case 35:
-#line 172 "src/q_parser.y"
+#line 173 "src/q_parser.y"
     { (yyval.phrase) = ph_first_word((yyvsp[(1) - (1)].str)); }
     break;
 
   case 36:
-#line 173 "src/q_parser.y"
+#line 174 "src/q_parser.y"
     { (yyval.phrase) = ph_first_word(NULL); }
     break;
 
   case 37:
-#line 174 "src/q_parser.y"
+#line 175 "src/q_parser.y"
     { (yyval.phrase) = ph_add_word((yyvsp[(1) - (2)].phrase), (yyvsp[(2) - (2)].str)); }
     break;
 
   case 38:
-#line 175 "src/q_parser.y"
+#line 176 "src/q_parser.y"
     { (yyval.phrase) = ph_add_word((yyvsp[(1) - (3)].phrase), NULL); }
     break;
 
   case 39:
-#line 176 "src/q_parser.y"
+#line 177 "src/q_parser.y"
     { (yyval.phrase) = ph_add_multi_word((yyvsp[(1) - (3)].phrase), (yyvsp[(3) - (3)].str));  }
     break;
 
   case 40:
-#line 178 "src/q_parser.y"
+#line 179 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  true,  true)); Y}
     break;
 
   case 41:
-#line 179 "src/q_parser.y"
+#line 180 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  true,  false)); Y}
     break;
 
   case 42:
-#line 180 "src/q_parser.y"
+#line 181 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  false, true)); Y}
     break;
 
   case 43:
-#line 181 "src/q_parser.y"
+#line 182 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  false, false)); Y}
     break;
 
   case 44:
-#line 182 "src/q_parser.y"
+#line 183 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (3)].str),  false, false)); Y}
     break;
 
   case 45:
-#line 183 "src/q_parser.y"
+#line 184 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (3)].str),  false, true)); Y}
     break;
 
   case 46:
-#line 184 "src/q_parser.y"
+#line 185 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (3)].str),  NULL,true,  false)); Y}
     break;
 
   case 47:
-#line 185 "src/q_parser.y"
+#line 186 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (3)].str),  NULL,false, false)); Y}
     break;
 
   case 48:
-#line 186 "src/q_parser.y"
+#line 187 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (2)].str),  false, false)); Y}
     break;
 
   case 49:
-#line 187 "src/q_parser.y"
+#line 188 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(3) - (3)].str),  false, true)); Y}
     break;
 
   case 50:
-#line 188 "src/q_parser.y"
+#line 189 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(3) - (3)].str),  NULL,true,  false)); Y}
     break;
 
   case 51:
-#line 189 "src/q_parser.y"
+#line 190 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (2)].str),  NULL,false, false)); Y}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1797 "src/q_parser.c"
+#line 1798 "src/q_parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2007,7 +2008,7 @@ yyreturn:
 }
 
 
-#line 191 "src/q_parser.y"
+#line 192 "src/q_parser.y"
 
 
 static const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
@@ -2153,7 +2154,7 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
         ts = (TokenStream *)h_get(qp->ts_cache, field);
         if (!ts) {
             ts = a_get_ts(qp->analyzer, field, text);
-            h_set(qp->ts_cache, estrdup(field), ts);
+            h_set(qp->ts_cache, field, ts);
         }
         else {
             ts->reset(ts, text);
@@ -2164,16 +2165,6 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
         ts->reset(ts, text);
     }
     return ts;
-}
-
-static char *get_cached_field(Hash *field_cache, const char *field)
-{
-    char *cached_field = (char *)h_get(field_cache, field);
-    if (!cached_field) {
-        cached_field = estrdup(field);
-        h_set(field_cache, cached_field, cached_field);
-    }
-    return cached_field;
 }
 
 static Query *get_bool_q(BCArray *bca)
@@ -2411,7 +2402,7 @@ static Query *get_wild_q(QParser *qp, char *field, char *pattern)
 static HashSet *add_field(QParser *qp, char *field)
 {
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
-        hs_add(qp->fields, get_cached_field(qp->field_cache, field));
+        hs_add(qp->fields, (char *)intern(field));
     }
     return qp->fields;
 }
@@ -2672,7 +2663,7 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->def_fields = def_fields;
         for (hse = def_fields->first; hse; hse = hse->next) {
             if (!hs_exists(self->all_fields, hse->elem)) {
-                hs_add(self->all_fields, estrdup((char *)hse->elem));
+                hs_add(self->all_fields, hse->elem);
             }
         }
         self->close_def_fields = true;
@@ -2681,15 +2672,15 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
         self->def_fields = all_fields;
         self->close_def_fields = false;
     }
-    self->field_cache = h_new_str((free_ft)NULL, &free);
+    self->field_cache = h_new_str((free_ft)NULL, (free_ft)NULL);
     for (hse = self->all_fields->first; hse; hse = hse->next) {
-        char *field = estrdup((char *)hse->elem);
+        char *field = (char *)hse->elem;
         h_set(self->field_cache, field, field);
     }
     self->fields = self->def_fields;
     /* make sure all_fields contains the default fields */
     self->analyzer = analyzer;
-    self->ts_cache = h_new_str(&free, (free_ft)&ts_deref);
+    self->ts_cache = h_new_str(NULL, (free_ft)&ts_deref);
     self->buf_index = 0;
     self->dynbuf = 0;
     self->non_tokenizer = non_tokenizer_new();

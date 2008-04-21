@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "intern.h"
 #include "internal.h"
 
 /*****************************************************************************
@@ -10,7 +11,7 @@
 
 typedef struct Range
 {
-    char *field;
+    const char *field;
     char *lower_term;
     char *upper_term;
     bool include_lower : 1;
@@ -69,7 +70,6 @@ static char *range_to_s(Range *range, const char *field, float boost)
 
 static void range_destroy(Range *range)
 {
-    free(range->field);
     free(range->lower_term);
     free(range->upper_term);
     free(range);
@@ -83,13 +83,14 @@ static unsigned long range_hash(Range *filt)
             ^ (filt->upper_term ? str_hash(filt->upper_term) : 0)) << 2);
 }
 
-static int str_eq(char *s1, char *s2)
+static int str_eq(const char *s1, const char *s2)
 {
     return (s1 && s2 && (strcmp(s1, s2) == 0)) || (s1 == s2);
 }
 
 static int range_eq(Range *filt, Range *o)
 {
+    // TODO use == instead of str_eq
     return (str_eq(filt->field, o->field)
             && str_eq(filt->lower_term, o->lower_term)
             && str_eq(filt->upper_term, o->upper_term)
@@ -124,7 +125,7 @@ static Range *range_new(const char *field, const char *lower_term,
 
     range = ALLOC(Range);
 
-    range->field = estrdup((char *)field);
+    range->field = intern(field);
     range->lower_term = lower_term ? estrdup(lower_term) : NULL;
     range->upper_term = upper_term ? estrdup(upper_term) : NULL;
     range->include_lower = include_lower;
@@ -178,7 +179,7 @@ static Range *trange_new(const char *field, const char *lower_term,
 
     range = ALLOC(Range);
 
-    range->field = estrdup((char *)field);
+    range->field = intern(field);
     range->lower_term = lower_term ? estrdup(lower_term) : NULL;
     range->upper_term = upper_term ? estrdup(upper_term) : NULL;
     range->include_lower = include_lower;
@@ -465,6 +466,7 @@ static MatchVector *rq_get_matchv_i(Query *self, MatchVector *mv,
                                     TermVector *tv)
 {
     Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
+    // TODO use ==
     if (strcmp(tv->field, range->field) == 0) {
         int i, j;
         char *upper_text = range->upper_term;
@@ -567,6 +569,7 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
                                      TermVector *tv)
 {
     Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
+    // TODO use ==
     if (strcmp(tv->field, range->field) != 0) {
         double lnum = 0.0, unum = 0.0;
         int len = 0;

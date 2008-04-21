@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "intern.h"
 #include "internal.h"
 
 /****************************************************************************
@@ -63,7 +64,6 @@ static Query *prq_rewrite(Query *self, IndexReader *ir)
 
 static void prq_destroy(Query *self)
 {
-    free(PfxQ(self)->field);
     free(PfxQ(self)->prefix);
     q_destroy_i(self);
 }
@@ -75,6 +75,7 @@ static unsigned long prq_hash(Query *self)
 
 static int prq_eq(Query *self, Query *o)
 {
+    // TODO use ==
     return (strcmp(PfxQ(self)->prefix, PfxQ(o)->prefix) == 0)
         && (strcmp(PfxQ(self)->field,  PfxQ(o)->field) == 0);
 }
@@ -83,7 +84,7 @@ Query *prefixq_new(const char *field, const char *prefix)
 {
     Query *self = q_new(PrefixQuery);
 
-    PfxQ(self)->field       = estrdup(field);
+    PfxQ(self)->field       = intern(field);
     PfxQ(self)->prefix      = estrdup(prefix);
     MTQMaxTerms(self)       = PREFIX_QUERY_MAX_TERMS;
 

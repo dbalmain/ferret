@@ -212,7 +212,9 @@ static void a_standard_destroy_i(Analyzer *a)
     free(a);
 }
 
-static TokenStream *a_standard_get_ts(Analyzer *a, char *field, char *text)
+static TokenStream *a_standard_get_ts(Analyzer *a,
+                                      const char *field,
+                                      char *text)
 {
     TokenStream *ts;
     (void)field;
@@ -222,7 +224,8 @@ static TokenStream *a_standard_get_ts(Analyzer *a, char *field, char *text)
 
 Analyzer *analyzer_new(TokenStream *ts,
                        void (*destroy_i)(Analyzer *a),
-                       TokenStream *(*get_ts)(Analyzer *a, char *field,
+                       TokenStream *(*get_ts)(Analyzer *a,
+                                              const char *field,
                                               char *text))
 {
     Analyzer *a = ALLOC(Analyzer);
@@ -1548,7 +1551,8 @@ static void pfa_destroy_i(Analyzer *self)
     free(self);
 }
 
-static TokenStream *pfa_get_ts(Analyzer *self, char *field, char *text)
+static TokenStream *pfa_get_ts(Analyzer *self,
+                               const char *field, char *text)
 {
     Analyzer *a = (Analyzer *)h_get(PFA(self)->dict, field);
     if (a == NULL) {
@@ -1563,9 +1567,11 @@ static void pfa_sub_a_destroy_i(void *p)
     a_deref(a);
 }
 
-void pfa_add_field(Analyzer *self, char *field, Analyzer *analyzer)
+void pfa_add_field(Analyzer *self, 
+                   const char *field,
+                   Analyzer *analyzer)
 {
-    h_set(PFA(self)->dict, estrdup(field), analyzer);
+    h_set(PFA(self)->dict, field, analyzer);
 }
 
 Analyzer *per_field_analyzer_new(Analyzer *default_a)
@@ -1573,7 +1579,7 @@ Analyzer *per_field_analyzer_new(Analyzer *default_a)
     Analyzer *a = (Analyzer *)ecalloc(sizeof(PerFieldAnalyzer));
 
     PFA(a)->default_a = default_a;
-    PFA(a)->dict = h_new_str(&free, &pfa_sub_a_destroy_i);
+    PFA(a)->dict = h_new_str(NULL, &pfa_sub_a_destroy_i);
 
     a->destroy_i = &pfa_destroy_i;
     a->get_ts    = pfa_get_ts;

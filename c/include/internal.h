@@ -580,6 +580,9 @@
 #define index_term_id                           frt_index_term_id
 #define init                                    frt_init
 #define int2float                               frt_int2float
+#define intern                                  frt_intern
+#define intern_and_free                         frt_intern_and_free
+#define intern_init                             frt_intern_init
 #define ir_add_cache                            frt_ir_add_cache
 #define ir_close                                frt_ir_close
 #define ir_commit                               frt_ir_commit

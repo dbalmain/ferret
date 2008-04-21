@@ -2,6 +2,7 @@
 #include "search.h"
 #include "index.h"
 #include "field_index.h"
+#include "intern.h"
 #include "internal.h"
 
 /***************************************************************************
@@ -18,7 +19,7 @@ static INLINE SortField *sort_field_alloc(const char *field,
     const FieldIndexClass *field_index_class)
 {
     SortField *self         = ALLOC(SortField);
-    self->field             = field ? estrdup(field) : NULL;
+    self->field             = field ? intern(field) : NULL;
     self->type              = type;
     self->reverse           = reverse;
     self->field_index_class = field_index_class;
@@ -58,8 +59,6 @@ SortField *sort_field_new(const char *field, SortType type, bool reverse)
 
 void sort_field_destroy(void *p)
 {
-    SortField *self = (SortField *)p;
-    free(self->field);
     free(p);
 }
 
@@ -132,19 +131,19 @@ SortField *sort_field_score_new(bool reverse)
 }
 
 const SortField SORT_FIELD_SCORE = {
+    NULL,               /* field_index_class */
     NULL,               /* field */
     SORT_TYPE_SCORE,    /* type */
     false,              /* reverse */
-    NULL,               /* field_index_class */
     &sf_score_compare,  /* compare */
     &sf_score_get_val,  /* get_val */
 };
 
 const SortField SORT_FIELD_SCORE_REV = {
+    NULL,               /* field_index_class */
     NULL,               /* field */
     SORT_TYPE_SCORE,    /* type */
     true,               /* reverse */
-    NULL,               /* field_index_class */
     &sf_score_compare,  /* compare */
     &sf_score_get_val,  /* get_val */
 };
@@ -177,19 +176,19 @@ SortField *sort_field_doc_new(bool reverse)
 }
 
 const SortField SORT_FIELD_DOC = {
+    NULL,               /* field_index_class */
     NULL,               /* field */
     SORT_TYPE_DOC,      /* type */
     false,              /* reverse */
-    NULL,               /* field_index_class */
     &sf_doc_compare,    /* compare */
     &sf_doc_get_val,    /* get_val */
 };
 
 const SortField SORT_FIELD_DOC_REV = {
+    NULL,               /* field_index_class */
     NULL,               /* field */
     SORT_TYPE_DOC,      /* type */
     true,               /* reverse */
-    NULL,               /* field_index_class */
     &sf_doc_compare,    /* compare */
     &sf_doc_get_val,    /* get_val */
 };
