@@ -19,13 +19,13 @@
 %%{
     machine StdTok;
     alphtype unsigned int;
-    include WChar "src/uchar-ucs4.rl";
+    include WChar "uchar-ucs4.rl";
 
     frt_alpha = ualpha;
     frt_alnum = ualnum;
     frt_digit = udigit;
 
-    include StdTok "src/scanner.in";
+    include StdTok "scanner.in";
 
     main := any @{ fhold; fcall frt_tokenizer; };
 }%%

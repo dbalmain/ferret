@@ -447,7 +447,7 @@ static const char _StdTok_indicies[] = {
 	0
 };
 
-static const char _StdTok_trans_targs_wi[] = {
+static const char _StdTok_trans_targs[] = {
 	34, 35, 2, 3, 4, 37, 6, 35, 
 	7, 35, 35, 8, 9, 10, 35, 41, 
 	13, 53, 14, 15, 16, 18, 19, 20, 
@@ -464,7 +464,7 @@ static const char _StdTok_trans_targs_wi[] = {
 	82, 79, 80, 32, 81, 84, 85, 86
 };
 
-static const char _StdTok_trans_actions_wi[] = {
+static const char _StdTok_trans_actions[] = {
 	5, 51, 0, 0, 0, 11, 0, 39, 
 	0, 13, 49, 0, 0, 0, 47, 83, 
 	0, 68, 0, 0, 0, 0, 0, 0, 
@@ -509,7 +509,7 @@ static const char _StdTok_from_state_actions[] = {
 	0, 0, 0, 0, 0, 0, 0
 };
 
-static const char _StdTok_eof_trans[] = {
+static const short _StdTok_eof_trans[] = {
 	0, 0, 2, 2, 2, 8, 2, 2, 
 	11, 11, 11, 15, 2, 2, 2, 2, 
 	2, 31, 2, 2, 2, 2, 2, 31, 
@@ -638,12 +638,12 @@ _resume:
 _match:
 	_trans = _StdTok_indicies[_trans];
 _eof_trans:
-	cs = _StdTok_trans_targs_wi[_trans];
+	cs = _StdTok_trans_targs[_trans];
 
-	if ( _StdTok_trans_actions_wi[_trans] == 0 )
+	if ( _StdTok_trans_actions[_trans] == 0 )
 		goto _again;
 
-	_acts = _StdTok_actions + _StdTok_trans_actions_wi[_trans];
+	_acts = _StdTok_actions + _StdTok_trans_actions[_trans];
 	_nacts = (unsigned int) *_acts++;
 	while ( _nacts-- > 0 )
 	{
@@ -822,11 +822,14 @@ _eof_trans:
 	case 11:
 	{{p = ((te))-1;} RET; }
 	break;
+	case 13:
+	{{p = ((te))-1;}}
+	break;
 	default: break;
 	}
 	}
 	break;
-#line 830 "src/scanner.c"
+#line 833 "src/scanner.c"
 		}
 	}
 
@@ -839,7 +842,7 @@ _again:
 #line 1 "src/scanner.rl"
 	{ts = 0;}
 	break;
-#line 843 "src/scanner.c"
+#line 846 "src/scanner.c"
 		}
 	}
 

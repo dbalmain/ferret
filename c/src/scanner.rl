@@ -22,7 +22,7 @@
     frt_alnum = alnum;
     frt_digit = digit;
 
-    include StdTok "src/scanner.in";
+    include StdTok "scanner.in";
 
     main := any @{ fhold; fcall frt_tokenizer; };
 }%%
