@@ -892,6 +892,11 @@ extern FrtSearcher *frt_msea_new(FrtSearcher **searchers, int s_cnt, bool close_
 
 #define FRT_QP_CONC_WORDS 2
 #define FRT_QP_MAX_CLAUSES 512
+typedef struct FrtFieldStack {
+    FrtHashSet *fields;
+    struct FrtFieldStack *next;
+    bool destroy : 1;
+} FrtFieldStack;
 
 typedef struct FrtQParser
 {
@@ -905,11 +910,11 @@ typedef struct FrtQParser
     char *dynbuf;
     int  buf_index;
     FrtHash *field_cache;
-    FrtHashSet *fields;
-    FrtHashSet *fields_buf;
     FrtHashSet *def_fields;
     FrtHashSet *all_fields;
     FrtHashSet *tokenized_fields;
+    FrtHashSet *fields;
+    FrtFieldStack *fields_top;
     FrtAnalyzer *analyzer;
     FrtHash *ts_cache;
     FrtQuery *result;
@@ -919,7 +924,6 @@ typedef struct FrtQParser
     bool clean_str : 1;
     bool handle_parse_errors : 1;
     bool allow_any_fields : 1;
-    bool close_def_fields : 1;
     bool destruct : 1;
     bool recovering : 1;
     bool use_keywords : 1;
