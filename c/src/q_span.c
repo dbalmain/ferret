@@ -2,6 +2,7 @@
 #include <limits.h>
 #include "search.h"
 #include "hashset.h"
+#include "intern.h"
 #include "internal.h"
 
 #define CLAUSE_INIT_CAPA 4
@@ -25,7 +26,7 @@ static unsigned long spanq_hash(Query *self)
 
 static int spanq_eq(Query *self, Query *o)
 {
-    return strcmp(SpQ(self)->field, SpQ(o)->field) == 0;
+    return SpQ(self)->field == SpQ(o)->field;
 }
 
 static void spanq_destroy_i(Query *self)
@@ -134,15 +135,15 @@ static int tv_tde_doc_num(TermDocEnum *tde)
 static TermDocEnum *spanq_ir_term_positions(IndexReader *ir)
 {
     TVTermDocEnum *tv_tde = ALLOC(TVTermDocEnum);
-    TermDocEnum *tde = (TermDocEnum *)tv_tde;
-    tv_tde->tv = (TermVector *)ir->store;
-    tde->seek           = &tv_tde_seek;
-    tde->doc_num        = &tv_tde_doc_num;
-    tde->freq           = &tv_tde_freq;
-    tde->next           = &tv_tde_next;
-    tde->skip_to        = &tv_tde_skip_to;
-    tde->next_position  = &tv_tde_next_position;
-    tde->close          = (void (*)(TermDocEnum *tde))&free;
+    TermDocEnum *tde      = (TermDocEnum *)tv_tde;
+    tv_tde->tv            = (TermVector *)ir->store;
+    tde->seek             = &tv_tde_seek;
+    tde->doc_num          = &tv_tde_doc_num;
+    tde->freq             = &tv_tde_freq;
+    tde->next             = &tv_tde_next;
+    tde->skip_to          = &tv_tde_skip_to;
+    tde->next_position    = &tv_tde_next_position;
+    tde->close            = (void (*)(TermDocEnum *tde))&free;
 
     return tde;
 }
@@ -150,11 +151,12 @@ static TermDocEnum *spanq_ir_term_positions(IndexReader *ir)
 static MatchVector *spanq_get_matchv_i(Query *self, MatchVector *mv,
                                        TermVector *tv)
 {
-    if (strcmp(SpQ(self)->field, tv->field) == 0) {
+    if (SpQ(self)->field == tv->field) {
         SpanEnum *sp_enum;
         IndexReader *ir = ALLOC(IndexReader);
         MatchVector *full_mv = matchv_new();
         HashSet *terms = SpQ(self)->get_terms(self);
+        /* FIXME What is going on here? Need to document this! */
         ir->fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
         fis_add_field(ir->fis,
                       fi_new(tv->field, STORE_NO, INDEX_NO, TERM_VECTOR_NO));
@@ -390,8 +392,7 @@ static int spante_end(SpanEnum *self)
 
 static char *spante_to_s(SpanEnum *self)
 {
-    char *field = SpQ(self->query)->field;
-    char *query_str = self->query->to_s(self->query, field);
+    char *query_str = self->query->to_s(self->query, EMPTY_STRING);
     char pos_str[20];
     size_t len = strlen(query_str);
     int pos;
@@ -424,7 +425,7 @@ static void spante_destroy(SpanEnum *self)
 static SpanEnum *spante_new(Query *query, IndexReader *ir)
 {
     char *term = SpTQ(query)->term;
-    char *field = SpQ(query)->field;
+    const char *field = SpQ(query)->field;
     SpanEnum *self = (SpanEnum *)ALLOC(SpanTermEnum);
 
     SpTEn(self)->positions  = ir_term_positions_for(ir, field, term);
@@ -618,7 +619,7 @@ static void spanmte_destroy(SpanEnum *self)
 
 static SpanEnum *spanmte_new(Query *query, IndexReader *ir)
 {
-    char *field = SpQ(query)->field;
+    const char *field = SpQ(query)->field;
     SpanEnum *self = (SpanEnum *)ALLOC(SpanMultiTermEnum);
     SpanMultiTermEnum *smte = SpMTEn(self);
     SpanMultiTermQuery *smtq = SpMTQ(query);
@@ -710,8 +711,7 @@ static int spanfe_end(SpanEnum *self)
 
 static char *spanfe_to_s(SpanEnum *self)
 {
-    char *field = SpQ(self->query)->field;
-    char *query_str = self->query->to_s(self->query, field);
+    char *query_str = self->query->to_s(self->query, EMPTY_STRING);
     char *res = strfmt("SpanFirstEnum(%s)", query_str);
     free(query_str);
     return res;
@@ -864,8 +864,7 @@ static int spanoe_end(SpanEnum *self)
 static char *spanoe_to_s(SpanEnum *self)
 {
     SpanOrEnum *soe = SpOEn(self);
-    char *field = SpQ(self->query)->field;
-    char *query_str = self->query->to_s(self->query, field);
+    char *query_str = self->query->to_s(self->query, EMPTY_STRING);
     char doc_str[62];
     size_t len = strlen(query_str);
     char *str = ALLOC_N(char, len + 80);
@@ -1177,8 +1176,7 @@ static int spanne_end(SpanEnum *self)
 static char *spanne_to_s(SpanEnum *self)
 {
     SpanNearEnum *sne = SpNEn(self);
-    char *field = SpQ(self->query)->field;
-    char *query_str = self->query->to_s(self->query, field);
+    char *query_str = self->query->to_s(self->query, EMPTY_STRING);
     char doc_str[62];
     size_t len = strlen(query_str);
     char *str = ALLOC_N(char, len + 80);
@@ -1341,8 +1339,7 @@ static int spanxe_end(SpanEnum *self)
 
 static char *spanxe_to_s(SpanEnum *self)
 {
-    char *field = SpQ(self->query)->field;
-    char *query_str = self->query->to_s(self->query, field);
+    char *query_str = self->query->to_s(self->query, EMPTY_STRING);
     char *res = strfmt("SpanNotEnum(%s)", query_str);
     free(query_str);
     return res;
@@ -1408,7 +1405,7 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
 
     char *query_str;
     HashSet *terms = SpW(self)->terms;
-    char *field = SpQ(self->query)->field;
+    const char *field = SpQ(self->query)->field;
     const int field_num = fis_get_field_num(ir->fis, field);
     char *doc_freqs = NULL;
     size_t df_i = 0;
@@ -1533,9 +1530,9 @@ static Weight *spanw_new(Query *query, Searcher *searcher)
  * SpanTermQuery
  *****************************************************************************/
 
-static char *spantq_to_s(Query *self, const char *field)
+static char *spantq_to_s(Query *self, const char *current_field)
 {
-    if (field == SpQ(self)->field) {
+    if (current_field && strcmp(current_field, SpQ(self)->field) == 0) {
         return strfmt("span_terms(%s)", SpTQ(self)->term);
     }
     else {
@@ -1546,7 +1543,6 @@ static char *spantq_to_s(Query *self, const char *field)
 static void spantq_destroy_i(Query *self)
 {
     free(SpTQ(self)->term);
-    free(SpQ(self)->field);
     spanq_destroy_i(self);
 }
 
@@ -1577,7 +1573,7 @@ Query *spantq_new(const char *field, const char *term)
     Query *self             = q_new(SpanTermQuery);
 
     SpTQ(self)->term        = estrdup(term);
-    SpQ(self)->field        = estrdup(field);
+    SpQ(self)->field        = intern(field);
     SpQ(self)->get_spans    = &spante_new;
     SpQ(self)->get_terms    = &spantq_get_terms;
 
@@ -1632,7 +1628,6 @@ static void spanmtq_destroy_i(Query *self)
         free(smtq->terms[i]);
     }
     free(smtq->terms);
-    free(SpQ(self)->field);
     spanq_destroy_i(self);
 }
 
@@ -1688,7 +1683,7 @@ Query *spanmtq_new_conf(const char *field, int max_terms)
     SpMTQ(self)->term_cnt   = 0;
     SpMTQ(self)->term_capa  = max_terms;
 
-    SpQ(self)->field        = estrdup(field);
+    SpQ(self)->field        = intern(field);
     SpQ(self)->get_spans    = &spanmte_new;
     SpQ(self)->get_terms    = &spanmtq_get_terms;
 
@@ -1759,7 +1754,6 @@ static Query *spanfq_rewrite(Query *self, IndexReader *ir)
 static void spanfq_destroy_i(Query *self)
 {
     q_deref(SpFQ(self)->match);
-    free(SpQ(self)->field);
     spanq_destroy_i(self);
 }
 
@@ -1784,7 +1778,8 @@ Query *spanfq_new_nr(Query *match, int end)
     SpFQ(self)->match       = match;
     SpFQ(self)->end         = end;
 
-    SpQ(self)->field        = estrdup(SpQ(match)->field);
+    // XXX
+    SpQ(self)->field        = SpQ(match)->field;
     SpQ(self)->get_spans    = &spanfe_new;
     SpQ(self)->get_terms    = &spanfq_get_terms;
 
@@ -1902,7 +1897,6 @@ static void spanoq_destroy_i(Query *self)
         q_deref(clause);
     }
     free(soq->clauses);
-    free(SpQ(self)->field);
 
     spanq_destroy_i(self);
 }
@@ -1946,7 +1940,7 @@ Query *spanoq_new()
     SpOQ(self)->clauses     = ALLOC_N(Query *, CLAUSE_INIT_CAPA);
     SpOQ(self)->c_capa      = CLAUSE_INIT_CAPA;
 
-    SpQ(self)->field        = estrdup((char *)EMPTY_STRING);
+    SpQ(self)->field        = EMPTY_STRING;
     SpQ(self)->get_spans    = &spanoq_get_spans;
     SpQ(self)->get_terms    = &spanoq_get_terms;
 
@@ -1971,10 +1965,9 @@ Query *spanoq_add_clause_nr(Query *self, Query *clause)
               "SpanQuery.", q_get_query_name(clause->type));
     }
     if (curr_index == 0) {
-        free(SpQ(self)->field);
-        SpQ(self)->field = estrdup(SpQ(clause)->field);
+        SpQ(self)->field = SpQ(clause)->field;
     }
-    else if (strcmp(SpQ(self)->field, SpQ(clause)->field) != 0) {
+    else if (SpQ(self)->field != SpQ(clause)->field) {
         RAISE(ARG_ERROR, "All clauses in a SpanQuery must have the same field. "
               "Attempted to add a SpanQuery with field \"%s\" to a SpanOrQuery "
               "with field \"%s\"", SpQ(clause)->field, SpQ(self)->field);
@@ -2087,7 +2080,6 @@ static void spannq_destroy(Query *self)
         q_deref(clause);
     }
     free(snq->clauses);
-    free(SpQ(self)->field);
 
     spanq_destroy_i(self);
 }
@@ -2140,7 +2132,7 @@ Query *spannq_new(int slop, bool in_order)
 
     SpQ(self)->get_spans    = &spannq_get_spans;
     SpQ(self)->get_terms    = &spannq_get_terms;
-    SpQ(self)->field        = estrdup((char *)EMPTY_STRING);
+    SpQ(self)->field        = EMPTY_STRING;
 
     self->type              = SPAN_NEAR_QUERY;
     self->rewrite           = &spannq_rewrite;
@@ -2163,10 +2155,9 @@ Query *spannq_add_clause_nr(Query *self, Query *clause)
               "SpanQuery.", q_get_query_name(clause->type));
     }
     if (curr_index == 0) {
-        free(SpQ(self)->field);
-        SpQ(self)->field = estrdup(SpQ(clause)->field);
+        SpQ(self)->field = SpQ(clause)->field;
     }
-    else if (strcmp(SpQ(self)->field, SpQ(clause)->field) != 0) {
+    else if (SpQ(self)->field != SpQ(clause)->field) {
         RAISE(ARG_ERROR, "All clauses in a SpanQuery must have the same field. "
               "Attempted to add a SpanQuery with field \"%s\" to SpanNearQuery "
               "with field \"%s\"", SpQ(clause)->field, SpQ(self)->field);
@@ -2241,8 +2232,6 @@ static void spanxq_destroy(Query *self)
     q_deref(sxq->inc);
     q_deref(sxq->exc);
 
-    free(SpQ(self)->field);
-
     spanq_destroy_i(self);
 }
 
@@ -2265,7 +2254,7 @@ static int spanxq_eq(Query *self, Query *o)
 Query *spanxq_new_nr(Query *inc, Query *exc)
 {
     Query *self;
-    if (strcmp(SpQ(inc)->field, SpQ(inc)->field) != 0) {
+    if (SpQ(inc)->field != SpQ(inc)->field) {
         RAISE(ARG_ERROR, "All clauses in a SpanQuery must have the same field. "
               "Attempted to add a SpanQuery with field \"%s\" along with a "
               "SpanQuery with field \"%s\" to an SpanNotQuery",
@@ -2276,7 +2265,7 @@ Query *spanxq_new_nr(Query *inc, Query *exc)
     SpXQ(self)->inc         = inc;
     SpXQ(self)->exc         = exc;
 
-    SpQ(self)->field        = estrdup(SpQ(inc)->field);
+    SpQ(self)->field        = SpQ(inc)->field;
     SpQ(self)->get_spans    = &spanxe_new;
     SpQ(self)->get_terms    = &spanxq_get_terms;
 
@@ -2325,7 +2314,7 @@ static char *spanprq_to_s(Query *self, const char *current_field)
 
     bptr = buffer = ALLOC_N(char, plen + flen + 35);
 
-    if (strcmp(field, current_field) != 0) {
+    if (current_field == NULL || strcmp(field, current_field) != 0) {
         bptr += sprintf(bptr, "%s:", field);
     }
 
@@ -2368,7 +2357,6 @@ static Query *spanprq_rewrite(Query *self, IndexReader *ir)
 
 static void spanprq_destroy(Query *self)
 {
-    free(SpQ(self)->field);
     free(SpPfxQ(self)->prefix);
     spanq_destroy_i(self);
 }
@@ -2381,14 +2369,14 @@ static unsigned long spanprq_hash(Query *self)
 static int spanprq_eq(Query *self, Query *o)
 {
     return (strcmp(SpPfxQ(self)->prefix, SpPfxQ(o)->prefix) == 0)
-        && (strcmp(SpQ(self)->field,  SpQ(o)->field) == 0);
+        && (SpQ(self)->field == SpQ(o)->field);
 }
 
 Query *spanprq_new(const char *field, const char *prefix)
 {
     Query *self = q_new(SpanPrefixQuery);
 
-    SpQ(self)->field        = estrdup(field);
+    SpQ(self)->field        = intern(field);
     SpPfxQ(self)->prefix    = estrdup(prefix);
     SpPfxQ(self)->max_terms = SPAN_PREFIX_QUERY_MAX_TERMS;
 

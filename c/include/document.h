@@ -13,7 +13,7 @@
 #define FRT_DF_INIT_CAPA 1
 typedef struct FrtDocField
 {
-    char *name;
+    const char *name;
     int size;
     int capa;
     int *lengths;

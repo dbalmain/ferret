@@ -102,7 +102,7 @@ typedef enum
 
 typedef struct FrtFieldInfo
 {
-    char *name;
+    const char *name;
     float boost;
     unsigned int bits;
     int number;
@@ -110,9 +110,9 @@ typedef struct FrtFieldInfo
 } FrtFieldInfo;
 
 extern FrtFieldInfo *frt_fi_new(const char *name,
-                         FrtStoreValue store,
-                         FrtIndexValue index,
-                         FrtTermVectorValue term_vector);
+                                FrtStoreValue store,
+                                FrtIndexValue index,
+                                FrtTermVectorValue term_vector);
 extern char *frt_fi_to_s(FrtFieldInfo *fi);
 extern void frt_fi_deref(FrtFieldInfo *fi);
 
@@ -549,12 +549,12 @@ typedef struct FrtTVTerm
 
 typedef struct FrtTermVector
 {
-    int     field_num;
-    char   *field;
-    int     term_cnt;
-    FrtTVTerm *terms;
-    int     offset_cnt;
-    FrtOffset *offsets;
+    int        field_num;
+    const char *field;
+    int        term_cnt;
+    FrtTVTerm  *terms;
+    int        offset_cnt;
+    FrtOffset  *offsets;
 } FrtTermVector;
 
 extern void frt_tv_destroy(FrtTermVector *tv);
@@ -632,12 +632,12 @@ typedef struct FrtLazyDocFieldData
 typedef struct FrtLazyDoc FrtLazyDoc;
 typedef struct FrtLazyDocField
 {
-    char             *name;
+    const char          *name;
     FrtLazyDocFieldData *data;
     FrtLazyDoc          *doc;
-    int               size; /* number of data elements */
-    int               len;  /* length of data elements concatenated */
-    bool              is_compressed : 2; /* set to 2 after all data is loaded */
+    int                 size; /* number of data elements */
+    int                 len;  /* length of data elements concatenated */
+    bool                is_compressed : 2; /* set to 2 after all data is loaded */
 } FrtLazyDocField;
 
 extern char *frt_lazy_df_get_data(FrtLazyDocField *self, int i);

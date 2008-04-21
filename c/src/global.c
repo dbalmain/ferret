@@ -1,4 +1,5 @@
 #include "global.h"
+#include "intern.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -444,4 +445,6 @@ void init(int argc, const char *const argv[])
     SETSIG_IF_UNSET(SIGFPE , action);
     SETSIG_IF_UNSET(SIGBUS , action);
     SETSIG_IF_UNSET(SIGSEGV, action);
+
+    intern_init();
 }

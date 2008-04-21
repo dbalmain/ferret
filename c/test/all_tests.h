@@ -38,6 +38,7 @@ TestSuite *ts_bitvector(TestSuite *suite);
 TestSuite *ts_except(TestSuite *suite);
 TestSuite *ts_mem_pool(TestSuite *suite);
 TestSuite *ts_similarity(TestSuite *suite);
+TestSuite *ts_intern(TestSuite *suite);
 TestSuite *ts_helper(TestSuite *suite);
 
 const struct test_list
@@ -78,6 +79,7 @@ const struct test_list
     {ts_except},
     {ts_mem_pool},
     {ts_similarity},
+    {ts_intern},
     {ts_helper}
 };
 

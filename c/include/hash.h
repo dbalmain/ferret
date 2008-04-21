@@ -125,9 +125,9 @@ extern int frt_ptr_eq(const void *q1, const void *q2);
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new(frt_hash_ft hash,
-                                  frt_eq_ft eq, 
-                                  frt_free_ft free_key,
-                                  frt_free_ft free_value);
+                          frt_eq_ft eq, 
+                          frt_free_ft free_key,
+                          frt_free_ft free_value);
 
 /**
  * Create a new Hash that uses null-terminated strings as it's keys. The
@@ -144,7 +144,7 @@ extern FrtHash *frt_h_new(frt_hash_ft hash,
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new_str(frt_free_ft free_key,
-                                      frt_free_ft free_value);
+                              frt_free_ft free_value);
 
 /**
  * Create a new Hash that uses integers as it's keys. The

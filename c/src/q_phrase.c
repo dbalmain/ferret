@@ -2,6 +2,7 @@
 #include <limits.h>
 #include "search.h"
 #include "array.h"
+#include "intern.h"
 #include "internal.h"
 
 #define PhQ(query) ((PhraseQuery *)(query))
@@ -758,6 +759,7 @@ static TVPosEnum *get_tvpe(TermVector *tv, char **terms, int t_cnt, int offset)
 static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
                                      TermVector *tv)
 {
+    // TODO use ==
     if (strcmp(tv->field, PhQ(self)->field) == 0) {
         const int pos_cnt = PhQ(self)->pos_cnt;
         int i;
@@ -982,7 +984,6 @@ static void phq_destroy(Query *self)
 {
     PhraseQuery *phq = PhQ(self);
     int i;
-    free(phq->field);
     for (i = 0; i < phq->pos_cnt; i++) {
         ary_destroy(phq->positions[i].terms, &free);
     }
@@ -1038,6 +1039,7 @@ static int phq_eq(Query *self, Query *o)
     int i, j;
     PhraseQuery *phq1 = PhQ(self);
     PhraseQuery *phq2 = PhQ(o);
+    // TODO use ==
     if (phq1->slop != phq2->slop
         || strcmp(phq1->field, phq2->field) != 0
         || phq1->pos_cnt != phq2->pos_cnt) {
@@ -1064,7 +1066,7 @@ Query *phq_new(const char *field)
 {
     Query *self = q_new(PhraseQuery);
 
-    PhQ(self)->field        = estrdup(field);
+    PhQ(self)->field        = intern(field);
     PhQ(self)->pos_cnt      = 0;
     PhQ(self)->pos_capa     = PhQ_INIT_CAPA;
     PhQ(self)->positions    = ALLOC_N(PhrasePosition, PhQ_INIT_CAPA);

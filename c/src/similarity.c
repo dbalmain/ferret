@@ -2,6 +2,7 @@
 #include "search.h"
 #include "array.h"
 #include "helper.h"
+#include "intern.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,7 @@
 Term *term_new(const char *field, const char *text)
 {
     Term *t = ALLOC(Term);
-    t->field = estrdup(field);
+    t->field = intern(field);
     t->text = estrdup(text);
     return t;
 }
@@ -24,7 +25,6 @@ Term *term_new(const char *field, const char *text)
 void term_destroy(Term *self)
 {
     free(self->text);
-    free(self->field);
     free(self);
 }
 

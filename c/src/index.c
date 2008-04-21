@@ -1,4 +1,5 @@
 #include "index.h"
+#include "intern.h"
 #include "similarity.h"
 #include "helper.h"
 #include "array.h"
@@ -284,7 +285,7 @@ FieldInfo *fi_new(const char *name,
 {
     FieldInfo *fi = ALLOC(FieldInfo);
     fi_check_params(store, index, term_vector);
-    fi->name = estrdup(name);
+    fi->name = intern(name);
     fi->boost = 1.0;
     fi->bits = 0;
     fi_set_store(fi, store);
@@ -297,7 +298,6 @@ FieldInfo *fi_new(const char *name,
 void fi_deref(FieldInfo *fi)
 {
     if (0 == --(fi->ref_cnt)) {
-        free(fi->name);
         free(fi);
     }
 }
@@ -417,12 +417,11 @@ FieldInfos *fis_read(InStream *is)
             for (i = is_read_vint(is); i > 0; i--) {
                 fi = ALLOC_AND_ZERO(FieldInfo);
                 TRY
-                    fi->name = is_read_string_safe(is);
+                    fi->name = intern_and_free(is_read_string_safe(is));
                     tmp.i = is_read_u32(is);
                     fi->boost = tmp.f;
                     fi->bits = is_read_vint(is);
                 XCATCHALL
-                    free(fi->name);
                     free(fi);
                 XENDTRY
                 fis_add_field(fis, fi);
@@ -1200,7 +1199,7 @@ static LazyDocField *lazy_df_new(const char *name, const int size,
                                  bool is_compressed)
 {
     LazyDocField *self = ALLOC(LazyDocField);
-    self->name = estrdup(name);
+    self->name = name;
     self->size = size;
     self->data = ALLOC_AND_ZERO_N(LazyDocFieldData, size);
     self->is_compressed = is_compressed;
@@ -1215,7 +1214,6 @@ static void lazy_df_destroy(LazyDocField *self)
             free(self->data[i].text);
          }
     }
-    free(self->name);
     free(self->data);
     free(self);
 }
@@ -1539,10 +1537,10 @@ void fr_close(FieldsReader *fr)
     free(fr);
 }
 
-static DocField *fr_df_new(char *name, int size, bool is_compressed)
+static DocField *fr_df_new(const char *name, int size, bool is_compressed)
 {
     DocField *df = ALLOC(DocField);
-    df->name = estrdup(name);
+    df->name = name;
     df->capa = df->size = size;
     df->data = ALLOC_N(char *, df->capa);
     df->lengths = ALLOC_N(int, df->capa);
@@ -1662,7 +1660,7 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
     const int num_terms = is_read_vint(fdt_in);
 
     tv->field_num = field_num;
-    tv->field = estrdup(fi->name);
+    tv->field = fi->name;
 
     if (num_terms > 0) {
         int i, j, delta_start, delta_len, total_len, freq;

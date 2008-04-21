@@ -1,3 +1,4 @@
+#include "intern.h"
 #include <string.h>
 #include "search.h"
 #include "internal.h"
@@ -165,7 +166,7 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     char *query_str = self->query->to_s(self->query, "");
     TermQuery *tq = TQ(self->query);
     char *term = tq->term;
-    char *field = tq->field;
+    const char *field = tq->field;
 
     Explanation *expl = expl_new(0.0, "weight(%s in %d), product of:",
                                  query_str, doc_num);
@@ -260,7 +261,6 @@ static Weight *tw_new(Query *query, Searcher *searcher)
 static void tq_destroy(Query *self)
 {
     free(TQ(self)->term);
-    free(TQ(self)->field);
     q_destroy_i(self);
 }
 
@@ -321,7 +321,7 @@ Query *tq_new(const char *field, const char *term)
 {
     Query *self             = q_new(TermQuery);
 
-    TQ(self)->field         = estrdup(field);
+    TQ(self)->field         = intern(field);
     TQ(self)->term          = estrdup(term);
 
     self->type              = TERM_QUERY;

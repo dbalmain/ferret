@@ -21,8 +21,8 @@ typedef struct FrtIndex
     FrtSearcher *sea;
     FrtQParser *qp;
     FrtHashSet *key;
-    char *id_field;
-    char *def_field;
+    const char *id_field;
+    const char *def_field;
     /* for FrtIndexWriter */
     bool auto_flush : 1;
     bool has_writes : 1;

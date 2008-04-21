@@ -88,7 +88,8 @@ typedef struct FrtTopDocs
     float max_score;
 } FrtTopDocs;
 
-extern FrtTopDocs *frt_td_new(int total_hits, int size, FrtHit **hits, float max_score);
+extern FrtTopDocs *frt_td_new(int total_hits, int size, FrtHit **hits,
+                              float max_score);
 extern void frt_td_destroy(FrtTopDocs *td);
 extern char *frt_td_to_s(FrtTopDocs *td);
 
@@ -100,14 +101,14 @@ extern char *frt_td_to_s(FrtTopDocs *td);
 
 typedef struct FrtFilter
 {
-    char                *name;
-    FrtHash     *cache;
-    FrtBitVector           *(*get_bv_i)(struct FrtFilter *self, FrtIndexReader *ir);
-    char                *(*to_s)(struct FrtFilter *self);
-    unsigned long        (*hash)(struct FrtFilter *self);
-    int                  (*eq)(struct FrtFilter *self, struct FrtFilter *o);
-    void                 (*destroy_i)(struct FrtFilter *self);
-    int                  ref_cnt;
+    const char    *name;
+    FrtHash       *cache;
+    FrtBitVector  *(*get_bv_i)(struct FrtFilter *self, FrtIndexReader *ir);
+    char          *(*to_s)(struct FrtFilter *self);
+    unsigned long (*hash)(struct FrtFilter *self);
+    int           (*eq)(struct FrtFilter *self, struct FrtFilter *o);
+    void          (*destroy_i)(struct FrtFilter *self);
+    int           ref_cnt;
 } FrtFilter;
 
 #define filt_new(type) frt_filt_create(sizeof(type), #type)
@@ -245,9 +246,9 @@ extern FrtQuery *frt_q_create(size_t size);
 
 typedef struct FrtTermQuery
 {
-    FrtQuery super;
-    char *field;
-    char *term;
+    FrtQuery   super;
+    const char *field;
+    char       *term;
 } FrtTermQuery;
 
 FrtQuery *frt_tq_new(const char *field, const char *term);
@@ -312,12 +313,12 @@ extern FrtBooleanClause *frt_bq_add_clause_nr(FrtQuery *self, FrtBooleanClause *
 #define FRT_PHQ_INIT_CAPA 4
 typedef struct FrtPhraseQuery
 {
-    FrtQuery           super;
-    int             slop;
-    char           *field;
+    FrtQuery          super;
+    int               slop;
+    const char        *field;
     FrtPhrasePosition *positions;
-    int             pos_cnt;
-    int             pos_capa;
+    int               pos_cnt;
+    int               pos_capa;
 } FrtPhraseQuery;
 
 extern FrtQuery *frt_phq_new(const char *field);
@@ -332,10 +333,10 @@ extern void frt_phq_append_multi_term(FrtQuery *self, const char *term);
 #define FRT_MULTI_TERM_QUERY_MAX_TERMS 256
 typedef struct FrtMultiTermQuery
 {
-    FrtQuery           super;
-    char           *field;
-    FrtPriorityQueue  *boosted_terms;
-    float           min_boost;
+    FrtQuery         super;
+    const char       *field;
+    FrtPriorityQueue *boosted_terms;
+    float            min_boost;
 } FrtMultiTermQuery;
 
 extern void frt_multi_tq_add_term(FrtQuery *self, const char *term);
@@ -360,8 +361,8 @@ typedef struct FrtMTQSubQuery
 typedef struct FrtPrefixQuery
 {
     FrtMTQSubQuery super;
-    char *field;
-    char *prefix;
+    const char     *field;
+    char           *prefix;
 } FrtPrefixQuery;
 
 extern FrtQuery *frt_prefixq_new(const char *field, const char *prefix);
@@ -377,8 +378,8 @@ extern FrtQuery *frt_prefixq_new(const char *field, const char *prefix);
 typedef struct FrtWildCardQuery
 {
     FrtMTQSubQuery super;
-    char *field;
-    char *pattern;
+    const char     *field;
+    char           *pattern;
 } FrtWildCardQuery;
 
 
@@ -397,7 +398,7 @@ extern bool frt_wc_match(const char *pattern, const char *text);
 typedef struct FrtFuzzyQuery
 {
     FrtMTQSubQuery super;
-    char       *field;
+    const char *field;
     char       *term;
     const char *text; /* term text after prefix */
     int         text_len;
@@ -491,8 +492,8 @@ struct FrtSpanEnum
 /* ** FrtSpanQuery ** */
 typedef struct FrtSpanQuery
 {
-    FrtQuery        super;
-    char        *field;
+    FrtQuery       super;
+    const char     *field;
     FrtSpanEnum    *(*get_spans)(FrtQuery *self, FrtIndexReader *ir);
     FrtHashSet     *(*get_terms)(FrtQuery *self);
 } FrtSpanQuery;
@@ -673,17 +674,17 @@ typedef enum
 
 typedef struct FrtSortField
 {
-    char                  *field;
-    SortType         type;
-    bool                   reverse : 1;
     const FrtFieldIndexClass *field_index_class;
+    const char  *field;
+    SortType    type;
+    bool        reverse : 1;
     int         (*compare)(void *index_ptr, FrtHit *hit1, FrtHit *hit2);
     void        (*get_val)(void *index_ptr, FrtHit *hit1, FrtComparable *comparable);
 } FrtSortField;
 
 extern FrtSortField *frt_sort_field_new(const char *field,
-                                 SortType type,
-                                 bool reverse);
+                                        SortType type,
+                                        bool reverse);
 extern FrtSortField *frt_sort_field_score_new(bool reverse);
 extern FrtSortField *frt_sort_field_doc_new(bool reverse);
 extern FrtSortField *frt_sort_field_int_new(const char *field, bool reverse);

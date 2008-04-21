@@ -122,7 +122,7 @@ static char *fuzq_to_s(Query *self, const char *curr_field)
 {
     char *buffer, *bptr;
     char *term = FzQ(self)->term;
-    char *field = FzQ(self)->field;
+    const char *field = FzQ(self)->field;
     bptr = buffer = ALLOC_N(char, strlen(term) + strlen(field) + 70);
 
     if (strcmp(curr_field, field) != 0) {
@@ -204,7 +204,6 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
 static void fuzq_destroy(Query *self)
 {
     free(FzQ(self)->term);
-    free(FzQ(self)->field);
     free(FzQ(self)->da);
     q_destroy_i(self);
 }
@@ -231,7 +230,7 @@ Query *fuzq_new_conf(const char *field, const char *term,
 {
     Query *self = q_new(FuzzyQuery);
 
-    FzQ(self)->field      = estrdup(field);
+    FzQ(self)->field      = field;
     FzQ(self)->term       = estrdup(term);
     FzQ(self)->pre_len    = pre_len ? pre_len : DEF_PRE_LEN;
     FzQ(self)->min_sim    = min_sim ? min_sim : DEF_MIN_SIM;

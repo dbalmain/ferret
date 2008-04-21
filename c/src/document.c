@@ -1,4 +1,5 @@
 #include "document.h"
+#include "intern.h"
 #include <string.h>
 #include "internal.h"
 
@@ -11,7 +12,7 @@
 DocField *df_new(const char *name)
 {
     DocField *df = ALLOC(DocField);
-    df->name = estrdup(name);
+    df->name = intern(name);
     df->size = 0;
     df->capa = DF_INIT_CAPA;
     df->data = ALLOC_N(char *, df->capa);
@@ -49,7 +50,6 @@ void df_destroy(DocField *df)
     }
     free(df->data);
     free(df->lengths);
-    free(df->name);
     free(df);
 }
 

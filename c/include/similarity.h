@@ -14,7 +14,7 @@ typedef struct FrtSearcher FrtSearcher;
 
 typedef struct FrtTerm
 {
-    char *field;
+    const char *field;
     char *text;
 } FrtTerm;
 

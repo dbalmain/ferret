@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "intern.h"
 #include "internal.h"
 
 /****************************************************************************
@@ -132,7 +133,6 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
 
 static void wcq_destroy(Query *self)
 {
-    free(WCQ(self)->field);
     free(WCQ(self)->pattern);
     q_destroy_i(self);
 }
@@ -144,6 +144,7 @@ static unsigned long wcq_hash(Query *self)
 
 static int wcq_eq(Query *self, Query *o)
 {
+    // TODO use ==
     return (strcmp(WCQ(self)->pattern, WCQ(o)->pattern) == 0)
         && (strcmp(WCQ(self)->field,   WCQ(o)->field) == 0);
 }
@@ -152,7 +153,7 @@ Query *wcq_new(const char *field, const char *pattern)
 {
     Query *self = q_new(WildCardQuery);
 
-    WCQ(self)->field        = estrdup(field);
+    WCQ(self)->field        = intern(field);
     WCQ(self)->pattern      = estrdup(pattern);
     MTQMaxTerms(self)       = WILD_CARD_QUERY_MAX_TERMS;
 
