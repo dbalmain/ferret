@@ -19,6 +19,8 @@ TODO
   - Add a globally accessable, threadsafe symbol table. This will be very
     useful for storing field names so that no objects need to strdup the
     field-names but can just store the symbol representative instead.
+    + this has been done but it can be improved using actual Symbol structs
+      instead of plain char*
   - Make threading optional at compile time
   - to_json should limit output to prevent memory overflow on large indexes.
     Perhaps we could use some type of buffered read for this.
@@ -33,7 +35,6 @@ TODO
     results by
   - Auto-loading of documents during search. ie actual documents get returned
     instead of document numbers.
-  - update benchmark suite to use getrusage.u
 
 * Ruby bindings
   - argument checking for every method. We need a new api for argument checking
@@ -105,4 +106,4 @@ Done
 * Fix:
   + Working Query:  field1:value1 AND NOT field2:value2
   + Failing Query:    field1:value1 AND ( NOT field2:value2 )
-
+* update benchmark suite to use getrusage

@@ -3,6 +3,4 @@
 * add stopAnalyzer to bindings
 
 benchmarks
-* string actions when length is known
 * standard tokenizer
-* writevint

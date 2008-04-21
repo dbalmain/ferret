@@ -1,3 +1,57 @@
+/*****************************************************************************
+ * QueryParser
+ * ===========
+ *
+ * Synopsis
+ * --------
+ *
+ * === qp_parse
+ *
+ * The main QueryParser method is +qp_parse+. It gets called with a the query
+ * string. The first thing it does is to clean the query string if
+ * ((QueryParser *)self)->clean_str is set to true. The cleaning is done with
+ * the qp_clean_str.
+ * 
+ * It then calls the yacc parser which will set self->result to the parsed
+ * query. If parsing fails in anyway, self->result should be set to NULL, in
+ * which case qp_parse does one of two things, depending on the value of
+ * self->handle_parse_errors. If it is set to true, qp_parse attempts to do a
+ * very basic parsing of the query by ignoring all special characters and
+ * parsing the query as a plain boolean query. If it is set to false, qp_parse
+ * will raise a PARSE_ERROR.
+ * 
+ * === The Lexer
+ *
+ * yylex is the lexing method called by the QueryParser. It breaks the query
+ * up into special characters ( "&:()[]{}!\"~^|<>=*?+-" ) and tokens (QWRD,
+ * WILD_STR, AND['AND', '&&'], OR['OR', '||'], REQ['REQ', '+'], NOT['NOT',
+ * '-', '~']). QWRD tokens are query word tokens which are made up of
+ * characters other than the special characters. They can also contain special
+ * characters when escaped with a backslash '\'. WILD_STR is the same as QWRD
+ * except that it may also contain '?' and '*' characters.
+ *
+ * === The Parser
+ *
+ * For a better understanding of the how the query parser works, it is a good
+ * idea to study the Ferret Query Language (FQL) described below. Once you
+ * understand FQL the one tricky part that needs to be mentioned is how fields
+ * are handled. The QueryParser knows about two sets of fields, the default
+ * search fields and the set of all fields in the index. When no fields are
+ * specified then the default fields are used. The '*:' field specifier will
+ * search all fields contained in the all_fields set. Otherwise all fields
+ * specified in the field descripter separated by '|' will be searched. For
+ * example 'title|content:' will search the title and content fields. When
+ * fields are specified like this, the parser will push the fields onto a
+ * stack and all queries modified by the field specifier will be applied to
+ * the fields on top of the stack. This is where the FLDS macro comes into
+ * place. It takes the current query building function in the parser and calls
+ * it for all fields on top of the stack.
+ * 
+ * Ferret Query Language (FQL)
+ * ===========================
+ *
+ * FIXME to be continued...
+ *****************************************************************************/
 %{
 #include <string.h>
 #include <ctype.h>
@@ -877,6 +931,14 @@ static void str_insert(char *str, int len, char chr)
     *str = chr;
 }
 
+/*****************************************************************************
+ * qp_clean_str method which basically scans the query string and ensures that
+ * all open and close parentheses '()' and quotes '"' are balanced. It does
+ * this be inserting or appending extra parentheses or quotes which is not
+ * necessarily going to be exactly what the user wanted but it will help
+ * prevent the parser from failing so it's the best we can do at this stage.
+ * It also checks 
+ *****************************************************************************/
 char *qp_clean_str(char *str)
 {
     int b, pb = -1;
