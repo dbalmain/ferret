@@ -143,9 +143,8 @@ static void test_q_parser(TestCase *tc, void *data)
         {"f1:*", "*"},
         {"f1:*^100.0", "*^100.0"},
         {"f1:?*", "f1:?*"},
-        {"f1:?*^100.0", "f1:?*^100.0"}
-         /*
-            */
+        {"f1:?*^100.0", "f1:?*^100.0"},
+        {"f1:(aaa f2:bbb ccc)", "f1:aaa f2:bbb f1:ccc"}
     };  
     (void)data;
 
@@ -160,7 +159,6 @@ static void test_q_parser(TestCase *tc, void *data)
 
     REF(analyzer);
     parser = qp_new(all_fields, def_fields, tkz_fields, analyzer);
-    parser->close_def_fields = false;
 
     for (i = 0; i < NELEMS(pairs); i++) {
         PARSER_TEST(pairs[i].qstr, pairs[i].qres);
@@ -174,6 +172,7 @@ static void test_q_parser(TestCase *tc, void *data)
 
     all_fields = hs_new_str(NULL);
     tkz_fields = hs_new_str(NULL);
+    def_fields = hs_new_str(NULL);
     hs_add(all_fields, xx);
     hs_add(all_fields, f1);
     hs_add(all_fields, f2);
@@ -181,6 +180,7 @@ static void test_q_parser(TestCase *tc, void *data)
     hs_add(tkz_fields, xx);
     hs_add(tkz_fields, f1);
     hs_add(tkz_fields, f2);
+    hs_add(def_fields, xx);
 
     /* This time let the query parser destroy the analyzer */
     parser = qp_new(all_fields, def_fields, tkz_fields, analyzer);
@@ -321,7 +321,8 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
         {"this-is-a-hyphenated-word", "\"thisisahyphenatedword|this is a hyphenated word\"~4"},
         {"\"the phrase and the phrase\"", "\"phrase <> <> phrase\"~3"},
         {"\"the e-mail was in the inbox\"", "\"email|e mail <> <> <> inbox\"~5"},
-        {"f1:?*^100.0", "f1:?*^100.0"}
+        {"f1:?*^100.0", "f1:?*^100.0"},
+        {"f1:(a1 f2:b2 c3)", "f1:a1 f2:b2 f1:c3"}
          /*
             */
     };  
@@ -335,7 +336,6 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
 
     REF(analyzer);
     parser = qp_new(all_fields, def_fields, NULL, analyzer);
-    parser->close_def_fields = false;
 
     for (i = 0; i < NELEMS(pairs); i++) {
         PARSER_TEST(pairs[i].qstr, pairs[i].qres);
@@ -348,10 +348,12 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
     qp_destroy(parser);
 
     all_fields = hs_new_str(NULL);
+    def_fields = hs_new_str(NULL);
     hs_add(all_fields, xx);
     hs_add(all_fields, f1);
     hs_add(all_fields, f2);
     hs_add(all_fields, field);
+    hs_add(def_fields, xx);
 
     /* This time let the query parser destroy the analyzer */
     parser = qp_new(all_fields, def_fields, NULL, analyzer);

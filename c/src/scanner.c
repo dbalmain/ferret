@@ -825,11 +825,10 @@ _eof_trans:
 	case 13:
 	{{p = ((te))-1;}}
 	break;
-	default: break;
 	}
 	}
 	break;
-#line 833 "src/scanner.c"
+#line 832 "src/scanner.c"
 		}
 	}
 
@@ -842,7 +841,7 @@ _again:
 #line 1 "src/scanner.rl"
 	{ts = 0;}
 	break;
-#line 846 "src/scanner.c"
+#line 845 "src/scanner.c"
 		}
 	}
 
