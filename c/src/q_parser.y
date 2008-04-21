@@ -56,6 +56,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <wctype.h>
+#include <assert.h>
 #include "except.h"
 #include "search.h"
 #include "array.h"
@@ -120,6 +121,9 @@ static void ph_destroy(Phrase *self);
 
 static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
                       bool inc_lower, bool inc_upper);
+
+static void qp_push_fields(QParser *self, HashSet *fields, bool destroy);
+static void qp_pop_fields(QParser *self);
 
 #define FLDS(q, func) do {\
     TRY {\
@@ -211,9 +215,9 @@ term_q    : QWRD                      { FLDS($$, get_term_q(qp, field, $1)); Y}
           ;
 wild_q    : WILD_STR                  { FLDS($$, get_wild_q(qp, field, $1)); Y}
           ;
-field_q   : field ':' q { qp->fields = qp->def_fields; }
+field_q   : field ':' q { qp_pop_fields(qp); }
                                       { $$ = $3; }
-          | '*' { qp->fields = qp->all_fields; } ':' q {qp->fields = qp->def_fields;}
+          | '*' { qp_push_fields(qp, qp->all_fields, false); } ':' q { qp_pop_fields(qp); }
                                       { $$ = $4; }
           ;
 field     : QWRD                      { $$ = first_field(qp, $1); }
@@ -641,10 +645,10 @@ static HashSet *add_field(QParser *qp, char *field)
     return qp->fields;
 }
 
+// XXX
 static HashSet *first_field(QParser *qp, char *field)
 {
-    qp->fields = qp->fields_buf;
-    hs_clear(qp->fields);
+    qp_push_fields(qp, hs_new_str(NULL), true);
     return add_field(qp, field);
 }
 
@@ -855,9 +859,35 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
     return rq;
 }
 
+static void qp_push_fields(QParser *self, HashSet *fields, bool destroy)
+{
+    FieldStack *fs = ALLOC(FieldStack); 
+
+    fs->next    = self->fields_top;
+    fs->fields  = fields;
+    fs->destroy = destroy;
+
+    self->fields_top = fs;
+    self->fields = fields;
+}
+
+static void qp_pop_fields(QParser *self)
+{
+    FieldStack *fs = self->fields_top; 
+
+    if (fs->destroy) {
+        hs_destroy(fs->fields);
+    }
+    self->fields_top = fs->next;
+    if (self->fields_top) {
+        self->fields = self->fields_top->fields;
+    }
+    free(fs);
+}
+
 void qp_destroy(QParser *self)
 {
-    if (self->close_def_fields) {
+    if (self->def_fields != self->all_fields) {
         hs_destroy(self->def_fields);
     }
     if (self->tokenized_fields) {
@@ -867,8 +897,10 @@ void qp_destroy(QParser *self)
         free(self->dynbuf);
     }
     hs_destroy(self->all_fields);
-    hs_destroy(self->fields_buf);
-    h_destroy(self->field_cache);
+
+    qp_pop_fields(self);
+    assert(NULL == self->fields_top);
+
     h_destroy(self->ts_cache);
     tk_destroy(self->non_tokenizer);
     a_deref(self->analyzer);
@@ -879,7 +911,6 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
                 HashSet *tokenized_fields, Analyzer *analyzer)
 {
     QParser *self = ALLOC(QParser);
-    HashSetEntry *hse;
     self->or_default = true;
     self->wild_lower = true;
     self->clean_str = false;
@@ -889,7 +920,6 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->use_keywords = true;
     self->use_typed_range_query = false;
     self->def_slop = 0;
-    self->fields_buf = hs_new_str(NULL);
     self->all_fields = all_fields;
     self->tokenized_fields = tokenized_fields;
     if (def_fields) {
@@ -900,18 +930,13 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
                 hs_add(self->all_fields, hse->elem);
             }
         }
-        self->close_def_fields = true;
     }
     else {
         self->def_fields = all_fields;
-        self->close_def_fields = false;
     }
-    self->field_cache = h_new_str((free_ft)NULL, (free_ft)NULL);
-    for (hse = self->all_fields->first; hse; hse = hse->next) {
-        char *field = (char *)hse->elem;
-        h_set(self->field_cache, field, field);
-    }
-    self->fields = self->def_fields;
+    self->fields_top = NULL;
+    qp_push_fields(self, self->def_fields, false);
+
     /* make sure all_fields contains the default fields */
     self->analyzer = analyzer;
     self->ts_cache = h_new_str(NULL, (free_ft)&ts_deref);
