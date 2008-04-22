@@ -71,6 +71,8 @@ ext/helper.c
 ext/helper.h
 ext/index.c
 ext/index.h
+ext/intern.c
+ext/intern.h
 ext/internal.h
 ext/libstemmer.h
 ext/mempool.c

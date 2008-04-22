@@ -4,6 +4,7 @@
 #include "hash.h"
 #include "hashset.h"
 #include "threading.h"
+#include "intern.h"
 #include "internal.h"
 
 /* Object Map */
@@ -168,13 +169,20 @@ rs2s(VALUE rstr)
 }
 
 char *
-nstrdup(VALUE rstr)
+rstrdup(VALUE rstr)
 {
     char *old = rs2s(rstr);
     int len = RSTRING(rstr)->len;
     char *new = ALLOC_N(char, len + 1);
     memcpy(new, old, len + 1);
     return new;
+}
+
+const char *
+rintern(VALUE rstr)
+{
+    char *old = rs2s(rstr);
+    return frt_intern(old);
 }
 
 char *
@@ -337,6 +345,10 @@ void Init_ferret_ext(void)
     VALUE cParseError;
     VALUE cStateError;
     VALUE cFileNotFoundError;
+
+    const char *const progname[] = {"ruby"};
+
+    frt_init(1, progname);
 
     /* initialize object map */
     object_map = h_new(&value_hash, &value_eq, NULL, NULL);

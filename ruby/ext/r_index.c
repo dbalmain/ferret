@@ -1460,7 +1460,7 @@ frb_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
                     df->destroy_data = true;
                     for (i = 0; i < RARRAY(value)->len; i++) {
                         val = rb_obj_as_string(RARRAY(value)->ptr[i]);
-                        df_add_data_len(df, nstrdup(val), RSTRING(val)->len);
+                        df_add_data_len(df, rstrdup(val), RSTRING(val)->len);
                     }
                 }
                 break;
@@ -1470,7 +1470,7 @@ frb_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
             default:
                 val = rb_obj_as_string(value);
                 df->destroy_data = true;
-                df_add_data_len(df, nstrdup(val), RSTRING(val)->len);
+                df_add_data_len(df, rstrdup(val), RSTRING(val)->len);
                 break;
         }
         doc_add_field(doc, df);
@@ -1500,7 +1500,7 @@ frb_get_doc(VALUE rdoc)
                 df->destroy_data = true;
                 for (i = 0; i < RARRAY(rdoc)->len; i++) {
                     val = rb_obj_as_string(RARRAY(rdoc)->ptr[i]);
-                    df_add_data_len(df, nstrdup(val), RSTRING(val)->len);
+                    df_add_data_len(df, rstrdup(val), RSTRING(val)->len);
                 }
                 doc_add_field(doc, df);
             }
@@ -1516,7 +1516,7 @@ frb_get_doc(VALUE rdoc)
             break;
         default:
             val = rb_obj_as_string(rdoc);
-            df = df_add_data_len(df_new("content"), nstrdup(val),
+            df = df_add_data_len(df_new("content"), rstrdup(val),
                                  RSTRING(val)->len);
             df->destroy_data = true;
             doc_add_field(doc, df);

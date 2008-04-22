@@ -68,7 +68,8 @@ extern char * frb_field(VALUE rfield);
 extern VALUE frb_get_term(const char *field, const char *term);
 extern char *json_concat_string(char *s, char *field);
 extern char *rs2s(VALUE rstr);
-extern char *nstrdup(VALUE rstr);
+extern char *rstrdup(VALUE rstr);
+extern const char *rintern(VALUE rstr);
 #define Frt_Make_Struct(klass)\
   rb_data_object_alloc(klass,NULL,(RUBY_DATA_FUNC)NULL,(RUBY_DATA_FUNC)NULL)
 
