@@ -1,3 +1,4 @@
+#include "intern.h"
 #include "ferret.h"
 #include "search.h"
 
@@ -51,12 +52,12 @@ frb_get_fields(VALUE rfields)
 
     if (rfields == Qnil) return NULL;
 
-    fields = hs_new_str(&free);
+    fields = hs_new_str(NULL);
     if (TYPE(rfields) == T_ARRAY) {
         int i;
         for (i = 0; i < RARRAY(rfields)->len; i++) {
             rval = rb_obj_as_string(RARRAY(rfields)->ptr[i]);
-            hs_add(fields, nstrdup(rval));
+            hs_add(fields, (char *)rintern(rval));
         }
     } else {
         rval = rb_obj_as_string(rfields);
@@ -64,13 +65,13 @@ frb_get_fields(VALUE rfields)
             hs_destroy(fields);
             fields = NULL;
         } else {
-            s = str = nstrdup(rval);
+            s = str = rstrdup(rval);
             while ((p = strchr(s, '|')) != '\0') {
                 *p = '\0';
-                hs_add(fields, estrdup(s));
+                hs_add(fields, (char *)intern(s));
                 s = p + 1;
             }
-            hs_add(fields, estrdup(s));
+            hs_add(fields, (char *)intern(s));
             free(str);
         }
     }
@@ -175,7 +176,7 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
         }
     }
     if (all_fields == NULL) {
-        all_fields = hs_new_str(&free);
+        all_fields = hs_new_str(NULL);
     }
 
     if (!analyzer) {
@@ -288,7 +289,7 @@ frb_qp_set_fields(VALUE self, VALUE rfields)
         qp->def_fields = NULL;
     }
     if (fields == NULL) {
-        fields = hs_new_str(&free);
+        fields = hs_new_str(NULL);
     }
     hs_destroy(qp->all_fields);
     qp->all_fields = fields;

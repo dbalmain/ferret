@@ -1148,7 +1148,7 @@ cwa_destroy_i(Analyzer *a)
 }
 
 static TokenStream *
-cwa_get_ts(Analyzer *a, char *field, char *text)
+cwa_get_ts(Analyzer *a, const char *field, char *text)
 {
     VALUE rts = rb_funcall(CWA(a)->ranalyzer, id_token_stream, 2,
                            ID2SYM(rb_intern(field)), rb_str_new2(text));
