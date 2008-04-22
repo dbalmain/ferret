@@ -898,7 +898,7 @@ typedef struct FrtFieldStack {
     bool destroy : 1;
 } FrtFieldStack;
 
-typedef struct FrtQParser
+typedef struct FrtQueryParser
 {
     frt_mutex_t mutex;
     int def_slop;
@@ -928,7 +928,8 @@ typedef struct FrtQParser
     bool recovering : 1;
     bool use_keywords : 1;
     bool use_typed_range_query : 1;
-} FrtQParser;
+} FrtQueryParser;
+typedef FrtQueryParser FrtQParser; /* QParser is an alias for QueryParser */
 
 extern FrtQParser *frt_qp_new(FrtHashSet *all_fields, FrtHashSet *def_fields,
                        FrtHashSet *tokenized_fields, FrtAnalyzer *analyzer);
