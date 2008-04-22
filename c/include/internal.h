@@ -269,6 +269,7 @@
 #define PriorityQueueInsertEnum FrtPriorityQueueInsertEnum
 #define QParser                 FrtQParser
 #define Query                   FrtQuery
+#define QueryParser             FrtQueryParser
 #define QueryType               FrtQueryType
 #define RAMFile                 FrtRAMFile
 #define RangeQuery              FrtRangeQuery
