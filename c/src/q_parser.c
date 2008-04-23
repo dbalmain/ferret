@@ -206,6 +206,13 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
 static void qp_push_fields(QParser *self, HashSet *fields, bool destroy);
 static void qp_pop_fields(QParser *self);
 
+/**
+ * +FLDS+ calls +func+ for all fields on top of the field stack. +func+
+ * must return a query. If there is more than one field on top of FieldStack
+ * then +FLDS+ will combing all the queries returned by +func+ into a single
+ * BooleanQuery which it than assigns to +q+. If there is only one field, the
+ * return value of +func+ is assigned to +q+ directly.
+ */
 #define FLDS(q, func) do {\
     TRY {\
         char *field;\
@@ -249,7 +256,7 @@ static void qp_pop_fields(QParser *self);
 
 
 /* Line 216 of yacc.c.  */
-#line 253 "src/q_parser.c"
+#line 260 "src/q_parser.c"
 
 #ifdef short
 # undef short
@@ -552,12 +559,12 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   218,   218,   219,   221,   222,   223,   224,   226,   227,
-     228,   230,   231,   233,   234,   235,   236,   237,   238,   239,
-     241,   242,   243,   245,   247,   247,   249,   249,   249,   252,
-     253,   255,   256,   257,   258,   260,   261,   262,   263,   264,
-     266,   267,   268,   269,   270,   271,   272,   273,   274,   275,
-     276,   277
+       0,   225,   225,   226,   228,   229,   230,   231,   233,   234,
+     235,   237,   238,   240,   241,   242,   243,   244,   245,   246,
+     248,   249,   250,   252,   254,   254,   256,   256,   256,   259,
+     260,   262,   263,   264,   265,   267,   268,   269,   270,   271,
+     273,   274,   275,   276,   277,   278,   279,   280,   281,   282,
+     283,   284
 };
 #endif
 
@@ -1216,59 +1223,59 @@ yydestruct (yymsg, yytype, yyvaluep, qp)
   switch (yytype)
     {
       case 27: /* "bool_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1222 "src/q_parser.c"
+#line 1229 "src/q_parser.c"
 	break;
       case 28: /* "bool_clss" */
-#line 215 "src/q_parser.y"
+#line 222 "src/q_parser.y"
 	{ if ((yyvaluep->bclss) && qp->destruct) bca_destroy((yyvaluep->bclss)); };
-#line 1227 "src/q_parser.c"
+#line 1234 "src/q_parser.c"
 	break;
       case 29: /* "bool_cls" */
-#line 214 "src/q_parser.y"
+#line 221 "src/q_parser.y"
 	{ if ((yyvaluep->bcls) && qp->destruct) bc_deref((yyvaluep->bcls)); };
-#line 1232 "src/q_parser.c"
+#line 1239 "src/q_parser.c"
 	break;
       case 30: /* "boosted_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1237 "src/q_parser.c"
+#line 1244 "src/q_parser.c"
 	break;
       case 31: /* "q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1242 "src/q_parser.c"
+#line 1249 "src/q_parser.c"
 	break;
       case 32: /* "term_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1247 "src/q_parser.c"
+#line 1254 "src/q_parser.c"
 	break;
       case 33: /* "wild_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1252 "src/q_parser.c"
+#line 1259 "src/q_parser.c"
 	break;
       case 34: /* "field_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1257 "src/q_parser.c"
+#line 1264 "src/q_parser.c"
 	break;
       case 39: /* "phrase_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1262 "src/q_parser.c"
+#line 1269 "src/q_parser.c"
 	break;
       case 40: /* "ph_words" */
-#line 216 "src/q_parser.y"
+#line 223 "src/q_parser.y"
 	{ if ((yyvaluep->phrase) && qp->destruct) ph_destroy((yyvaluep->phrase)); };
-#line 1267 "src/q_parser.c"
+#line 1274 "src/q_parser.c"
 	break;
       case 41: /* "range_q" */
-#line 213 "src/q_parser.y"
+#line 220 "src/q_parser.y"
 	{ if ((yyvaluep->query) && qp->destruct) q_deref((yyvaluep->query)); };
-#line 1272 "src/q_parser.c"
+#line 1279 "src/q_parser.c"
 	break;
 
       default:
@@ -1577,228 +1584,228 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 218 "src/q_parser.y"
+#line 225 "src/q_parser.y"
     {   qp->result = (yyval.query) = NULL; }
     break;
 
   case 3:
-#line 219 "src/q_parser.y"
+#line 226 "src/q_parser.y"
     { T qp->result = (yyval.query) = get_bool_q((yyvsp[(1) - (1)].bclss)); E }
     break;
 
   case 4:
-#line 221 "src/q_parser.y"
+#line 228 "src/q_parser.y"
     { T (yyval.bclss) = first_cls((yyvsp[(1) - (1)].bcls)); E }
     break;
 
   case 5:
-#line 222 "src/q_parser.y"
+#line 229 "src/q_parser.y"
     { T (yyval.bclss) = add_and_cls((yyvsp[(1) - (3)].bclss), (yyvsp[(3) - (3)].bcls)); E }
     break;
 
   case 6:
-#line 223 "src/q_parser.y"
+#line 230 "src/q_parser.y"
     { T (yyval.bclss) = add_or_cls((yyvsp[(1) - (3)].bclss), (yyvsp[(3) - (3)].bcls)); E }
     break;
 
   case 7:
-#line 224 "src/q_parser.y"
+#line 231 "src/q_parser.y"
     { T (yyval.bclss) = add_default_cls(qp, (yyvsp[(1) - (2)].bclss), (yyvsp[(2) - (2)].bcls)); E }
     break;
 
   case 8:
-#line 226 "src/q_parser.y"
+#line 233 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(2) - (2)].query), BC_MUST); E }
     break;
 
   case 9:
-#line 227 "src/q_parser.y"
+#line 234 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(2) - (2)].query), BC_MUST_NOT); E }
     break;
 
   case 10:
-#line 228 "src/q_parser.y"
+#line 235 "src/q_parser.y"
     { T (yyval.bcls) = get_bool_cls((yyvsp[(1) - (1)].query), BC_SHOULD); E }
     break;
 
   case 12:
-#line 231 "src/q_parser.y"
+#line 238 "src/q_parser.y"
     { T if ((yyvsp[(1) - (3)].query)) sscanf((yyvsp[(3) - (3)].str),"%f",&((yyvsp[(1) - (3)].query)->boost));  (yyval.query)=(yyvsp[(1) - (3)].query); E }
     break;
 
   case 14:
-#line 234 "src/q_parser.y"
+#line 241 "src/q_parser.y"
     { T (yyval.query) = bq_new_max(true, qp->max_clauses); E }
     break;
 
   case 15:
-#line 235 "src/q_parser.y"
+#line 242 "src/q_parser.y"
     { T (yyval.query) = get_bool_q((yyvsp[(2) - (3)].bclss)); E }
     break;
 
   case 20:
-#line 241 "src/q_parser.y"
+#line 248 "src/q_parser.y"
     { FLDS((yyval.query), get_term_q(qp, field, (yyvsp[(1) - (1)].str))); Y}
     break;
 
   case 21:
-#line 242 "src/q_parser.y"
+#line 249 "src/q_parser.y"
     { FLDS((yyval.query), get_fuzzy_q(qp, field, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].str))); Y}
     break;
 
   case 22:
-#line 243 "src/q_parser.y"
+#line 250 "src/q_parser.y"
     { FLDS((yyval.query), get_fuzzy_q(qp, field, (yyvsp[(1) - (2)].str), NULL)); Y}
     break;
 
   case 23:
-#line 245 "src/q_parser.y"
+#line 252 "src/q_parser.y"
     { FLDS((yyval.query), get_wild_q(qp, field, (yyvsp[(1) - (1)].str))); Y}
     break;
 
   case 24:
-#line 247 "src/q_parser.y"
+#line 254 "src/q_parser.y"
     { qp_pop_fields(qp); }
     break;
 
   case 25:
-#line 248 "src/q_parser.y"
+#line 255 "src/q_parser.y"
     { (yyval.query) = (yyvsp[(3) - (4)].query); }
     break;
 
   case 26:
-#line 249 "src/q_parser.y"
+#line 256 "src/q_parser.y"
     { qp_push_fields(qp, qp->all_fields, false); }
     break;
 
   case 27:
-#line 249 "src/q_parser.y"
+#line 256 "src/q_parser.y"
     { qp_pop_fields(qp); }
     break;
 
   case 28:
-#line 250 "src/q_parser.y"
+#line 257 "src/q_parser.y"
     { (yyval.query) = (yyvsp[(4) - (5)].query); }
     break;
 
   case 29:
-#line 252 "src/q_parser.y"
+#line 259 "src/q_parser.y"
     { (yyval.hashset) = first_field(qp, (yyvsp[(1) - (1)].str)); }
     break;
 
   case 30:
-#line 253 "src/q_parser.y"
+#line 260 "src/q_parser.y"
     { (yyval.hashset) = add_field(qp, (yyvsp[(3) - (3)].str));}
     break;
 
   case 31:
-#line 255 "src/q_parser.y"
+#line 262 "src/q_parser.y"
     { (yyval.query) = get_phrase_q(qp, (yyvsp[(2) - (3)].phrase), NULL); }
     break;
 
   case 32:
-#line 256 "src/q_parser.y"
+#line 263 "src/q_parser.y"
     { (yyval.query) = get_phrase_q(qp, (yyvsp[(2) - (5)].phrase), (yyvsp[(5) - (5)].str)); }
     break;
 
   case 33:
-#line 257 "src/q_parser.y"
+#line 264 "src/q_parser.y"
     { (yyval.query) = NULL; }
     break;
 
   case 34:
-#line 258 "src/q_parser.y"
+#line 265 "src/q_parser.y"
     { (yyval.query) = NULL; (void)(yyvsp[(4) - (4)].str);}
     break;
 
   case 35:
-#line 260 "src/q_parser.y"
+#line 267 "src/q_parser.y"
     { (yyval.phrase) = ph_first_word((yyvsp[(1) - (1)].str)); }
     break;
 
   case 36:
-#line 261 "src/q_parser.y"
+#line 268 "src/q_parser.y"
     { (yyval.phrase) = ph_first_word(NULL); }
     break;
 
   case 37:
-#line 262 "src/q_parser.y"
+#line 269 "src/q_parser.y"
     { (yyval.phrase) = ph_add_word((yyvsp[(1) - (2)].phrase), (yyvsp[(2) - (2)].str)); }
     break;
 
   case 38:
-#line 263 "src/q_parser.y"
+#line 270 "src/q_parser.y"
     { (yyval.phrase) = ph_add_word((yyvsp[(1) - (3)].phrase), NULL); }
     break;
 
   case 39:
-#line 264 "src/q_parser.y"
+#line 271 "src/q_parser.y"
     { (yyval.phrase) = ph_add_multi_word((yyvsp[(1) - (3)].phrase), (yyvsp[(3) - (3)].str));  }
     break;
 
   case 40:
-#line 266 "src/q_parser.y"
+#line 273 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  true,  true)); Y}
     break;
 
   case 41:
-#line 267 "src/q_parser.y"
+#line 274 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  true,  false)); Y}
     break;
 
   case 42:
-#line 268 "src/q_parser.y"
+#line 275 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  false, true)); Y}
     break;
 
   case 43:
-#line 269 "src/q_parser.y"
+#line 276 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (4)].str),  (yyvsp[(3) - (4)].str),  false, false)); Y}
     break;
 
   case 44:
-#line 270 "src/q_parser.y"
+#line 277 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (3)].str),  false, false)); Y}
     break;
 
   case 45:
-#line 271 "src/q_parser.y"
+#line 278 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (3)].str),  false, true)); Y}
     break;
 
   case 46:
-#line 272 "src/q_parser.y"
+#line 279 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (3)].str),  NULL,true,  false)); Y}
     break;
 
   case 47:
-#line 273 "src/q_parser.y"
+#line 280 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (3)].str),  NULL,false, false)); Y}
     break;
 
   case 48:
-#line 274 "src/q_parser.y"
+#line 281 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(2) - (2)].str),  false, false)); Y}
     break;
 
   case 49:
-#line 275 "src/q_parser.y"
+#line 282 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, NULL,(yyvsp[(3) - (3)].str),  false, true)); Y}
     break;
 
   case 50:
-#line 276 "src/q_parser.y"
+#line 283 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(3) - (3)].str),  NULL,true,  false)); Y}
     break;
 
   case 51:
-#line 277 "src/q_parser.y"
+#line 284 "src/q_parser.y"
     { FLDS((yyval.query), get_r_q(qp, field, (yyvsp[(2) - (2)].str),  NULL,false, false)); Y}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1802 "src/q_parser.c"
+#line 1809 "src/q_parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2012,12 +2019,22 @@ yyreturn:
 }
 
 
-#line 279 "src/q_parser.y"
+#line 286 "src/q_parser.y"
 
 
 static const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
 static const char *not_word =   " \t()[]{}!\"~^|<>=";
 
+/**
+ * +get_word+ gets the next query-word from the query string. A query-word is
+ * basically a string of non-special or escaped special characters. It is
+ * Analyzer agnostic. It is up to the get_*_q methods to tokenize the word and
+ * turn it into a +Query+. See the documentation for each get_*_q method to
+ * see how it handles tokenization.
+ *
+ * Note that +get_word+ is also responsible for returning field names and
+ * matching the special tokens 'AND', 'NOT', 'REQ' and 'OR'.
+ */
 static int get_word(YYSTYPE *lvalp, QParser *qp)
 {
     bool is_wild = false;
@@ -2061,8 +2078,10 @@ static int get_word(YYSTYPE *lvalp, QParser *qp)
             default:
                 *bufp++ = c;
         }
-        /* we've exceeded the static buffer. switch to the dynamic
-           one. */
+        /* we've exceeded the static buffer. switch to the dynamic one. The
+         * dynamic buffer is allocated enough space to hold the whole query
+         * string so it's capacity doesn't need to be checked again once
+         * allocated. */
         if (!qp->dynbuf && ((bufp - buf) == MAX_WORD_SIZE)) {
             qp->dynbuf = ALLOC_AND_ZERO_N(char, strlen(qp->qstr) + 1);
             strncpy(qp->dynbuf, buf, MAX_WORD_SIZE);
@@ -2072,8 +2091,8 @@ static int get_word(YYSTYPE *lvalp, QParser *qp)
     }
 get_word_done:
     qp->qstrp--;
-    /* check for keywords. There are only four so we have a bit of a hack which
-     * just checks for all of them. */
+    /* check for keywords. There are only four so we have a bit of a hack
+     * which just checks for all of them. */
     *bufp = '\0';
     len = (int)(bufp - buf);
     if (qp->use_keywords) {
@@ -2093,6 +2112,33 @@ get_word_done:
     return QWRD;
 }
 
+/**
+ * +yylex+ is the lexing method called by the QueryParser. It breaks the
+ * query up into special characters;
+ * 
+ *     ( "&:()[]{}!\"~^|<>=*?+-" )
+ *
+ * and tokens; 
+ * 
+ *   - QWRD
+ *   - WILD_STR
+ *   - AND['AND', '&&']
+ *   - OR['OR', '||']
+ *   - REQ['REQ', '+']
+ *   - NOT['NOT', '-', '~']
+ *
+ * QWRD tokens are query word tokens which are made up of characters other
+ * than the special characters. They can also contain special characters when
+ * escaped with a backslash '\'. WILD_STR is the same as QWRD except that it
+ * may also contain '?' and '*' characters.
+ *
+ * If any of the special chars are seen they will usually be returned straight
+ * away. The exceptions are the wild chars '*' and '?', and '&' which will be
+ * treated as a plain old word character unless followed by another '&'.
+ * 
+ * If no special characters or tokens are found then yylex delegates to
+ * +get_word+ which will fetch the next query-word.
+ */
 static int yylex(YYSTYPE *lvalp, QParser *qp)
 {
     char c, nc;
@@ -2131,6 +2177,11 @@ static int yylex(YYSTYPE *lvalp, QParser *qp)
     return get_word(lvalp, qp);
 }
 
+/**
+ * yyerror gets called if there is an parse error with the yacc parser.
+ * It is responsible for clearing any memory that was allocated during the
+ * parsing process.
+ */
 static int yyerror(QParser *qp, char const *msg)
 {
     qp->destruct = true;
@@ -2151,6 +2202,14 @@ static int yyerror(QParser *qp, char const *msg)
 
 #define BQ(query) ((BooleanQuery *)(query))
 
+/**
+ * The QueryParser caches a tokenizer for each field so that it doesn't need
+ * to allocate a new tokenizer for each term in the query. This would be quite
+ * expensive as tokenizers use quite a large hunk of memory.
+ *
+ * This method returns the query parser for a particular field and sets it up
+ * with the text to be tokenized.
+ */
 static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
 {
     TokenStream *ts;
@@ -2171,6 +2230,11 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
     return ts;
 }
 
+/**
+ * Turns a BooleanClause array into a BooleanQuery. It will optimize the query
+ * if 0 or 1 clauses are present to NULL or the actual query in the clause
+ * respectively.
+ */
 static Query *get_bool_q(BCArray *bca)
 {
     Query *q;
@@ -2206,6 +2270,10 @@ static Query *get_bool_q(BCArray *bca)
     return q;
 }
 
+/**
+ * Base method for appending BooleanClauses to a BooleanClause array. This
+ * method doesn't care about the type of clause (MUST, SHOULD, MUST_NOT).
+ */
 static void bca_add_clause(BCArray *bca, BooleanClause *clause)
 {
     if (bca->size >= bca->capa) {
@@ -2216,6 +2284,10 @@ static void bca_add_clause(BCArray *bca, BooleanClause *clause)
     bca->size++;
 }
 
+/**
+ * Add the first clause to a BooleanClause array. This method is also
+ * responsible for allocating a new BooleanClause array.
+ */
 static BCArray *first_cls(BooleanClause *clause)
 {
     BCArray *bca = ALLOC_AND_ZERO(BCArray);
@@ -2227,6 +2299,12 @@ static BCArray *first_cls(BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add AND clause to the BooleanClause array. The means that it will set the
+ * clause being added and the previously added clause from SHOULD clauses to
+ * MUST clauses. (If they are currently MUST_NOT clauses they stay as they
+ * are.)
+ */
 static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause)
 {
     if (clause) {
@@ -2243,6 +2321,9 @@ static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add SHOULD clause to the BooleanClause array.
+ */
 static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause)
 {
     if (clause) {
@@ -2251,6 +2332,10 @@ static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add AND or OR clause to the BooleanClause array, depending on the default
+ * clause type.
+ */
 static BCArray *add_default_cls(QParser *qp, BCArray *bca,
                                 BooleanClause *clause)
 {
@@ -2263,6 +2348,9 @@ static BCArray *add_default_cls(QParser *qp, BCArray *bca,
     return bca;
 }
 
+/**
+ * destroy array of BooleanClauses
+ */
 static void bca_destroy(BCArray *bca)
 {
     int i;
@@ -2273,6 +2361,9 @@ static void bca_destroy(BCArray *bca)
     free(bca);
 }
 
+/**
+ * Turn a query into a BooleanClause for addition to a BooleanQuery.
+ */
 static BooleanClause *get_bool_cls(Query *q, BCType occur)
 {
     if (q) {
@@ -2283,6 +2374,14 @@ static BooleanClause *get_bool_cls(Query *q, BCType occur)
     }
 }
 
+/**
+ * Create a TermQuery. The word will be tokenized and if the tokenization
+ * produces more than one token, a PhraseQuery will be returned. For example,
+ * if the word is dbalmain@gmail.com and a LetterTokenizer is used then a
+ * PhraseQuery "dbalmain gmail com" will be returned which is actually exactly
+ * what we want as it will match any documents containing the same email
+ * address and tokenized with the same tokenizer.
+ */
 static Query *get_term_q(QParser *qp, char *field, char *word)
 {
     Query *q;
@@ -2316,6 +2415,11 @@ static Query *get_term_q(QParser *qp, char *field, char *word)
     return q;
 }
 
+/**
+ * Create a FuzzyQuery. The word will be tokenized and only the first token
+ * will be used. If there are any more tokens after tokenization, they will be
+ * ignored.
+ */
 static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop_str)
 {
     Query *q;
@@ -2337,6 +2441,10 @@ static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop_str)
     return q;
 }
 
+/**
+ * Downcase a string taking locale into account and works for multibyte
+ * character sets.
+ */
 static char *lower_str(char *str)
 {
     const int max_len = (int)strlen(str) + 1;
@@ -2362,6 +2470,15 @@ static char *lower_str(char *str)
     return str;
 }
 
+/**
+ * Create a WildCardQuery. No tokenization will be performed on the pattern
+ * but the pattern will be downcased if +qp->wild_lower+ is set to true and
+ * the field in question is a tokenized field.
+ *
+ * Note: this method will not always return a WildCardQuery. It could be
+ * optimized to a MatchAllQuery if the pattern is '*' or a PrefixQuery if the
+ * only wild char (*, ?) in the pattern is a '*' at the end of the pattern.
+ */
 static Query *get_wild_q(QParser *qp, char *field, char *pattern)
 {
     Query *q;
@@ -2403,6 +2520,9 @@ static Query *get_wild_q(QParser *qp, char *field, char *pattern)
     return q;
 }
 
+/**
+ * Adds another field to the top of the FieldStack.
+ */
 static HashSet *add_field(QParser *qp, char *field)
 {
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
@@ -2411,13 +2531,20 @@ static HashSet *add_field(QParser *qp, char *field)
     return qp->fields;
 }
 
-// XXX
+/**
+ * The method gets called when a field modifier ("field1|field2:") is seen. It
+ * will push a new FieldStack object onto the stack and add +field+ to its
+ * fields set.
+ */
 static HashSet *first_field(QParser *qp, char *field)
 {
     qp_push_fields(qp, hs_new_str(NULL), true);
     return add_field(qp, field);
 }
 
+/**
+ * Destroy a phrase object freeing all allocated memory.
+ */
 static void ph_destroy(Phrase *self)
 {
     int i;
@@ -2429,6 +2556,9 @@ static void ph_destroy(Phrase *self)
 }
 
 
+/**
+ * Allocate a new Phrase object
+ */
 static Phrase *ph_new()
 {
   Phrase *self = ALLOC_AND_ZERO(Phrase);
@@ -2437,6 +2567,10 @@ static Phrase *ph_new()
   return self;
 }
 
+/**
+ * Add the first word to the phrase. This method is also in charge of
+ * allocating a new Phrase object.
+ */
 static Phrase *ph_first_word(char *word)
 {
     Phrase *self = ph_new();
@@ -2448,6 +2582,9 @@ static Phrase *ph_first_word(char *word)
     return self;
 }
 
+/**
+ * Add a new word to the Phrase
+ */
 static Phrase *ph_add_word(Phrase *self, char *word)
 {
     if (word) {
@@ -2470,6 +2607,10 @@ static Phrase *ph_add_word(Phrase *self, char *word)
     return self;
 }
 
+/**
+ * Adds a word to the Phrase object in the same position as the previous word
+ * added to the Phrase. This will later be turned into a multi-PhraseQuery.
+ */
 static Phrase *ph_add_multi_word(Phrase *self, char *word)
 {
     const int index = self->size - 1;
@@ -2494,7 +2635,20 @@ static Phrase *ph_add_multi_word(Phrase *self, char *word)
  *
  * Note that each word in the query gets tokenized. Unlike get_term_q, if the
  * word gets tokenized into more than one token, the rest of the tokens are
- * ignored.
+ * ignored. For example, if you have the phrase;
+ *
+ *      "email: dbalmain@gmail.com"
+ * 
+ * the Phrase object will contain to positions with the words 'email:' and
+ * 'dbalmain@gmail.com'. Now, if you are using a LetterTokenizer then the
+ * second word will be tokenized into the tokens ['dbalmain', 'gmail', 'com']
+ * and only the first token will be used, so the resulting phrase query will
+ * actually look like this;
+ *
+ *      "email dbalmain"
+ *
+ * This problem can easily be solved by using the StandardTokenizer or any
+ * custom tokenizer which will leave dbalmain@gmail.com as a single token.
  */
 static Query *get_phrase_query(QParser *qp, char *field,
                                Phrase *phrase, char *slop_str)
