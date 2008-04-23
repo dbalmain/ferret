@@ -72,6 +72,8 @@
 #define HAS_ISO_VARARGS                    FRT_HAS_ISO_VARARGS
 #define HAS_VARARGS                        FRT_HAS_VARARGS
 #define HS_MIN_SIZE                        FRT_HS_MIN_SIZE
+#define I                                  FRT_I
+#define IF                                 FRT_IF
 #define INDEX_ERROR                        FRT_INDEX_ERROR
 #define INDEX_INTERVAL                     FRT_INDEX_INTERVAL
 #define INDEX_NO                           FRT_INDEX_NO
@@ -523,6 +525,7 @@
 #define h_lookup_ft                             frt_h_lookup_ft
 #define h_new                                   frt_h_new
 #define h_new_int                               frt_h_new_int
+#define h_new_ptr                               frt_h_new_ptr
 #define h_new_str                               frt_h_new_str
 #define h_rem                                   frt_h_rem
 #define h_rem_int                               frt_h_rem_int
@@ -542,6 +545,7 @@
 #define hs_free                                 frt_hs_free
 #define hs_merge                                frt_hs_merge
 #define hs_new                                  frt_hs_new
+#define hs_new_ptr                              frt_hs_new_ptr
 #define hs_new_str                              frt_hs_new_str
 #define hs_orig                                 frt_hs_orig
 #define hs_rem                                  frt_hs_rem
@@ -762,6 +766,7 @@
 #define q_weight                                frt_q_weight
 #define qfilt_new                               frt_qfilt_new
 #define qfilt_new_nr                            frt_qfilt_new_nr
+#define qp_add_field                            frt_qp_add_field
 #define qp_clean_str                            frt_qp_clean_str
 #define qp_default_fuzzy_min_sim                frt_qp_default_fuzzy_min_sim
 #define qp_default_fuzzy_pre_len                frt_qp_default_fuzzy_pre_len

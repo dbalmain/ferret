@@ -1,4 +1,5 @@
 #include "hash.h"
+#include "intern.h"
 #include "global.h"
 #include <stdlib.h>
 #include "test.h"
@@ -15,22 +16,22 @@ static int *malloc_int(int val)
  */
 static void test_hash_str(TestCase *tc, void *data)
 {
-    Hash *ht = h_new_str(NULL, &free);
+    Hash *h = h_new_str(NULL, &free);
     (void)data; /* suppress unused argument warning */
 
-    Assert(h_get(ht, "one") == NULL, "No entries added yet");
+    Assert(h_get(h, "one") == NULL, "No entries added yet");
 
-    Aiequal(0, h_set(ht, "one", malloc_int(1)));
-    Aiequal(1, *(int *)h_get(ht, "one"));
-    Aiequal(true, h_del(ht, "one"));
+    Aiequal(0, h_set(h, "one", malloc_int(1)));
+    Aiequal(1, *(int *)h_get(h, "one"));
+    Aiequal(true, h_del(h, "one"));
 
-    Assert(h_get(ht, "one") == NULL, "The Hash Entry has been deleted");
+    Assert(h_get(h, "one") == NULL, "The Hash Entry has been deleted");
 
     /* test that h_has_key works even when value is set to null */
-    h_set(ht, "one", NULL);
-    Apnull(h_get(ht, "one"));
-    Atrue(h_has_key(ht, "one"));
-    h_destroy(ht);
+    h_set(h, "one", NULL);
+    Apnull(h_get(h, "one"));
+    Atrue(h_has_key(h, "one"));
+    h_destroy(h);
 }
 
 typedef struct Point
@@ -69,35 +70,35 @@ static void test_hash_point(TestCase *tc, void *data)
     Point *p1 = point_new(1, 2);
     Point *p2 = point_new(2, 1);
     Point *p3 = point_new(1, 2);
-    Hash *ht = h_new(&point_hash, &point_eq, NULL, &free);
+    Hash *h = h_new(&point_hash, &point_eq, NULL, &free);
     (void)data; /* suppress unused argument warning */
 
     Assert(point_eq(p1, p3), "should be equal");
 
-    Assert(h_get(ht, p1) == NULL, "No entries added yet");
-    Assert(h_get(ht, p2) == NULL, "No entries added yet");
-    Assert(h_get(ht, p3) == NULL, "No entries added yet");
-    Aiequal(0, ht->size);
-    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(ht, p1, malloc_int(0)));
-    Aiequal(1, ht->size);
-    Aiequal(0, *(int *)h_get(ht, p1));
-    Aiequal(HASH_KEY_SAME, h_set(ht, p1, malloc_int(1)));
-    Aiequal(1, ht->size);
-    Aiequal(1, *(int *)h_get(ht, p1));
-    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(ht, p2, malloc_int(2)));
-    Aiequal(2, ht->size);
-    Aiequal(2, *(int *)h_get(ht, p2));
-    Aiequal(HASH_KEY_EQUAL, h_set(ht, p3, malloc_int(3)));
-    Aiequal(2, ht->size);
-    Aiequal(3, *(int *)h_get(ht, p3));
-    Aiequal(3, *(int *)h_get(ht, p1));
-    Aiequal(true, h_del(ht, p1));
-    Aiequal(1, ht->size);
-    Assert(h_get(ht, p1) == NULL, "Entry should be deleted");
-    h_clear(ht);
-    Assert(h_get(ht, p2) == NULL, "Entry should be deleted");
-    Aiequal(0, ht->size);
-    h_destroy(ht);
+    Assert(h_get(h, p1) == NULL, "No entries added yet");
+    Assert(h_get(h, p2) == NULL, "No entries added yet");
+    Assert(h_get(h, p3) == NULL, "No entries added yet");
+    Aiequal(0, h->size);
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(h, p1, malloc_int(0)));
+    Aiequal(1, h->size);
+    Aiequal(0, *(int *)h_get(h, p1));
+    Aiequal(HASH_KEY_SAME, h_set(h, p1, malloc_int(1)));
+    Aiequal(1, h->size);
+    Aiequal(1, *(int *)h_get(h, p1));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set(h, p2, malloc_int(2)));
+    Aiequal(2, h->size);
+    Aiequal(2, *(int *)h_get(h, p2));
+    Aiequal(HASH_KEY_EQUAL, h_set(h, p3, malloc_int(3)));
+    Aiequal(2, h->size);
+    Aiequal(3, *(int *)h_get(h, p3));
+    Aiequal(3, *(int *)h_get(h, p1));
+    Aiequal(true, h_del(h, p1));
+    Aiequal(1, h->size);
+    Assert(h_get(h, p1) == NULL, "Entry should be deleted");
+    h_clear(h);
+    Assert(h_get(h, p2) == NULL, "Entry should be deleted");
+    Aiequal(0, h->size);
+    h_destroy(h);
     free(p1);
     free(p2);
     free(p3);
@@ -111,46 +112,90 @@ static void test_hash_point(TestCase *tc, void *data)
 static void test_hash_int(TestCase *tc, void *data)
 {
     int i;
-    Hash *ht = h_new_int(&free);
+    Hash *h = h_new_int(&free);
     char buf[100];
     char *word;
     (void)data; /* suppress unused argument warning */
 
-    Aiequal(0, ht->size);
-    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set_int(ht, 0, estrdup("one")));
-    Aiequal(1, ht->size);
-    Atrue(h_has_key_int(ht, 0));
-    h_set_int(ht, 10, estrdup("ten"));
-    Aiequal(2, ht->size);
-    Atrue(h_has_key_int(ht, 10));
-    h_set_int(ht, 1000, estrdup("thousand"));
-    Aiequal(3, ht->size);
-    Atrue(h_has_key_int(ht, 1000));
-    Asequal("thousand", word = (char *)h_rem_int(ht, 1000));
-    Aiequal(2, ht->size);
-    Atrue(!h_has_key_int(ht, 1000));
-    Atrue(h_has_key_int(ht, 10));
-    Atrue(!h_set_safe_int(ht, 10, word));
+    Aiequal(0, h->size);
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set_int(h, 0, estrdup("one")));
+    Aiequal(1, h->size);
+    Atrue(h_has_key_int(h, 0));
+    h_set_int(h, 10, estrdup("ten"));
+    Aiequal(2, h->size);
+    Atrue(h_has_key_int(h, 10));
+    h_set_int(h, 1000, estrdup("thousand"));
+    Aiequal(3, h->size);
+    Atrue(h_has_key_int(h, 1000));
+    Asequal("thousand", word = (char *)h_rem_int(h, 1000));
+    Aiequal(2, h->size);
+    Atrue(!h_has_key_int(h, 1000));
+    Atrue(h_has_key_int(h, 10));
+    Atrue(!h_set_safe_int(h, 10, word));
     free(word);
-    h_del_int(ht, 10);
+    h_del_int(h, 10);
 
     for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
         sprintf(buf, "<%d>", i);
-        h_set_int(ht, i, estrdup(buf));
+        h_set_int(h, i, estrdup(buf));
     }
-    Asequal("<0>", h_get_int(ht, 0));
-    Asequal("<100>", h_get_int(ht, 100));
+    Asequal("<0>", h_get_int(h, 0));
+    Asequal("<100>", h_get_int(h, 100));
     for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
         sprintf(buf, "<%d>", i);
-        Asequal(buf, h_get_int(ht, i));
+        Asequal(buf, h_get_int(h, i));
     }
 
     for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
-        h_del_int(ht, i);
+        h_del_int(h, i);
     }
-    Aiequal(0, ht->size);
+    Aiequal(0, h->size);
 
-    h_destroy(ht);
+    h_destroy(h);
+}
+
+/**
+ * Test using pointers as the key. This is also an example as to how to use
+ * pointers as the key.
+ */
+#define HASH_INT_TEST_SIZE 1000
+static void test_hash_ptr(TestCase *tc, void *data)
+{
+    Hash *h = h_new_ptr(&free);
+    const char *word1 = intern("one");
+    const char *word2 = intern("two");
+    char *word_one = estrdup("one");
+    int i;
+    char buf[100];
+    (void)data; /* suppress unused argument warning */
+
+    h_set(h, word1, estrdup("1"));
+    h_set(h, word2, estrdup("2"));
+    h_set(h, word_one, estrdup("3"));
+    Asequal("1", h_get(h, word1));
+    Asequal("2", h_get(h, word2));
+    Asequal("3", h_get(h, word_one));
+
+    Aiequal(3, h->size);
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+        char *str = strfmt("<%d>", i);
+        h_set(h, I(str), str);
+    }
+    Asequal("<0>", h_get(h, I("<0>")));
+    Asequal("<100>", h_get(h, I("<100>")));
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+        sprintf(buf, "<%d>", i);
+        Asequal(buf, h_get(h, I(buf)));
+    }
+
+    for (i = 0; i < HASH_INT_TEST_SIZE; i++) {
+        sprintf(buf, "<%d>", i);
+        h_del(h, I(buf));
+    }
+    Aiequal(3, h->size);
+
+    h_destroy(h);
+    free(word_one);
 }
 
 /**
@@ -167,22 +212,22 @@ static void stress_hash(TestCase *tc, void *data)
     (void)data; /* suppress unused argument warning */
 
     for (k = 0; k < 1; k++) {
-        Hash *ht = h_new_str(&free, &free);
+        Hash *h = h_new_str(&free, &free);
         for (i = 0; i < STRESS_SIZE; i++) {
             sprintf(buf, "(%d)", i);
-            if (h_get(ht, buf) != NULL) {
+            if (h_get(h, buf) != NULL) {
                 Assert(false,
                        "h_get returned a result when it shouldn't have\n");
                 return;
             }
-            h_set(ht, estrdup(buf), malloc_int(i));
+            h_set(h, estrdup(buf), malloc_int(i));
         }
 
 
         for (j = 0; j < 1; j++) {
             for (i = 0; i < STRESS_SIZE; i++) {
                 sprintf(buf, "(%d)", i);
-                if (i != *(int *)h_get(ht, buf)) {
+                if (i != *(int *)h_get(h, buf)) {
                     Assert(false, "h_get returned an incorrect result\n");
                     return;
                 }
@@ -191,18 +236,18 @@ static void stress_hash(TestCase *tc, void *data)
 
         for (i = 0; i < STRESS_SIZE / 2; i++) {
             sprintf(buf, "(%d)", i);
-            if (!h_del(ht, buf)) {
+            if (!h_del(h, buf)) {
                 Assert(false, "h_del returned an error code\n");
                 return;
             }
-            if (h_get(ht, buf) != NULL) {
+            if (h_get(h, buf) != NULL) {
                 Assert(false, "h_get returned an incorrect result\n");
                 return;
             }
         }
 
-        Aiequal(STRESS_SIZE / 2, ht->size);
-        h_destroy(ht);
+        Aiequal(STRESS_SIZE / 2, h->size);
+        h_destroy(h);
     }
 }
 
@@ -215,19 +260,19 @@ static void test_hash_up_and_down(TestCase *tc, void *data)
     int i, j;
     char buf[20];
 
-    Hash *ht = h_new_str(&free, &free);
+    Hash *h = h_new_str(&free, &free);
     (void)data; /* suppress unused argument warning */
 
     for (j = 0; j < 50; j++) {
         for (i = j * 10; i < j * 10 + 10; i++) {
             sprintf(buf, "(%d)", i);
-            if (h_get(ht, buf) != NULL) {
+            if (h_get(h, buf) != NULL) {
                 Assert(false,
                        "h_get returned a result when it shouldn't have\n");
                 return;
             }
-            h_set(ht, estrdup(buf), malloc_int(i));
-            if (i != *(int *)h_get(ht, buf)) {
+            h_set(h, estrdup(buf), malloc_int(i));
+            if (i != *(int *)h_get(h, buf)) {
                 Assert(false, "h_get returned an incorrect result\n");
                 return;
             }
@@ -235,30 +280,30 @@ static void test_hash_up_and_down(TestCase *tc, void *data)
 
         for (i = j * 10; i < j * 10 + 10; i++) {
             sprintf(buf, "(%d)", i);
-            if (!h_del(ht, buf)) {
+            if (!h_del(h, buf)) {
                 Assert(false, "h_del returned an error code\n");
                 return;
             }
-            if (h_get(ht, buf) != NULL) {
+            if (h_get(h, buf) != NULL) {
                 Assert(false, "h_get returned an incorrect result\n");
                 return;
             }
         }
     }
-    Aiequal(0, ht->size);
-    h_destroy(ht);
+    Aiequal(0, h->size);
+    h_destroy(h);
 }
 
 /**
  * Method used in h_each test
  */
-static void test_each_ekv(void *key, void *value, Hash *ht)
+static void test_each_ekv(void *key, void *value, Hash *h)
 {
     if ((strlen((char *)key) % 2) == 0) {
-        h_del(ht, key);
+        h_del(h, key);
     }
     else {
-        h_del(ht, value);
+        h_del(h, value);
     }
 }
 
@@ -272,38 +317,38 @@ static void test_hash_each_and_clone(TestCase *tc, void *data)
     char *strs[] =
         { "one", "two", "three", "four", "five", "six", "seven", NULL };
     char **s = strs;
-    Hash *ht = h_new_str(&free, &free);
+    Hash *h = h_new_str(&free, &free);
     Hash *ht2;
     (void)data; /* suppress unused argument warning */
 
     while (*s) {
-        h_set(ht, estrdup(*s), estrdup(*s));
+        h_set(h, estrdup(*s), estrdup(*s));
         s++;
     }
-    h_del(ht, "two");
-    h_del(ht, "four");
+    h_del(h, "two");
+    h_del(h, "four");
 
-    Aiequal(7, ht->fill);
-    Aiequal(5, ht->size);
+    Aiequal(7, h->fill);
+    Aiequal(5, h->size);
 
-    ht2 = h_clone(ht, (h_clone_ft)&estrdup, (h_clone_ft)&estrdup);
+    ht2 = h_clone(h, (h_clone_ft)&estrdup, (h_clone_ft)&estrdup);
 
-    Aiequal(7, ht->fill);
-    Aiequal(5, ht->size);
+    Aiequal(7, h->fill);
+    Aiequal(5, h->size);
     Aiequal(5, ht2->fill);
     Aiequal(5, ht2->size);
 
-    h_del(ht, "seven");
+    h_del(h, "seven");
 
-    Aiequal(7, ht->fill);
-    Aiequal(4, ht->size);
+    Aiequal(7, h->fill);
+    Aiequal(4, h->size);
     Aiequal(5, ht2->fill);
     Aiequal(5, ht2->size);
 
-    h_each(ht, (void (*)(void *k, void *v, void *a))&test_each_ekv, ht2);
+    h_each(h, (void (*)(void *k, void *v, void *a))&test_each_ekv, ht2);
 
-    Aiequal(7, ht->fill);
-    Aiequal(4, ht->size);
+    Aiequal(7, h->fill);
+    Aiequal(4, h->size);
     Aiequal(5, ht2->fill);
     Aiequal(1, ht2->size);
 
@@ -314,7 +359,7 @@ static void test_hash_each_and_clone(TestCase *tc, void *data)
     Apnull(h_get(ht2, "four"));
     Apnull(h_get(ht2, "five"));
     Apnull(h_get(ht2, "six"));
-    h_destroy(ht);
+    h_destroy(h);
     h_destroy(ht2);
 }
 
@@ -336,15 +381,15 @@ static void add_string_ekv(void *key, void *value, struct StringArray *str_arr)
     str_arr->cnt++;
 }
 
-static struct StringArray *h_extract_strings(Hash *ht)
+static struct StringArray *h_extract_strings(Hash *h)
 {
     struct StringArray *str_arr = ALLOC(struct StringArray);
 
-    str_arr->strings = ALLOC_N(char *, ht->size);
+    str_arr->strings = ALLOC_N(char *, h->size);
     str_arr->cnt = 0;
-    str_arr->size = ht->size;
+    str_arr->size = h->size;
 
-    h_each(ht, (h_each_key_val_ft)add_string_ekv, str_arr);
+    h_each(h, (h_each_key_val_ft)add_string_ekv, str_arr);
 
     return str_arr;
 }
@@ -358,14 +403,14 @@ static void test_hash_extract_strings(TestCase *tc, void *data)
     int i;
     struct StringArray *str_arr;
     const char *strs[] = {"one", "two", "three", "four", "five"};
-    Hash *ht = h_new_str(NULL, NULL);
+    Hash *h = h_new_str(NULL, NULL);
     (void)data; /* suppress unused argument warning */
 
     for (i = 0; i < (int)NELEMS(strs); i++) {
-        h_set(ht, strs[i], (void *)strs[i]);
+        h_set(h, strs[i], (void *)strs[i]);
     }
 
-    str_arr = h_extract_strings(ht);
+    str_arr = h_extract_strings(h);
 
     if (Aiequal(NELEMS(strs), str_arr->size)) {
         for (i = 0; i < (int)NELEMS(strs); i++) {
@@ -380,7 +425,7 @@ static void test_hash_extract_strings(TestCase *tc, void *data)
         }
     }
 
-    h_destroy(ht);
+    h_destroy(h);
     free(str_arr->strings);
     free(str_arr);
 }
@@ -392,6 +437,7 @@ TestSuite *ts_hash(TestSuite *suite)
     tst_run_test(suite, test_hash_str, NULL);
     tst_run_test(suite, test_hash_point, NULL);
     tst_run_test(suite, test_hash_int, NULL);
+    tst_run_test(suite, test_hash_ptr, NULL);
     tst_run_test(suite, stress_hash, NULL);
     tst_run_test(suite, test_hash_up_and_down, NULL);
     tst_run_test(suite, test_hash_each_and_clone, NULL);

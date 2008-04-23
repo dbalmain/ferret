@@ -43,11 +43,13 @@ void index_auto_flush_iw(Index *self)
     AUTOFLUSH_IW(self);
 }
 
+
 Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
                  bool create)
 {
-    HashSet *all_fields = hs_new_str(NULL);
     Index *self = ALLOC_AND_ZERO(Index);
+    HashSetEntry *hse;
+    /* FIXME: need to add these to the query parser */
     self->config = default_config;
     mutex_init(&self->mutex, NULL);
     self->has_writes = false;
@@ -80,7 +82,10 @@ Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
     self->check_latest = true;
 
     REF(self->analyzer);
-    self->qp = qp_new(all_fields, def_fields, NULL, self->analyzer);
+    self->qp = qp_new(self->analyzer);
+    for (hse = def_fields->first; hse; hse = hse->next) {
+        qp_add_field(self->qp, (const char *)hse->elem, true, true);
+    }
     /* Index is a convenience class so set qp convenience options */
     self->qp->allow_any_fields = true;
     self->qp->clean_str = true;

@@ -198,17 +198,6 @@ Hash *h_new_int(free_ft free_value)
     return self;
 }
 
-Hash *h_new_ptr(free_ft free_key, free_ft free_value)
-{
-    Hash *self     = h_new_str(free_key, free_value);
-
-    self->lookup_i = &h_lookup_ptr;
-    self->eq_i     = NULL;
-    self->hash_i   = NULL;
-
-    return self;
-}
-
 Hash *h_new(hash_ft hash, eq_ft eq, free_ft free_key, free_ft free_value)
 {
     Hash *self     = h_new_str(free_key, free_value);

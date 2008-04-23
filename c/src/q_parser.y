@@ -134,12 +134,13 @@ static void bca_destroy(BCArray *bca);
 
 static BooleanClause *get_bool_cls(Query *q, BCType occur);
 
-static Query *get_term_q(QParser *qp, char *field, char *word);
-static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop);
-static Query *get_wild_q(QParser *qp, char *field, char *pattern);
+static Query *get_term_q(QParser *qp, const char *field, char *word);
+static Query *get_fuzzy_q(QParser *qp, const char *field, char *word,
+                          char *slop);
+static Query *get_wild_q(QParser *qp, const char *field, char *pattern);
 
-static HashSet *first_field(QParser *qp, char *field);
-static HashSet *add_field(QParser *qp, char *field);
+static HashSet *first_field(QParser *qp, const char *field);
+static HashSet *add_field(QParser *qp, const char *field);
 
 static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop);
 
@@ -148,7 +149,7 @@ static Phrase *ph_add_word(Phrase *self, char *word);
 static Phrase *ph_add_multi_word(Phrase *self, char *word);
 static void ph_destroy(Phrase *self);
 
-static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
+static Query *get_r_q(QParser *qp, const char *field, char *from, char *to,
                       bool inc_lower, bool inc_upper);
 
 static void qp_push_fields(QParser *self, HashSet *fields, bool destroy);
@@ -473,10 +474,10 @@ static int yyerror(QParser *qp, char const *msg)
  * This method returns the query parser for a particular field and sets it up
  * with the text to be tokenized.
  */
-static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
+static TokenStream *get_cached_ts(QParser *qp, const char *field, char *text)
 {
     TokenStream *ts;
-    if (!qp->tokenized_fields || hs_exists(qp->tokenized_fields, field)) {
+    if (hs_exists(qp->tokenized_fields, field)) {
         ts = (TokenStream *)h_get(qp->ts_cache, field);
         if (!ts) {
             ts = a_get_ts(qp->analyzer, field, text);
@@ -645,7 +646,7 @@ static BooleanClause *get_bool_cls(Query *q, BCType occur)
  * what we want as it will match any documents containing the same email
  * address and tokenized with the same tokenizer.
  */
-static Query *get_term_q(QParser *qp, char *field, char *word)
+static Query *get_term_q(QParser *qp, const char *field, char *word)
 {
     Query *q;
     Token *token;
@@ -683,7 +684,8 @@ static Query *get_term_q(QParser *qp, char *field, char *word)
  * will be used. If there are any more tokens after tokenization, they will be
  * ignored.
  */
-static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop_str)
+static Query *get_fuzzy_q(QParser *qp, const char *field, char *word,
+                          char *slop_str)
 {
     Query *q;
     Token *token;
@@ -742,7 +744,7 @@ static char *lower_str(char *str)
  * optimized to a MatchAllQuery if the pattern is '*' or a PrefixQuery if the
  * only wild char (*, ?) in the pattern is a '*' at the end of the pattern.
  */
-static Query *get_wild_q(QParser *qp, char *field, char *pattern)
+static Query *get_wild_q(QParser *qp, const char *field, char *pattern)
 {
     Query *q;
     bool is_prefix = false;
@@ -786,10 +788,11 @@ static Query *get_wild_q(QParser *qp, char *field, char *pattern)
 /**
  * Adds another field to the top of the FieldStack.
  */
-static HashSet *add_field(QParser *qp, char *field)
+static HashSet *add_field(QParser *qp, const char *field)
 {
+    field = intern(field);
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
-        hs_add(qp->fields, (char *)intern(field));
+        hs_add(qp->fields, (char *)field);
     }
     return qp->fields;
 }
@@ -799,9 +802,9 @@ static HashSet *add_field(QParser *qp, char *field)
  * will push a new FieldStack object onto the stack and add +field+ to its
  * fields set.
  */
-static HashSet *first_field(QParser *qp, char *field)
+static HashSet *first_field(QParser *qp, const char *field)
 {
-    qp_push_fields(qp, hs_new_str(NULL), true);
+    qp_push_fields(qp, hs_new_ptr(NULL), true);
     return add_field(qp, field);
 }
 
@@ -913,7 +916,7 @@ static Phrase *ph_add_multi_word(Phrase *self, char *word)
  * This problem can easily be solved by using the StandardTokenizer or any
  * custom tokenizer which will leave dbalmain@gmail.com as a single token.
  */
-static Query *get_phrase_query(QParser *qp, char *field,
+static Query *get_phrase_query(QParser *qp, const char *field,
                                Phrase *phrase, char *slop_str)
 {
     const int pos_cnt = phrase->size;
@@ -1039,7 +1042,7 @@ static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
  * Just like with WildCardQuery, RangeQuery needs to downcase its terms if the
  * tokenizer also downcased its terms.
  */
-static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
+static Query *get_r_q(QParser *qp, const char *field, char *from, char *to,
                       bool inc_lower, bool inc_upper)
 {
     Query *rq;
@@ -1118,15 +1121,8 @@ static void qp_pop_fields(QParser *self)
  */
 void qp_destroy(QParser *self)
 {
-    if (self->def_fields != self->all_fields) {
-        hs_destroy(self->def_fields);
-    }
-    if (self->tokenized_fields) {
-        hs_destroy(self->tokenized_fields);
-    }
-    if (self->dynbuf) {
-        free(self->dynbuf);
-    }
+    hs_destroy(self->tokenized_fields);
+    hs_destroy(self->def_fields);
     hs_destroy(self->all_fields);
 
     qp_pop_fields(self);
@@ -1144,8 +1140,7 @@ void qp_destroy(QParser *self)
  * Not also that this method ensures that all fields that exist in
  * +def_fields+ must also exist in +all_fields+. This should make sense.
  */
-QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
-                HashSet *tokenized_fields, Analyzer *analyzer)
+QParser *qp_new(Analyzer *analyzer)
 {
     QParser *self = ALLOC(QParser);
     self->or_default = true;
@@ -1157,20 +1152,11 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->use_keywords = true;
     self->use_typed_range_query = false;
     self->def_slop = 0;
-    self->all_fields = all_fields;
-    self->tokenized_fields = tokenized_fields;
-    if (def_fields) {
-        HashSetEntry *hse;
-        self->def_fields = def_fields;
-        for (hse = def_fields->first; hse; hse = hse->next) {
-            if (!hs_exists(self->all_fields, hse->elem)) {
-                hs_add(self->all_fields, hse->elem);
-            }
-        }
-    }
-    else {
-        self->def_fields = all_fields;
-    }
+
+    self->tokenized_fields = hs_new_ptr(NULL);
+    self->all_fields = hs_new_ptr(NULL);
+    self->def_fields = hs_new_ptr(NULL);
+
     self->fields_top = NULL;
     qp_push_fields(self, self->def_fields, false);
 
@@ -1182,6 +1168,21 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->non_tokenizer = non_tokenizer_new();
     mutex_init(&self->mutex, NULL);
     return self;
+}
+
+void qp_add_field(QParser *self,
+                  const char *field,
+                  bool is_default,
+                  bool is_tokenized)
+{
+    field = intern(field);
+    hs_add(self->all_fields, (char *)field);
+    if (is_default) {
+        hs_add(self->def_fields, (char *)field);
+    }
+    if (is_tokenized) {
+        hs_add(self->tokenized_fields, (char *)field);
+    }
 }
 
 /* these chars have meaning within phrases */
