@@ -74,6 +74,8 @@ static void test_q_parser(TestCase *tc, void *data)
         {"Opus::City", "\"opus city\"~1"},
         {"()", ""},
         {"field:()", ""},
+        {"one AND (f1:two OR f2:three) AND four",
+            "+one +(f1:two f2:three) +four"},
         {"xx:\"Hello Newman\" field:()", "\"hello newman\" ()"},
         {"one (two AND three)", "one (+two +three)"},
         {"one AND (two OR three)", "+one +(two three)"},

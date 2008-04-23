@@ -4,7 +4,8 @@
 #include "internal.h"
 
 
-static const char * NON_UNIQUE_KEY_ERROR_MSG = "Tried to use a key that was not unique";
+static const char *NON_UNIQUE_KEY_ERROR_MSG =
+    "Tried to use a key that was not unique";
 
 static const char *ID_STRING = "id";
 
