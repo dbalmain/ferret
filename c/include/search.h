@@ -931,8 +931,9 @@ typedef struct FrtQueryParser
 } FrtQueryParser;
 typedef FrtQueryParser FrtQParser; /* QParser is an alias for QueryParser */
 
-extern FrtQParser *frt_qp_new(FrtHashSet *all_fields, FrtHashSet *def_fields,
-                       FrtHashSet *tokenized_fields, FrtAnalyzer *analyzer);
+extern FrtQParser *frt_qp_new(FrtAnalyzer *analyzer);
+extern void frt_qp_add_field(FrtQParser *self, const char *field,
+                             bool is_default, bool is_tokenized);
 extern void frt_qp_destroy(FrtQParser *self);
 extern FrtQuery *frt_qp_parse(FrtQParser *self, char *qstr);
 extern char *frt_qp_clean_str(char *str);

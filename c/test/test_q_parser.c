@@ -1,11 +1,6 @@
 #include "search.h"
 #include "test.h"
 
-static char *f1 = "f1";
-static char *f2 = "f2";
-static char *field = "field";
-static char *xx = "xx";
-
 typedef struct QPTestPair {
     char *qstr;
     char *qres;
@@ -13,7 +8,7 @@ typedef struct QPTestPair {
 
 #define PARSER_TEST(str, res) do {\
     Query *q = qp_parse(parser, str);\
-    char *qres = q->to_s(q, xx);\
+    char *qres = q->to_s(q, "xx");\
     Asequal(res, qres);\
     q_deref(q);\
     free(qres);\
@@ -22,9 +17,6 @@ typedef struct QPTestPair {
 static void test_q_parser(TestCase *tc, void *data)
 {
     int i;
-    HashSet *all_fields = hs_new_str(NULL);
-    HashSet *def_fields = hs_new_str(NULL);
-    HashSet *tkz_fields = hs_new_str(NULL);
     Analyzer *analyzer = letter_analyzer_new(true);
     QParser *parser;
     QPTestPair pairs[] = {
@@ -148,17 +140,12 @@ static void test_q_parser(TestCase *tc, void *data)
     };  
     (void)data;
 
-    hs_add(all_fields, xx);
-    hs_add(all_fields, f1);
-    hs_add(all_fields, f2);
-    hs_add(all_fields, field);
-    hs_add(tkz_fields, xx);
-    hs_add(tkz_fields, f1);
-    hs_add(tkz_fields, f2);
-    hs_add(def_fields, xx);
-
     REF(analyzer);
-    parser = qp_new(all_fields, def_fields, tkz_fields, analyzer);
+    parser = qp_new(analyzer);
+    qp_add_field(parser, "xx",    true,  true);
+    qp_add_field(parser, "f1",    false, true);
+    qp_add_field(parser, "f2",    false, true);
+    qp_add_field(parser, "field", false, false);
 
     for (i = 0; i < NELEMS(pairs); i++) {
         PARSER_TEST(pairs[i].qstr, pairs[i].qres);
@@ -170,20 +157,13 @@ static void test_q_parser(TestCase *tc, void *data)
     PARSER_TEST("not_field:word", "");
     qp_destroy(parser);
 
-    all_fields = hs_new_str(NULL);
-    tkz_fields = hs_new_str(NULL);
-    def_fields = hs_new_str(NULL);
-    hs_add(all_fields, xx);
-    hs_add(all_fields, f1);
-    hs_add(all_fields, f2);
-    hs_add(all_fields, field);
-    hs_add(tkz_fields, xx);
-    hs_add(tkz_fields, f1);
-    hs_add(tkz_fields, f2);
-    hs_add(def_fields, xx);
-
     /* This time let the query parser destroy the analyzer */
-    parser = qp_new(all_fields, def_fields, tkz_fields, analyzer);
+    parser = qp_new(analyzer);
+    qp_add_field(parser, "xx",    true,  true);
+    qp_add_field(parser, "f1",    false, true);
+    qp_add_field(parser, "f2",    false, true);
+    qp_add_field(parser, "field", false, false);
+
     parser->clean_str = false;
     parser->allow_any_fields = true;
     for (i = 0; i < NELEMS(pairs); i++) {
@@ -204,8 +184,6 @@ static void test_q_parser(TestCase *tc, void *data)
 static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
 {
     int i;
-    HashSet *all_fields = hs_new_str(NULL);
-    HashSet *def_fields = hs_new_str(NULL);
     Analyzer *analyzer = mb_standard_analyzer_new(true);
     QParser *parser;
     QPTestPair pairs[] = {
@@ -328,14 +306,12 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
     };  
     (void)data;
 
-    hs_add(all_fields, xx);
-    hs_add(all_fields, f1);
-    hs_add(all_fields, f2);
-    hs_add(all_fields, field);
-    hs_add(def_fields, xx);
-
     REF(analyzer);
-    parser = qp_new(all_fields, def_fields, NULL, analyzer);
+    parser = qp_new(analyzer);
+    qp_add_field(parser, "xx",    true,  true);
+    qp_add_field(parser, "f1",    false, true);
+    qp_add_field(parser, "f2",    false, true);
+    qp_add_field(parser, "field", false, true);
 
     for (i = 0; i < NELEMS(pairs); i++) {
         PARSER_TEST(pairs[i].qstr, pairs[i].qres);
@@ -347,16 +323,13 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
     PARSER_TEST("not_field:word", "");
     qp_destroy(parser);
 
-    all_fields = hs_new_str(NULL);
-    def_fields = hs_new_str(NULL);
-    hs_add(all_fields, xx);
-    hs_add(all_fields, f1);
-    hs_add(all_fields, f2);
-    hs_add(all_fields, field);
-    hs_add(def_fields, xx);
-
     /* This time let the query parser destroy the analyzer */
-    parser = qp_new(all_fields, def_fields, NULL, analyzer);
+    parser = qp_new(analyzer);
+    qp_add_field(parser, "xx",    true,  true);
+    qp_add_field(parser, "f1",    false, true);
+    qp_add_field(parser, "f2",    false, true);
+    qp_add_field(parser, "field", false, true);
+
     parser->clean_str = false;
     parser->allow_any_fields = true;
     for (i = 0; i < NELEMS(pairs); i++) {
@@ -407,8 +380,6 @@ static void test_qp_clean_str(TestCase *tc, void *data)
 static void test_qp_bad_queries(TestCase *tc, void *data)
 {
     int i;
-    HashSet *all_fields = hs_new_str(NULL);
-    HashSet *def_fields = hs_new_str(NULL);
     QParser *parser;
     QPTestPair pairs[] = {
         {"[, ]", ""},
@@ -418,13 +389,12 @@ static void test_qp_bad_queries(TestCase *tc, void *data)
     };  
     (void)data;
 
-    hs_add(all_fields, f1);
-    hs_add(all_fields, f2);
-    hs_add(all_fields, field);
-    hs_add(all_fields, xx);
-    hs_add(def_fields, xx);
+    parser = qp_new(letter_analyzer_new(true));
+    qp_add_field(parser, "xx",    true,  true);
+    qp_add_field(parser, "f1",    false, true);
+    qp_add_field(parser, "f2",    false, true);
+    qp_add_field(parser, "field", false, true);
 
-    parser = qp_new(all_fields, def_fields, NULL, letter_analyzer_new(true));
     parser->handle_parse_errors = true;
 
     for (i = 0; i < NELEMS(pairs); i++) {
@@ -439,15 +409,12 @@ static void test_qp_bad_queries(TestCase *tc, void *data)
 
 static void test_qp_prefix_query(TestCase *tc, void *data)
 {
-    HashSet *all_fields = hs_new_str(NULL);
-    HashSet *def_fields = hs_new_str(NULL);
     QParser *parser;
     Query *q;
     (void)data;
-    hs_add(all_fields, xx);
-    hs_add(def_fields, xx);
 
-    parser = qp_new(all_fields, def_fields, NULL, letter_analyzer_new(true));
+    parser = qp_new(letter_analyzer_new(true));
+    qp_add_field(parser, "xx", true,  true);
 
     q = qp_parse(parser, "asdg*");
     Aiequal(PREFIX_QUERY, q->type);
@@ -466,14 +433,11 @@ static void test_qp_prefix_query(TestCase *tc, void *data)
 
 static void test_qp_keyword_switch(TestCase *tc, void *data)
 {
-    HashSet *all_fields = hs_new_str(NULL);
-    HashSet *def_fields = hs_new_str(NULL);
     QParser *parser;
     (void)data;
-    hs_add(all_fields, xx);
-    hs_add(def_fields, xx);
 
-    parser = qp_new(all_fields, def_fields, NULL, letter_analyzer_new(true));
+    parser = qp_new(letter_analyzer_new(true));
+    qp_add_field(parser, "xx", true,  true);
 
     PARSER_TEST("REQ www (xxx AND yyy) OR NOT zzz", "+www (+xxx +yyy) -zzz");
 

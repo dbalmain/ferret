@@ -766,6 +766,7 @@
 #define q_weight                                frt_q_weight
 #define qfilt_new                               frt_qfilt_new
 #define qfilt_new_nr                            frt_qfilt_new_nr
+#define qp_add_field                            frt_qp_add_field
 #define qp_clean_str                            frt_qp_clean_str
 #define qp_default_fuzzy_min_sim                frt_qp_default_fuzzy_min_sim
 #define qp_default_fuzzy_pre_len                frt_qp_default_fuzzy_pre_len

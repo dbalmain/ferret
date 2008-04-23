@@ -1,4 +1,6 @@
 #include "search.h"
+#include "intern.h"
+#include "internal.h"
 #include "ind.h"
 #include "testhelper.h"
 #include "test.h"
@@ -161,9 +163,10 @@ TestSuite *ts_threading(TestSuite *suite)
     index_create(store, fis);
     fis_deref(fis);
 
-    hs_add(def_fields, contents);
+    hs_add(def_fields, (char *)I(contents));
     store->clear_all(store);
     index = index_new(store, a, def_fields, true);
+    hs_destroy(def_fields);
 
     suite = ADD_SUITE(suite);
 
