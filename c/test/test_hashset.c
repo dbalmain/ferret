@@ -1,4 +1,5 @@
 #include "hashset.h"
+#include "intern.h"
 #include "test.h"
 
 /**
@@ -54,6 +55,41 @@ static void test_hs(TestCase *tc, void *data)
     Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "three"));
     Aiequal(0, hs->size);
 
+    hs_destroy(hs);
+}
+
+static void test_hs_ptr(TestCase *tc, void *data)
+{
+    HashSet *hs = hs_new_ptr(NULL);
+    const char *word1 = intern("one");
+    const char *word2 = intern("two");
+    char *word_one = estrdup("one");
+    (void)data; /* suppress unused argument warning */
+
+    Aiequal(0, hs->size);
+
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_add(hs, (void *)word1));
+    Aiequal(1, hs->size);
+    Aiequal(HASH_KEY_SAME, hs_exists(hs, word1));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "one"));
+    Aiequal(HASH_KEY_SAME, hs_add(hs, (void *)word1));
+    Aiequal(1, hs->size);
+
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_add(hs, (void *)word2));
+    Aiequal(2, hs->size);
+    Aiequal(HASH_KEY_SAME, hs_exists(hs, word2));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "two"));
+    Aiequal(HASH_KEY_SAME, hs_add(hs, (void *)word2));
+    Aiequal(2, hs->size);
+
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_add(hs, (void *)word_one));
+    Aiequal(3, hs->size);
+    Aiequal(HASH_KEY_SAME, hs_exists(hs, word_one));
+    Aiequal(HASH_KEY_DOES_NOT_EXIST, hs_exists(hs, "one"));
+    Aiequal(HASH_KEY_SAME, hs_add(hs, (void *)word_one));
+    Aiequal(3, hs->size);
+
+    free(word_one);
     hs_destroy(hs);
 }
 
@@ -243,6 +279,7 @@ TestSuite *ts_hashset(TestSuite *suite)
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_hs, NULL);
+    tst_run_test(suite, test_hs_ptr, NULL);
     tst_run_test(suite, test_hs_add_safe, NULL);
     tst_run_test(suite, test_hs_merge, NULL);
     tst_run_test(suite, test_hs_free, NULL);

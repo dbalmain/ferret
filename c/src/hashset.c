@@ -31,6 +31,13 @@ HashSet *hs_new_str(free_ft free_func)
     return hs;
 }
 
+HashSet *hs_new_ptr(free_ft free_func)
+{
+    HashSet *hs = hs_alloc(free_func);
+    hs->ht = h_new_ptr(NULL);
+    return hs;
+}
+
 static INLINE void clear(HashSet *hs, bool destroy)
 {
     HashSetEntry *curr, *next = hs->first;

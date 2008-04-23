@@ -545,6 +545,7 @@
 #define hs_free                                 frt_hs_free
 #define hs_merge                                frt_hs_merge
 #define hs_new                                  frt_hs_new
+#define hs_new_ptr                              frt_hs_new_ptr
 #define hs_new_str                              frt_hs_new_str
 #define hs_orig                                 frt_hs_orig
 #define hs_rem                                  frt_hs_rem
