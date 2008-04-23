@@ -214,9 +214,9 @@ static void test_tv_single_doc(TestCase *tc, void *data)
     /* test document's term vectors */
     tvs = fr_get_tv(fr, 0);
     Aiequal(4, tvs->size);
-    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"tv2")->number);
+    tv = (TermVector*)h_get(tvs, "tv2");
     Apnull(tv);
-    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"other")->number);
+    tv = (TermVector*)h_get(tvs, "other");
     Apnull(tv);
 
     tv = (TermVector*)h_get(tvs, "tv_with_positions_offsets");
@@ -349,9 +349,9 @@ static void test_tv_multi_doc(TestCase *tc, void *data)
 
     tvs = fr_get_tv(fr, 4);
     Aiequal(4, tvs->size);
-    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"tv2")->number);
+    tv = (TermVector*)h_get(tvs, "tv2");
     Apnull(tv);
-    tv = (TermVector*)h_get_int(tvs, fis_get_or_add_field(fis,"other")->number);
+    tv = (TermVector*)h_get(tvs, "other");
     Apnull(tv);
 
     tv = (TermVector*)h_get(tvs, "tv_with_positions_offsets");

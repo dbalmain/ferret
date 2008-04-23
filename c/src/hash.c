@@ -12,6 +12,8 @@
  ****************************************************************************/
 
 static char *dummy_key = "";
+static char *dummy_int_key = "i";
+
 
 #define PERTURB_SHIFT 5
 #define MAX_FREE_HASH_TABLES 80
@@ -46,33 +48,21 @@ static int str_eq(const void *q1, const void *q2)
     return strcmp((const char *)q1, (const char *)q2) == 0;
 }
 
-static int int_eq(const void *q1, const void *q2)
-{
-    (void)q1;
-    (void)q2;
-    return true;
-}
-
-static unsigned long int_hash(const void *i)
-{
-    return *((unsigned long *)i);
-}
-
-typedef HashEntry *(*lookup_ft)(struct Hash *ht, register const void *key);
+typedef HashEntry *(*lookup_ft)(struct Hash *self, register const void *key);
 
 /**
  * Fast lookup function for resizing as we know there are no equal elements or
  * deletes to worry about.
  *
- * @param ht the Hash to do the fast lookup in
+ * @param self the Hash to do the fast lookup in
  * @param the hashkey we are looking for
  */
-static INLINE HashEntry *h_resize_lookup(Hash *ht,
+static INLINE HashEntry *h_resize_lookup(Hash *self,
                                          register const unsigned long hash)
 {
     register unsigned long perturb;
-    register int mask = ht->mask;
-    register HashEntry *he0 = ht->table;
+    register int mask = self->mask;
+    register HashEntry *he0 = self->table;
     register int i = hash & mask;
     register HashEntry *he = &he0[i];
 
@@ -91,12 +81,12 @@ static INLINE HashEntry *h_resize_lookup(Hash *ht,
     }
 }
 
-static HashEntry *h_lookup_int(Hash *ht, const void *key)
+static HashEntry *h_lookup_ptr(Hash *self, const void *key)
 {
-    register const unsigned long hash = *((int *)key);
+    register const unsigned long hash = (long)key;
     register unsigned long perturb;
-    register int mask = ht->mask;
-    register HashEntry *he0 = ht->table;
+    register int mask = self->mask;
+    register HashEntry *he0 = self->table;
     register int i = hash & mask;
     register HashEntry *he = &he0[i];
     register HashEntry *freeslot = NULL;
@@ -128,16 +118,16 @@ static HashEntry *h_lookup_int(Hash *ht, const void *key)
     }
 }
 
-HashEntry *h_lookup(Hash *ht, register const void *key)
+HashEntry *h_lookup(Hash *self, register const void *key)
 {
-    register const unsigned long hash = ht->hash_i(key);
+    register const unsigned long hash = self->hash_i(key);
     register unsigned long perturb;
-    register int mask = ht->mask;
-    register HashEntry *he0 = ht->table;
+    register int mask = self->mask;
+    register HashEntry *he0 = self->table;
     register int i = hash & mask;
     register HashEntry *he = &he0[i];
     register HashEntry *freeslot = NULL;
-    eq_ft eq = ht->eq_i;
+    eq_ft eq = self->eq_i;
 
     if (he->key == NULL || he->key == key) {
         he->hash = hash;
@@ -175,58 +165,72 @@ HashEntry *h_lookup(Hash *ht, register const void *key)
 
 Hash *h_new_str(free_ft free_key, free_ft free_value)
 {
-    Hash *ht;
+    Hash *self;
     if (num_free_hts > 0) {
-        ht = free_hts[--num_free_hts];
+        self = free_hts[--num_free_hts];
     }
     else {
-        ht = ALLOC(Hash);
+        self = ALLOC(Hash);
     }
-    ht->fill = 0;
-    ht->size = 0;
-    ht->mask = HASH_MINSIZE - 1;
-    ht->table = ht->smalltable;
-    memset(ht->smalltable, 0, sizeof(ht->smalltable));
-    ht->lookup_i = (lookup_ft)&h_lookup;
-    ht->eq_i = str_eq;
-    ht->hash_i = (hash_ft)str_hash;
+    self->fill = 0;
+    self->size = 0;
+    self->mask = HASH_MINSIZE - 1;
+    self->table = self->smalltable;
+    memset(self->smalltable, 0, sizeof(self->smalltable));
+    self->lookup_i = (lookup_ft)&h_lookup;
+    self->eq_i = str_eq;
+    self->hash_i = (hash_ft)str_hash;
 
-    ht->free_key_i = free_key != NULL ? free_key : &dummy_free;
-    ht->free_value_i = free_value != NULL ? free_value : &dummy_free;
-    ht->ref_cnt = 1;
-    return ht;
+    self->free_key_i = free_key != NULL ? free_key : &dummy_free;
+    self->free_value_i = free_value != NULL ? free_value : &dummy_free;
+    self->ref_cnt = 1;
+    return self;
 }
 
 Hash *h_new_int(free_ft free_value)
 {
-    Hash *ht = h_new_str(NULL, free_value);
-    ht->lookup_i = &h_lookup_int;
-    ht->eq_i = int_eq;
-    ht->hash_i = int_hash;
-    return ht;
+    Hash *self     = h_new_str(NULL, free_value);
+
+    self->lookup_i = &h_lookup_ptr;
+    self->eq_i     = NULL;
+    self->hash_i   = NULL;
+
+    return self;
+}
+
+Hash *h_new_ptr(free_ft free_key, free_ft free_value)
+{
+    Hash *self     = h_new_str(free_key, free_value);
+
+    self->lookup_i = &h_lookup_ptr;
+    self->eq_i     = NULL;
+    self->hash_i   = NULL;
+
+    return self;
 }
 
 Hash *h_new(hash_ft hash, eq_ft eq, free_ft free_key, free_ft free_value)
 {
-    Hash *ht = h_new_str(free_key, free_value);
+    Hash *self     = h_new_str(free_key, free_value);
 
-    ht->lookup_i = &h_lookup;
-    ht->eq_i = eq;
-    ht->hash_i = hash;
-    return ht;
+    self->lookup_i = &h_lookup;
+    self->eq_i     = eq;
+    self->hash_i   = hash;
+
+    return self;
 }
 
-void h_clear(Hash *ht)
+void h_clear(Hash *self)
 {
     int i;
     HashEntry *he;
-    free_ft free_key = ht->free_key_i;
-    free_ft free_value = ht->free_value_i;
+    free_ft free_key   = self->free_key_i;
+    free_ft free_value = self->free_value_i;
 
     /* Clear all the hash values and keys as necessary */
     if (free_key != dummy_free || free_value != dummy_free) {
-        for (i = 0; i <= ht->mask; i++) {
-            he = &ht->table[i];
+        for (i = 0; i <= self->mask; i++) {
+            he = &self->table[i];
             if (he->key != NULL && he->key != dummy_key) {
                 free_value(he->value);
                 free_key(he->key);
@@ -234,50 +238,50 @@ void h_clear(Hash *ht)
             he->key = NULL;
         }
     }
-    ZEROSET_N(ht->table, HashEntry, ht->mask + 1);
-    ht->size = 0;
-    ht->fill = 0;
+    ZEROSET_N(self->table, HashEntry, self->mask + 1);
+    self->size = 0;
+    self->fill = 0;
 }
 
-void h_destroy(Hash *ht)
+void h_destroy(Hash *self)
 {
-    if (--(ht->ref_cnt) <= 0) {
-        h_clear(ht);
+    if (--(self->ref_cnt) <= 0) {
+        h_clear(self);
 
         /* if a new table was created, be sure to free it */
-        if (ht->table != ht->smalltable) {
-            free(ht->table);
+        if (self->table != self->smalltable) {
+            free(self->table);
         }
 
 #ifdef DEBUG
-        free(ht);
+        free(self);
 #else
         if (num_free_hts < MAX_FREE_HASH_TABLES) {
-            free_hts[num_free_hts++] = ht;
+            free_hts[num_free_hts++] = self;
         }
         else {
-            free(ht);
+            free(self);
         }
 #endif
     }
 }
 
-void *h_get(Hash *ht, const void *key)
+void *h_get(Hash *self, const void *key)
 {
     /* Note: lookup_i will never return NULL. */
-    return ht->lookup_i(ht, key)->value;
+    return self->lookup_i(self, key)->value;
 }
 
-int h_del(Hash *ht, const void *key)
+int h_del(Hash *self, const void *key)
 {
-    HashEntry *he = ht->lookup_i(ht, key);
+    HashEntry *he = self->lookup_i(self, key);
 
     if (he->key != NULL && he->key != dummy_key) {
-        ht->free_key_i(he->key);
-        ht->free_value_i(he->value);
+        self->free_key_i(he->key);
+        self->free_value_i(he->value);
         he->key = dummy_key;
         he->value = NULL;
-        ht->size--;
+        self->size--;
         return true;
     }
     else {
@@ -285,20 +289,20 @@ int h_del(Hash *ht, const void *key)
     }
 }
 
-void *h_rem(Hash *ht, const void *key, bool destroy_key)
+void *h_rem(Hash *self, const void *key, bool destroy_key)
 {
     void *val;
-    HashEntry *he = ht->lookup_i(ht, key);
+    HashEntry *he = self->lookup_i(self, key);
 
     if (he->key != NULL && he->key != dummy_key) {
         if (destroy_key) {
-            ht->free_key_i(he->key);
+            self->free_key_i(he->key);
         }
 
         he->key = dummy_key;
         val = he->value;
         he->value = NULL;
-        ht->size--;
+        self->size--;
         return val;
     }
     else {
@@ -306,7 +310,7 @@ void *h_rem(Hash *ht, const void *key, bool destroy_key)
     }
 }
 
-static int h_resize(Hash *ht, int min_newsize)
+static int h_resize(Hash *self, int min_newsize)
 {
     HashEntry smallcopy[HASH_MINSIZE];
     HashEntry *oldtable;
@@ -317,124 +321,102 @@ static int h_resize(Hash *ht, int min_newsize)
     for (newsize = HASH_MINSIZE; newsize < min_newsize; newsize <<= 1) {
     }
 
-    oldtable = ht->table;
+    oldtable = self->table;
     if (newsize == HASH_MINSIZE) {
-        if (ht->table == ht->smalltable) {
-            /* need to copy the d*(int *)ata out so we can rebuild the table into
+        if (self->table == self->smalltable) {
+            /* need to copy the data out so we can rebuild the table into
              * the same space */
-            memcpy(smallcopy, ht->smalltable, sizeof(smallcopy));
+            memcpy(smallcopy, self->smalltable, sizeof(smallcopy));
             oldtable = smallcopy;
         }
         else {
-            ht->table = ht->smalltable;
+            self->table = self->smalltable;
         }
     }
     else {
-        ht->table = ALLOC_N(HashEntry, newsize);
+        self->table = ALLOC_N(HashEntry, newsize);
     }
-    memset(ht->table, 0, sizeof(HashEntry) * newsize);
-    ht->fill = ht->size;
-    ht->mask = newsize - 1;
+    memset(self->table, 0, sizeof(HashEntry) * newsize);
+    self->fill = self->size;
+    self->mask = newsize - 1;
 
-    for (num_active = ht->size, he_old = oldtable; num_active > 0; he_old++) {
+    for (num_active = self->size, he_old = oldtable; num_active > 0; he_old++) {
         if (he_old->key && he_old->key != dummy_key) {    /* active entry */
-            /*he_new = ht->lookup_i(ht, he_old->key); */
-            he_new = h_resize_lookup(ht, he_old->hash);
+            /*he_new = self->lookup_i(self, he_old->key); */
+            he_new = h_resize_lookup(self, he_old->hash);
             he_new->key = he_old->key;
             he_new->value = he_old->value;
             num_active--;
         }                       /* else empty entry so nothing to do */
     }
-    if (oldtable != smallcopy && oldtable != ht->smalltable) {
+    if (oldtable != smallcopy && oldtable != self->smalltable) {
         free(oldtable);
     }
     return 0;
 }
 
-HashKeyStatus h_set(Hash *ht, const void *key, void *value)
+INLINE bool h_set_ext(Hash *self, const void *key, HashEntry **he)
+{
+    *he = self->lookup_i(self, key);
+    if ((*he)->key == NULL) {
+        if (self->fill * 3 > self->mask * 2) {
+            h_resize(self, self->size * ((self->size > SLOW_DOWN) ? 4 : 2));
+            *he = self->lookup_i(self, key);
+        }
+        self->fill++;
+        self->size++;
+        return true;
+    }
+    else if ((*he)->key == dummy_key) {
+        self->size++;
+        return true;
+    }
+
+    return false;
+}
+
+HashKeyStatus h_set(Hash *self, const void *key, void *value)
 {
     HashKeyStatus ret_val = HASH_KEY_DOES_NOT_EXIST;
-    HashEntry *he = ht->lookup_i(ht, key);
-    if (he->key == NULL) {
-        if (ht->fill * 3 > ht->mask * 2) {
-            h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-            he = ht->lookup_i(ht, key);
+    HashEntry *he;
+    if (!h_set_ext(self, key, &he)) {
+        if (he->key != key) {
+            self->free_key_i(he->key);
+            if (he->value != value) {
+                self->free_value_i(he->value);
+            }
+            ret_val = HASH_KEY_EQUAL;
         }
-        ht->fill++;
-        ht->size++;
-    }
-    else if (he->key == dummy_key) {
-        ht->size++;
-    }
-    else if (he->key != key) {
-        ht->free_key_i(he->key);
-        if (he->value != value) {
-            ht->free_value_i(he->value);
+        else {
+            /* Only free old value if it isn't the new value */
+            if (he->value != value) {
+                self->free_value_i(he->value);
+            }
+            ret_val = HASH_KEY_SAME;
         }
-        ret_val = HASH_KEY_EQUAL;
-    }
-    else {
-        /* safety check. Only free old value if it isn't the new value */
-        if (he->value != value) {
-            ht->free_value_i(he->value);
-        }
-        ret_val = HASH_KEY_SAME;
     }
     he->key = (void *)key;
     he->value = value;
 
-    /*
-    if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
-        h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-    }
-    */
     return ret_val;
 }
 
-HashEntry *h_set_ext(Hash *ht, const void *key)
+int h_set_safe(Hash *self, const void *key, void *value)
 {
-    HashEntry *he = ht->lookup_i(ht, key);
-    if (he->key == NULL) {
-        if (ht->fill * 3 > ht->mask * 2) {
-            h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-            he = ht->lookup_i(ht, key);
-        }
-        ht->fill++;
-        ht->size++;
-    }
-    else if (he->key == dummy_key) {
-        ht->size++;
-    }
-
-    return he;
-}
-
-int h_set_safe(Hash *ht, const void *key, void *value)
-{
-    HashEntry *he = ht->lookup_i(ht, key);
-    int fill = ht->fill;
-    if (he->key == NULL) {
-        ht->fill++;
-        ht->size++;
-    }
-    else if (he->key == dummy_key) {
-        ht->size++;
+    HashEntry *he;
+    if (h_set_ext(self, key, &he)) {
+        he->key = (void *)key;
+        he->value = value;
+        return true;
     }
     else {
         return false;
     }
-    he->key = (void *)key;
-    he->value = value;
-
-    if ((ht->fill > fill) && (ht->fill * 3 > ht->mask * 2)) {
-        h_resize(ht, ht->size * ((ht->size > SLOW_DOWN) ? 4 : 2));
-    }
-    return true;
 }
 
-HashKeyStatus h_has_key(Hash *ht, const void *key)
+HashKeyStatus h_has_key(Hash *self, const void *key)
 {
-    HashEntry *he = ht->lookup_i(ht, key);
+    HashEntry *he = self->lookup_i(self, key);
     if (he->key == NULL || he->key == dummy_key) {
         return HASH_KEY_DOES_NOT_EXIST;
     }
@@ -444,44 +426,62 @@ HashKeyStatus h_has_key(Hash *ht, const void *key)
     return HASH_KEY_EQUAL;
 }
 
-void *h_get_int(Hash *self, const unsigned long key)
+INLINE void *h_get_int(Hash *self, const unsigned long key)
 {
-    return h_get(self, &key);
+    return h_get(self, (const void *)key);
 }
 
-int h_del_int(Hash *self, const unsigned long key)
+INLINE int h_del_int(Hash *self, const unsigned long key)
 {
-    return h_del(self, &key);
+    return h_del(self, (const void *)key);
 }
 
-void *h_rem_int(Hash *self, const unsigned long key)
+INLINE void *h_rem_int(Hash *self, const unsigned long key)
 {
-    return h_rem(self, &key, false);
+    return h_rem(self, (const void *)key, false);
 }
 
-HashKeyStatus h_set_int(Hash *self,
-                             const unsigned long key,
-                             void *value)
+INLINE HashKeyStatus h_set_int(Hash *self,
+                               const unsigned long key,
+                               void *value)
 {
-    return h_set(self, &key, value);
+    HashKeyStatus ret_val = HASH_KEY_DOES_NOT_EXIST;
+    HashEntry *he;
+    if (!h_set_ext(self, (const void *)key, &he)) {
+        /* Only free old value if it isn't the new value */
+        if (he->value != value) {
+            self->free_value_i(he->value);
+        }
+        ret_val = HASH_KEY_EQUAL;
+    }
+    he->key = dummy_int_key;
+    he->value = value;
+
+    return ret_val;
 }
 
-int h_set_safe_int(Hash *self, const unsigned long key, void *value)
+INLINE int h_set_safe_int(Hash *self, const unsigned long key, void *value)
 {
-    return h_set_safe(self, &key, value);
+    HashEntry *he;
+    if (h_set_ext(self, (const void *)key, &he)) {
+        he->key = dummy_int_key;
+        he->value = value;
+        return true;
+    }
+    return false;
 }
 
-int h_has_key_int(Hash *self, const unsigned long key)
+INLINE int h_has_key_int(Hash *self, const unsigned long key)
 {
-    return h_has_key(self, &key);
+    return h_has_key(self, (const void *)key);
 }
 
-void h_each(Hash *ht,
+void h_each(Hash *self,
             void (*each_kv) (void *key, void *value, void *arg), void *arg)
 {
     HashEntry *he;
-    int i = ht->size;
-    for (he = ht->table; i > 0; he++) {
+    int i = self->size;
+    for (he = self->table; i > 0; he++) {
         if (he->key && he->key != dummy_key) {        /* active entry */
             each_kv(he->key, he->value, arg);
             i--;
@@ -489,17 +489,19 @@ void h_each(Hash *ht,
     }
 }
 
-Hash *h_clone(Hash *ht,
-                   h_clone_ft clone_key, h_clone_ft clone_value)
+Hash *h_clone(Hash *self, h_clone_ft clone_key, h_clone_ft clone_value)
 {
     void *key, *value;
     HashEntry *he;
-    int i = ht->size;
+    int i = self->size;
     Hash *ht_clone;
 
-    ht_clone = h_new(ht->hash_i, ht->eq_i, ht->free_key_i, ht->free_value_i);
+    ht_clone = h_new(self->hash_i,
+                     self->eq_i,
+                     self->free_key_i,
+                     self->free_value_i);
 
-    for (he = ht->table; i > 0; he++) {
+    for (he = self->table; i > 0; he++) {
         if (he->key && he->key != dummy_key) {        /* active entry */
             key = clone_key ? clone_key(he->key) : he->key;
             value = clone_value ? clone_value(he->value) : he->value;
@@ -510,12 +512,12 @@ Hash *h_clone(Hash *ht,
     return ht_clone;
 }
 
-void h_str_print_keys(Hash *ht)
+void h_str_print_keys(Hash *self)
 {
     HashEntry *he;
-    int i = ht->size;
+    int i = self->size;
     printf("keys:\n");
-    for (he = ht->table; i > 0; he++) {
+    for (he = self->table; i > 0; he++) {
         if (he->key && he->key != dummy_key) {        /* active entry */
             printf("\t%s\n", (char *)he->key);
             i--;

@@ -5511,23 +5511,25 @@ static void dw_add_posting(MemoryPool *mp,
                            int len,
                            int pos)
 {
-    HashEntry *pl_he = h_set_ext(curr_plists, text);
-    if (pl_he->value) {
-        pl_add_occ(mp, (PostingList *)pl_he->value, pos);
-    }
-    else {
-        HashEntry *fld_pl_he = h_set_ext(fld_plists, text);
-        PostingList *pl = (PostingList *)fld_pl_he->value;
+    HashEntry *pl_he;
+    if (h_set_ext(curr_plists, text, &pl_he)) {
         Posting *p =  p_new(mp, doc_num, pos);
-        if (!pl) {
+        HashEntry *fld_pl_he;
+        PostingList *pl;
+
+        if (h_set_ext(fld_plists, text, &fld_pl_he)) {
             fld_pl_he->value = pl = pl_new(mp, text, len, p);
             pl_he->key = fld_pl_he->key = (char *)pl->term;
         }
         else {
+            pl = (PostingList *)fld_pl_he->value;
             pl_add_posting(pl, p);
             pl_he->key = (char *)pl->term;
         }
         pl_he->value = pl;
+    }
+    else {
+        pl_add_occ(mp, (PostingList *)pl_he->value, pos);
     }
 }
 

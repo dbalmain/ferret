@@ -527,7 +527,6 @@
 #define h_rem                                   frt_h_rem
 #define h_rem_int                               frt_h_rem_int
 #define h_set                                   frt_h_set
-#define h_set_ext                               frt_h_set_ext
 #define h_set_int                               frt_h_set_int
 #define h_set_safe                              frt_h_set_safe
 #define h_set_safe_int                          frt_h_set_safe_int
