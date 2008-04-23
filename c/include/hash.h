@@ -60,7 +60,7 @@ typedef struct FrtHash
     /* the following function pointers are used internally and should not be
      * used outside of the Hash methods */
     FrtHashEntry *(*lookup_i)(struct FrtHash *self,
-                                    register const void *key);
+                              register const void *key);
     unsigned long (*hash_i)(const void *key);
     int           (*eq_i)(const void *key1, const void *key2);
     void          (*free_key_i)(void *p);
@@ -274,10 +274,13 @@ extern int frt_h_set_safe(FrtHash *self, const void *key, void *value);
  *
  * @param self the Hash to add the value to
  * @param key the key to use to reference the value
- * @return HashEntry a pointer to the hash entry object now reserved for this
+ * @param he HashEntry a pointer to the hash entry object now reserved for this
  * value. Be sure to set both the *key* and the *value*
+ * @return true if the key was empty, false otherwise
  */
-extern FrtHashEntry *frt_h_set_ext(FrtHash *ht, const void *key);
+extern FRT_INLINE bool h_set_ext(FrtHash *self,
+                                 const void *key,
+                                 FrtHashEntry **he);
 
 /**
  * Check whether key +key+ exists in the Hash.

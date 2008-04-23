@@ -385,19 +385,23 @@ namespace :build do
   end
 end
 
-task :valgrind => 'testall' do
-	sh "valgrind --suppressions=valgrind.supp " +
-                "--leak-check=yes             " +
-                "--show-reachable=yes         " +
-                "--workaround-gcc296-bugs=yes -v ./testall -q"
+task :valgrind do
+  check_coptions
+  Rake::Task[:testall].invoke
+  sh "valgrind --suppressions=valgrind.supp " +
+              "--leak-check=yes             " +
+              "--show-reachable=yes         " +
+              "--workaround-gcc296-bugs=yes -v ./testall -q"
 end
 
-task :gen_valgrind => 'build:testall' do
-	sh "valgrind --suppressions=valgrind.supp " +
-                "--leak-check=yes             " +
-                "--show-reachable=yes         " +
-                "--gen-suppressions=yes       " +
-                "--workaround-gcc296-bugs=yes -v ./testall -q"
+task :gen_valgrind do
+  check_coptions
+  Rake::Task[:testall].invoke
+  sh "valgrind --suppressions=valgrind.supp " +
+              "--leak-check=yes             " +
+              "--show-reachable=yes         " +
+              "--gen-suppressions=yes       " +
+              "--workaround-gcc296-bugs=yes -v ./testall -q"
 end
 
 
