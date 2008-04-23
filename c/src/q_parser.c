@@ -2198,6 +2198,9 @@ static int yyerror(QParser *qp, char const *msg)
                  "couldn't parse query ``%s''. Error message "
                  " was %s", buf, (char *)msg);
     }
+    while (qp->fields_top->next != NULL) {
+        qp_pop_fields(qp);
+    }
     return 0;
 }
 
@@ -2858,8 +2861,12 @@ static void qp_pop_fields(QParser *self)
  */
 void qp_destroy(QParser *self)
 {
-    hs_destroy(self->tokenized_fields);
-    hs_destroy(self->def_fields);
+    if (self->tokenized_fields != self->all_fields) {
+        hs_destroy(self->tokenized_fields);
+    }
+    if (self->def_fields != self->all_fields) {
+        hs_destroy(self->def_fields);
+    }
     hs_destroy(self->all_fields);
 
     qp_pop_fields(self);
@@ -3046,6 +3053,7 @@ static Query *qp_get_bad_query(QParser *qp, char *str)
 {
     Query *volatile q = NULL;
     qp->recovering = true;
+    assert(qp->fields_top->next == NULL);
     FLDS(q, get_term_q(qp, field, str));
     return q;
 }

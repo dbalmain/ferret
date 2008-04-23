@@ -52,7 +52,7 @@ frb_get_fields(VALUE rfields)
 
     if (rfields == Qnil) return NULL;
 
-    fields = hs_new_str(NULL);
+    fields = hs_new_ptr(NULL);
     if (TYPE(rfields) == T_ARRAY) {
         int i;
         for (i = 0; i < RARRAY(rfields)->len; i++) {
@@ -76,6 +76,15 @@ frb_get_fields(VALUE rfields)
         }
     }
     return fields;
+}
+
+static void
+hs_safe_merge(HashSet *merger, HashSet *mergee)
+{
+    HashSetEntry *hse;
+    for (hse = mergee->first; hse; hse = hse->next) {
+        hs_add(merger, (char *)hse->elem);
+    }
 }
 
 /* 
@@ -176,14 +185,25 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
         }
     }
     if (all_fields == NULL) {
-        all_fields = hs_new_str(NULL);
+        all_fields = hs_new_ptr(NULL);
     }
 
     if (!analyzer) {
         analyzer = mb_standard_analyzer_new(true);
     }
 
-    qp = qp_new(all_fields, def_fields, tkz_fields, analyzer);
+    qp = qp_new(analyzer);
+    hs_destroy(qp->all_fields);
+    hs_destroy(qp->def_fields);
+    //hs_destroy(qp->tokenized_fields);
+
+    if (def_fields) hs_safe_merge(all_fields, def_fields);
+    if (tkz_fields) hs_safe_merge(all_fields, tkz_fields);
+    qp->all_fields = all_fields;
+    qp->def_fields = def_fields ? def_fields : all_fields;
+    qp->tokenized_fields = tkz_fields ? tkz_fields : all_fields;
+    qp->fields_top->fields = def_fields;
+
     qp->allow_any_fields = true;
     qp->clean_str = true;
     qp->handle_parse_errors = true;
@@ -285,17 +305,29 @@ frb_qp_set_fields(VALUE self, VALUE rfields)
     GET_QP;
     HashSet *fields = frb_get_fields(rfields);
 
-    if (qp->def_fields == qp->all_fields) {
-        qp->def_fields = NULL;
-    }
+    /* if def_fields == all_fields then we need to replace both */
+    if (qp->def_fields == qp->all_fields) qp->def_fields = NULL;
+    if (qp->tokenized_fields == qp->all_fields) qp->tokenized_fields = NULL;
+
     if (fields == NULL) {
-        fields = hs_new_str(NULL);
+        fields = hs_new_ptr(NULL);
     }
+
+    /* make sure all the fields in tokenized fields are contained in
+     * all_fields */
+    if (qp->tokenized_fields) hs_safe_merge(fields, qp->tokenized_fields);
+
+    /* delete old fields set */
+    assert(qp->all_fields->free_elem_i == dummy_free);
     hs_destroy(qp->all_fields);
+
+    /* add the new fields set and add to def_fields if necessary */
     qp->all_fields = fields;
     if (qp->def_fields == NULL) {
         qp->def_fields = fields;
+        qp->fields_top->fields = fields;
     }
+    if (qp->tokenized_fields == NULL) qp->tokenized_fields = fields;
 
     return self;
 }
@@ -337,7 +369,9 @@ static VALUE
 frb_qp_set_tkz_fields(VALUE self, VALUE rfields)
 {
     GET_QP;
-    if (qp->tokenized_fields) hs_destroy(qp->tokenized_fields);
+    if (qp->tokenized_fields != qp->all_fields) {
+        hs_destroy(qp->tokenized_fields);
+    }
     qp->tokenized_fields = frb_get_fields(rfields);
     return self;
 }
