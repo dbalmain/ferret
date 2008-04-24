@@ -90,6 +90,5 @@ extern Symbol rintern(VALUE rstr);
 
 #endif
 
-#define SYM2RSYM(_sym) ID2SYM(rb_intern(S(_sym)))
 #define frb_mark_cclass(klass) rb_ivar_set(klass, id_cclass, Qtrue)
 #define frb_is_cclass(obj) (rb_ivar_get(CLASS_OF(obj), id_cclass) == Qtrue)

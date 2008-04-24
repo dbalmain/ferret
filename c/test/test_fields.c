@@ -544,7 +544,7 @@ static void test_lazy_field_loading(TestCase *tc, void *data)
     fis_deref(fis);
     store_deref(store);
 
-    lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "stored");
+    lazy_df = lazy_doc_get(lazy_doc, I("stored"));
     Apnull(lazy_doc->fields[0]->data[0].text);
     Asequal("this is a stored field", text=lazy_df_get_data(lazy_df, 0));
     Asequal("this is a stored field", lazy_doc->fields[0]->data[0].text);

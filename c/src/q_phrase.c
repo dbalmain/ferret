@@ -532,9 +532,10 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     char *doc_freqs = NULL;
     size_t len = 0, pos = 0;
     const int field_num = fis_get_field_num(ir->fis, phq->field);
+    const char *field = S(phq->field);
 
     if (field_num < 0) {
-        return expl_new(0.0, "field \"%s\" does not exist in the index", phq->field);
+        return expl_new(0.0, "field \"%s\" does not exist in the index", field);
     }
 
     query_str = self->query->to_s(self->query, NULL);
@@ -563,8 +564,8 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     pos -= 2; /* remove ", " from the end */
     doc_freqs[pos] = 0;
 
-    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", phq->field, doc_freqs);
-    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", phq->field, doc_freqs);
+    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
+    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
     free(doc_freqs);
 
     /* explain query weight */
@@ -598,7 +599,7 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
         ? sim_decode_norm(self->similarity, field_norms[doc_num])
         : (float)0.0;
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
-                               phq->field, doc_num);
+                               field, doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -892,6 +893,8 @@ static char *phq_to_s(Query *self, Symbol default_field)
     PhraseQuery *phq = PhQ(self);
     const int pos_cnt = phq->pos_cnt;
     PhrasePosition *positions = phq->positions;
+    const char *field = S(phq->field);
+    int flen = strlen(field);
 
     int i, j, buf_index = 0, pos, last_pos;
     size_t len = 0;
@@ -899,7 +902,7 @@ static char *phq_to_s(Query *self, Symbol default_field)
 
     if (phq->pos_cnt == 0) {
         if (default_field != phq->field) {
-            return strfmt("%s:\"\"", phq->field);
+            return strfmt("%s:\"\"", field);
         }
         else {
             return estrdup("\"\"");
@@ -909,7 +912,7 @@ static char *phq_to_s(Query *self, Symbol default_field)
     /* sort the phrase positions by position */
     qsort(positions, pos_cnt, sizeof(PhrasePosition), &phrase_pos_cmp);
 
-    len = sym_len(phq->field) + 1;
+    len = flen + 1;
 
     for (i = 0; i < pos_cnt; i++) {
         char **terms = phq->positions[i].terms;
@@ -925,10 +928,9 @@ static char *phq_to_s(Query *self, Symbol default_field)
     buffer = ALLOC_N(char, len);
 
     if (default_field != phq->field) {
-        len = sym_len(phq->field);
-        memcpy(buffer, phq->field, len);
-        buffer[len] = ':';
-        buf_index += len + 1;
+        memcpy(buffer, field, flen);
+        buffer[flen] = ':';
+        buf_index += flen + 1;
     }
 
     buffer[buf_index++] = '"';

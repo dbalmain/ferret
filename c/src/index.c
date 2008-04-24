@@ -449,7 +449,7 @@ void fis_write(FieldInfos *fis, OutStream *os)
     os_write_vint(os, fis->size);
     for (i = 0; i < fis_size; i++) {
         fi = fis->fields[i];
-        os_write_string(os, (char *)fi->name);
+        os_write_string(os, S(fi->name));
         tmp.f = fi->boost;
         os_write_u32(os, tmp.i);
         os_write_vint(os, fi->bits);
@@ -1469,7 +1469,7 @@ void lazy_df_get_bytes(LazyDocField *self, char *buf, int start, int len)
 static LazyDoc *lazy_doc_new(int size, InStream *fdt_in)
 {
     LazyDoc *self = ALLOC(LazyDoc);
-    self->field_dict = h_new_str(NULL, (free_ft)&lazy_df_destroy);
+    self->field_dictionary = h_new_ptr((free_ft)&lazy_df_destroy);
     self->size = size;
     self->fields = ALLOC_AND_ZERO_N(LazyDocField *, size);
     self->fields_in = is_clone(fdt_in);
@@ -1478,7 +1478,7 @@ static LazyDoc *lazy_doc_new(int size, InStream *fdt_in)
 
 void lazy_doc_close(LazyDoc *self)
 {
-    h_destroy(self->field_dict);
+    h_destroy(self->field_dictionary);
     is_close(self->fields_in);
     free(self->fields);
     free(self);
@@ -1487,8 +1487,13 @@ void lazy_doc_close(LazyDoc *self)
 static void lazy_doc_add_field(LazyDoc *self, LazyDocField *lazy_df, int i)
 {
     self->fields[i] = lazy_df;
-    h_set(self->field_dict, lazy_df->name, lazy_df);
+    h_set(self->field_dictionary, lazy_df->name, lazy_df);
     lazy_df->doc = self;
+}
+
+LazyDocField *frt_lazy_doc_get(LazyDoc *self, Symbol field)
+{
+    return (LazyDocField *)h_get(self->field_dictionary, field);
 }
 
 /****************************************************************************
@@ -1715,7 +1720,7 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
 
 Hash *fr_get_tv(FieldsReader *fr, int doc_num)
 {
-    Hash *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
+    Hash *term_vectors = h_new_ptr((free_ft)&tv_destroy);
     int i;
     InStream *fdx_in = fr->fdx_in;
     InStream *fdt_in = fr->fdt_in;

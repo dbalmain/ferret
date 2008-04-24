@@ -260,7 +260,7 @@ static Explanation *multi_tsc_explain(Scorer *self, int doc_num)
             expl_add_detail(expl,
                 expl_new(sim_tf(self->similarity, (float)freq) * tdew->boost,
                          "tf(term_freq(%s:%s)=%d)^%f",
-                         mtsc->field, tdew->term, freq, tdew->boost));
+                         S(mtsc->field), tdew->term, freq, tdew->boost));
 
             total_score += sim_tf(self->similarity, (float)freq) * tdew->boost;
 
@@ -384,17 +384,17 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
 
     char *query_str;
     MultiTermQuery *mtq = MTQ(self->query);
-    Symbol field = mtq->field;
+    const char *field = S(mtq->field);
     PriorityQueue *bt_pq = mtq->boosted_terms;
     int i;
     int total_doc_freqs = 0;
     char *doc_freqs = NULL;
     size_t len = 0, pos = 0;
-    const int field_num = fis_get_field_num(ir->fis, field);
+    const int field_num = fis_get_field_num(ir->fis, mtq->field);
 
     if (field_num < 0) {
         return expl_new(0.0, "field \"%s\" does not exist in the index",
-                        (char *)field);
+                        field);
     }
 
     query_str = self->query->to_s(self->query, NULL);
@@ -415,8 +415,8 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
     pos -= 2; /* remove " + " from the end */
     sprintf(doc_freqs + pos, "= %d", total_doc_freqs);
 
-    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", (char *)field, doc_freqs);
-    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", (char *)field, doc_freqs);
+    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
+    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
     free(doc_freqs);
 
     /* explain query weight */
@@ -454,7 +454,7 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
         ? sim_decode_norm(self->similarity, field_norms[doc_num])
         : (float)0.0;
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
-                               (char *)field, doc_num);
+                               field, doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -502,13 +502,14 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
  * MultiTermQuery
  ***************************************************************************/
 
-static char *multi_tq_to_s(Query *self, Symbol curr_field)
+static char *multi_tq_to_s(Query *self, Symbol default_field)
 {
     int i;
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms, *bt_pq_clone;
     BoostedTerm *bt;
     char *buffer, *bptr;
-    int flen = (int)sym_len(MTQ(self)->field);
+    const char *field = S(MTQ(self)->field);
+    int flen = (int)strlen(field);
     int tlen = 0;
 
     /* Priority queues skip the first element */
@@ -518,8 +519,8 @@ static char *multi_tq_to_s(Query *self, Symbol curr_field)
 
     bptr = buffer = ALLOC_N(char, tlen + flen + 35);
 
-    if (curr_field != MTQ(self)->field) {
-        bptr += sprintf(bptr, "%s:", S(MTQ(self)->field));
+    if (default_field != MTQ(self)->field) {
+        bptr += sprintf(bptr, "%s:", field);
     }
 
     *(bptr++) = '"';

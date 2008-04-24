@@ -208,7 +208,7 @@ static VALUE
 frb_fi_name(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
-    return ID2SYM(rb_intern(S(fi->name)));
+    return ID2SYM(fi->name);
 }
 
 /*
@@ -638,7 +638,7 @@ frb_fis_get_fields(VALUE self)
     VALUE rfield_names = rb_ary_new();
     int i;
     for (i = 0; i < fis->size; i++) {
-        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
+        rb_ary_push(rfield_names, FSYM2SYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -658,7 +658,7 @@ frb_fis_get_tk_fields(VALUE self)
     int i;
     for (i = 0; i < fis->size; i++) {
         if (!fi_is_tokenized(fis->fields[i])) continue;
-        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
+        rb_ary_push(rfield_names, FSYM2SYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -1244,7 +1244,7 @@ frb_get_tv(TermVector *tv)
     const int o_cnt = tv->offset_cnt;
     VALUE rfield, rterms, *rts;
     VALUE roffsets = Qnil;
-    rfield = SYM2RSYM(tv->field);
+    rfield = FSYM2SYM(tv->field);
 
     rterms = rb_ary_new2(t_cnt);
     rts = RARRAY(rterms)->ptr;
@@ -1980,9 +1980,9 @@ frb_lzd_default(VALUE self, VALUE rkey)
 {
     LazyDoc *lazy_doc = (LazyDoc *)DATA_PTR(rb_ivar_get(self, id_data));
     Symbol field = frb_field(rkey);
-    VALUE rfield = SYM2RSYM(field);
+    VALUE rfield = FSYM2SYM(field);
 
-    return frb_lazy_df_load(self, rfield, h_get(lazy_doc->field_dict, field));
+    return frb_lazy_df_load(self, rfield, lazy_doc_get(lazy_doc, field));
 }
 
 /*
@@ -2012,7 +2012,7 @@ frb_lzd_load(VALUE self)
     int i;
     for (i = 0; i < lazy_doc->size; i++) {
         LazyDocField *lazy_df = lazy_doc->fields[i];
-        frb_lazy_df_load(self, SYM2RSYM(lazy_df->name), lazy_df);
+        frb_lazy_df_load(self, FSYM2SYM(lazy_df->name), lazy_df);
     }
     return self;
 }
@@ -2031,7 +2031,7 @@ frb_get_lazy_doc(LazyDoc *lazy_doc)
     rb_ivar_set(self, id_data, rdata);
 
     for (i = 0; i < lazy_doc->size; i++) {
-        RARRAY(rfields)->ptr[i] = SYM2RSYM(lazy_doc->fields[i]->name);
+        RARRAY(rfields)->ptr[i] = FSYM2SYM(lazy_doc->fields[i]->name);
         RARRAY(rfields)->len++;
     }
     rb_ivar_set(self, id_fields, rfields);
@@ -2170,7 +2170,7 @@ frb_ir_init(VALUE self, VALUE rdir)
     for (i = 0; i < fis->size; i++) {
         FieldInfo *fi = fis->fields[i];
         rb_hash_aset(rfield_num_map,
-                     SYM2RSYM(fi->name),
+                     FSYM2SYM(fi->name),
                      INT2FIX(fi->number));
     }
     rb_ivar_set(self, id_fld_num_map, rfield_num_map);
@@ -2471,7 +2471,7 @@ frb_ir_term_vector(VALUE self, VALUE rdoc_id, VALUE rfield)
 static void
 frb_add_each_tv(void *key, void *value, void *rtvs)
 {
-    rb_hash_aset((VALUE)rtvs, ID2SYM(rb_intern(key)), frb_get_tv(value));
+    rb_hash_aset((VALUE)rtvs, ID2SYM((ID)key), frb_get_tv(value));
 }
 
 /*
@@ -2639,7 +2639,7 @@ frb_ir_fields(VALUE self)
     VALUE rfield_names = rb_ary_new();
     int i;
     for (i = 0; i < fis->size; i++) {
-        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
+        rb_ary_push(rfield_names, FSYM2SYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -2675,7 +2675,7 @@ frb_ir_tk_fields(VALUE self)
     int i;
     for (i = 0; i < fis->size; i++) {
         if (!fi_is_tokenized(fis->fields[i])) continue;
-        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
+        rb_ary_push(rfield_names, FSYM2SYM(fis->fields[i]->name));
     }
     return rfield_names;
 }

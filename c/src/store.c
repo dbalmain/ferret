@@ -598,12 +598,14 @@ INLINE void os_write_vll(OutStream *os, register u64 num)
     }
 }
 
+INLINE void os_write_string_len(OutStream *os, const char *str, int len)
+{
+    os_write_vint(os, len);
+    os_write_bytes(os, (uchar *)str, len);
+}
 void os_write_string(OutStream *os, const char *str)
 {
-    int len = (int)strlen(str);
-    os_write_vint(os, len);
-
-    os_write_bytes(os, (uchar *)str, len);
+    os_write_string_len(os, str, (int)strlen(str));
 }
 
 /**

@@ -847,7 +847,7 @@ char **searcher_highlight(Searcher *self,
     LazyDoc *lazy_doc = self->get_lazy_doc(self, doc_num);
     LazyDocField *lazy_df = NULL;
     if (lazy_doc) {
-        lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, field);
+        lazy_df = lazy_doc_get(lazy_doc, field);
     }
     if (tv && lazy_df && tv->term_cnt > 0 && tv->terms[0].positions != NULL
         && tv->offsets != NULL) {

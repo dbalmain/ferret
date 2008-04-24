@@ -1735,19 +1735,19 @@ static void test_ir_term_vectors(TestCase *tc, void *data)
 
     tvs = ir->term_vectors(ir, 3);
     Aiequal(3, tvs->size);
-    tv = (TermVector *)h_get(tvs, "author");
+    tv = (TermVector *)h_get(tvs, I("author"));
     if (Apnotnull(tv)) {
         Asequal("author", tv->field);
         Aiequal(2, tv->term_cnt);
         Aiequal(0, tv->offset_cnt);
         Apnull(tv->offsets);
     }
-    tv = (TermVector *)h_get(tvs, "body");
+    tv = (TermVector *)h_get(tvs, I("body"));
     if (Apnotnull(tv)) {
         Asequal("body", tv->field);
         Aiequal(4, tv->term_cnt);
     }
-    tv = (TermVector *)h_get(tvs, "title");
+    tv = (TermVector *)h_get(tvs, I("title"));
     if (Apnotnull(tv)) {
         Asequal("title", tv->field);
         Aiequal(1, tv->term_cnt); /* untokenized */
@@ -1820,22 +1820,22 @@ static void test_ir_compression(TestCase *tc, void *data)
     doc_destroy(doc);
 
     lz_doc = ir->get_lazy_doc(ir, 0);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, changing_field);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, changing_field);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     Asequal(lazy_df_get_data(lz_df1, 0), lazy_df_get_data(lz_df2, 0));
     lazy_doc_close(lz_doc);
 
     lz_doc = ir->get_lazy_doc(ir, 2);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, tag);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     for (i = 0; i < 4; i++) {
         Asequal(lazy_df_get_data(lz_df1, i), lazy_df_get_data(lz_df2, i));
     }
     lazy_doc_close(lz_doc);
 
     lz_doc = ir->get_lazy_doc(ir, 2);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, tag);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     lazy_df_get_bytes(lz_df1, buf1, 5, 11);
     lazy_df_get_bytes(lz_df2, buf2, 5, 11);
     buf2[11] = buf1[11] = '\0';

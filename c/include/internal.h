@@ -73,7 +73,6 @@
 #define HAS_VARARGS                        FRT_HAS_VARARGS
 #define HS_MIN_SIZE                        FRT_HS_MIN_SIZE
 #define I                                  FRT_I
-#define IF                                 FRT_IF
 #define INDEX_ERROR                        FRT_INDEX_ERROR
 #define INDEX_INTERVAL                     FRT_INDEX_INTERVAL
 #define INDEX_NO                           FRT_INDEX_NO
@@ -644,6 +643,7 @@
 #define lazy_df_get_bytes                       frt_lazy_df_get_bytes
 #define lazy_df_get_data                        frt_lazy_df_get_data
 #define lazy_doc_close                          frt_lazy_doc_close
+#define lazy_doc_get                            frt_lazy_doc_get
 #define legacy_standard_tokenizer_new           frt_legacy_standard_tokenizer_new
 #define letter_analyzer_new                     frt_letter_analyzer_new
 #define letter_tokenizer_new                    frt_letter_tokenizer_new
