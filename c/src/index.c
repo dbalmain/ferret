@@ -335,7 +335,7 @@ FieldInfos *fis_new(StoreValue store, IndexValue index,
 {
     FieldInfos *fis = ALLOC(FieldInfos);
     fi_check_params(store, index, term_vector);
-    fis->field_dict = h_new_str((free_ft)NULL, (free_ft)&fi_deref);
+    fis->field_dict = h_new_ptr((free_ft)&fi_deref);
     fis->size = 0;
     fis->capa = FIELD_INFOS_INIT_CAPA;
     fis->fields = ALLOC_N(FieldInfo *, fis->capa);
@@ -364,12 +364,12 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
 
 FieldInfo *fis_get_field(FieldInfos *fis, const char *name)
 {
-    return (FieldInfo *)h_get(fis->field_dict, name);
+    return (FieldInfo *)h_get(fis->field_dict, I(name));
 }
 
 int fis_get_field_num(FieldInfos *fis, const char *name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
     if (fi) {
         return fi->number;
     }
@@ -380,7 +380,7 @@ int fis_get_field_num(FieldInfos *fis, const char *name)
 
 FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
     if (!fi) {
         fi = (FieldInfo*)fi_new(name, fis->store, fis->index, fis->term_vector);
         fis_add_field(fis, fi);
@@ -4540,7 +4540,7 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
                                   const char *field)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, field);
+    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, I(field));
     FieldsReader *fr;
 
     if (!fi || !fi_store_term_vector(fi) || !SR(ir)->fr ||
