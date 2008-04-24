@@ -647,13 +647,14 @@ extern void frt_lazy_df_get_bytes(FrtLazyDocField *self, char *buf,
 /* * * FrtLazyDoc * * */
 struct FrtLazyDoc
 {
-    FrtHash *field_dict;
+    FrtHash *field_dictionary;
     int size;
     FrtLazyDocField **fields;
     FrtInStream *fields_in;
 };
 
 extern void frt_lazy_doc_close(FrtLazyDoc *self);
+extern FrtLazyDocField *frt_lazy_doc_get(FrtLazyDoc *self, FrtSymbol field);
 
 /****************************************************************************
  *

@@ -565,6 +565,20 @@ extern void frt_os_write_voff_t(FrtOutStream *os, register off_t num);
 extern void frt_os_write_vll(FrtOutStream *os, register frt_u64 num);
 
 /**
+ * Write a string with known length to the FrtOutStream. A string is an
+ * integer +length+ in VINT format (see frt_os_write_vint) followed by
+ * +length+ bytes. The string can then be read using frt_is_read_string.
+ *
+ * @param os FrtOutStream to write to
+ * @param str the string to write
+ * @param len the length of the string to write
+ * @raise FRT_IO_ERROR if there is an error writing to the file-system
+ */
+extern FRT_INLINE void os_write_string_len(FrtOutStream *os,
+                                           const char *str,
+                                           int len);
+
+/**
  * Write a string to the FrtOutStream. A string is an integer +length+ in VINT
  * format (see frt_os_write_vint) followed by +length+ bytes. The string can then
  * be read using frt_is_read_string.

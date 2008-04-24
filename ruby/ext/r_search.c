@@ -215,7 +215,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
         char *value = "";
         size_t value_len = 0;
         LazyDoc *lzd = sea->get_lazy_doc(sea, doc_id);
-        LazyDocField *lzdf = h_get(lzd->field_dict, field);
+        LazyDocField *lzdf = lazy_doc_get(lzd, field);
         if (NULL != lzdf) {
             value = lazy_df_get_data(lzdf, 0);
             value_len = strlen(value);
@@ -261,11 +261,13 @@ frb_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
     }
 
 	for (i = 0; i < lzd->size; i++) {
+        char *field_name;
 		f = lzd->fields[i];
+        field_name = S(f->name);
 		if (i)  *(s++) = ',';
         *(s++) = '"';
-        l = sym_len(f->name);
-        memcpy(s, f->name, l);
+        l = strlen(field_name);
+        memcpy(s, field_name, l);
         s += l;
         *(s++) = '"';
         *(s++) = ':';
@@ -2229,7 +2231,7 @@ static VALUE
 frb_sf_get_name(VALUE self)
 {
     GET_SF();
-    return sf->field ? SYM2RSYM(sf->field) : Qnil;
+    return sf->field ? FSYM2SYM(sf->field) : Qnil;
 }
 
 /*

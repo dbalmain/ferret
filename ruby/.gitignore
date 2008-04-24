@@ -137,8 +137,6 @@ ext/stem_UTF_8_turkish.h
 ext/stopwords.c
 ext/store.c
 ext/store.h
-ext/symbol.c
-ext/symbol.h
 ext/term_vectors.c
 ext/win32.h
 test/temp

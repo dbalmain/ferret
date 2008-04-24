@@ -1151,7 +1151,7 @@ static TokenStream *
 cwa_get_ts(Analyzer *a, Symbol field, char *text)
 {
     VALUE rts = rb_funcall(CWA(a)->ranalyzer, id_token_stream, 2,
-                           SYM2RSYM(field), rb_str_new2(text));
+                           FSYM2SYM(field), rb_str_new2(text));
     return frb_get_cwrapped_rts(rts);
 } 
 
@@ -1490,7 +1490,7 @@ frb_pfa_analyzer_token_stream(VALUE self, VALUE rfield, VALUE rstring)
     }
     if (a->get_ts == cwa_get_ts) {
         return rb_funcall(CWA(a)->ranalyzer, id_token_stream, 2,
-                          SYM2RSYM(field), rb_str_new2(rs2s(rstring)));
+                          FSYM2SYM(field), rb_str_new2(rs2s(rstring)));
     }
     else {
         return get_rb_ts_from_a(a, rfield, rstring);

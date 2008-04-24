@@ -105,7 +105,7 @@ static Explanation *tsc_explain(Scorer *self, int doc_num)
     }
     return expl_new(sim_tf(self->similarity, (float)tf),
                     "tf(term_freq(%s:%s)=%d)",
-                    TQ(query)->field, TQ(query)->term, tf);
+                    S(TQ(query)->field), TQ(query)->term, tf);
 }
 
 static void tsc_destroy(Scorer *self)
@@ -265,12 +265,13 @@ static void tq_destroy(Query *self)
 
 static char *tq_to_s(Query *self, Symbol default_field)
 {
-    size_t flen = sym_len(TQ(self)->field);
+    const char *field = S(TQ(self)->field);
+    size_t flen = strlen(field);
     size_t tlen = strlen(TQ(self)->term);
     char *buffer = ALLOC_N(char, 34 + flen + tlen);
     char *b = buffer;
     if (default_field != TQ(self)->field) {
-        memcpy(b, TQ(self)->field, sizeof(char) * flen);
+        memcpy(b, field, sizeof(char) * flen);
         b[flen] = ':';
         b += flen + 1;
     }

@@ -249,7 +249,7 @@ static float odd_number_filter(int doc_num, float score, Searcher *sea, void *ar
 {
     float is_ok = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = lazy_doc_get(lazy_doc, I("num"));
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
     (void)arg;
@@ -267,7 +267,7 @@ static float distance_filter(int doc_num, float score, Searcher *sea, void *arg)
     int start_point = *((int *)arg);
     float distance = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = lazy_doc_get(lazy_doc, I("num"));
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
 

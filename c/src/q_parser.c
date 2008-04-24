@@ -2906,7 +2906,7 @@ QParser *qp_new(Analyzer *analyzer)
 
     /* make sure all_fields contains the default fields */
     self->analyzer = analyzer;
-    self->ts_cache = h_new_str(NULL, (free_ft)&ts_deref);
+    self->ts_cache = h_new_ptr((free_ft)&ts_deref);
     self->buf_index = 0;
     self->dynbuf = NULL;
     self->non_tokenizer = non_tokenizer_new();

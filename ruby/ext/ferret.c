@@ -190,7 +190,7 @@ frb_field(VALUE rfield)
 {
     switch (TYPE(rfield)) {
         case T_SYMBOL:
-            return I(rb_id2name(SYM2ID(rfield)));
+            return SYM2FSYM(rfield);
         case T_STRING:
             return I(rs2s(rfield));
         default:
@@ -292,7 +292,7 @@ static ID id_text;
 VALUE frb_get_term(Symbol field, const char *text)
 {
     return rb_struct_new(cTerm,
-                         SYM2RSYM(field),
+                         FSYM2SYM(field),
                          rb_str_new2(text),
                          NULL);
 }

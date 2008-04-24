@@ -5,7 +5,8 @@ if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
   create_makefile("ferret_ext")
 elsif ENV['FERRET_DEV']
   require 'mkmf'
-  $CFLAGS += " -g -Wall -fno-stack-protector -fno-common -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=500"
+  $CFLAGS = " -g -Wall -fno-stack-protector -fno-common -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=500"
+  puts $CFLAGS
   create_makefile("ferret_ext")
 else
   require 'mkmf'

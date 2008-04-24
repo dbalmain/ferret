@@ -1614,7 +1614,7 @@ static char *spanmtq_to_s(Query *self, Symbol field)
         p = strfmt("span_terms(%s)", terms);
     }
     else {
-        p = strfmt("span_terms(%s:%s)", SpQ(self)->field, terms);
+        p = strfmt("span_terms(%s:%s)", S(SpQ(self)->field), terms);
     }
     free(terms);
     return p;

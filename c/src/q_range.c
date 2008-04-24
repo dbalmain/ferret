@@ -18,19 +18,20 @@ typedef struct Range
     bool include_upper : 1;
 } Range;
 
-static char *range_to_s(Range *range, Symbol field, float boost)
+static char *range_to_s(Range *range, Symbol default_field, float boost)
 {
     char *buffer, *b;
     size_t flen, llen, ulen;
+    const char *field = S(range->field);
 
-    flen = sym_len(range->field);
+    flen = strlen(field);
     llen = range->lower_term ? strlen(range->lower_term) : 0;
     ulen = range->upper_term ? strlen(range->upper_term) : 0;
     buffer = ALLOC_N(char, flen + llen + ulen + 40);
     b = buffer;
 
-    if (field != range->field) {
-        memcpy(buffer, range->field, flen * sizeof(char));
+    if (default_field != range->field) {
+        memcpy(buffer, field, flen * sizeof(char));
         b += flen;
         *b = ':';
         b++;
