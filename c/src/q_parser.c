@@ -223,7 +223,7 @@ static void qp_pop_fields(QParser *self);
             field = (Symbol)qp->fields->first->elem;\
             q = func;\
         } else {\
-            Query *volatile sq;HashSetEntry *volatile hse;\
+            Query *volatile sq; HashSetEntry *volatile hse;\
             q = bq_new_max(false, qp->max_clauses);\
             for (hse = qp->fields->first; hse; hse = hse->next) {\
                 field = (Symbol)hse->elem;\

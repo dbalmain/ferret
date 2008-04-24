@@ -21,7 +21,7 @@
 
 static unsigned long spanq_hash(Query *self)
 {
-    return sym_hash(SpQ(self)->field);
+    return SpQ(self)->field ? sym_hash(SpQ(self)->field) : 0;
 }
 
 static int spanq_eq(Query *self, Query *o)
@@ -1778,7 +1778,6 @@ Query *spanfq_new_nr(Query *match, int end)
     SpFQ(self)->match       = match;
     SpFQ(self)->end         = end;
 
-    // XXX
     SpQ(self)->field        = SpQ(match)->field;
     SpQ(self)->get_spans    = &spanfe_new;
     SpQ(self)->get_terms    = &spanfq_get_terms;

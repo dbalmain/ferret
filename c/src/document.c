@@ -101,7 +101,7 @@ char *df_to_s(DocField *df)
 Document *doc_new()
 {
     Document *doc = ALLOC(Document);
-    doc->field_dict = h_new_str(NULL, (free_ft)&df_destroy);
+    doc->field_dict = h_new_ptr((free_ft)&df_destroy);
     doc->size = 0;
     doc->capa = DOC_INIT_CAPA;
     doc->fields = ALLOC_N(DocField *, doc->capa);
@@ -113,7 +113,7 @@ DocField *doc_add_field(Document *doc, DocField *df)
 {
     if (!h_set_safe(doc->field_dict, df->name, df)) {
         RAISE(EXCEPTION, "tried to add %s field which alread existed\n",
-              (const char *)df->name);
+              S(df->name));
     }
     if (doc->size >= doc->capa) {
         doc->capa <<= 1;

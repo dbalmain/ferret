@@ -1579,7 +1579,7 @@ Analyzer *per_field_analyzer_new(Analyzer *default_a)
     Analyzer *a = (Analyzer *)ecalloc(sizeof(PerFieldAnalyzer));
 
     PFA(a)->default_a = default_a;
-    PFA(a)->dict = h_new_str(NULL, &pfa_sub_a_destroy_i);
+    PFA(a)->dict = h_new_ptr(&pfa_sub_a_destroy_i);
 
     a->destroy_i = &pfa_destroy_i;
     a->get_ts    = pfa_get_ts;

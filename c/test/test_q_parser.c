@@ -144,6 +144,24 @@ static void test_q_parser(TestCase *tc, void *data)
 
     REF(analyzer);
     parser = qp_new(analyzer);
+    qp_add_field(parser, I("xx"),    true,  true);
+    qp_add_field(parser, I("f1"),    false, true);
+    qp_add_field(parser, I("f2"),    false, true);
+    qp_add_field(parser, I("field"), false, false);
+
+    for (i = 0; i < NELEMS(pairs); i++) {
+        PARSER_TEST(pairs[i].qstr, pairs[i].qres);
+    }
+    parser->clean_str = true;
+    for (i = 0; i < NELEMS(pairs); i++) {
+        PARSER_TEST(pairs[i].qstr, pairs[i].qres);
+    }
+    PARSER_TEST("not_field:word", "");
+    qp_destroy(parser);
+
+    /* This time let the query parser destroy the analyzer */
+    parser = qp_new(analyzer);
+    qp_add_field(parser, I("xx"),    true, true);
     qp_add_field(parser, I("f1"),    false, true);
     qp_add_field(parser, I("f2"),    false, true);
     qp_add_field(parser, I("field"), false, false);

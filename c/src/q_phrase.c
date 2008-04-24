@@ -898,7 +898,7 @@ static char *phq_to_s(Query *self, Symbol default_field)
     char *buffer;
 
     if (phq->pos_cnt == 0) {
-        if (default_field == phq->field) {
+        if (default_field != phq->field) {
             return strfmt("%s:\"\"", phq->field);
         }
         else {
