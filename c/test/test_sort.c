@@ -312,12 +312,13 @@ TestSuite *ts_sort(TestSuite *suite)
 {
     Searcher *sea, **searchers;
     Store *store = open_ram_store(), *fs_store;
-    sort_test_setup(store);
 
     search = intern("search");
     string = intern("string");
     integer = intern("integer");
     flt = intern("flt");
+
+    sort_test_setup(store);
 
     suite = ADD_SUITE(suite);
 

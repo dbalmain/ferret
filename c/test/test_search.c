@@ -1302,6 +1302,11 @@ TestSuite *ts_search(TestSuite *suite)
     IndexReader *ir;
     Searcher *searcher;
 
+    date    = intern("date");
+    field   = intern("field");
+    cat     = intern("cat");
+    number  = intern("number");
+
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_explanation, NULL);

@@ -284,6 +284,7 @@ FieldInfo *fi_new(Symbol name,
                   TermVectorValue term_vector)
 {
     FieldInfo *fi = ALLOC(FieldInfo);
+    assert(NULL != name);
     fi_check_params(store, index, term_vector);
     fi->name = name;
     fi->boost = 1.0;

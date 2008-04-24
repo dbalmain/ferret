@@ -559,9 +559,8 @@ static void test_span_not_hash(TestCase *tc, void *data)
 TestSuite *ts_q_span(TestSuite *suite)
 {
     Store *store = open_ram_store();
-    span_test_setup(store);
-
     field = intern("field");
+    span_test_setup(store);
 
     suite = ADD_SUITE(suite);
 

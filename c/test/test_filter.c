@@ -19,6 +19,10 @@ void prepare_filter_index(Store *store)
     IndexWriter *iw;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
 
+    num      = intern("num");
+    date     = intern("date");
+    flipflop = intern("flipflop");
+
     struct FilterData data[FILTER_DOCS_SIZE] = {
         {"0", "20040601", "on"},
         {"1", "20041001", "off"},
@@ -313,10 +317,6 @@ TestSuite *ts_filter(TestSuite *suite)
     Store *store;
     IndexReader *ir;
     Searcher *searcher;
-
-    num      = intern("num");
-    date     = intern("date");
-    flipflop = intern("flipflop");
 
     suite = ADD_SUITE(suite);
 
