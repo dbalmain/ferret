@@ -2,7 +2,7 @@
 #include <limits.h>
 #include "search.h"
 #include "array.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 #define PhQ(query) ((PhraseQuery *)(query))
@@ -537,7 +537,7 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
         return expl_new(0.0, "field \"%s\" does not exist in the index", phq->field);
     }
 
-    query_str = self->query->to_s(self->query, "");
+    query_str = self->query->to_s(self->query, NULL);
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
 
@@ -759,8 +759,7 @@ static TVPosEnum *get_tvpe(TermVector *tv, char **terms, int t_cnt, int offset)
 static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
                                      TermVector *tv)
 {
-    // TODO use ==
-    if (strcmp(tv->field, PhQ(self)->field) == 0) {
+    if (tv->field == PhQ(self)->field) {
         const int pos_cnt = PhQ(self)->pos_cnt;
         int i;
         int slop = PhQ(self)->slop;
@@ -888,7 +887,7 @@ static void phq_extract_terms(Query *self, HashSet *term_set)
     }
 }
 
-static char *phq_to_s(Query *self, const char *field)
+static char *phq_to_s(Query *self, Symbol default_field)
 {
     PhraseQuery *phq = PhQ(self);
     const int pos_cnt = phq->pos_cnt;
@@ -899,7 +898,7 @@ static char *phq_to_s(Query *self, const char *field)
     char *buffer;
 
     if (phq->pos_cnt == 0) {
-        if (strcmp(field, phq->field) != 0) {
+        if (default_field == phq->field) {
             return strfmt("%s:\"\"", phq->field);
         }
         else {
@@ -910,7 +909,7 @@ static char *phq_to_s(Query *self, const char *field)
     /* sort the phrase positions by position */
     qsort(positions, pos_cnt, sizeof(PhrasePosition), &phrase_pos_cmp);
 
-    len = strlen(phq->field) + 1;
+    len = sym_len(phq->field) + 1;
 
     for (i = 0; i < pos_cnt; i++) {
         char **terms = phq->positions[i].terms;
@@ -925,8 +924,8 @@ static char *phq_to_s(Query *self, const char *field)
 
     buffer = ALLOC_N(char, len);
 
-    if (strcmp(field, phq->field) != 0) {
-        len = strlen(phq->field);
+    if (default_field != phq->field) {
+        len = sym_len(phq->field);
         memcpy(buffer, phq->field, len);
         buffer[len] = ':';
         buf_index += len + 1;
@@ -1023,7 +1022,7 @@ static unsigned long phq_hash(Query *self)
 {
     int i, j;
     PhraseQuery *phq = PhQ(self);
-    unsigned long hash = str_hash(phq->field);
+    unsigned long hash = sym_hash(phq->field);
     for (i = 0; i < phq->pos_cnt; i++) {
         char **terms = phq->positions[i].terms;
         for (j = ary_size(terms) - 1; j >= 0; j--) {
@@ -1039,9 +1038,8 @@ static int phq_eq(Query *self, Query *o)
     int i, j;
     PhraseQuery *phq1 = PhQ(self);
     PhraseQuery *phq2 = PhQ(o);
-    // TODO use ==
     if (phq1->slop != phq2->slop
-        || strcmp(phq1->field, phq2->field) != 0
+        || phq1->field != phq2->field
         || phq1->pos_cnt != phq2->pos_cnt) {
         return false;
     }
@@ -1062,11 +1060,11 @@ static int phq_eq(Query *self, Query *o)
     return true;
 }
 
-Query *phq_new(const char *field)
+Query *phq_new(Symbol field)
 {
     Query *self = q_new(PhraseQuery);
 
-    PhQ(self)->field        = intern(field);
+    PhQ(self)->field        = field;
     PhQ(self)->pos_cnt      = 0;
     PhQ(self)->pos_capa     = PhQ_INIT_CAPA;
     PhQ(self)->positions    = ALLOC_N(PhrasePosition, PhQ_INIT_CAPA);

@@ -10,7 +10,7 @@
     free(__tmp);                                                  \
 } while(0)
 
-static const char *field = "field";
+static Symbol field;
 
 static void add_doc(char *text, IndexWriter *iw)
 {
@@ -84,7 +84,7 @@ static void test_span_term(TestCase *tc, void *data)
     ir = ir_open(store);
     sea = isea_new(ir);
 
-    tq = spantq_new("notafield", "nine");
+    tq = spantq_new(I("notafield"), "nine");
     check_hits(tc, sea, tq, "", -1);
     TEST_SE(tq, ir, "SpanTermEnum(span_terms(notafield:nine))@START");
     q_deref(tq);
@@ -107,20 +107,20 @@ static void test_span_term_hash(TestCase *tc, void *data)
     Query *q1, *q2;
     (void)data;
 
-    q1 = spantq_new("A", "a");
+    q1 = spantq_new(I("A"), "a");
 
-    q2 = spantq_new("A", "a");
+    q2 = spantq_new(I("A"), "a");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     Assert(q_eq(q1, q1), "Queries are equal");
     q_deref(q2);
 
-    q2 = spantq_new("A", "b");
+    q2 = spantq_new(I("A"), "b");
     Assert(q_hash(q1) != q_hash(q2), "Terms differ");
     Assert(!q_eq(q1, q2), "Terms differ");
     q_deref(q2);
 
-    q2 = spantq_new("B", "a");
+    q2 = spantq_new(I("B"), "a");
     Assert(q_hash(q1) != q_hash(q2), "Fields differ");
     Assert(!q_eq(q1, q2), "Fields differ");
     q_deref(q2);
@@ -138,7 +138,7 @@ static void test_span_multi_term(TestCase *tc, void *data)
     ir = ir_open(store);
     sea = isea_new(ir);
 
-    mtq = spanmtq_new("notafield");
+    mtq = spanmtq_new(I("notafield"));
     check_hits(tc, sea, mtq, "", -1);
     TEST_SE(mtq, ir, "SpanTermEnum(span_terms(notafield:[]))@START");
 
@@ -212,18 +212,18 @@ static void test_span_prefix(TestCase *tc, void *data)
     ir = ir_open(store);
     sea = isea_new(ir);
 
-    prq = spanprq_new("notafield", "fl");
-    tmp = prq->to_s(prq, "notafield");
+    prq = spanprq_new(I("notafield"), "fl");
+    tmp = prq->to_s(prq, I("notafield"));
     Asequal("fl*", tmp);
     free(tmp);
-    tmp = prq->to_s(prq, "foo");
+    tmp = prq->to_s(prq, I("foo"));
     Asequal("notafield:fl*", tmp);
     free(tmp);
     check_hits(tc, sea, prq, "", -1);
     q_deref(prq);
 
     prq = spanprq_new(field, "fl");
-    tmp = prq->to_s(prq, "field");
+    tmp = prq->to_s(prq, I("field"));
     Asequal("fl*", tmp);
     free(tmp);
     check_hits(tc, sea, prq, "2, 4, 12, 16, 19, 21, 27, 29", -1);
@@ -236,20 +236,20 @@ static void test_span_prefix_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
-    q1 = spanprq_new("A", "a");
+    q1 = spanprq_new(I("A"), "a");
 
-    q2 = spanprq_new("A", "a");
+    q2 = spanprq_new(I("A"), "a");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "SpanPrefixQueries are equal");
     Assert(q_eq(q1, q1), "SpanPrefixQueries are same");
     q_deref(q2);
 
-    q2 = spanprq_new("A", "b");
+    q2 = spanprq_new(I("A"), "b");
     Assert(q_hash(q1) != q_hash(q2), "SpanPrefixQueries are not equal");
     Assert(!q_eq(q1, q2), "SpanPrefixQueries are not equal");
     q_deref(q2);
 
-    q2 = spanprq_new("B", "a");
+    q2 = spanprq_new(I("B"), "a");
     Assert(q_hash(q1) != q_hash(q2), "SpanPrefixQueries are not equal");
     Assert(!q_eq(q1, q2), "SpanPrefixQueries are not equal");
     q_deref(q2);
@@ -286,20 +286,20 @@ static void test_span_first_hash(TestCase *tc, void *data)
     Query *q1, *q2;
     (void)data;
 
-    q1 = spanfq_new_nr(spantq_new("A", "a"), 5);
+    q1 = spanfq_new_nr(spantq_new(I("A"), "a"), 5);
 
-    q2 = spanfq_new_nr(spantq_new("A", "a"), 5);
+    q2 = spanfq_new_nr(spantq_new(I("A"), "a"), 5);
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     Assert(q_eq(q1, q1), "Queries are equal");
     q_deref(q2);
 
-    q2 = spanfq_new_nr(spantq_new("A", "a"), 3);
+    q2 = spanfq_new_nr(spantq_new(I("A"), "a"), 3);
     Assert(q_hash(q1) != q_hash(q2), "Ends differ");
     Assert(!q_eq(q1, q2), "Ends differ");
     q_deref(q2);
 
-    q2 = spanfq_new_nr(spantq_new("A", "b"), 5);
+    q2 = spanfq_new_nr(spantq_new(I("A"), "b"), 5);
     Assert(q_hash(q1) != q_hash(q2), "Terms differ");
     Assert(!q_eq(q1, q2), "Terms differ");
     q_deref(q2);
@@ -525,30 +525,30 @@ static void test_span_not_hash(TestCase *tc, void *data)
     Query *q1, *q2;
     (void)data;
 
-    q1 = spanxq_new_nr(spantq_new("A", "a"),
-                       spantq_new("A", "b"));
-    q2 = spanxq_new_nr(spantq_new("A", "a"),
-                       spantq_new("A", "b"));
+    q1 = spanxq_new_nr(spantq_new(I("A"), "a"),
+                       spantq_new(I("A"), "b"));
+    q2 = spanxq_new_nr(spantq_new(I("A"), "a"),
+                       spantq_new(I("A"), "b"));
 
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     Assert(q_eq(q1, q1), "Queries are equal");
     q_deref(q2);
 
-    q2 = spanxq_new_nr(spantq_new("A", "a"),
-                       spantq_new("A", "c"));
+    q2 = spanxq_new_nr(spantq_new(I("A"), "a"),
+                       spantq_new(I("A"), "c"));
     Assert(q_hash(q1) != q_hash(q2), "exclude queries differ");
     Assert(!q_eq(q1, q2), "exclude queries differ");
     q_deref(q2);
 
-    q2 = spanxq_new_nr(spantq_new("A", "x"),
-                       spantq_new("A", "b"));
+    q2 = spanxq_new_nr(spantq_new(I("A"), "x"),
+                       spantq_new(I("A"), "b"));
     Assert(q_hash(q1) != q_hash(q2), "include queries differ");
     Assert(!q_eq(q1, q2), "include queries differ");
     q_deref(q2);
 
-    q2 = spanxq_new_nr(spantq_new("B", "a"),
-                       spantq_new("B", "b"));
+    q2 = spanxq_new_nr(spantq_new(I("B"), "a"),
+                       spantq_new(I("B"), "b"));
     Assert(q_hash(q1) != q_hash(q2), "fields differ");
     Assert(!q_eq(q1, q2), "fields differ");
     q_deref(q2);
@@ -560,6 +560,8 @@ TestSuite *ts_q_span(TestSuite *suite)
 {
     Store *store = open_ram_store();
     span_test_setup(store);
+
+    field = intern("field");
 
     suite = ADD_SUITE(suite);
 

@@ -623,7 +623,7 @@ void matchv_destroy(MatchVector *self)
 MatchVector *searcher_get_match_vector(Searcher *self,
                                        Query *query,
                                        const int doc_num,
-                                       const char *field)
+                                       Symbol field)
 {
     MatchVector *mv = matchv_new();
     bool rewrite = query->get_matchv_i == q_get_matchv_i;
@@ -835,7 +835,7 @@ static char *highlight_field(MatchVector *mv,
 char **searcher_highlight(Searcher *self,
                           Query *query,
                           const int doc_num,
-                          const char *field,
+                          Symbol field,
                           const int excerpt_len,
                           const int num_excerpts,
                           const char *pre_tag,
@@ -993,7 +993,7 @@ static Similarity *sea_get_similarity(Searcher *self)
 
 #define ISEA(searcher) ((IndexSearcher *)(searcher))
 
-int isea_doc_freq(Searcher *self, const char *field, const char *term)
+int isea_doc_freq(Searcher *self, Symbol field, const char *term)
 {
     return ir_doc_freq(ISEA(self)->ir, field, term);
 }
@@ -1243,7 +1243,7 @@ static Explanation *isea_explain_w(Searcher *self, Weight *w, int doc_num)
 
 static TermVector *isea_get_term_vector(Searcher *self,
                                           const int doc_num,
-                                          const char *field)
+                                          Symbol field)
 {
     IndexReader *ir = ISEA(self)->ir;
     return ir->term_vector(ir, doc_num, field);
@@ -1300,7 +1300,7 @@ typedef struct CachedDFSearcher
     int      max_doc;
 } CachedDFSearcher;
 
-static int cdfsea_doc_freq(Searcher *self, const char *field, const char *text)
+static int cdfsea_doc_freq(Searcher *self, Symbol field, const char *text)
 {
     Term term;
     int *df;
@@ -1388,7 +1388,7 @@ static Explanation *cdfsea_explain_w(Searcher *self, Weight *w, int doc_num)
 }
 
 static TermVector *cdfsea_get_term_vector(Searcher *self, const int doc_num,
-                                          const char *field)
+                                          Symbol field)
 {
     (void)self; (void)doc_num; (void)field;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
@@ -1466,7 +1466,7 @@ static INLINE int msea_get_searcher_index(Searcher *self, int n)
     return hi;
 }
 
-static int msea_doc_freq(Searcher *self, const char *field, const char *term)
+static int msea_doc_freq(Searcher *self, Symbol field, const char *term)
 {
     int i;
     int doc_freq = 0;
@@ -1792,7 +1792,7 @@ static Explanation *msea_explain_w(Searcher *self, Weight *w, int doc_num)
 }
 
 static TermVector *msea_get_term_vector(Searcher *self, const int doc_num,
-                                        const char *field)
+                                        Symbol field)
 {
     MultiSearcher *msea = MSEA(self);
     int i = msea_get_searcher_index(self, doc_num);

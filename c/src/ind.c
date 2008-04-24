@@ -7,8 +7,6 @@
 static const char *NON_UNIQUE_KEY_ERROR_MSG =
     "Tried to use a key that was not unique";
 
-static const char *ID_STRING = "id";
-
 #define INDEX_CLOSE_READER(self) do { \
     if (self->sea) {                  \
         searcher_close(self->sea);    \
@@ -77,15 +75,15 @@ Index *index_new(Store *store, Analyzer *analyzer, HashSet *def_fields,
 
     /* options */
     self->key = NULL;
-    self->id_field = ID_STRING;
-    self->def_field = ID_STRING;
+    self->id_field = intern("id");
+    self->def_field = intern("id");
     self->auto_flush = false;
     self->check_latest = true;
 
     REF(self->analyzer);
     self->qp = qp_new(self->analyzer);
     for (hse = def_fields->first; hse; hse = hse->next) {
-        qp_add_field(self->qp, (const char *)hse->elem, true, true);
+        qp_add_field(self->qp, (Symbol)hse->elem, true, true);
     }
     /* Index is a convenience class so set qp convenience options */
     self->qp->allow_any_fields = true;
@@ -210,7 +208,7 @@ static INLINE void index_del_doc_with_key_i(Index *self, Document *doc,
     HashSetEntry *hse;
 
     if (key->size == 1) {
-        char *field = (char *)key->first->elem;
+        Symbol field = (Symbol)key->first->elem;
         ensure_writer_open(self);
         df = doc_get_field(doc, field);
         if (df) {
@@ -223,7 +221,7 @@ static INLINE void index_del_doc_with_key_i(Index *self, Document *doc,
     ensure_searcher_open(self);
 
     for (hse = key->first; hse; hse = hse->next) {
-        char *field = (char *)hse->elem;
+        Symbol field = (Symbol)hse->elem;
         df = doc_get_field(doc, field);
         if (!df) continue;
         bq_add_query(q, tq_new(field, df->data[0]), BC_MUST);
@@ -322,7 +320,7 @@ Document *index_get_doc_ts(Index *self, int doc_num)
     return doc;
 }
 
-int index_term_id(Index *self, const char *field, const char *term)
+int index_term_id(Index *self, Symbol field, const char *term)
 {
     TermDocEnum *tde;
     int doc_num = -1;
@@ -335,7 +333,7 @@ int index_term_id(Index *self, const char *field, const char *term)
     return doc_num;
 }
 
-Document *index_get_doc_term(Index *self, const char *field,
+Document *index_get_doc_term(Index *self, Symbol field,
                              const char *term)
 {
     Document *doc = NULL;
@@ -369,7 +367,7 @@ void index_delete(Index *self, int doc_num)
     mutex_unlock(&self->mutex);
 }
 
-void index_delete_term(Index *self, const char *field, const char *term)
+void index_delete_term(Index *self, Symbol field, const char *term)
 {
     TermDocEnum *tde;
     mutex_lock(&self->mutex);

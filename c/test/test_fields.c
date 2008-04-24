@@ -4,7 +4,7 @@
 #define do_field_prop_test(tc, fi, name, boost, is_stored,\
                            is_compressed, is_indexed, is_tokenized, omit_norms,\
                            store_term_vector, store_positions, store_offsets)\
-        field_prop_test(tc, __LINE__, fi, name, boost, is_stored,\
+        field_prop_test(tc, __LINE__, fi, I(name), boost, is_stored,\
                         is_compressed, is_indexed, is_tokenized, omit_norms,\
                         store_term_vector, store_positions, store_offsets)
 #define T 1
@@ -13,7 +13,7 @@
 void field_prop_test(TestCase *tc,
                      int line_num,
                      FieldInfo *fi,
-                     char *name,
+                     Symbol name,
                      float boost,
                      bool is_stored,
                      bool is_compressed,
@@ -24,7 +24,7 @@ void field_prop_test(TestCase *tc,
                      bool store_positions,
                      bool store_offsets)
 {
-    tst_str_equal(line_num, tc, name, fi->name);
+    tst_ptr_equal(line_num, tc, name, fi->name);
     tst_flt_equal(line_num, tc, boost, fi->boost);
     tst_int_equal(line_num, tc, is_stored,          fi_is_stored(fi));
     tst_int_equal(line_num, tc, is_compressed,      fi_is_compressed(fi));
@@ -47,21 +47,21 @@ static void test_fi_new(TestCase *tc, void *data)
     FieldInfo *fi;
     (void)data; /* suppress unused argument warning */
 
-    fi = fi_new("name", STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fi = fi_new(I("name"), STORE_NO, INDEX_NO, TERM_VECTOR_NO);
     do_field_prop_test(tc, fi, "name", 1.0, F, F, F, F, F, F, F, F);
     fi_deref(fi);
-    fi = fi_new("name", STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    fi = fi_new(I("name"), STORE_YES, INDEX_YES, TERM_VECTOR_YES);
     do_field_prop_test(tc, fi, "name", 1.0, T, F, T, T, F, T, F, F);
     fi_deref(fi);
-    fi = fi_new("name", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fi = fi_new(I("name"), STORE_COMPRESS, INDEX_UNTOKENIZED,
                    TERM_VECTOR_WITH_POSITIONS);
     do_field_prop_test(tc, fi, "name", 1.0, T, T, T, F, F, T, T, F);
     fi_deref(fi);
-    fi = fi_new("name", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fi = fi_new(I("name"), STORE_NO, INDEX_YES_OMIT_NORMS,
                    TERM_VECTOR_WITH_OFFSETS);
     do_field_prop_test(tc, fi, "name", 1.0, F, F, T, T, T, T, F, T);
     fi_deref(fi);
-    fi = fi_new("name", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+    fi = fi_new(I("name"), STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                    TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     fi->boost = 1000.0;
     do_field_prop_test(tc, fi, "name", 1000.0, F, F, T, F, T, T, T, T);
@@ -82,19 +82,19 @@ static void test_fis_basic(TestCase *tc, void *data)
     (void)data; /* suppress unused argument warning */
 
     fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_new("FFFFFFFF", STORE_NO, INDEX_NO,
+    fis_add_field(fis, fi_new(I("FFFFFFFF"), STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_new("TFTTFTFF", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new(I("TFTTFTFF"), STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(I("TTTFFTTF"), STORE_COMPRESS, INDEX_UNTOKENIZED,
                                  TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_new("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fis_add_field(fis, fi_new(I("FFTTTTFT"), STORE_NO, INDEX_YES_OMIT_NORMS,
                                  TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("FFTFTTTT", STORE_NO,
+    fis_add_field(fis, fi_new(I("FFTFTTTT"), STORE_NO,
                                  INDEX_UNTOKENIZED_OMIT_NORMS,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
 
-    fi = fi_new("FFTFTTTT", STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
+    fi = fi_new(I("FFTFTTTT"), STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                    TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     TRY
         Apnull(fis_add_field(fis, fi));
@@ -106,17 +106,17 @@ static void test_fis_basic(TestCase *tc, void *data)
 
     fi_deref(fi);
 
-    Apequal(fis_get_field(fis, "FFFFFFFF"), fis->fields[0]);
-    Apequal(fis_get_field(fis, "TFTTFTFF"), fis->fields[1]);
-    Apequal(fis_get_field(fis, "TTTFFTTF"), fis->fields[2]);
-    Apequal(fis_get_field(fis, "FFTTTTFT"), fis->fields[3]);
-    Apequal(fis_get_field(fis, "FFTFTTTT"), fis->fields[4]);
+    Apequal(fis_get_field(fis, I("FFFFFFFF")), fis->fields[0]);
+    Apequal(fis_get_field(fis, I("TFTTFTFF")), fis->fields[1]);
+    Apequal(fis_get_field(fis, I("TTTFFTTF")), fis->fields[2]);
+    Apequal(fis_get_field(fis, I("FFTTTTFT")), fis->fields[3]);
+    Apequal(fis_get_field(fis, I("FFTFTTTT")), fis->fields[4]);
 
-    Aiequal(0, fis_get_field(fis, "FFFFFFFF")->number);
-    Aiequal(1, fis_get_field(fis, "TFTTFTFF")->number);
-    Aiequal(2, fis_get_field(fis, "TTTFFTTF")->number);
-    Aiequal(3, fis_get_field(fis, "FFTTTTFT")->number);
-    Aiequal(4, fis_get_field(fis, "FFTFTTTT")->number);
+    Aiequal(0, fis_get_field(fis, I("FFFFFFFF"))->number);
+    Aiequal(1, fis_get_field(fis, I("TFTTFTFF"))->number);
+    Aiequal(2, fis_get_field(fis, I("TTTFFTTF"))->number);
+    Aiequal(3, fis_get_field(fis, I("FFTTTTFT"))->number);
+    Aiequal(4, fis_get_field(fis, I("FFTFTTTT"))->number);
 
     Asequal("FFFFFFFF", fis->fields[0]->name);
     Asequal("TFTTFTFF", fis->fields[1]->name);
@@ -149,35 +149,35 @@ static void test_fis_with_default(TestCase *tc, void *data)
     (void)data; /* suppress unused argument warning */
 
     fis = fis_new(STORE_NO, INDEX_NO, TERM_VECTOR_NO);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("name")), "name", 1.0,
                        F, F, F, F, F, F, F, F);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "dave"), "dave", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("dave")), "dave", 1.0,
                        F, F, F, F, F, F, F, F);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "wert"), "wert", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("wert")), "wert", 1.0,
                        F, F, F, F, F, F, F, F);
     do_field_prop_test(tc, fis->fields[0], "name", 1.0, F, F, F, F, F, F, F, F);
     do_field_prop_test(tc, fis->fields[1], "dave", 1.0, F, F, F, F, F, F, F, F);
     do_field_prop_test(tc, fis->fields[2], "wert", 1.0, F, F, F, F, F, F, F, F);
-    Apnull(fis_get_field(fis, "random"));
+    Apnull(fis_get_field(fis, I("random")));
     fis_deref(fis);
 
     fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("name")), "name", 1.0,
                        T, F, T, T, F, T, F, F);
     fis_deref(fis);
     fis = fis_new(STORE_COMPRESS, INDEX_UNTOKENIZED,
                      TERM_VECTOR_WITH_POSITIONS);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("name")), "name", 1.0,
                        T, T, T, F, F, T, T, F);
     fis_deref(fis);
     fis = fis_new(STORE_NO, INDEX_YES_OMIT_NORMS,
                      TERM_VECTOR_WITH_OFFSETS);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("name")), "name", 1.0,
                        F, F, T, T, T, T, F, T);
     fis_deref(fis);
     fis = fis_new(STORE_NO, INDEX_UNTOKENIZED_OMIT_NORMS,
                      TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "name"), "name", 1.0,
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("name")), "name", 1.0,
                        F, F, T, F, T, T, T, T);
     fis_deref(fis);
 }
@@ -193,15 +193,15 @@ static void test_fis_rw(TestCase *tc, void *data)
 
     fis = fis_new(STORE_YES, INDEX_UNTOKENIZED_OMIT_NORMS, 
                   TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_new("FFFFFFFF", STORE_NO, INDEX_NO,
+    fis_add_field(fis, fi_new(I("FFFFFFFF"), STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_new("TFTTFTFF", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new(I("TFTTFTFF"), STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("TTTFFTTF", STORE_COMPRESS, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(I("TTTFFTTF"), STORE_COMPRESS, INDEX_UNTOKENIZED,
                                  TERM_VECTOR_WITH_POSITIONS));
-    fis_add_field(fis, fi_new("FFTTTTFT", STORE_NO, INDEX_YES_OMIT_NORMS,
+    fis_add_field(fis, fi_new(I("FFTTTTFT"), STORE_NO, INDEX_YES_OMIT_NORMS,
                                  TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("FFTFTTTT", STORE_NO,
+    fis_add_field(fis, fi_new(I("FFTFTTTT"), STORE_NO,
                                  INDEX_UNTOKENIZED_OMIT_NORMS,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
     fis->fields[1]->boost = 2.0;
@@ -216,10 +216,10 @@ static void test_fis_rw(TestCase *tc, void *data)
 
     /* these fields won't be saved be will added again later */
     Aiequal(5, fis->size);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "new_field"),
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("new_field")),
                        "new_field", 1.0, T, F, T, F, T, T, T, T);
     Aiequal(6, fis->size);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "another"),
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("another")),
                        "another", 1.0, T, F, T, F, T, T, T, T);
     Aiequal(7, fis->size);
 
@@ -243,10 +243,10 @@ static void test_fis_rw(TestCase *tc, void *data)
     do_field_prop_test(tc, fis->fields[4], "FFTFTTTT", 5.0,
                        F, F, T, F, T, T, T, T);
     Aiequal(5, fis->size);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "new_field"),
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("new_field")),
                        "new_field", 1.0, T, F, T, F, T, T, T, T);
     Aiequal(6, fis->size);
-    do_field_prop_test(tc, fis_get_or_add_field(fis, "another"),
+    do_field_prop_test(tc, fis_get_or_add_field(fis, I("another")),
                        "another", 1.0, T, F, T, F, T, T, T, T);
     Aiequal(7, fis->size);
     str=fis_to_s(fis);
@@ -332,18 +332,18 @@ static Document *prepare_doc()
     DocField *df;
     char *bin_data = prepare_bin_data(BIN_DATA_LEN);
 
-    doc_add_field(doc, df_add_data(df_new("ignored"), "this fld's ignored"));
-    doc_add_field(doc, df_add_data(df_new("unstored"), "unstored ignored"));
-    doc_add_field(doc, df_add_data(df_new("stored"), "Yay, a stored field"));
-    df = doc_add_field(doc, df_add_data(df_new("stored_array"), "one"));
+    doc_add_field(doc, df_add_data(df_new(I("ignored")), "this fld's ignored"));
+    doc_add_field(doc, df_add_data(df_new(I("unstored")), "unstored ignored"));
+    doc_add_field(doc, df_add_data(df_new(I("stored")), "Yay, a stored field"));
+    df = doc_add_field(doc, df_add_data(df_new(I("stored_array")), "one"));
     df->destroy_data = false;
     df_add_data(df, "two");
     df_add_data(df, "three");
     df_add_data(df, "four");
     df_add_data_len(df, bin_data, BIN_DATA_LEN);
-    doc_add_field(doc, df_add_data_len(df_new("binary"), bin_data,
+    doc_add_field(doc, df_add_data_len(df_new(I("binary")), bin_data,
                                        BIN_DATA_LEN))->destroy_data = true;
-    df = doc_add_field(doc, df_add_data(df_new("array"), "ichi"));
+    df = doc_add_field(doc, df_add_data(df_new(I("array")), "ichi"));
     df_add_data(df, "ni");
     df_add_data(df, "san");
     df_add_data(df, "yon");
@@ -355,13 +355,13 @@ static Document *prepare_doc()
 static FieldInfos *prepare_fis()
 {
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_new("ignored", STORE_NO, INDEX_NO,
+    fis_add_field(fis, fi_new(I("ignored"), STORE_NO, INDEX_NO,
                                  TERM_VECTOR_NO));
-    fis_add_field(fis, fi_new("unstored", STORE_NO, INDEX_YES,
+    fis_add_field(fis, fi_new(I("unstored"), STORE_NO, INDEX_YES,
                                  TERM_VECTOR_WITH_POSITIONS_OFFSETS));
-    fis_add_field(fis, fi_new("stored", STORE_YES, INDEX_YES,
+    fis_add_field(fis, fi_new(I("stored"), STORE_YES, INDEX_YES,
                                  TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("stored_array", STORE_COMPRESS,
+    fis_add_field(fis, fi_new(I("stored_array"), STORE_COMPRESS,
                                  INDEX_UNTOKENIZED, TERM_VECTOR_NO));
     return fis;
 }
@@ -387,9 +387,9 @@ static void test_fields_rw_single(TestCase *tc, void *data)
     doc_destroy(doc);
 
     Aiequal(6, fis->size);
-    do_field_prop_test(tc, fis_get_field(fis, "binary"), "binary", 1.0,
+    do_field_prop_test(tc, fis_get_field(fis, I("binary")), "binary", 1.0,
                        T, F, T, T, F, F, F, F);
-    do_field_prop_test(tc, fis_get_field(fis, "array"), "array", 1.0,
+    do_field_prop_test(tc, fis_get_field(fis, I("array")), "array", 1.0,
                        T, F, T, T, F, F, F, F);
 
     fr = fr_open(store, "_0", fis);
@@ -398,14 +398,14 @@ static void test_fields_rw_single(TestCase *tc, void *data)
 
     Aiequal(4, doc->size);
 
-    Apnull(doc_get_field(doc, "ignored"));
-    Apnull(doc_get_field(doc, "unstored"));
+    Apnull(doc_get_field(doc, I("ignored")));
+    Apnull(doc_get_field(doc, I("unstored")));
 
-    df = doc_get_field(doc, "stored");
+    df = doc_get_field(doc, I("stored"));
     Aiequal(1, df->size);
     check_df_data(df, 0, "Yay, a stored field");
 
-    df = doc_get_field(doc, "stored_array");
+    df = doc_get_field(doc, I("stored_array"));
     Aiequal(5, df->size);
     check_df_data(df, 0, "one");
     check_df_data(df, 1, "two");
@@ -413,11 +413,11 @@ static void test_fields_rw_single(TestCase *tc, void *data)
     check_df_data(df, 3, "four");
     check_df_bin_data(df, 4, bin_data, BIN_DATA_LEN);
 
-    df = doc_get_field(doc, "binary");
+    df = doc_get_field(doc, I("binary"));
     Aiequal(1, df->size);
     check_df_bin_data(df, 0, bin_data, BIN_DATA_LEN);
 
-    df = doc_get_field(doc, "array");
+    df = doc_get_field(doc, I("array"));
     Aiequal(5, df->size);
     check_df_data(df, 0, "ichi");
     check_df_data(df, 1, "ni");
@@ -448,7 +448,7 @@ static void test_fields_rw_multi(TestCase *tc, void *data)
         char buf[100];
         sprintf(buf, "<<%d>>", i);
         doc = doc_new();
-        doc_add_field(doc, df_add_data(df_new(buf), buf));
+        doc_add_field(doc, df_add_data(df_new(I(buf)), buf));
         fw_add_doc(fw, doc);
         fw_write_tv_index(fw);
         doc_destroy(doc);
@@ -461,14 +461,14 @@ static void test_fields_rw_multi(TestCase *tc, void *data)
     fw_close(fw);
 
     Aiequal(106, fis->size);
-    do_field_prop_test(tc, fis_get_field(fis, "binary"), "binary", 1.0,
+    do_field_prop_test(tc, fis_get_field(fis, I("binary")), "binary", 1.0,
                        T, F, T, T, F, F, F, F);
-    do_field_prop_test(tc, fis_get_field(fis, "array"), "array", 1.0,
+    do_field_prop_test(tc, fis_get_field(fis, I("array")), "array", 1.0,
                        T, F, T, T, F, F, F, F);
     for (i = 0; i < 100; i++) {
         char buf[100];
         sprintf(buf, "<<%d>>", i);
-        do_field_prop_test(tc, fis_get_field(fis, buf), buf, 1.0,
+        do_field_prop_test(tc, fis_get_field(fis, I(buf)), buf, 1.0,
                            T, F, T, T, F, F, F, F);
     }
 
@@ -478,14 +478,14 @@ static void test_fields_rw_multi(TestCase *tc, void *data)
 
     Aiequal(4, doc->size);
 
-    Apnull(doc_get_field(doc, "ignored"));
-    Apnull(doc_get_field(doc, "unstored"));
+    Apnull(doc_get_field(doc, I("ignored")));
+    Apnull(doc_get_field(doc, I("unstored")));
 
-    df = doc_get_field(doc, "stored");
+    df = doc_get_field(doc, I("stored"));
     Aiequal(1, df->size);
     check_df_data(df, 0, "Yay, a stored field");
 
-    df = doc_get_field(doc, "stored_array");
+    df = doc_get_field(doc, I("stored_array"));
     Aiequal(5, df->size);
     check_df_data(df, 0, "one");
     check_df_data(df, 1, "two");
@@ -493,11 +493,11 @@ static void test_fields_rw_multi(TestCase *tc, void *data)
     check_df_data(df, 3, "four");
     check_df_bin_data(df, 4, bin_data, BIN_DATA_LEN);
 
-    df = doc_get_field(doc, "binary");
+    df = doc_get_field(doc, I("binary"));
     Aiequal(1, df->size);
     check_df_bin_data(df, 0, bin_data, BIN_DATA_LEN);
 
-    df = doc_get_field(doc, "array");
+    df = doc_get_field(doc, I("array"));
     Aiequal(5, df->size);
     check_df_data(df, 0, "ichi");
     check_df_data(df, 1, "ni");
@@ -526,7 +526,7 @@ static void test_lazy_field_loading(TestCase *tc, void *data)
     
     fw = fw_open(store, "_as3", fis);
     doc = doc_new();
-    df = df_new("stored");
+    df = df_new(I("stored"));
     df_add_data(df, "this is a stored field");
     df_add_data(df, "to be or not to be");
     df_add_data(df, "a stitch in time, saves nine");

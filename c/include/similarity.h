@@ -1,6 +1,8 @@
 #ifndef FRT_SIMILARITY_H
 #define FRT_SIMILARITY_H
 
+#include "symbol.h"
+
 typedef struct FrtSearcher FrtSearcher;
 
 /****************************************************************************
@@ -14,11 +16,11 @@ typedef struct FrtSearcher FrtSearcher;
 
 typedef struct FrtTerm
 {
-    const char *field;
+    FrtSymbol field;
     char *text;
 } FrtTerm;
 
-extern FrtTerm *frt_term_new(const char *field, const char *text);
+extern FrtTerm *frt_term_new(FrtSymbol field, const char *text);
 extern void frt_term_destroy(FrtTerm *self);
 extern int frt_term_eq(const void *t1, const void *t2);
 extern unsigned long frt_term_hash(const void *t);
@@ -47,13 +49,13 @@ struct FrtSimilarity
 {
     void *data;
     float norm_table[256];
-    float (*length_norm)(FrtSimilarity *self, const char *field, int num_terms);
+    float (*length_norm)(FrtSimilarity *self, FrtSymbol field, int num_terms);
     float (*query_norm)(FrtSimilarity *self, float sum_of_squared_weights);
     float (*tf)(FrtSimilarity *self, float freq);
     float (*sloppy_freq)(FrtSimilarity *self, int distance);
-    float (*idf_term)(FrtSimilarity *self, const char *field, char *term,
+    float (*idf_term)(FrtSimilarity *self, FrtSymbol field, char *term,
                       FrtSearcher *searcher);
-    float (*idf_phrase)(FrtSimilarity *self, const char *field,
+    float (*idf_phrase)(FrtSimilarity *self, FrtSymbol field,
                         FrtPhrasePosition *positions,
                         int pp_cnt, FrtSearcher *searcher);
     float (*idf)(FrtSimilarity *self, int doc_freq, int num_docs);

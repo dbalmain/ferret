@@ -1,8 +1,7 @@
 #include "search.h"
 #include "test.h"
 
-static const char *num = "num";
-static const char *flipflop = "flipflop";
+static Symbol num, flipflop;
 
 extern void prepare_filter_index(Store *store);
 
@@ -48,6 +47,9 @@ TestSuite *ts_q_filtered(TestSuite *suite)
     Store *store = open_ram_store();
     IndexReader *ir;
     Searcher *searcher;
+
+    num      = intern("num");
+    flipflop = intern("flipflop");
 
     suite = ADD_SUITE(suite);
 

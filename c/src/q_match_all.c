@@ -111,9 +111,9 @@ static Weight *maw_new(Query *query, Searcher *searcher)
  *
  ***************************************************************************/
 
-static char *maq_to_s(Query *self, const char *field)
+static char *maq_to_s(Query *self, Symbol default_field)
 {
-    (void)field;
+    (void)default_field;
     if (self->boost == 1.0) {
         return estrdup("*");
     } else {

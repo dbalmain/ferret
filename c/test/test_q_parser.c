@@ -8,7 +8,7 @@ typedef struct QPTestPair {
 
 #define PARSER_TEST(str, res) do {\
     Query *q = qp_parse(parser, str);\
-    char *qres = q->to_s(q, "xx");\
+    char *qres = q->to_s(q, I("xx"));\
     Asequal(res, qres);\
     q_deref(q);\
     free(qres);\
@@ -144,27 +144,9 @@ static void test_q_parser(TestCase *tc, void *data)
 
     REF(analyzer);
     parser = qp_new(analyzer);
-    qp_add_field(parser, "xx",    true,  true);
-    qp_add_field(parser, "f1",    false, true);
-    qp_add_field(parser, "f2",    false, true);
-    qp_add_field(parser, "field", false, false);
-
-    for (i = 0; i < NELEMS(pairs); i++) {
-        PARSER_TEST(pairs[i].qstr, pairs[i].qres);
-    }
-    parser->clean_str = true;
-    for (i = 0; i < NELEMS(pairs); i++) {
-        PARSER_TEST(pairs[i].qstr, pairs[i].qres);
-    }
-    PARSER_TEST("not_field:word", "");
-    qp_destroy(parser);
-
-    /* This time let the query parser destroy the analyzer */
-    parser = qp_new(analyzer);
-    qp_add_field(parser, "xx",    true,  true);
-    qp_add_field(parser, "f1",    false, true);
-    qp_add_field(parser, "f2",    false, true);
-    qp_add_field(parser, "field", false, false);
+    qp_add_field(parser, I("f1"),    false, true);
+    qp_add_field(parser, I("f2"),    false, true);
+    qp_add_field(parser, I("field"), false, false);
 
     parser->clean_str = false;
     parser->allow_any_fields = true;
@@ -310,10 +292,10 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
 
     REF(analyzer);
     parser = qp_new(analyzer);
-    qp_add_field(parser, "xx",    true,  true);
-    qp_add_field(parser, "f1",    false, true);
-    qp_add_field(parser, "f2",    false, true);
-    qp_add_field(parser, "field", false, true);
+    qp_add_field(parser, I("xx"),    true,  true);
+    qp_add_field(parser, I("f1"),    false, true);
+    qp_add_field(parser, I("f2"),    false, true);
+    qp_add_field(parser, I("field"), false, true);
 
     for (i = 0; i < NELEMS(pairs); i++) {
         PARSER_TEST(pairs[i].qstr, pairs[i].qres);
@@ -327,10 +309,10 @@ static void test_q_parser_standard_analyzer(TestCase *tc, void *data)
 
     /* This time let the query parser destroy the analyzer */
     parser = qp_new(analyzer);
-    qp_add_field(parser, "xx",    true,  true);
-    qp_add_field(parser, "f1",    false, true);
-    qp_add_field(parser, "f2",    false, true);
-    qp_add_field(parser, "field", false, true);
+    qp_add_field(parser, I("xx"),    true,  true);
+    qp_add_field(parser, I("f1"),    false, true);
+    qp_add_field(parser, I("f2"),    false, true);
+    qp_add_field(parser, I("field"), false, true);
 
     parser->clean_str = false;
     parser->allow_any_fields = true;
@@ -392,10 +374,10 @@ static void test_qp_bad_queries(TestCase *tc, void *data)
     (void)data;
 
     parser = qp_new(letter_analyzer_new(true));
-    qp_add_field(parser, "xx",    true,  true);
-    qp_add_field(parser, "f1",    false, true);
-    qp_add_field(parser, "f2",    false, true);
-    qp_add_field(parser, "field", false, true);
+    qp_add_field(parser, I("xx"),    true,  true);
+    qp_add_field(parser, I("f1"),    false, true);
+    qp_add_field(parser, I("f2"),    false, true);
+    qp_add_field(parser, I("field"), false, true);
 
     parser->handle_parse_errors = true;
 
@@ -416,7 +398,7 @@ static void test_qp_prefix_query(TestCase *tc, void *data)
     (void)data;
 
     parser = qp_new(letter_analyzer_new(true));
-    qp_add_field(parser, "xx", true,  true);
+    qp_add_field(parser, I("xx"), true,  true);
 
     q = qp_parse(parser, "asdg*");
     Aiequal(PREFIX_QUERY, q->type);
@@ -439,7 +421,7 @@ static void test_qp_keyword_switch(TestCase *tc, void *data)
     (void)data;
 
     parser = qp_new(letter_analyzer_new(true));
-    qp_add_field(parser, "xx", true,  true);
+    qp_add_field(parser, I("xx"), true,  true);
 
     PARSER_TEST("REQ www (xxx AND yyy) OR NOT zzz", "+www (+xxx +yyy) -zzz");
 

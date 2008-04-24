@@ -118,15 +118,15 @@ float fuzq_score(FuzzyQuery *fuzq, const char *target)
 
 #define FzQ(query) ((FuzzyQuery *)(query))
 
-static char *fuzq_to_s(Query *self, const char *curr_field)
+static char *fuzq_to_s(Query *self, Symbol curr_field)
 {
     char *buffer, *bptr;
     char *term = FzQ(self)->term;
-    const char *field = FzQ(self)->field;
-    bptr = buffer = ALLOC_N(char, strlen(term) + strlen(field) + 70);
+    Symbol field = FzQ(self)->field;
+    bptr = buffer = ALLOC_N(char, strlen(term) + sym_len(field) + 70);
 
-    if (strcmp(curr_field, field) != 0) {
-        bptr += sprintf(bptr, "%s:", field);
+    if (curr_field != field) {
+        bptr += sprintf(bptr, "%s:", S(field));
     }
 
     bptr += sprintf(bptr, "%s~", term);
@@ -151,15 +151,14 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
     int pre_len = fuzq->pre_len;
     char *prefix = NULL;
     const char *term = fuzq->term;
-    const char *field = fuzq->field;
-    const int field_num = fis_get_field_num(ir->fis, field);
+    const int field_num = fis_get_field_num(ir->fis, fuzq->field);
     TermEnum *te;
 
     if (field_num < 0) {
         return bq_new(true);
     }
     if (fuzq->pre_len >= (int)strlen(term)) {
-        return tq_new(field, term);
+        return tq_new(fuzq->field, term);
     }
 
     q = multi_tq_new_conf(fuzq->field, MTQMaxTerms(self), fuzq->min_sim);
@@ -210,7 +209,7 @@ static void fuzq_destroy(Query *self)
 
 static unsigned long fuzq_hash(Query *self)
 {
-    return str_hash(FzQ(self)->term) ^ str_hash(FzQ(self)->field)
+    return str_hash(FzQ(self)->term) ^ sym_hash(FzQ(self)->field)
         ^ float2int(FzQ(self)->min_sim) ^ FzQ(self)->pre_len;
 }
 
@@ -220,12 +219,12 @@ static int fuzq_eq(Query *self, Query *o)
     FuzzyQuery *fq2 = FzQ(o);
 
     return (strcmp(fq1->term, fq2->term) == 0)
-        && (strcmp(fq1->field, fq2->field) == 0)
+        && (fq1->field == fq2->field)
         && (fq1->pre_len == fq2->pre_len)
         && (fq1->min_sim == fq2->min_sim);
 }
 
-Query *fuzq_new_conf(const char *field, const char *term,
+Query *fuzq_new_conf(Symbol field, const char *term,
                      float min_sim, int pre_len, int max_terms)
 {
     Query *self = q_new(FuzzyQuery);
@@ -247,7 +246,7 @@ Query *fuzq_new_conf(const char *field, const char *term,
     return self;
 }
 
-Query *fuzq_new(const char *field, const char *term)
+Query *fuzq_new(Symbol field, const char *term)
 {
     return fuzq_new_conf(field, term, 0.0f, 0, 0);
 }

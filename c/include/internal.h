@@ -128,6 +128,7 @@
 #define RECAPA                             FRT_RECAPA
 #define REF                                FRT_REF
 #define RETURN_EARLY                       FRT_RETURN_EARLY
+#define S                                  FRT_S
 #define SCANNER                            FRT_SCANNER
 #define SCORER_NULLIFY                     FRT_SCORER_NULLIFY
 #define SEGMENTS_FILE_NAME                 FRT_SEGMENTS_FILE_NAME
@@ -302,6 +303,7 @@
 #define Store                   FrtStore
 #define StoreValue              FrtStoreValue
 #define StringIndex             FrtStringIndex
+#define Symbol                  FrtSymbol
 #define TVField                 FrtTVField
 #define TVTerm                  FrtTVTerm
 #define Term                    FrtTerm
@@ -323,6 +325,7 @@
 #define TypedRangeQuery         FrtTypedRangeQuery
 #define Weight                  FrtWeight
 #define WildCardQuery           FrtWildCardQuery
+#define __Symbol                Frt__Symbol
 
 /* Functions */
 #define a_deref                                 frt_a_deref
@@ -587,7 +590,6 @@
 #define int2float                               frt_int2float
 #define intern                                  frt_intern
 #define intern_and_free                         frt_intern_and_free
-#define intern_init                             frt_intern_init
 #define ir_add_cache                            frt_ir_add_cache
 #define ir_close                                frt_ir_close
 #define ir_commit                               frt_ir_commit
@@ -890,6 +892,9 @@
 #define stpe_new                                frt_stpe_new
 #define str_hash                                frt_str_hash
 #define strfmt                                  frt_strfmt
+#define sym_hash                                frt_sym_hash
+#define sym_len                                 frt_sym_len
+#define symbol_init                             frt_symbol_init
 #define td_destroy                              frt_td_destroy
 #define td_new                                  frt_td_new
 #define td_to_s                                 frt_td_to_s

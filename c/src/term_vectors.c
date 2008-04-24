@@ -2,7 +2,7 @@
 #include "index.h"
 #include "array.h"
 #include "helper.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 /****************************************************************************
@@ -115,7 +115,7 @@ static TermVector *tvr_read_term_vector(TermVectorsReader *tvr, int field_num)
     const int num_terms = is_read_vint(tvd_in);
     
     tv->field_num = field_num;
-    tv->field = intern(fi->name);
+    tv->field = fi->name;
 
     if (num_terms > 0) {
         int i, j, delta_start, delta_len, total_len, freq;

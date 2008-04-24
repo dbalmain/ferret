@@ -91,7 +91,7 @@ static void add_string_docs(Store *store, const char *string[])
     
     while (*string) {
         Document *doc = doc_new();
-        doc_add_field(doc, df_add_data(df_new("field"), (char *)*string));
+        doc_add_field(doc, df_add_data(df_new(I("field")), (char *)*string));
         iw_add_doc(iw, doc);
         doc_destroy(doc);
         string++;
@@ -107,7 +107,7 @@ static void check_searcher_match_vector(TestCase *tc, Store *store,
 {
     IndexReader *ir = ir_open(store);
     Searcher *sea = isea_new(ir);
-    MatchVector *mv = searcher_get_match_vector(sea, query, doc_num, "field");
+    MatchVector *mv = searcher_get_match_vector(sea, query, doc_num, I("field"));
     static int offset_array[ARRAY_SIZE];
     int matchv_size = s2l(expected, offset_array) / 2;
     int i;
@@ -129,7 +129,7 @@ static void check_match_vector(TestCase *tc, Store *store, Query *query, int doc
 {
     IndexReader *ir = ir_open(store);
     MatchVector *mv = matchv_new();
-    TermVector *term_vector = ir->term_vector(ir, doc_num, "field");
+    TermVector *term_vector = ir->term_vector(ir, doc_num, I("field"));
     static int offset_array[ARRAY_SIZE];
     int matchv_size = s2l(expected, offset_array) / 2;
     int i;
@@ -159,12 +159,12 @@ static void test_term_query(TestCase *tc, void *data)
     };
     make_index(store);
     add_string_docs(store, docs);
-    q = tq_new("field", "rabbit");
+    q = tq_new(I("field"), "rabbit");
     Chk_mv(q, 0, "5:5");
     Chk_mv(q, 1, "0:0 2:2 4:4 6:6");
     Chk_mv(q, 2, "");
     q_deref(q);
-    q = tq_new("diff_field", "rabbit");
+    q = tq_new(I("diff_field"), "rabbit");
     Chk_mv(q, 0, "");
     Chk_mv(q, 1, "");
     q_deref(q);
@@ -188,7 +188,7 @@ static void test_phrase_query(TestCase *tc, void *data)
     };
     make_index(store);
     add_string_docs(store, docs);
-    q = phq_new("field");
+    q = phq_new(I("field"));
     phq_add_term(q, "one", 1); 
     phq_add_term(q, "two", 1); 
     phq_add_term(q, "three", 1); 
@@ -202,7 +202,7 @@ static void test_phrase_query(TestCase *tc, void *data)
     q_deref(q);
     
     /* test that it only works for the correct field */
-    q = phq_new("wrong_field");
+    q = phq_new(I("wrong_field"));
     phq_add_term(q, "one", 1); 
     phq_add_term(q, "two", 1); 
     phq_add_term(q, "three", 1); 
@@ -213,7 +213,7 @@ static void test_phrase_query(TestCase *tc, void *data)
     Chk_mv(q, 0, "");
     q_deref(q);
 
-    q = phq_new("field");
+    q = phq_new(I("field"));
     phq_add_term(q, "quick", 1);
     phq_append_multi_term(q, "fast");
     phq_append_multi_term(q, "agile");
@@ -244,11 +244,11 @@ static void test_boolean_query(TestCase *tc, void *data)
     make_index(store);
     add_string_docs(store, docs);
     q = bq_new(false);
-    bq_add_query_nr(q, tq_new("field", "one"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "one"), BC_SHOULD);
     Chk_mv(q, 0, "0:0 12:12");
-    bq_add_query_nr(q, tq_new("field", "two"), BC_MUST);
+    bq_add_query_nr(q, tq_new(I("field"), "two"), BC_MUST);
     Chk_mv(q, 0, "0:0 5:5 12:12 13:13");
-    phq = phq_new("field");
+    phq = phq_new(I("field"));
     phq_add_term(phq, "one", 1);
     phq_add_term(phq, "two", 1);
     Chk_mv(phq, 0, "12:13");
@@ -267,7 +267,7 @@ static void test_multi_term_query(TestCase *tc, void *data)
     };
     make_index(store);
     add_string_docs(store, docs);
-    q = multi_tq_new("field");
+    q = multi_tq_new(I("field"));
     multi_tq_add_term(q, "one");
     Chk_mv(q, 0, "0:0 12:12");
     multi_tq_add_term(q, "two");
@@ -288,11 +288,11 @@ static void test_span_queries(TestCase *tc, void *data)
     };
     make_index(store);
     add_string_docs(store, docs);
-    q = spantq_new("wrong_field", "words");
+    q = spantq_new(I("wrong_field"), "words");
     Chk_mv(q, 0, "");
     q_deref(q);
 
-    q = spantq_new("field", "words");
+    q = spantq_new(I("field"), "words");
     Chk_mv(q, 0, "3:3 8:8 12:12");
     q = spanfq_new_nr(q, 4);
     Chk_mv(q, 0, "3:3");
@@ -308,17 +308,17 @@ static void test_span_queries(TestCase *tc, void *data)
     oq = spanoq_new();
     spanoq_add_clause_nr(oq, q);
     Chk_mv(oq, 0, "3:3 8:8 12:12");
-    spanoq_add_clause_nr(oq, spantq_new("field", "one"));
+    spanoq_add_clause_nr(oq, spantq_new(I("field"), "one"));
     Chk_mv(oq, 0, "0:0 3:3 8:8 12:12 13:13");
-    spanoq_add_clause_nr(oq, spantq_new("field", "two"));
+    spanoq_add_clause_nr(oq, spantq_new(I("field"), "two"));
     Chk_mv(oq, 0, "0:0 3:3 5:5 8:8 12:12 13:13 14:14");
     q_deref(oq);
 
     q = spannq_new(1, true);
-    spannq_add_clause_nr(q, spantq_new("field", "worda"));
+    spannq_add_clause_nr(q, spantq_new(I("field"), "worda"));
     Chk_mv(q, 0, "");
     Chk_mv(q, 1, "0:0 4:4 10:10");
-    spannq_add_clause_nr(q, spantq_new("field", "wordb"));
+    spannq_add_clause_nr(q, spantq_new(I("field"), "wordb"));
     Chk_mv(q, 1, "0:0 2:2");
     ((SpanNearQuery *)q)->in_order = false;
     Chk_mv(q, 1, "0:0 2:2 4:4");
@@ -327,7 +327,7 @@ static void test_span_queries(TestCase *tc, void *data)
     ((SpanNearQuery *)q)->slop = 3;
     Chk_mv(q, 1, "0:0 2:2 4:4 7:7 10:10 14:14");
 
-    q = spanxq_new_nr(q, spantq_new("field", "2"));
+    q = spanxq_new_nr(q, spantq_new(I("field"), "2"));
     Chk_mv(q, 1, "0:0 2:2 4:4 10:10 14:14");
     q_deref(q);
 }
@@ -342,15 +342,15 @@ static void test_searcher_get_match_vector(TestCase *tc, void *data)
     };
     make_index(store);
     add_string_docs(store, docs);
-    q = fuzq_new_conf("field", "funnyword", 0.9f, 0, 512);
+    q = fuzq_new_conf(I("field"), "funnyword", 0.9f, 0, 512);
     Chk_sea_mv(q, 0, "0:0");
     q_deref(q);
 
-    q = fuzq_new_conf("field", "funnyword", 0.8f, 0, 512);
+    q = fuzq_new_conf(I("field"), "funnyword", 0.8f, 0, 512);
     Chk_sea_mv(q, 0, "0:0 2:2 4:4 5:5");
     q_deref(q);
 
-    q = fuzq_new_conf("field", "funnyword", 0.5f, 0, 512);
+    q = fuzq_new_conf(I("field"), "funnyword", 0.5f, 0, 512);
     Chk_sea_mv(q, 0, "0:0 1:1 2:2 3:3 4:4 5:5 6:6");
     q_deref(q);
 }
@@ -375,7 +375,7 @@ static void test_searcher_highlight(TestCase *tc, void *data)
     add_string_docs(store, docs);
 
     iw = iw_open(store, letter_analyzer_new(true), NULL);
-    doc_add_field(doc, df_add_data(df_new("field"), "That's how it goes now."));
+    doc_add_field(doc, df_add_data(df_new(I("field")), "That's how it goes now."));
     iw_add_doc(iw, doc);
     doc_destroy(doc);
     iw_close(iw);
@@ -383,21 +383,21 @@ static void test_searcher_highlight(TestCase *tc, void *data)
     ir = ir_open(store);
     sea = isea_new(ir);
 
-    q = tq_new("field", "one");
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 1,
+    q = tq_new(I("field"), "one");
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 1,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     Asequal("...are <b>one</b>...", highlights[0]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 2,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 2,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("...are <b>one</b>...", highlights[0]);
     Asequal("...this; <b>one</b>...", highlights[1]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 3,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 3,
                                     "<b>", "</b>", "...");
     Aiequal(3, ary_size(highlights));
     Asequal("the words...", highlights[0]);
@@ -405,7 +405,7 @@ static void test_searcher_highlight(TestCase *tc, void *data)
     Asequal("...this; <b>one</b>...", highlights[2]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 4,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 4,
                                     "<b>", "</b>", "...");
     Aiequal(3, ary_size(highlights));
     Asequal("the words we are...", highlights[0]);
@@ -413,14 +413,14 @@ static void test_searcher_highlight(TestCase *tc, void *data)
     Asequal("...this; <b>one</b>...", highlights[2]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 5,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 5,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("the words we are searching for are <b>one</b>...", highlights[0]);
     Asequal("...this; <b>one</b>...", highlights[1]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 20,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 20,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     Asequal("the words we are searching for are <b>one</b> and two also "
@@ -428,7 +428,7 @@ static void test_searcher_highlight(TestCase *tc, void *data)
             "two lets see how it goes", highlights[0]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 1000, 1,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 1000, 1,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     Asequal("the words we are searching for are <b>one</b> and two also "
@@ -439,73 +439,73 @@ static void test_searcher_highlight(TestCase *tc, void *data)
     q_deref(q);
 
     q = bq_new(false);
-    bq_add_query_nr(q, tq_new("field", "one"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("field", "two"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "one"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "two"), BC_SHOULD);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 15, 2,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 15, 2,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("...<b>one</b> and <b>two</b>...", highlights[0]);
     Asequal("...this; <b>one</b> <b>two</b>...", highlights[1]);
     ary_destroy(highlights, &free);
 
-    phq = phq_new("field");
+    phq = phq_new(I("field"));
     phq_add_term(phq, "one", 1);
     phq_add_term(phq, "two", 1);
 
     bq_add_query_nr(q, phq, BC_SHOULD);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 15, 2,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 15, 2,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("...<b>one</b> and <b>two</b>...", highlights[0]);
     Asequal("...this; <b>one two</b>...", highlights[1]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 15, 1,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 15, 1,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     /* should have a higher priority since it the merger of three matches */
     Asequal("...this; <b>one two</b>...", highlights[0]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "not_a_field", 15, 1,
+    highlights = searcher_highlight(sea, q, 0, I("not_a_field"), 15, 1,
                                     "<b>", "</b>", "...");
     Apnull(highlights);
 
     q_deref(q);
 
-    q = tq_new("wrong_field", "one");
-    highlights = searcher_highlight(sea, q, 0, "not_a_field", 15, 1,
+    q = tq_new(I("wrong_field"), "one");
+    highlights = searcher_highlight(sea, q, 0, I("not_a_field"), 15, 1,
                                     "<b>", "</b>", "...");
     Apnull(highlights);
 
     q_deref(q);
 
     q = bq_new(false);
-    phq = phq_new("field");
+    phq = phq_new(I("field"));
     phq_add_term(phq, "the", 1);
     phq_add_term(phq, "words", 1);
     bq_add_query_nr(q, phq, BC_SHOULD);
-    phq = phq_new("field");
+    phq = phq_new(I("field"));
     phq_add_term(phq, "for", 1);
     phq_add_term(phq, "are", 1);
     phq_add_term(phq, "one", 1);
     phq_add_term(phq, "and", 1);
     phq_add_term(phq, "two", 1);
     bq_add_query_nr(q, phq, BC_SHOULD);
-    bq_add_query_nr(q, tq_new("field", "words"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("field", "one"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("field", "two"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("field", "UnKnOwNfIeLd"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "words"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "one"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "two"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("field"), "UnKnOwNfIeLd"), BC_SHOULD);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 1,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 1,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     Asequal("<b>the words</b>...", highlights[0]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 0, "field", 10, 2,
+    highlights = searcher_highlight(sea, q, 0, I("field"), 10, 2,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("<b>the words</b>...", highlights[0]);
@@ -514,15 +514,15 @@ static void test_searcher_highlight(TestCase *tc, void *data)
 
     q_deref(q);
 
-    q = tq_new("field", "goes");
-    highlights = searcher_highlight(sea, q, 0, "field", 13, 2,
+    q = tq_new(I("field"), "goes");
+    highlights = searcher_highlight(sea, q, 0, I("field"), 13, 2,
                                     "<b>", "</b>", "...");
     Aiequal(2, ary_size(highlights));
     Asequal("the words we...", highlights[0]);
     Asequal("...how it <b>goes</b>", highlights[1]);
     ary_destroy(highlights, &free);
 
-    highlights = searcher_highlight(sea, q, 1, "field", 16, 1,
+    highlights = searcher_highlight(sea, q, 1, I("field"), 16, 1,
                                     "<b>", "</b>", "...");
     Aiequal(1, ary_size(highlights));
     Asequal("...how it <b>goes</b> now.", highlights[0]);

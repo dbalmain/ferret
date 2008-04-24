@@ -1415,7 +1415,7 @@ static void bq_extract_terms(Query *self, HashSet *terms)
     }
 }
 
-static char *bq_to_s(Query *self, const char *field)
+static char *bq_to_s(Query *self, Symbol field)
 {
     int i;
     BooleanClause *clause;

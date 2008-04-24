@@ -1,9 +1,9 @@
-#include "intern.h"
+#include "symbol.h"
 #include "test.h"
 
 static void test_intern(TestCase *tc, void *data)
 {
-    const char *word1 = intern("word"), *word2 = intern("word");
+    Symbol word1 = intern("word"), word2 = intern("word");
     (void)data; /* suppress unused argument warning */
 
     Asequal("One",   intern("One"));
@@ -21,7 +21,7 @@ static void test_intern(TestCase *tc, void *data)
     Apequal(word1, word2);
 }
 
-TestSuite *ts_intern(TestSuite *suite)
+TestSuite *ts_symbol(TestSuite *suite)
 {
     suite = ADD_SUITE(suite);
 

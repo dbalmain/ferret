@@ -213,7 +213,7 @@ static void a_standard_destroy_i(Analyzer *a)
 }
 
 static TokenStream *a_standard_get_ts(Analyzer *a,
-                                      const char *field,
+                                      Symbol field,
                                       char *text)
 {
     TokenStream *ts;
@@ -225,7 +225,7 @@ static TokenStream *a_standard_get_ts(Analyzer *a,
 Analyzer *analyzer_new(TokenStream *ts,
                        void (*destroy_i)(Analyzer *a),
                        TokenStream *(*get_ts)(Analyzer *a,
-                                              const char *field,
+                                              Symbol field,
                                               char *text))
 {
     Analyzer *a = ALLOC(Analyzer);
@@ -1552,7 +1552,7 @@ static void pfa_destroy_i(Analyzer *self)
 }
 
 static TokenStream *pfa_get_ts(Analyzer *self,
-                               const char *field, char *text)
+                               Symbol field, char *text)
 {
     Analyzer *a = (Analyzer *)h_get(PFA(self)->dict, field);
     if (a == NULL) {
@@ -1568,7 +1568,7 @@ static void pfa_sub_a_destroy_i(void *p)
 }
 
 void pfa_add_field(Analyzer *self, 
-                   const char *field,
+                   Symbol field,
                    Analyzer *analyzer)
 {
     h_set(PFA(self)->dict, field, analyzer);
