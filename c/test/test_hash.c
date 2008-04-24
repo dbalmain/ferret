@@ -1,5 +1,5 @@
 #include "hash.h"
-#include "intern.h"
+#include "symbol.h"
 #include "global.h"
 #include <stdlib.h>
 #include "test.h"
@@ -162,8 +162,8 @@ static void test_hash_int(TestCase *tc, void *data)
 static void test_hash_ptr(TestCase *tc, void *data)
 {
     Hash *h = h_new_ptr(&free);
-    const char *word1 = intern("one");
-    const char *word2 = intern("two");
+    Symbol word1 = intern("one");
+    Symbol word2 = intern("two");
     char *word_one = estrdup("one");
     int i;
     char buf[100];

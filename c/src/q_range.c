@@ -1,6 +1,6 @@
 #include <string.h>
 #include "search.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 /*****************************************************************************
@@ -11,25 +11,25 @@
 
 typedef struct Range
 {
-    const char *field;
+    Symbol field;
     char *lower_term;
     char *upper_term;
     bool include_lower : 1;
     bool include_upper : 1;
 } Range;
 
-static char *range_to_s(Range *range, const char *field, float boost)
+static char *range_to_s(Range *range, Symbol field, float boost)
 {
     char *buffer, *b;
     size_t flen, llen, ulen;
 
-    flen = strlen(range->field);
+    flen = sym_len(range->field);
     llen = range->lower_term ? strlen(range->lower_term) : 0;
     ulen = range->upper_term ? strlen(range->upper_term) : 0;
     buffer = ALLOC_N(char, flen + llen + ulen + 40);
     b = buffer;
 
-    if (strcmp(field, range->field)) {
+    if (field != range->field) {
         memcpy(buffer, range->field, flen * sizeof(char));
         b += flen;
         *b = ':';
@@ -78,7 +78,7 @@ static void range_destroy(Range *range)
 static unsigned long range_hash(Range *filt)
 {
     return filt->include_lower | (filt->include_upper << 1)
-        | ((str_hash(filt->field)
+        | ((sym_hash(filt->field)
             ^ (filt->lower_term ? str_hash(filt->lower_term) : 0)
             ^ (filt->upper_term ? str_hash(filt->upper_term) : 0)) << 2);
 }
@@ -90,15 +90,14 @@ static int str_eq(const char *s1, const char *s2)
 
 static int range_eq(Range *filt, Range *o)
 {
-    // TODO use == instead of str_eq
-    return (str_eq(filt->field, o->field)
+    return ((filt->field == o->field)
             && str_eq(filt->lower_term, o->lower_term)
             && str_eq(filt->upper_term, o->upper_term)
             && (filt->include_lower == o->include_lower)
             && (filt->include_upper == o->include_upper));
 }
 
-static Range *range_new(const char *field, const char *lower_term,
+static Range *range_new(Symbol field, const char *lower_term,
                  const char *upper_term, bool include_lower,
                  bool include_upper)
 {
@@ -125,7 +124,7 @@ static Range *range_new(const char *field, const char *lower_term,
 
     range = ALLOC(Range);
 
-    range->field = intern(field);
+    range->field = field;
     range->lower_term = lower_term ? estrdup(lower_term) : NULL;
     range->upper_term = upper_term ? estrdup(upper_term) : NULL;
     range->include_lower = include_lower;
@@ -133,7 +132,7 @@ static Range *range_new(const char *field, const char *lower_term,
     return range;
 }
 
-static Range *trange_new(const char *field, const char *lower_term,
+static Range *trange_new(Symbol field, const char *lower_term,
                   const char *upper_term, bool include_lower,
                   bool include_upper)
 {
@@ -179,7 +178,7 @@ static Range *trange_new(const char *field, const char *lower_term,
 
     range = ALLOC(Range);
 
-    range->field = intern(field);
+    range->field = field;
     range->lower_term = lower_term ? estrdup(lower_term) : NULL;
     range->upper_term = upper_term ? estrdup(upper_term) : NULL;
     range->include_lower = include_lower;
@@ -209,7 +208,7 @@ static void rfilt_destroy_i(Filter *filt)
 
 static char *rfilt_to_s(Filter *filt)
 {
-    char *rstr = range_to_s(RF(filt)->range, "", 1.0);
+    char *rstr = range_to_s(RF(filt)->range, NULL, 1.0);
     char *rfstr = strfmt("RangeFilter< %s >", rstr);
     free(rstr);
     return rfstr;
@@ -285,7 +284,7 @@ static int rfilt_eq(Filter *filt, Filter *o)
     return range_eq(RF(filt)->range, RF(o)->range);
 }
 
-Filter *rfilt_new(const char *field,
+Filter *rfilt_new(Symbol field,
                   const char *lower_term, const char *upper_term,
                   bool include_lower, bool include_upper)
 {
@@ -309,7 +308,7 @@ Filter *rfilt_new(const char *field,
 
 static char *trfilt_to_s(Filter *filt)
 {
-    char *rstr = range_to_s(RF(filt)->range, "", 1.0);
+    char *rstr = range_to_s(RF(filt)->range, NULL, 1.0);
     char *rfstr = strfmt("TypedRangeFilter< %s >", rstr);
     free(rstr);
     return rfstr;
@@ -422,7 +421,7 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
     }
 }
 
-Filter *trfilt_new(const char *field,
+Filter *trfilt_new(Symbol field,
                    const char *lower_term, const char *upper_term,
                    bool include_lower, bool include_upper)
 {
@@ -451,7 +450,7 @@ typedef struct RangeQuery
     Range *range;
 } RangeQuery;
 
-static char *rq_to_s(Query *self, const char *field)
+static char *rq_to_s(Query *self, Symbol field)
 {
     return range_to_s(RQ(self)->range, field, self->boost);
 }
@@ -466,8 +465,7 @@ static MatchVector *rq_get_matchv_i(Query *self, MatchVector *mv,
                                     TermVector *tv)
 {
     Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
-    // TODO use ==
-    if (strcmp(tv->field, range->field) == 0) {
+    if (tv->field == range->field) {
         int i, j;
         char *upper_text = range->upper_term;
         char *lower_text = range->lower_term;
@@ -513,19 +511,19 @@ static int rq_eq(Query *self, Query *o)
     return range_eq(RQ(self)->range, RQ(o)->range);
 }
 
-Query *rq_new_less(const char *field, const char *upper_term,
+Query *rq_new_less(Symbol field, const char *upper_term,
                    bool include_upper)
 {
     return rq_new(field, NULL, upper_term, false, include_upper);
 }
 
-Query *rq_new_more(const char *field, const char *lower_term,
+Query *rq_new_more(Symbol field, const char *lower_term,
                    bool include_lower)
 {
     return rq_new(field, lower_term, NULL, include_lower, false);
 }
 
-Query *rq_new(const char *field, const char *lower_term,
+Query *rq_new(Symbol field, const char *lower_term,
               const char *upper_term, bool include_lower, bool include_upper)
 {
     Query *self     = q_new(RangeQuery);
@@ -569,8 +567,7 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
                                      TermVector *tv)
 {
     Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
-    // TODO use ==
-    if (strcmp(tv->field, range->field) != 0) {
+    if (tv->field == range->field) {
         double lnum = 0.0, unum = 0.0;
         int len = 0;
         const char *lt = range->lower_term;
@@ -641,19 +638,19 @@ static Query *trq_rewrite(Query *self, IndexReader *ir)
     return (Query *)csq;
 }
 
-Query *trq_new_less(const char *field, const char *upper_term,
+Query *trq_new_less(Symbol field, const char *upper_term,
                     bool include_upper)
 {
     return trq_new(field, NULL, upper_term, false, include_upper);
 }
 
-Query *trq_new_more(const char *field, const char *lower_term,
+Query *trq_new_more(Symbol field, const char *lower_term,
                     bool include_lower)
 {
     return trq_new(field, lower_term, NULL, include_lower, false);
 }
 
-Query *trq_new(const char *field, const char *lower_term,
+Query *trq_new(Symbol field, const char *lower_term,
                const char *upper_term, bool include_lower, bool include_upper)
 {
     Query *self     = q_new(RangeQuery);

@@ -1,4 +1,4 @@
-#include "intern.h"
+#include "symbol.h"
 #include <string.h>
 #include "search.h"
 #include "internal.h"
@@ -163,10 +163,9 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     float field_norm;
     Explanation *field_norm_expl;
 
-    char *query_str = self->query->to_s(self->query, "");
+    char *query_str = self->query->to_s(self->query, NULL);
     TermQuery *tq = TQ(self->query);
     char *term = tq->term;
-    const char *field = tq->field;
 
     Explanation *expl = expl_new(0.0, "weight(%s in %d), product of:",
                                  query_str, doc_num);
@@ -174,9 +173,9 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     /* We need two of these as it's included in both the query explanation
      * and the field explanation */
     Explanation *idf_expl1 = expl_new(self->idf, "idf(doc_freq=%d)",
-                                      ir_doc_freq(ir, field, term));
+                                      ir_doc_freq(ir, tq->field, term));
     Explanation *idf_expl2 = expl_new(self->idf, "idf(doc_freq=%d)",
-                                      ir_doc_freq(ir, field, term));
+                                      ir_doc_freq(ir, tq->field, term));
 
     /* explain query weight */
     Explanation *query_expl = expl_new(0.0, "query_weight(%s), product of:",
@@ -199,7 +198,7 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
 
     /* explain field weight */
     field_expl = expl_new(0.0, "field_weight(%s:%s in %d), product of:",
-                          field, term, doc_num);
+                          S(tq->field), term, doc_num);
 
     scorer = self->scorer(self, ir);
     tf_expl = scorer->explain(scorer, doc_num);
@@ -207,12 +206,12 @@ static Explanation *tw_explain(Weight *self, IndexReader *ir, int doc_num)
     expl_add_detail(field_expl, tf_expl);
     expl_add_detail(field_expl, idf_expl2);
 
-    field_norms = ir_get_norms(ir, field);
+    field_norms = ir_get_norms(ir, tq->field);
     field_norm = (field_norms 
                   ? sim_decode_norm(self->similarity, field_norms[doc_num]) 
                   : (float)0.0);
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
-                               field, doc_num);
+                               S(tq->field), doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -264,13 +263,13 @@ static void tq_destroy(Query *self)
     q_destroy_i(self);
 }
 
-static char *tq_to_s(Query *self, const char *field)
+static char *tq_to_s(Query *self, Symbol default_field)
 {
-    size_t flen = strlen(TQ(self)->field);
+    size_t flen = sym_len(TQ(self)->field);
     size_t tlen = strlen(TQ(self)->term);
     char *buffer = ALLOC_N(char, 34 + flen + tlen);
     char *b = buffer;
-    if (strcmp(field, TQ(self)->field) != 0) {
+    if (default_field != TQ(self)->field) {
         memcpy(b, TQ(self)->field, sizeof(char) * flen);
         b[flen] = ':';
         b += flen + 1;
@@ -292,19 +291,19 @@ static void tq_extract_terms(Query *self, HashSet *terms)
 
 static unsigned long tq_hash(Query *self)
 {
-    return str_hash(TQ(self)->term) ^ str_hash(TQ(self)->field);
+    return str_hash(TQ(self)->term) ^ sym_hash(TQ(self)->field);
 }
 
 static int tq_eq(Query *self, Query *o)
 {
     return (strcmp(TQ(self)->term, TQ(o)->term) == 0) 
-        && (strcmp(TQ(self)->field, TQ(o)->field) == 0);
+        && (TQ(self)->field == TQ(o)->field);
 }
 
 static MatchVector *tq_get_matchv_i(Query *self, MatchVector *mv,
                                     TermVector *tv)
 {
-    if (strcmp(tv->field, TQ(self)->field) == 0) {
+    if (tv->field == TQ(self)->field) {
         int i;
         TVTerm *tv_term = tv_get_tv_term(tv, TQ(self)->term);
         if (tv_term) {
@@ -317,11 +316,11 @@ static MatchVector *tq_get_matchv_i(Query *self, MatchVector *mv,
     return mv;
 }
 
-Query *tq_new(const char *field, const char *term)
+Query *tq_new(Symbol field, const char *term)
 {
     Query *self             = q_new(TermQuery);
 
-    TQ(self)->field         = intern(field);
+    TQ(self)->field         = field;
     TQ(self)->term          = estrdup(term);
 
     self->type              = TERM_QUERY;

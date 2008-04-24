@@ -1,5 +1,5 @@
 #include "hashset.h"
-#include "intern.h"
+#include "symbol.h"
 #include "test.h"
 
 /**
@@ -61,8 +61,7 @@ static void test_hs(TestCase *tc, void *data)
 static void test_hs_ptr(TestCase *tc, void *data)
 {
     HashSet *hs = hs_new_ptr(NULL);
-    const char *word1 = intern("one");
-    const char *word2 = intern("two");
+    Symbol word1 = intern("one"), word2 = intern("two");
     char *word_one = estrdup("one");
     (void)data; /* suppress unused argument warning */
 

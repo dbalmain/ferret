@@ -1,5 +1,5 @@
 #include "index.h"
-#include "intern.h"
+#include "symbol.h"
 #include "similarity.h"
 #include "helper.h"
 #include "array.h"
@@ -278,14 +278,14 @@ static void fi_check_params(int store, int index, int term_vector)
     }
 }
 
-FieldInfo *fi_new(const char *name,
+FieldInfo *fi_new(Symbol name,
                   StoreValue store,
                   IndexValue index,
                   TermVectorValue term_vector)
 {
     FieldInfo *fi = ALLOC(FieldInfo);
     fi_check_params(store, index, term_vector);
-    fi->name = intern(name);
+    fi->name = name;
     fi->boost = 1.0;
     fi->bits = 0;
     fi_set_store(fi, store);
@@ -304,9 +304,9 @@ void fi_deref(FieldInfo *fi)
 
 char *fi_to_s(FieldInfo *fi)
 {
-    char *str = ALLOC_N(char, strlen(fi->name) + 200);
+    char *str = ALLOC_N(char, strlen((char *)fi->name) + 200);
     char *s = str;
-    s += sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", fi->name,
+    s += sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", (char *)fi->name,
                  fi_is_stored(fi) ? "is_stored, " : "",
                  fi_is_compressed(fi) ? "is_compressed, " : "",
                  fi_is_indexed(fi) ? "is_indexed, " : "",
@@ -354,7 +354,7 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
     }
     if (!h_set_safe(fis->field_dict, fi->name, fi)) {
         RAISE(ARG_ERROR,
-              "Field :%s already exists", fi->name);
+              "Field :%s already exists", (char *)fi->name);
     }
     fi->number = fis->size;
     fis->fields[fis->size] = fi;
@@ -362,14 +362,14 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
     return fi;
 }
 
-FieldInfo *fis_get_field(FieldInfos *fis, const char *name)
+FieldInfo *fis_get_field(FieldInfos *fis, Symbol name)
 {
-    return (FieldInfo *)h_get(fis->field_dict, I(name));
+    return (FieldInfo *)h_get(fis->field_dict, name);
 }
 
-int fis_get_field_num(FieldInfos *fis, const char *name)
+int fis_get_field_num(FieldInfos *fis, Symbol name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (fi) {
         return fi->number;
     }
@@ -378,9 +378,9 @@ int fis_get_field_num(FieldInfos *fis, const char *name)
     }
 }
 
-FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name)
+FieldInfo *fis_get_or_add_field(FieldInfos *fis, Symbol name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (!fi) {
         fi = (FieldInfo*)fi_new(name, fis->store, fis->index, fis->term_vector);
         fis_add_field(fis, fi);
@@ -448,7 +448,7 @@ void fis_write(FieldInfos *fis, OutStream *os)
     os_write_vint(os, fis->size);
     for (i = 0; i < fis_size; i++) {
         fi = fis->fields[i];
-        os_write_string(os, fi->name);
+        os_write_string(os, (char *)fi->name);
         tmp.f = fi->boost;
         os_write_u32(os, tmp.i);
         os_write_vint(os, fi->bits);
@@ -523,7 +523,7 @@ char *fis_to_s(FieldInfos *fis)
                        "    store: %s\n"
                        "    index: %s\n"
                        "    term_vector: %s\n",
-                       fi->name, fi->boost, fi_store_str(fi),
+                       (char *)fi->name, fi->boost, fi_store_str(fi),
                        fi_index_str(fi), fi_term_vector_str(fi));
     }
 
@@ -1195,7 +1195,7 @@ u64 sis_read_current_version(Store *store)
  *
  ****************************************************************************/
 
-static LazyDocField *lazy_df_new(const char *name, const int size,
+static LazyDocField *lazy_df_new(Symbol name, const int size,
                                  bool is_compressed)
 {
     LazyDocField *self = ALLOC(LazyDocField);
@@ -1537,7 +1537,7 @@ void fr_close(FieldsReader *fr)
     free(fr);
 }
 
-static DocField *fr_df_new(const char *name, int size, bool is_compressed)
+static DocField *fr_df_new(Symbol name, int size, bool is_compressed)
 {
     DocField *df = ALLOC(DocField);
     df->name = name;
@@ -3935,16 +3935,17 @@ bool ir_index_exists(Store *store)
     return sis_current_segment_generation(store) != 1;
 }
 
-int ir_get_field_num(IndexReader *ir, const char *field)
+int ir_get_field_num(IndexReader *ir, Symbol field)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num < 0) {
-        RAISE(ARG_ERROR, "Field :%s does not exist in this index", field);
+        RAISE(ARG_ERROR,
+              "Field :%s does not exist in this index", (char *)field);
     }
     return field_num;
 }
 
-int ir_doc_freq(IndexReader *ir, const char *field, const char *term)
+int ir_doc_freq(IndexReader *ir, Symbol field, const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -3964,7 +3965,7 @@ static void ir_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar val
     mutex_unlock(&ir->mutex);
 }
 
-void ir_set_norm(IndexReader *ir, int doc_num, const char *field, uchar val)
+void ir_set_norm(IndexReader *ir, int doc_num, Symbol field, uchar val)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -3987,13 +3988,13 @@ uchar *ir_get_norms_i(IndexReader *ir, int field_num)
     return norms;
 }
 
-uchar *ir_get_norms(IndexReader *ir, const char *field)
+uchar *ir_get_norms(IndexReader *ir, Symbol field)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     return ir_get_norms_i(ir, field_num);
 }
 
-uchar *ir_get_norms_into(IndexReader *ir, const char *field, uchar *buf)
+uchar *ir_get_norms_into(IndexReader *ir, Symbol field, uchar *buf)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -4025,7 +4026,7 @@ void ir_delete_doc(IndexReader *ir, int doc_num)
     }
 }
 
-Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
+Document *ir_get_doc_with_term(IndexReader *ir, Symbol field,
                                const char *term)
 {
     TermDocEnum *tde = ir_term_docs_for(ir, field, term);
@@ -4040,7 +4041,7 @@ Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
     return doc;
 }
 
-TermEnum *ir_terms(IndexReader *ir, const char *field)
+TermEnum *ir_terms(IndexReader *ir, Symbol field)
 {
     TermEnum *te = NULL;
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4050,7 +4051,7 @@ TermEnum *ir_terms(IndexReader *ir, const char *field)
     return te;
 }
 
-TermEnum *ir_terms_from(IndexReader *ir, const char *field,
+TermEnum *ir_terms_from(IndexReader *ir, Symbol field,
                            const char *term)
 {
     TermEnum *te = NULL;
@@ -4061,7 +4062,7 @@ TermEnum *ir_terms_from(IndexReader *ir, const char *field,
     return te;
 }
 
-TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
+TermDocEnum *ir_term_docs_for(IndexReader *ir, Symbol field,
                               const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4072,7 +4073,7 @@ TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
     return tde;
 }
 
-TermDocEnum *ir_term_positions_for(IndexReader *ir, const char *field,
+TermDocEnum *ir_term_positions_for(IndexReader *ir, Symbol field,
                                    const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4538,9 +4539,9 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
 }
 
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
-                                  const char *field)
+                                  Symbol field)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, I(field));
+    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, field);
     FieldsReader *fr;
 
     if (!fi || !fi_store_term_vector(fi) || !SR(ir)->fr ||
@@ -4839,7 +4840,7 @@ static TermDocEnum *mr_term_positions(IndexReader *ir)
 }
 
 static TermVector *mr_term_vector(IndexReader *ir, int doc_num,
-                                  const char *field)
+                                  Symbol field)
 {
     GET_READER();
     return reader->term_vector(reader, doc_num - MR(ir)->starts[i], field);
@@ -6349,7 +6350,7 @@ void iw_commit(IndexWriter *iw)
     mutex_unlock(&iw->mutex);
 }
 
-void iw_delete_term(IndexWriter *iw, const char *field, const char *term)
+void iw_delete_term(IndexWriter *iw, Symbol field, const char *term)
 {
     int field_num = fis_get_field_num(iw->fis, field);
     if (field_num >= 0) {
@@ -6383,7 +6384,7 @@ void iw_delete_term(IndexWriter *iw, const char *field, const char *term)
     }
 }
 
-void iw_delete_terms(IndexWriter *iw, const char *field,
+void iw_delete_terms(IndexWriter *iw, Symbol field,
                      char **terms, const int term_cnt)
 {
     int field_num = fis_get_field_num(iw->fis, field);

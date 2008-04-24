@@ -1,7 +1,7 @@
 #include "search.h"
 #include "test.h"
 
-static const char *num = "num";
+static Symbol num;
 
 extern void prepare_filter_index(Store *store);
 
@@ -69,6 +69,8 @@ TestSuite *ts_q_const_score(TestSuite *suite)
     Store *store = open_ram_store();
     IndexReader *ir;
     Searcher *searcher;
+
+    num = intern("num");
 
     suite = ADD_SUITE(suite);
 

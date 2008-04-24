@@ -3,7 +3,7 @@
 
 #define ARRAY_SIZE 20
 
-static const char *field = "field";
+static Symbol field;
 
 static void add_doc(char *text, IndexWriter *iw)
 {
@@ -86,7 +86,7 @@ static void test_fuzziness(TestCase *tc, void *data)
     do_prefix_test(tc, sea, "ddddX", "6", 4, 0.0);
     do_prefix_test(tc, sea, "ddddX", "", 5, 0.0);
 
-    q = fuzq_new_conf("anotherfield", "ddddX", 0.0, 10, 100);
+    q = fuzq_new_conf(I("anotherfield"), "ddddX", 0.0, 10, 100);
     top_docs = searcher_search(sea, q, 0, 1, NULL, NULL, NULL);
     q_deref(q);
     Aiequal(0, top_docs->total_hits);
@@ -155,30 +155,30 @@ static void test_fuzzy_query_hash(TestCase *tc, void *data)
     Query *q1, *q2;
     (void)data;
 
-    q1 = fuzq_new_conf("A", "a", (float)0.4, 2, 100);
-    q2 = fuzq_new_conf("A", "a", (float)0.4, 2, 100);
+    q1 = fuzq_new_conf(I("A"), "a", (float)0.4, 2, 100);
+    q2 = fuzq_new_conf(I("A"), "a", (float)0.4, 2, 100);
 
     Assert(q_eq(q1, q1), "Test same queries are equal");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     q_deref(q2);
 
-    q2 = fuzq_new_conf("A", "a", (float)0.4, 0, 100);
+    q2 = fuzq_new_conf(I("A"), "a", (float)0.4, 0, 100);
     Assert(q_hash(q1) != q_hash(q2), "prelen differs");
     Assert(!q_eq(q1, q2), "prelen differs");
     q_deref(q2);
 
-    q2 = fuzq_new_conf("A", "a", (float)0.5, 2, 100);
+    q2 = fuzq_new_conf(I("A"), "a", (float)0.5, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "similarity differs");
     Assert(!q_eq(q1, q2), "similarity differs");
     q_deref(q2);
 
-    q2 = fuzq_new_conf("A", "b", (float)0.4, 2, 100);
+    q2 = fuzq_new_conf(I("A"), "b", (float)0.4, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "term differs");
     Assert(!q_eq(q1, q2), "term differs");
     q_deref(q2);
 
-    q2 = fuzq_new_conf("B", "a", (float)0.4, 2, 100);
+    q2 = fuzq_new_conf(I("B"), "a", (float)0.4, 2, 100);
     Assert(q_hash(q1) != q_hash(q2), "field differs");
     Assert(!q_eq(q1, q2), "field differs");
     q_deref(q2);
@@ -189,6 +189,8 @@ static void test_fuzzy_query_hash(TestCase *tc, void *data)
 TestSuite *ts_q_fuzzy(TestSuite *suite)
 {
     Store *store = open_ram_store();
+
+    field = intern("field");
 
     suite = ADD_SUITE(suite);
 

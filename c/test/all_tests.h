@@ -17,6 +17,7 @@ TestSuite *ts_hash(TestSuite *suite);
 TestSuite *ts_search(TestSuite *suite);
 TestSuite *ts_multi_search(TestSuite *suite);
 TestSuite *ts_lang(TestSuite *suite);
+TestSuite *ts_symbol(TestSuite *suite);
 TestSuite *ts_priorityqueue(TestSuite *suite);
 TestSuite *ts_q_parser(TestSuite *suite);
 TestSuite *ts_highlighter(TestSuite *suite);
@@ -38,7 +39,6 @@ TestSuite *ts_bitvector(TestSuite *suite);
 TestSuite *ts_except(TestSuite *suite);
 TestSuite *ts_mem_pool(TestSuite *suite);
 TestSuite *ts_similarity(TestSuite *suite);
-TestSuite *ts_intern(TestSuite *suite);
 TestSuite *ts_helper(TestSuite *suite);
 
 const struct test_list
@@ -58,6 +58,7 @@ const struct test_list
     {ts_search},
     {ts_multi_search},
     {ts_lang},
+    {ts_symbol},
     {ts_priorityqueue},
     {ts_q_parser},
     {ts_highlighter},
@@ -79,7 +80,6 @@ const struct test_list
     {ts_except},
     {ts_mem_pool},
     {ts_similarity},
-    {ts_intern},
     {ts_helper}
 };
 

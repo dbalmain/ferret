@@ -1,7 +1,7 @@
 #include <string.h>
 #include "search.h"
 #include "helper.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 #define MTQ(query) ((MultiTermQuery *)(query))
@@ -142,7 +142,7 @@ static TermDocEnumWrapper *tdew_new(const char *term, TermDocEnum *tde,
 typedef struct MultiTermScorer
 {
     Scorer                super;
-    const char           *field;
+    Symbol                field;
     uchar                *norms;
     Weight               *weight;
     TermDocEnumWrapper  **tdew_a;
@@ -295,7 +295,7 @@ static void multi_tsc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-static Scorer *multi_tsc_new(Weight *weight, const char *field,
+static Scorer *multi_tsc_new(Weight *weight, Symbol field,
                              TermDocEnumWrapper **tdew_a, int tdew_cnt,
                              uchar *norms)
 {
@@ -384,7 +384,7 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
 
     char *query_str;
     MultiTermQuery *mtq = MTQ(self->query);
-    const char *field = mtq->field;
+    Symbol field = mtq->field;
     PriorityQueue *bt_pq = mtq->boosted_terms;
     int i;
     int total_doc_freqs = 0;
@@ -393,10 +393,11 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
     const int field_num = fis_get_field_num(ir->fis, field);
 
     if (field_num < 0) {
-        return expl_new(0.0, "field \"%s\" does not exist in the index", field);
+        return expl_new(0.0, "field \"%s\" does not exist in the index",
+                        (char *)field);
     }
 
-    query_str = self->query->to_s(self->query, "");
+    query_str = self->query->to_s(self->query, NULL);
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
 
@@ -414,8 +415,8 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
     pos -= 2; /* remove " + " from the end */
     sprintf(doc_freqs + pos, "= %d", total_doc_freqs);
 
-    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
-    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
+    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", (char *)field, doc_freqs);
+    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", (char *)field, doc_freqs);
     free(doc_freqs);
 
     /* explain query weight */
@@ -453,7 +454,7 @@ static Explanation *multi_tw_explain(Weight *self, IndexReader *ir, int doc_num)
         ? sim_decode_norm(self->similarity, field_norms[doc_num])
         : (float)0.0;
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
-                               field, doc_num);
+                               (char *)field, doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -476,7 +477,6 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
     int i;
     int doc_freq         = 0;
     Weight *self         = w_new(Weight, query);
-    const char *field    = MTQ(query)->field;
     PriorityQueue *bt_pq = MTQ(query)->boosted_terms;
 
     self->scorer         = &multi_tw_scorer;
@@ -488,7 +488,7 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
     self->idf            = 0.0;
 
     for (i = bt_pq->size; i > 0; i--) {
-        doc_freq += searcher->doc_freq(searcher, field,
+        doc_freq += searcher->doc_freq(searcher, MTQ(query)->field,
                                        ((BoostedTerm *)bt_pq->heap[i])->term);
     }
     self->idf += sim_idf(self->similarity, doc_freq,
@@ -502,14 +502,13 @@ static Weight *multi_tw_new(Query *query, Searcher *searcher)
  * MultiTermQuery
  ***************************************************************************/
 
-static char *multi_tq_to_s(Query *self, const char *curr_field)
+static char *multi_tq_to_s(Query *self, Symbol curr_field)
 {
     int i;
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms, *bt_pq_clone;
     BoostedTerm *bt;
     char *buffer, *bptr;
-    const char *field = MTQ(self)->field;
-    int flen = (int)strlen(field);
+    int flen = (int)sym_len(MTQ(self)->field);
     int tlen = 0;
 
     /* Priority queues skip the first element */
@@ -519,8 +518,8 @@ static char *multi_tq_to_s(Query *self, const char *curr_field)
 
     bptr = buffer = ALLOC_N(char, tlen + flen + 35);
 
-    if (strcmp(curr_field, field) != 0) {
-        bptr += sprintf(bptr, "%s:", field);
+    if (curr_field != MTQ(self)->field) {
+        bptr += sprintf(bptr, "%s:", S(MTQ(self)->field));
     }
 
     *(bptr++) = '"';
@@ -561,18 +560,17 @@ static void multi_tq_destroy_i(Query *self)
 static void multi_tq_extract_terms(Query *self, HashSet *terms)
 {
     int i;
-    const char *field = MTQ(self)->field;
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
     for (i = boosted_terms->size; i > 0; i--) {
         BoostedTerm *bt = (BoostedTerm *)boosted_terms->heap[i];
-        hs_add(terms, term_new(field, bt->term));
+        hs_add(terms, term_new(MTQ(self)->field, bt->term));
     }
 }
 
 static unsigned long multi_tq_hash(Query *self)
 {
     int i;
-    unsigned long hash = str_hash(MTQ(self)->field);
+    unsigned long hash = sym_hash(MTQ(self)->field);
     PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
     for (i = boosted_terms->size; i > 0; i--) {
         BoostedTerm *bt = (BoostedTerm *)boosted_terms->heap[i];
@@ -587,7 +585,7 @@ static int multi_tq_eq(Query *self, Query *o)
     PriorityQueue *boosted_terms1 = MTQ(self)->boosted_terms;
     PriorityQueue *boosted_terms2 = MTQ(o)->boosted_terms;
 
-    if (strcmp(MTQ(self)->field, MTQ(o)->field) != 0
+    if ((MTQ(self)->field != MTQ(o)->field)
         || boosted_terms1->size != boosted_terms2->size) {
         return false;
     }
@@ -604,8 +602,7 @@ static int multi_tq_eq(Query *self, Query *o)
 static MatchVector *multi_tq_get_matchv_i(Query *self, MatchVector *mv,
                                           TermVector *tv)
 {
-    // TODO use ==
-    if (strcmp(tv->field, MTQ(self)->field) == 0) {
+    if (tv->field == MTQ(self)->field) {
         int i;
         PriorityQueue *boosted_terms = MTQ(self)->boosted_terms;
         for (i = boosted_terms->size; i > 0; i--) {
@@ -623,7 +620,7 @@ static MatchVector *multi_tq_get_matchv_i(Query *self, MatchVector *mv,
     return mv;
 }
 
-Query *multi_tq_new_conf(const char *field, int max_terms, float min_boost)
+Query *multi_tq_new_conf(Symbol field, int max_terms, float min_boost)
 {
     Query *self;
 
@@ -634,7 +631,7 @@ Query *multi_tq_new_conf(const char *field, int max_terms, float min_boost)
 
     self                     = q_new(MultiTermQuery);
 
-    MTQ(self)->field         = intern(field);
+    MTQ(self)->field         = field;
     MTQ(self)->boosted_terms = pq_new(max_terms,
                                       (lt_ft)&boosted_term_less_than,
                                       (free_ft)&boosted_term_destroy);
@@ -652,7 +649,7 @@ Query *multi_tq_new_conf(const char *field, int max_terms, float min_boost)
     return self;
 }
 
-Query *multi_tq_new(const char *field)
+Query *multi_tq_new(Symbol field)
 {
     return multi_tq_new_conf(field, MULTI_TERM_QUERY_MAX_TERMS, 0.0);
 }

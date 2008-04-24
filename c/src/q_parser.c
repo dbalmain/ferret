@@ -107,7 +107,7 @@
 #include "except.h"
 #include "search.h"
 #include "array.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 typedef struct Phrase {
@@ -186,10 +186,10 @@ static void bca_destroy(BCArray *bca);
 
 static BooleanClause *get_bool_cls(Query *q, BCType occur);
 
-static Query *get_term_q(QParser *qp, const char *field, char *word);
-static Query *get_fuzzy_q(QParser *qp, const char *field, char *word,
+static Query *get_term_q(QParser *qp, Symbol field, char *word);
+static Query *get_fuzzy_q(QParser *qp, Symbol field, char *word,
                           char *slop);
-static Query *get_wild_q(QParser *qp, const char *field, char *pattern);
+static Query *get_wild_q(QParser *qp, Symbol field, char *pattern);
 
 static HashSet *first_field(QParser *qp, const char *field);
 static HashSet *add_field(QParser *qp, const char *field);
@@ -201,7 +201,7 @@ static Phrase *ph_add_word(Phrase *self, char *word);
 static Phrase *ph_add_multi_word(Phrase *self, char *word);
 static void ph_destroy(Phrase *self);
 
-static Query *get_r_q(QParser *qp, const char *field, char *from, char *to,
+static Query *get_r_q(QParser *qp, Symbol field, char *from, char *to,
                       bool inc_lower, bool inc_upper);
 
 static void qp_push_fields(QParser *self, HashSet *fields, bool destroy);
@@ -216,17 +216,17 @@ static void qp_pop_fields(QParser *self);
  */
 #define FLDS(q, func) do {\
     TRY {\
-        char *field;\
+        Symbol field;\
         if (qp->fields->size == 0) {\
             q = NULL;\
         } else if (qp->fields->size == 1) {\
-            field = (char *)qp->fields->first->elem;\
+            field = (Symbol)qp->fields->first->elem;\
             q = func;\
         } else {\
             Query *volatile sq;HashSetEntry *volatile hse;\
             q = bq_new_max(false, qp->max_clauses);\
             for (hse = qp->fields->first; hse; hse = hse->next) {\
-                field = (char *)hse->elem;\
+                field = (Symbol)hse->elem;\
                 sq = func;\
                 TRY\
                   if (sq) bq_add_query_nr(q, sq, BC_SHOULD);\
@@ -2214,7 +2214,7 @@ static int yyerror(QParser *qp, char const *msg)
  * This method returns the query parser for a particular field and sets it up
  * with the text to be tokenized.
  */
-static TokenStream *get_cached_ts(QParser *qp, const char *field, char *text)
+static TokenStream *get_cached_ts(QParser *qp, Symbol field, char *text)
 {
     TokenStream *ts;
     if (hs_exists(qp->tokenized_fields, field)) {
@@ -2386,7 +2386,7 @@ static BooleanClause *get_bool_cls(Query *q, BCType occur)
  * what we want as it will match any documents containing the same email
  * address and tokenized with the same tokenizer.
  */
-static Query *get_term_q(QParser *qp, const char *field, char *word)
+static Query *get_term_q(QParser *qp, Symbol field, char *word)
 {
     Query *q;
     Token *token;
@@ -2424,7 +2424,7 @@ static Query *get_term_q(QParser *qp, const char *field, char *word)
  * will be used. If there are any more tokens after tokenization, they will be
  * ignored.
  */
-static Query *get_fuzzy_q(QParser *qp, const char *field, char *word,
+static Query *get_fuzzy_q(QParser *qp, Symbol field, char *word,
                           char *slop_str)
 {
     Query *q;
@@ -2484,7 +2484,7 @@ static char *lower_str(char *str)
  * optimized to a MatchAllQuery if the pattern is '*' or a PrefixQuery if the
  * only wild char (*, ?) in the pattern is a '*' at the end of the pattern.
  */
-static Query *get_wild_q(QParser *qp, const char *field, char *pattern)
+static Query *get_wild_q(QParser *qp, Symbol field, char *pattern)
 {
     Query *q;
     bool is_prefix = false;
@@ -2528,11 +2528,11 @@ static Query *get_wild_q(QParser *qp, const char *field, char *pattern)
 /**
  * Adds another field to the top of the FieldStack.
  */
-static HashSet *add_field(QParser *qp, const char *field)
+static HashSet *add_field(QParser *qp, const char *field_name)
 {
-    field = intern(field);
+    Symbol field = intern(field_name);
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
-        hs_add(qp->fields, (char *)field);
+        hs_add(qp->fields, field);
     }
     return qp->fields;
 }
@@ -2656,7 +2656,7 @@ static Phrase *ph_add_multi_word(Phrase *self, char *word)
  * This problem can easily be solved by using the StandardTokenizer or any
  * custom tokenizer which will leave dbalmain@gmail.com as a single token.
  */
-static Query *get_phrase_query(QParser *qp, const char *field,
+static Query *get_phrase_query(QParser *qp, Symbol field,
                                Phrase *phrase, char *slop_str)
 {
     const int pos_cnt = phrase->size;
@@ -2782,7 +2782,7 @@ static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
  * Just like with WildCardQuery, RangeQuery needs to downcase its terms if the
  * tokenizer also downcased its terms.
  */
-static Query *get_r_q(QParser *qp, const char *field, char *from, char *to,
+static Query *get_r_q(QParser *qp, Symbol field, char *from, char *to,
                       bool inc_lower, bool inc_upper)
 {
     Query *rq;
@@ -2915,17 +2915,16 @@ QParser *qp_new(Analyzer *analyzer)
 }
 
 void qp_add_field(QParser *self,
-                  const char *field,
+                  Symbol field,
                   bool is_default,
                   bool is_tokenized)
 {
-    field = intern(field);
-    hs_add(self->all_fields, (char *)field);
+    hs_add(self->all_fields, field);
     if (is_default) {
-        hs_add(self->def_fields, (char *)field);
+        hs_add(self->def_fields, field);
     }
     if (is_tokenized) {
-        hs_add(self->tokenized_fields, (char *)field);
+        hs_add(self->tokenized_fields, field);
     }
 }
 

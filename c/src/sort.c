@@ -2,7 +2,7 @@
 #include "search.h"
 #include "index.h"
 #include "field_index.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 /***************************************************************************
@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static INLINE SortField *sort_field_alloc(const char *field,
+static INLINE SortField *sort_field_alloc(Symbol field,
     SortType type,
     bool reverse,
     int (*compare)(void *index_ptr, Hit *hit1, Hit *hit2),
@@ -19,7 +19,7 @@ static INLINE SortField *sort_field_alloc(const char *field,
     const FieldIndexClass *field_index_class)
 {
     SortField *self         = ALLOC(SortField);
-    self->field             = field ? intern(field) : NULL;
+    self->field             = field;
     self->type              = type;
     self->reverse           = reverse;
     self->field_index_class = field_index_class;
@@ -28,7 +28,7 @@ static INLINE SortField *sort_field_alloc(const char *field,
     return self;
 }
 
-SortField *sort_field_new(const char *field, SortType type, bool reverse)
+SortField *sort_field_new(Symbol field, SortType type, bool reverse)
 {
     SortField *sf = NULL;
     switch (type) {
@@ -93,8 +93,8 @@ char *sort_field_to_s(SortField *self)
             break;
     }
     if (self->field) {
-        str = ALLOC_N(char, 3 + strlen(self->field) + strlen(type));
-        sprintf(str, "%s:%s%s", self->field, type, (self->reverse ? "!" : ""));
+        str = ALLOC_N(char, 3 + sym_len(self->field) + strlen(type));
+        sprintf(str, "%s:%s%s", S(self->field), type, (self->reverse ? "!" : ""));
     }
     else {
         str = ALLOC_N(char, 2 + strlen(type));
@@ -211,7 +211,7 @@ static int sf_byte_compare(void *index, Hit *hit1, Hit *hit2)
     else return 0;
 }
 
-SortField *sort_field_byte_new(const char *field, bool reverse)
+SortField *sort_field_byte_new(Symbol field, bool reverse)
 {
     return sort_field_alloc(field, SORT_TYPE_BYTE, reverse,
                             &sf_byte_compare, &sf_byte_get_val,
@@ -236,7 +236,7 @@ static int sf_int_compare(void *index, Hit *hit1, Hit *hit2)
     else return 0;
 }
 
-SortField *sort_field_int_new(const char *field, bool reverse)
+SortField *sort_field_int_new(Symbol field, bool reverse)
 {
     return sort_field_alloc(field, SORT_TYPE_INTEGER, reverse,
                             &sf_int_compare, &sf_int_get_val,
@@ -261,7 +261,7 @@ static int sf_float_compare(void *index, Hit *hit1, Hit *hit2)
     else return 0;
 }
 
-SortField *sort_field_float_new(const char *field, bool reverse)
+SortField *sort_field_float_new(Symbol field, bool reverse)
 {
     return sort_field_alloc(field, SORT_TYPE_FLOAT, reverse,
                             &sf_float_compare, &sf_float_get_val,
@@ -306,7 +306,7 @@ static int sf_string_compare(void *index, Hit *hit1, Hit *hit2)
     */
 }
 
-SortField *sort_field_string_new(const char *field, bool reverse)
+SortField *sort_field_string_new(Symbol field, bool reverse)
 {
     return sort_field_alloc(field, SORT_TYPE_STRING, reverse,
                             &sf_string_compare, &sf_string_get_val,
@@ -317,7 +317,7 @@ SortField *sort_field_string_new(const char *field, bool reverse)
  * AutoSortField
  ***************************************************************************/
 
-SortField *sort_field_auto_new(const char *field, bool reverse)
+SortField *sort_field_auto_new(Symbol field, bool reverse)
 {
     return sort_field_alloc(field, SORT_TYPE_AUTO, reverse, NULL, NULL, NULL);
 }
@@ -431,7 +431,7 @@ static Comparator *sorter_get_comparator(SortField *sf, IndexReader *ir)
             if (!te->next(te) && (ir->num_docs(ir) > 0)) {
                 RAISE(ARG_ERROR,
                       "Cannot sort by field \"%s\" as there are no terms "
-                      "in that field in the index.", sf->field);
+                      "in that field in the index.", S(sf->field));
             }
             sort_field_auto_evaluate(sf, te->curr_term);
             te->close(te);

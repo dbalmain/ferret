@@ -108,12 +108,12 @@ static Weight *csw_new(Query *query, Searcher *searcher)
  *
  ***************************************************************************/
 
-static char *csq_to_s(Query *self, const char *field)
+static char *csq_to_s(Query *self, Symbol default_field)
 {
     Filter *filter = CScQ(self)->filter;
     char *filter_str = filter->to_s(filter);
     char *buffer;
-    (void)field;
+    (void)default_field;
     if (self->boost == 1.0) {
         buffer = strfmt("ConstantScore(%s)", filter_str);
     }

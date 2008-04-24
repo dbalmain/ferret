@@ -142,3 +142,4 @@ ext/store.h
 ext/term_vectors.c
 ext/win32.h
 test/temp
+pkg

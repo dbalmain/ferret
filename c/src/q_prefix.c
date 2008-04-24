@@ -1,6 +1,6 @@
 #include <string.h>
 #include "search.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 /****************************************************************************
@@ -11,18 +11,17 @@
 
 #define PfxQ(query) ((PrefixQuery *)(query))
 
-static char *prq_to_s(Query *self, const char *current_field)
+static char *prq_to_s(Query *self, Symbol default_field)
 {
     char *buffer, *bptr;
     const char *prefix = PfxQ(self)->prefix;
-    const char *field = PfxQ(self)->field;
     size_t plen = strlen(prefix);
-    size_t flen = strlen(field);
+    size_t flen = sym_len(PfxQ(self)->field);
 
     bptr = buffer = ALLOC_N(char, plen + flen + 35);
 
-    if (strcmp(field, current_field) != 0) {
-        bptr += sprintf(bptr, "%s:", field);
+    if (PfxQ(self)->field != default_field) {
+        bptr += sprintf(bptr, "%s:", S(PfxQ(self)->field));
     }
 
     bptr += sprintf(bptr, "%s*", prefix);
@@ -36,9 +35,9 @@ static char *prq_to_s(Query *self, const char *current_field)
 
 static Query *prq_rewrite(Query *self, IndexReader *ir)
 {
-    const char *field = PfxQ(self)->field;
-    const int field_num = fis_get_field_num(ir->fis, field);
-    Query *volatile q = multi_tq_new_conf(field, MTQMaxTerms(self), 0.0);
+    const int field_num = fis_get_field_num(ir->fis, PfxQ(self)->field);
+    Query *volatile q = multi_tq_new_conf(PfxQ(self)->field,
+                                          MTQMaxTerms(self), 0.0);
     q->boost = self->boost;        /* set the boost */
 
     if (field_num >= 0) {
@@ -70,21 +69,20 @@ static void prq_destroy(Query *self)
 
 static unsigned long prq_hash(Query *self)
 {
-    return str_hash(PfxQ(self)->field) ^ str_hash(PfxQ(self)->prefix);
+    return sym_hash(PfxQ(self)->field) ^ str_hash(PfxQ(self)->prefix);
 }
 
 static int prq_eq(Query *self, Query *o)
 {
-    // TODO use ==
     return (strcmp(PfxQ(self)->prefix, PfxQ(o)->prefix) == 0)
-        && (strcmp(PfxQ(self)->field,  PfxQ(o)->field) == 0);
+        && (PfxQ(self)->field == PfxQ(o)->field);
 }
 
-Query *prefixq_new(const char *field, const char *prefix)
+Query *prefixq_new(Symbol field, const char *prefix)
 {
     Query *self = q_new(PrefixQuery);
 
-    PfxQ(self)->field       = intern(field);
+    PfxQ(self)->field       = field;
     PfxQ(self)->prefix      = estrdup(prefix);
     MTQMaxTerms(self)       = PREFIX_QUERY_MAX_TERMS;
 

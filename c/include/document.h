@@ -2,6 +2,7 @@
 #define FRT_DOCUMENT_H
 
 #include "global.h"
+#include "symbol.h"
 #include "hash.h"
 
 /****************************************************************************
@@ -13,7 +14,7 @@
 #define FRT_DF_INIT_CAPA 1
 typedef struct FrtDocField
 {
-    const char *name;
+    FrtSymbol name;
     int size;
     int capa;
     int *lengths;
@@ -23,7 +24,7 @@ typedef struct FrtDocField
     bool is_compressed : 1;
 } FrtDocField;
 
-extern FrtDocField *frt_df_new(const char *name);
+extern FrtDocField *frt_df_new(FrtSymbol name);
 extern FrtDocField *frt_df_add_data(FrtDocField *df, char *data);
 extern FrtDocField *frt_df_add_data_len(FrtDocField *df, char *data, int len);
 extern void frt_df_destroy(FrtDocField *df);
@@ -47,7 +48,7 @@ typedef struct FrtDocument
 
 extern FrtDocument *frt_doc_new();
 extern FrtDocField *frt_doc_add_field(FrtDocument *doc, FrtDocField *df);
-extern FrtDocField *frt_doc_get_field(FrtDocument *doc, const char *fname);
+extern FrtDocField *frt_doc_get_field(FrtDocument *doc, FrtSymbol name);
 extern char *frt_doc_to_s(FrtDocument *doc);
 extern void frt_doc_destroy(FrtDocument *doc);
 

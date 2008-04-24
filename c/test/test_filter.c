@@ -11,9 +11,7 @@ struct FilterData {
     char *flipflop;
 };
 
-static const char *num = "num";
-static const char *date = "date";
-static const char *flipflop = "flipflop";
+static Symbol num, date, flipflop;
 
 void prepare_filter_index(Store *store)
 {
@@ -222,20 +220,20 @@ static void test_query_filter_hash(TestCase *tc, void *data)
 {
     Filter *f1, *f2;
     (void)data;
-    f1 = qfilt_new_nr(tq_new("A", "a"));
-    f2 = qfilt_new_nr(tq_new("A", "a"));
+    f1 = qfilt_new_nr(tq_new(I("A"), "a"));
+    f2 = qfilt_new_nr(tq_new(I("A"), "a"));
 
     Aiequal(filt_hash(f1), filt_hash(f2));
     Assert(filt_eq(f1, f2), "Queries are equal");
     Assert(filt_eq(f1, f1), "Queries are equal");
     filt_deref(f2);
 
-    f2 = qfilt_new_nr(tq_new("A", "b"));
+    f2 = qfilt_new_nr(tq_new(I("A"), "b"));
     Assert(filt_hash(f1) != filt_hash(f2), "texts differ");
     Assert(!filt_eq(f1, f2), "texts differ");
     filt_deref(f2);
 
-    f2 = qfilt_new_nr(tq_new("B", "a"));
+    f2 = qfilt_new_nr(tq_new(I("B"), "a"));
     Assert(filt_hash(f1) != filt_hash(f2), "fields differ");
     Assert(!filt_eq(f1, f2), "fields differ");
     filt_deref(f2);
@@ -315,6 +313,10 @@ TestSuite *ts_filter(TestSuite *suite)
     Store *store;
     IndexReader *ir;
     Searcher *searcher;
+
+    num      = intern("num");
+    date     = intern("date");
+    flipflop = intern("flipflop");
 
     suite = ADD_SUITE(suite);
 

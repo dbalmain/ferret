@@ -57,9 +57,9 @@ static IndexWriter *create_iw_lucene(Store *store)
 static void add_doc(IndexWriter *iw, int id)
 {
     Document *doc = doc_new();
-    doc_add_field(doc, df_add_data(df_new(content_f),
+    doc_add_field(doc, df_add_data(df_new(I(content_f)),
                                    estrdup("aaa")))->destroy_data = true;
-    doc_add_field(doc, df_add_data(df_new(id_f),
+    doc_add_field(doc, df_add_data(df_new(I(id_f)),
                                    strfmt("%d", id)))->destroy_data = true;
     iw_add_doc(iw, doc);
     doc_destroy(doc);
@@ -101,7 +101,7 @@ static void test_delete_leftover_files(TestCase *tc, void *data)
     Aiequal(1, ir->max_doc(ir) - ir->num_docs(ir));
 
     /* Set one norm so we get a .s0 file: */
-    ir_set_norm(ir, 21, content_f, 12);
+    ir_set_norm(ir, 21, I(content_f), 12);
     ir_close(ir);
     store_before = store_to_s(store);
 
