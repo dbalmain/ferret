@@ -4,7 +4,7 @@
 #include "hash.h"
 #include "hashset.h"
 #include "threading.h"
-#include "intern.h"
+#include "symbol.h"
 #include "internal.h"
 
 /* Object Map */
@@ -178,25 +178,25 @@ rstrdup(VALUE rstr)
     return new;
 }
 
-const char *
+Symbol
 rintern(VALUE rstr)
 {
     char *old = rs2s(rstr);
     return frt_intern(old);
 }
 
-char *
+Symbol
 frb_field(VALUE rfield)
 {
     switch (TYPE(rfield)) {
         case T_SYMBOL:
-            return rb_id2name(SYM2ID(rfield));
+            return I(rb_id2name(SYM2ID(rfield)));
         case T_STRING:
-            return rs2s(rfield);
+            return I(rs2s(rfield));
         default:
             rb_raise(rb_eArgError, "field name must be a symbol");
+            return NULL;
     }
-    return NULL;
 }
 
 /*
@@ -289,10 +289,10 @@ void FRT_EXIT(const char *err_type, const char *fmt, ...)
 static ID id_field;
 static ID id_text;
 
-VALUE frb_get_term(const char *field, const char *text)
+VALUE frb_get_term(Symbol field, const char *text)
 {
     return rb_struct_new(cTerm,
-                         ID2SYM(rb_intern(field)),
+                         SYM2RSYM(field),
                          rb_str_new2(text),
                          NULL);
 }

@@ -1,4 +1,4 @@
-#include "intern.h"
+#include "symbol.h"
 #include "ferret.h"
 #include "search.h"
 

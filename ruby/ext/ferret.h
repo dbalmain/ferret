@@ -4,6 +4,7 @@
 #include "global.h"
 #include "hashset.h"
 #include "document.h"
+#include "symbol.h"
 #include "internal.h"
 
 /* IDs */
@@ -64,12 +65,12 @@ extern void frb_deref_free(void *p);
 extern void frb_create_dir(VALUE rpath);
 extern VALUE frb_hs_to_rb_ary(HashSet *hs);
 extern void *frb_rb_data_ptr(VALUE val);
-extern char * frb_field(VALUE rfield);
-extern VALUE frb_get_term(const char *field, const char *term);
+extern Symbol frb_field(VALUE rfield);
+extern VALUE frb_get_term(Symbol field, const char *term);
 extern char *json_concat_string(char *s, char *field);
 extern char *rs2s(VALUE rstr);
 extern char *rstrdup(VALUE rstr);
-extern const char *rintern(VALUE rstr);
+extern Symbol rintern(VALUE rstr);
 #define Frt_Make_Struct(klass)\
   rb_data_object_alloc(klass,NULL,(RUBY_DATA_FUNC)NULL,(RUBY_DATA_FUNC)NULL)
 
@@ -89,5 +90,6 @@ extern const char *rintern(VALUE rstr);
 
 #endif
 
+#define SYM2RSYM(_sym) ID2SYM(rb_intern(S(_sym)))
 #define frb_mark_cclass(klass) rb_ivar_set(klass, id_cclass, Qtrue)
 #define frb_is_cclass(obj) (rb_ivar_get(CLASS_OF(obj), id_cclass) == Qtrue)

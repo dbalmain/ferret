@@ -52,6 +52,8 @@ static VALUE sym_with_positions;
 static VALUE sym_with_offsets;
 static VALUE sym_with_positions_offsets;
 
+static Symbol fsym_content;
+
 static ID id_term;
 static ID id_fields;
 static ID id_fld_num_map;
@@ -206,7 +208,7 @@ static VALUE
 frb_fi_name(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
-    return ID2SYM(rb_intern(fi->name));
+    return ID2SYM(rb_intern(S(fi->name)));
 }
 
 /*
@@ -485,11 +487,14 @@ frb_fis_get(VALUE self, VALUE ridx)
             break;
                        }
         case T_SYMBOL:
+        case T_STRING:
             rfi = frb_get_field_info(fis_get_field(fis, frb_field(ridx)));
             break;
+            /*
         case T_STRING:
             rfi = frb_get_field_info(fis_get_field(fis, StringValuePtr(ridx)));
             break;
+            */
         default:
             rb_raise(rb_eArgError, "Can't index FieldInfos with %s",
                      rs2s(rb_obj_as_string(ridx)));
@@ -633,7 +638,7 @@ frb_fis_get_fields(VALUE self)
     VALUE rfield_names = rb_ary_new();
     int i;
     for (i = 0; i < fis->size; i++) {
-        rb_ary_push(rfield_names, ID2SYM(rb_intern(fis->fields[i]->name)));
+        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -653,7 +658,7 @@ frb_fis_get_tk_fields(VALUE self)
     int i;
     for (i = 0; i < fis->size; i++) {
         if (!fi_is_tokenized(fis->fields[i])) continue;
-        rb_ary_push(rfield_names, ID2SYM(rb_intern(fis->fields[i]->name)));
+        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -748,7 +753,7 @@ static VALUE
 frb_te_skip_to(VALUE self, VALUE rterm)
 {
     TermEnum *te = (TermEnum *)DATA_PTR(self);
-    return frb_te_get_set_term(self, te->skip_to(te, frb_field(rterm)));
+    return frb_te_get_set_term(self, te->skip_to(te, rs2s(rterm)));
 }
 
 /*
@@ -1239,7 +1244,7 @@ frb_get_tv(TermVector *tv)
     const int o_cnt = tv->offset_cnt;
     VALUE rfield, rterms, *rts;
     VALUE roffsets = Qnil;
-    rfield = ID2SYM(rb_intern(tv->field));
+    rfield = SYM2RSYM(tv->field);
 
     rterms = rb_ary_new2(t_cnt);
     rts = RARRAY(rterms)->ptr;
@@ -1431,22 +1436,9 @@ frb_hash_to_doc_i(VALUE key, VALUE value, VALUE arg)
         return ST_CONTINUE;
     } else {
         Document *doc = (Document *)arg;
-        char *field;
+        Symbol field = frb_field(key);
         VALUE val;
         DocField *df;
-        switch (TYPE(key)) {
-            case T_STRING:
-                field = rs2s(key);
-                break;
-            case T_SYMBOL:
-                field = rb_id2name(SYM2ID(key));
-                break;
-            default:
-                rb_raise(rb_eArgError,
-                         "%s cannot be a key to a field. Field keys must "
-                         " be symbols.", rs2s(rb_obj_as_string(key)));
-                break;
-        }
         if (NULL == (df = doc_get_field(doc, field))) {
             df = df_new(field);
         }
@@ -1496,7 +1488,7 @@ frb_get_doc(VALUE rdoc)
         case T_ARRAY:
             {
                 int i;
-                df = df_new("content");
+                df = df_new(fsym_content);
                 df->destroy_data = true;
                 for (i = 0; i < RARRAY(rdoc)->len; i++) {
                     val = rb_obj_as_string(RARRAY(rdoc)->ptr[i]);
@@ -1506,17 +1498,17 @@ frb_get_doc(VALUE rdoc)
             }
             break;
         case T_SYMBOL:
-            df = df_add_data(df_new("content"), rb_id2name(SYM2ID(rdoc)));
+            df = df_add_data(df_new(fsym_content), rb_id2name(SYM2ID(rdoc)));
             doc_add_field(doc, df);
             break;
         case T_STRING:
-            df = df_add_data_len(df_new("content"), rs2s(rdoc),
+            df = df_add_data_len(df_new(fsym_content), rs2s(rdoc),
                                  RSTRING(rdoc)->len);
             doc_add_field(doc, df);
             break;
         default:
             val = rb_obj_as_string(rdoc);
-            df = df_add_data_len(df_new("content"), rstrdup(val),
+            df = df_add_data_len(df_new(fsym_content), rstrdup(val),
                                  RSTRING(val)->len);
             df->destroy_data = true;
             doc_add_field(doc, df);
@@ -1987,22 +1979,10 @@ static VALUE
 frb_lzd_default(VALUE self, VALUE rkey)
 {
     LazyDoc *lazy_doc = (LazyDoc *)DATA_PTR(rb_ivar_get(self, id_data));
-    char *field = NULL;
-    switch (TYPE(rkey)) {
-        case T_STRING:
-            field = rs2s(rkey);
-            rkey = ID2SYM(rb_intern(field));
-            break;
-        case T_SYMBOL:
-            field = frb_field(rkey);
-            break;
-        default:
-            rb_raise(rb_eArgError,
-                     "%s cannot be a key to a field. Field keys must "
-                     " be symbols.", rs2s(rb_obj_as_string(rkey)));
-            break;
-    }
-    return frb_lazy_df_load(self, rkey, h_get(lazy_doc->field_dict, field));
+    Symbol field = frb_field(rkey);
+    VALUE rfield = SYM2RSYM(field);
+
+    return frb_lazy_df_load(self, rfield, h_get(lazy_doc->field_dict, field));
 }
 
 /*
@@ -2032,7 +2012,7 @@ frb_lzd_load(VALUE self)
     int i;
     for (i = 0; i < lazy_doc->size; i++) {
         LazyDocField *lazy_df = lazy_doc->fields[i];
-        frb_lazy_df_load(self, ID2SYM(rb_intern(lazy_df->name)), lazy_df);
+        frb_lazy_df_load(self, SYM2RSYM(lazy_df->name), lazy_df);
     }
     return self;
 }
@@ -2051,7 +2031,7 @@ frb_get_lazy_doc(LazyDoc *lazy_doc)
     rb_ivar_set(self, id_data, rdata);
 
     for (i = 0; i < lazy_doc->size; i++) {
-        RARRAY(rfields)->ptr[i] = ID2SYM(rb_intern(lazy_doc->fields[i]->name));
+        RARRAY(rfields)->ptr[i] = SYM2RSYM(lazy_doc->fields[i]->name);
         RARRAY(rfields)->len++;
     }
     rb_ivar_set(self, id_fields, rfields);
@@ -2190,7 +2170,7 @@ frb_ir_init(VALUE self, VALUE rdir)
     for (i = 0; i < fis->size; i++) {
         FieldInfo *fi = fis->fields[i];
         rb_hash_aset(rfield_num_map,
-                     ID2SYM(rb_intern(fi->name)),
+                     SYM2RSYM(fi->name),
                      INT2FIX(fi->number));
     }
     rb_ivar_set(self, id_fld_num_map, rfield_num_map);
@@ -2659,7 +2639,7 @@ frb_ir_fields(VALUE self)
     VALUE rfield_names = rb_ary_new();
     int i;
     for (i = 0; i < fis->size; i++) {
-        rb_ary_push(rfield_names, ID2SYM(rb_intern(fis->fields[i]->name)));
+        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -2695,7 +2675,7 @@ frb_ir_tk_fields(VALUE self)
     int i;
     for (i = 0; i < fis->size; i++) {
         if (!fi_is_tokenized(fis->fields[i])) continue;
-        rb_ary_push(rfield_names, ID2SYM(rb_intern(fis->fields[i]->name)));
+        rb_ary_push(rfield_names, SYM2RSYM(fis->fields[i]->name));
     }
     return rfield_names;
 }
@@ -3485,6 +3465,7 @@ Init_Index(void)
     sym_boost     = ID2SYM(rb_intern("boost"));
     sym_analyzer  = ID2SYM(rb_intern("analyzer"));
     sym_close_dir = ID2SYM(rb_intern("close_dir"));
+    fsym_content  = I("content");
 
     Init_TermVector();
     Init_TermEnum();
