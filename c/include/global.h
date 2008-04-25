@@ -1,6 +1,10 @@
 #ifndef FRT_GLOBAL_H
 #define FRT_GLOBAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "config.h"
 #include "except.h"
 #include "lang.h"
@@ -134,4 +138,9 @@ extern void frt_setprogname(const char *str);
 extern const char *frt_progname();
 extern void frt_micro_sleep(const int micro_seconds);
 extern void frt_clean_up();
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

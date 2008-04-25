@@ -1,6 +1,10 @@
 #ifndef FRT_BIT_VECTOR_H
 #define FRT_BIT_VECTOR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 
 #define FRT_BV_INIT_CAPA 256
@@ -269,5 +273,9 @@ extern FrtBitVector *frt_bv_xor_x(FrtBitVector *bv1, FrtBitVector *bv2);
  * @return A +bv+ with all it's bits flipped
  */
 extern FrtBitVector *frt_bv_not_x(FrtBitVector *bv);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
