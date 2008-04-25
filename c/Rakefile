@@ -2,6 +2,7 @@ require 'set'
 require 'erb'
 require 'rake'
 require 'rake/clean'
+require 'ostruct'
 
 class String
   def /(path)
@@ -104,7 +105,13 @@ ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   FILE2SRC[dep_file(src)] = FILE2SRC[basename] = FILE2SRC[src] = src
   basename
 end
-$gcov_results   = []
+
+$gcov_results   = OpenStruct.new(:files => {})
+def gcov_sorted_keys
+  $gcov_results.files.keys.sort_by {|fn|
+      $gcov_results.files[fn].percent
+  }.reverse
+end
 
 ###
 # Dependency Handling
@@ -228,9 +235,15 @@ end
 desc "Generate and print gcov results"
 task :gcov => :do_gcov do
   puts "\ngcov Results\n=============\n"
-  $gcov_results.each do |percent, line_cnt, fn|
-    puts "%25s %6.2f%% (%4d)" % [fn, percent, line_cnt]
+  total_lines = 0
+  total_lines_covered = 0
+  gcov_sorted_keys.each do |fn|
+    res = $gcov_results.files[fn]
+    puts "%25s %6.2f%% (%4d)" % [fn, res.percent, res.line_count]
   end
+  puts "Total Lines:         %s" % $gcov_results.total_lines
+  puts "Total Lines covered: %s (%0.2f%%)" % 
+            [$gcov_results.covered_lines, $gcov_results.percent]
 end
 
 task :gcov2html => :do_gcov do
@@ -243,8 +256,9 @@ end
 task :do_gcov do
   CFLAGS << " -fprofile-arcs -ftest-coverage"
   run_tests
-  gcov_results = []
+  gcov_result_map = {}
   gcov_scanner = /File '([^']+)'\nLines executed:(\d+.\d+)% of (\d+)/
+  total_lines = covered_lines = 0
   OBJS.each do |obj|
     bn = obj.pathmap('%n')
     %w{gcda gcno}.each do |ext|
@@ -255,12 +269,19 @@ task :do_gcov do
                 File.exists?(GCOV_DIR/"#{bn}.gcda")
     gcov_cmd = "gcov -o .gcov/ #{obj}"
     details = IO.popen(gcov_cmd).read.scan(gcov_scanner)
-    details.each do |filename, percent, line_cnt|
+    details.each do |filename, percent, line_count|
       next if filename =~ /^\//
-      $gcov_results << [percent.to_f, line_cnt, filename]
+      line_count = line_count.to_i
+      percent = percent.to_f
+      $gcov_results.files[filename] = OpenStruct.new(:percent => percent,
+                                                     :line_count => line_count)
+      total_lines += line_count
+      covered_lines += (0.01 * percent * line_count).to_i
     end
   end
-  $gcov_results = $gcov_results.sort_by{|res| res[0]}.reverse
+  $gcov_results.total_lines = total_lines
+  $gcov_results.covered_lines = covered_lines
+  $gcov_results.percent = 100.0 * covered_lines /total_lines
 end
 
 desc "Build the benchmark runner"
