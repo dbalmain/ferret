@@ -1,4 +1,5 @@
 testall
+benchall
 search_bench
 bench
 tokenize
