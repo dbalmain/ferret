@@ -242,16 +242,12 @@ void h_destroy(Hash *self)
             free(self->table);
         }
 
-#ifdef DEBUG
-        free(self);
-#else
         if (num_free_hts < MAX_FREE_HASH_TABLES) {
             free_hts[num_free_hts++] = self;
         }
         else {
             free(self);
         }
-#endif
     }
 }
 
@@ -501,15 +497,28 @@ Hash *h_clone(Hash *self, h_clone_ft clone_key, h_clone_ft clone_value)
     return ht_clone;
 }
 
-void h_str_print_keys(Hash *self)
+void h_str_print_keys(Hash *self, FILE *out)
 {
     HashEntry *he;
     int i = self->size;
-    printf("keys:\n");
+    char **keys = ALLOC_N(char *, self->size);
     for (he = self->table; i > 0; he++) {
         if (he->key && he->key != dummy_key) {        /* active entry */
-            printf("\t%s\n", (char *)he->key);
             i--;
+            keys[i] = (char *)he->key;
         }
+    }
+    strsort(keys, self->size);
+    fprintf(out, "keys:\n");
+    for (i = 0; i < self->size; i++) {
+        fprintf(out, "\t%s\n", keys[i]);
+    }
+    free(keys);
+}
+
+void hash_finalize()
+{
+    while (num_free_hts > 0) {
+        free(free_hts[--num_free_hts]);
     }
 }

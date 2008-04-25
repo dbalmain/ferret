@@ -2,7 +2,9 @@
 #include "symbol.h"
 #include "global.h"
 #include <stdlib.h>
+#include <unistd.h>
 #include "test.h"
+#include "testhelper.h"
 
 static int *malloc_int(int val)
 {
@@ -11,12 +13,19 @@ static int *malloc_int(int val)
     return i;
 }
 
+static void mark_free(void *p)
+{
+    strcpy((char *)p, "freed");
+}
 /**
  * Basic test for string Hash. Make sure string can be retrieved
  */
 static void test_hash_str(TestCase *tc, void *data)
 {
     Hash *h = h_new_str(NULL, &free);
+    FILE *f;
+    char buf[100], *t;
+    memset(buf, 0, 100);
     (void)data; /* suppress unused argument warning */
 
     Assert(h_get(h, "one") == NULL, "No entries added yet");
@@ -31,6 +40,31 @@ static void test_hash_str(TestCase *tc, void *data)
     h_set(h, "one", NULL);
     Apnull(h_get(h, "one"));
     Atrue(h_has_key(h, "one"));
+    h_set(h, "two", malloc_int(2));
+    h_set(h, "three", malloc_int(3));
+    h_set(h, "four", malloc_int(4));
+
+    f = temp_open();
+    h_str_print_keys(h, f);
+    fseek(f, 0, SEEK_SET);
+    fread(buf, 1, 100, f);
+    fclose(f);
+    Asequal("keys:\n\tfour\n\tone\n\tthree\n\ttwo\n", buf);
+    h_destroy(h);
+
+    /* test h_rem with allocated key */
+    strcpy(buf, "key");
+    h_new_str(&mark_free, (free_ft)NULL);
+    h_set(h, buf, "val");
+    Asequal("val", h_get(h, "key"));
+    t = (char *)h_rem(h, "key", false);
+    Asequal("val", t);
+    Asequal("key", buf);
+    h_set(h, buf, "new val");
+    Asequal("new val", h_get(h, "key"));
+    t = (char *)h_rem(h, "key", true);
+    Asequal("new val", t);
+    Asequal("freed", buf);
     h_destroy(h);
 }
 
@@ -121,7 +155,9 @@ static void test_hash_int(TestCase *tc, void *data)
     Aiequal(HASH_KEY_DOES_NOT_EXIST, h_set_int(h, 0, estrdup("one")));
     Aiequal(1, h->size);
     Atrue(h_has_key_int(h, 0));
-    h_set_int(h, 10, estrdup("ten"));
+    Assert(h_set_safe_int(h, 10, estrdup("ten")), "Not existing");
+    Assert(!h_set_safe_int(h, 10, "10"), "Won't overwrite existing");
+    Asequal("ten", h_get_int(h, 10));
     Aiequal(2, h->size);
     Atrue(h_has_key_int(h, 10));
     h_set_int(h, 1000, estrdup("thousand"));
@@ -169,6 +205,8 @@ static void test_hash_ptr(TestCase *tc, void *data)
     char buf[100];
     (void)data; /* suppress unused argument warning */
 
+    Aiequal(ptr_hash(word1), intern("one"));
+    Atrue(ptr_eq(word1, intern("one")));
     h_set(h, word1, estrdup("1"));
     h_set(h, word2, estrdup("2"));
     h_set(h, word_one, estrdup("3"));

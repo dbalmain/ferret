@@ -20,5 +20,6 @@ extern int nth_word_eql(char *words, char *word, int n);
 extern int s2l(char *str, int *arr);
 extern bool ary_includes(int *array, int size, int val);
 extern char *num_to_str(int num);
+extern FILE *temp_open();
 
 #endif

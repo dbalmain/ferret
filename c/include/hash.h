@@ -491,6 +491,17 @@ extern FrtHashEntry *frt_h_lookup(FrtHash *ht,
 typedef FrtHashEntry *(*frt_h_lookup_ft)(FrtHash *ht,
                                             register const void *key);
 
-extern void frt_h_str_print_keys(FrtHash *ht);
+extern void frt_h_str_print_keys(FrtHash *ht, FILE *out);
+
+/**
+ * The Hash implementation actually keeps a buffer of old hash tables around
+ * for performance reasons. If you want all memory freed when your program
+ * finishes (useful if you are using valgrind) you should call this method on
+ * exit.
+ *
+ * One way to do this is to register it with atexit(). This is done for you
+ * when you call +frt_init+.
+ */
+extern void frt_hash_finalize();
 
 #endif

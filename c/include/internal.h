@@ -536,6 +536,7 @@
 #define h_set_safe                              frt_h_set_safe
 #define h_set_safe_int                          frt_h_set_safe_int
 #define h_str_print_keys                        frt_h_str_print_keys
+#define hash_finalize                           frt_hash_finalize
 #define hash_ft                                 frt_hash_ft
 #define hlp_string_diff                         frt_hlp_string_diff
 #define hs_add                                  frt_hs_add
@@ -892,6 +893,7 @@
 #define stpe_new                                frt_stpe_new
 #define str_hash                                frt_str_hash
 #define strfmt                                  frt_strfmt
+#define strsort                                 frt_strsort
 #define sym_hash                                frt_sym_hash
 #define sym_len                                 frt_sym_len
 #define symbol_init                             frt_symbol_init

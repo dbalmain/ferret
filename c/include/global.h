@@ -79,6 +79,7 @@ extern const char *FRT_EMPTY_STRING;
 extern int frt_scmp(const void *p1, const void *p2);
 extern int frt_icmp(const void *p1, const void *p2);
 extern int frt_icmp_risky(const void *p1, const void *p2);
+extern void frt_strsort(char **string_array, int size);
 
 extern int frt_min2(int a, int b);
 extern int frt_min3(int a, int b, int c);
