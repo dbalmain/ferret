@@ -1,8 +1,11 @@
 #ifndef ALL_BENCHMARKS_H
 #define ALL_BENCHMARKS_H
 
-#include "benchmark.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include "benchmark.h"
 
 void bm_vint_io(BenchMark *bm);
 void bm_strcmp_when_length_is_known(BenchMark *bm);
@@ -23,5 +26,9 @@ const struct BenchMarkList
     {bm_specialized_string_hash, "specialized_string_hash"},
     {bm_bitvector_implementations, "bitvector_implementations"}
 };
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

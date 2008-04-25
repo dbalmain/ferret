@@ -1,6 +1,10 @@
 #ifndef FRT_MEM_POOL_H
 #define FRT_MEM_POOL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define FRT_MP_BUF_SIZE 65536
 #define FRT_MP_INIT_CAPA 4
 
@@ -31,5 +35,9 @@ extern int frt_mp_used(FrtMemoryPool *mp);
     (type*)memset(frt_mp_alloc(mp, sizeof(type)), 0, sizeof(type))
 #define FRT_MP_ALLOC_AND_ZERO_N(mp,type,n)\
     (type*)FRT_ZEROSET_N(frt_mp_alloc(mp, sizeof(type)*(n)), type, n)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

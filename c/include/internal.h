@@ -1,6 +1,10 @@
 #ifndef FRT_INTERNAL_H
 #define FRT_INTERNAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Constants */
 #define ABS                                FRT_ABS
 #define ALLOC                              FRT_ALLOC
@@ -972,5 +976,9 @@
 #define xpop_context                            frt_xpop_context
 #define xpush_context                           frt_xpush_context
 #define xraise                                  frt_xraise
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

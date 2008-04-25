@@ -1,6 +1,10 @@
 #ifndef FRT_FIELD_INDEX_H
 #define FRT_FIELD_INDEX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "index.h"
 
 /***************************************************************************
@@ -40,4 +44,9 @@ extern FrtFieldIndex *frt_field_index_get(FrtIndexReader *ir, const char *field,
 extern const char *frt_get_string_value(FrtFieldIndex *field_index, long doc_num);
 extern float frt_get_float_value(FrtFieldIndex *field_index, long doc_num);
 extern long frt_get_integer_value(FrtFieldIndex *field_index, long doc_num);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

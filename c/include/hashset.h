@@ -1,6 +1,10 @@
 #ifndef FRT_HASHSET_H
 #define FRT_HASHSET_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hash.h"
 #include "global.h"
 
@@ -190,5 +194,9 @@ FrtHashSet hs_excl_or(FrtHashSet *hs1, FrtHashSet *h2);
 FrtHashSet hs_and(FrtHashSet *hs1, FrtHashSet *h2);
 FrtHashSet hs_mask(FrtHashSet *hs1, FrtHashSet *h2);
 */
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

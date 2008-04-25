@@ -1,6 +1,10 @@
 #ifndef FRT_DOCUMENT_H
 #define FRT_DOCUMENT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 #include "hash.h"
 
@@ -50,5 +54,9 @@ extern FrtDocField *frt_doc_add_field(FrtDocument *doc, FrtDocField *df);
 extern FrtDocField *frt_doc_get_field(FrtDocument *doc, const char *fname);
 extern char *frt_doc_to_s(FrtDocument *doc);
 extern void frt_doc_destroy(FrtDocument *doc);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

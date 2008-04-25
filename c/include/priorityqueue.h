@@ -1,6 +1,10 @@
 #ifndef FRT_PRIORITYQUEUE_H
 #define FRT_PRIORITYQUEUE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 
 typedef bool (*frt_lt_ft)(const void *p1, const void *p2);
@@ -143,5 +147,9 @@ extern void *frt_pq_pop(FrtPriorityQueue *self);
  * @return true if the PriorityQueue is full.
  */
 #define frt_pq_full(pq) ((pq)->size == (pq)->capa)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

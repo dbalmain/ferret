@@ -1,6 +1,10 @@
 #ifndef FRT_MAPPER_H
 #define FRT_MAPPER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hash.h"
 
 typedef struct FrtState
@@ -48,5 +52,9 @@ extern char *frt_mulmap_map(FrtMultiMapper *self, char *to, char *from, int capa
 extern char *frt_mulmap_dynamic_map(FrtMultiMapper *self, char *from);
 extern int frt_mulmap_map_len(FrtMultiMapper *self, char *to, char *from, int capa);
 extern void frt_mulmap_destroy(FrtMultiMapper *self);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

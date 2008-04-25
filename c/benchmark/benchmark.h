@@ -1,6 +1,10 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 #include "internal.h"
 #include <time.h>
@@ -8,11 +12,7 @@
 #include <sys/time.h>
 
 #define BM_RUN_COUNT 6
-#ifdef __cplusplus
-#define BENCH(name) extern "C" void bm_##name(BenchMark *bm)
-#else
-#define BENCH(name) void bm_##name(BenchMark *bm)
-#endif
+#define BENCH(name) FRT_EXTERNC void bm_##name(BenchMark *bm)
 
 extern const char *WORD_LIST[];
 
@@ -48,5 +48,9 @@ void bm_add(BenchMark *benchmark, bm_run_ft call, const char *name);
 #define BM_ADD(call) bm_add(bm, &call, #call)
 #define BM_COUNT(num) bm->count = num;
 #define BM_DISCARD(num) bm->discard = num;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -1,6 +1,10 @@
 #ifndef FRT_ANALYSIS_H
 #define FRT_ANALYSIS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 #include "hash.h"
 #include "multimapper.h"
@@ -226,5 +230,9 @@ typedef struct FrtPerFieldAnalyzer
 
 extern FrtAnalyzer *frt_per_field_analyzer_new(FrtAnalyzer *a);
 extern void frt_pfa_add_field(FrtAnalyzer *self, char *field, FrtAnalyzer *analyzer);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

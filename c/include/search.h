@@ -1,6 +1,10 @@
 #ifndef FRT_SEARCH_H
 #define FRT_SEARCH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct FrtQuery FrtQuery;
 typedef struct FrtWeight FrtWeight;
 typedef struct FrtScorer FrtScorer;
@@ -23,7 +27,7 @@ typedef struct FrtExplanation
     char *description;
     struct FrtExplanation **details;
 } FrtExplanation;
- 
+
 extern FrtExplanation *frt_expl_new(float value, const char *description, ...);
 extern void frt_expl_destroy(FrtExplanation *expl);
 extern FrtExplanation *frt_expl_add_detail(FrtExplanation *expl, FrtExplanation *detail);
@@ -258,7 +262,7 @@ FrtQuery *frt_tq_new(const char *field, const char *term);
 
 /* *** FrtBooleanClause *** */
 
-typedef enum 
+typedef enum
 {
     FRT_BC_SHOULD,
     FRT_BC_MUST,
@@ -694,10 +698,10 @@ extern FrtSortField *frt_sort_field_auto_new(const char *field, bool reverse);
 extern void frt_sort_field_destroy(void *p);
 extern char *frt_sort_field_to_s(FrtSortField *self);
 
-extern const FrtSortField FRT_SORT_FIELD_SCORE; 
-extern const FrtSortField FRT_SORT_FIELD_SCORE_REV; 
-extern const FrtSortField FRT_SORT_FIELD_DOC; 
-extern const FrtSortField FRT_SORT_FIELD_DOC_REV; 
+extern const FrtSortField FRT_SORT_FIELD_SCORE;
+extern const FrtSortField FRT_SORT_FIELD_SCORE_REV;
+extern const FrtSortField FRT_SORT_FIELD_DOC;
+extern const FrtSortField FRT_SORT_FIELD_DOC_REV;
 
 /***************************************************************************
  * FrtSort
@@ -759,7 +763,7 @@ typedef float (*frt_filter_ft)(int doc_num, float score, FrtSearcher *self, void
 typedef struct FrtPostFilter
 {
     float (*filter_func)(int doc_num, float score, FrtSearcher *self, void *arg);
-    void *arg;  
+    void *arg;
 } FrtPostFilter;
 
 struct FrtSearcher
@@ -791,7 +795,7 @@ struct FrtSearcher
     /*
      * Scan the index for all documents that match a query and write the
      * results to a buffer. It will stop scanning once the limit is reached
-     * and it starts scanning from offset_docnum. 
+     * and it starts scanning from offset_docnum.
      *
      * Note: Unlike the offset_docnum in other search methods, this
      * offset_docnum refers to document number and not hit.
@@ -934,5 +938,8 @@ extern char *frt_qp_clean_str(char *str);
 extern float frt_qp_default_fuzzy_min_sim;
 extern int frt_qp_default_fuzzy_pre_len;
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

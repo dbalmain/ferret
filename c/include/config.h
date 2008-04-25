@@ -1,6 +1,10 @@
 #ifndef FRT_DEFINES_H
 #define FRT_DEFINES_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/types.h>
 #include <limits.h>
 #include "posh.h"
@@ -39,6 +43,10 @@ typedef posh_i64_t frt_i64;
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__) && !defined(__cplusplus)
 #define FRT_HAS_GNUC_VARARGS
 #define FRT_HAS_VARARGS
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif
