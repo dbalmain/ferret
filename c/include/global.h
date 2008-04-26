@@ -18,9 +18,22 @@ extern "C" {
 #define FRT_BUFFER_SIZE 1024
 
 #if defined(__GNUC__) && !defined(__cplusplus)
-# define FRT_INLINE __inline__
+#  define FRT_INLINE __inline__
 #else
-# define FRT_INLINE
+#  define FRT_INLINE
+#endif
+
+/* This version error out if it can't inline the function */
+#if __GNUC__ >= 3
+#  define FRT_ALWAYS_INLINE inline __attribute__ ((always_inline))
+#else
+#  define FRT_ALWAYS_INLINE
+#endif
+
+#ifdef __cplusplus
+#define FRT_EXTERNC extern "C"
+#else
+#define FRT_EXTERNC
 #endif
 
 typedef void (*frt_free_ft)(void *key);
