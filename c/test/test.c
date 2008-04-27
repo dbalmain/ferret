@@ -264,7 +264,7 @@ static int report(TestSuite *suite)
         if (dptr->failed != 0) {
             double percent =
                 ((double) dptr->failed / (double) dptr->num_test);
-            fprintf(stdout, "%-15s\t\t%5d\t%4d\t%6.2f%%\n", dptr->name,
+            fprintf(stdout, "%-24s%5d\t%4d\t%6.2f%%\n", dptr->name,
                     dptr->num_test, dptr->failed, percent * 100);
         }
         dptr = dptr->next;
