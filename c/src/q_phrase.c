@@ -117,7 +117,7 @@ static int pp_pos_cmp(const void *const p1, const void *const p2)
 static bool pp_less_than(const PhPos *pp1, const PhPos *pp2)
 {
     if (pp1->position == pp2->position) {
-        return pp1->offset > pp2->offset;
+        return pp1->offset < pp2->offset;
     }
     else {
         return pp1->position < pp2->position;

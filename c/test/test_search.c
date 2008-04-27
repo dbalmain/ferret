@@ -420,7 +420,6 @@ static void test_boolean_query(TestCase *tc, void *data)
     bq_add_query_nr(bq, tq2, BC_MUST_NOT);
     check_hits(tc, searcher, bq, "0,1,4,5,7,9,10,12,13,15,16,17", -1);
     q_deref(bq);
-    return;
 
     tq2 = tq_new(field, "word3");
     bq = bq_new(false);
