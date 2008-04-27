@@ -146,6 +146,37 @@ static void test_bv_scan(TestCase *tc, void *data)
     bv_destroy(not_bv);
 }
 
+#define test_bveq(_bv1, _bv2)                                       \
+do {                                                                \
+    BitVector *_not_bv1, *_not_bv2;                                 \
+    Assert(bv_eq(_bv1, _bv2), "BitVectors are equal");              \
+    Assert(bv_eq(_bv2, _bv1), "BitVectors are equal");              \
+    Assert(bv_eq(_bv1, _bv1), "bv_eq on self should work");         \
+    Aiequal(bv_hash(_bv1), bv_hash(_bv2));                          \
+    /* test flipped bitvectors */                                   \
+    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);               \
+    bv_set(_not_bv1, 1100); /* should make no difference */         \
+    Assert(bv_eq(_not_bv1, _not_bv2), "BitVectors are equal");      \
+    Assert(bv_eq(_not_bv2, _not_bv1), "BitVectors are equal");      \
+    Assert(bv_eq(_not_bv1, _not_bv1), "bv_eq on self should work"); \
+    Aiequal(bv_hash(_not_bv1), bv_hash(_not_bv2));                  \
+    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                     \
+} while (0)
+
+#define test_bvneq(_bv1, _bv2)                                      \
+do {                                                                \
+    BitVector *_not_bv1, *_not_bv2;                                 \
+    Assert(!bv_eq(_bv1, _bv2), "BitVectors are not equal");         \
+    Assert(!bv_eq(_bv2, _bv1), "BitVectors are not equal");         \
+    Assert(bv_hash(_bv1) != bv_hash(_bv2), "BitVectors not equal"); \
+    /* test flipped bitvectors */                                   \
+    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);               \
+    Assert(!bv_eq(_not_bv1, _not_bv2), "BitVectors are not equal"); \
+    Assert(!bv_eq(_not_bv2, _not_bv1), "BitVectors are not equal"); \
+    Assert(bv_hash(_not_bv1) != bv_hash(_not_bv2), "Bitvectors !=");\
+    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                     \
+} while (0)
+
 static void test_bv_eq_hash(TestCase *tc, void *data)
 {
     static int const COUNT = 1000;
@@ -154,43 +185,47 @@ static void test_bv_eq_hash(TestCase *tc, void *data)
     BitVector *bv2 = bv_new();
     (void)data;
 
-    Assert(bv_eq(bv1, bv2), "BitVectors are both empty");
+    test_bveq(bv1, bv2);
     Assert(bv_eq(bv1, bv1), "bv_eq on self should work");
-    Aiequal(bv_hash(bv1), bv_hash(bv2));
 
     bv_set(bv1, 1);
-    Assert(!bv_eq(bv1, bv2), "BitVectors are not equal");
-    Assert(bv_hash(bv1) != bv_hash(bv2), "BitVectors are not equal");
+    test_bvneq(bv1, bv2);
 
     bv_set(bv2, 11);
-    Assert(!bv_eq(bv1, bv2), "BitVectors are not equal");
-    Assert(bv_hash(bv1) != bv_hash(bv2), "BitVectors are not equal");
+    test_bvneq(bv1, bv2);
 
     bv_set(bv1, 11);
     bv_set(bv2, 1);
-    Assert(bv_eq(bv1, bv2), "BitVectors are equal");
-    Aiequal(bv_hash(bv1), bv_hash(bv2));
+    test_bveq(bv1, bv2);
 
-    bv_unset(bv1, 1000);
-    Assert(bv_eq(bv1, bv2), "BitVectors are equal");
-    Aiequal(bv_hash(bv1), bv_hash(bv2));
+    /* This will increase size of bv1 to 1000 */
+    bv_unset(bv1, 1000); 
+    /* difference in size shouldn't matter */
+    test_bveq(bv1, bv2);
 
     for (i = 0; i < COUNT; i++) {
         int bit = rand() % COUNT;
         bv_set(bv1, bit);
         bv_set(bv2, bit);
     }
+    test_bveq(bv1, bv2);
 
-    Assert(bv_eq(bv1, bv2), "BitVectors are equal");
-    Aiequal(bv_hash(bv1), bv_hash(bv2));
     bv_destroy(bv1);
     bv_destroy(bv2);
 
+    /* although the saet bits will be equal, the extension will be different*/
     bv1 = set_bits(bv_new(), "1, 3, 5");
     bv2 = bv_not_x(set_bits(bv_new(), "0, 2, 4"));
     bv_set(bv2, 5);
-    Assert(!bv_eq(bv1, bv2), "BitVectors have different extension");
-    Assert(bv_hash(bv1) != bv_hash(bv2), "BitVectors have different extension");
+    test_bvneq(bv1, bv2);
+
+    bv_destroy(bv2);
+    bv2 = set_bits(bv_new(), "1, 3, 5");
+    bv1 = bv_not_x(bv1);
+    bv2 = bv_not_x(bv2);
+    bv_unset(bv1, 1000);
+    test_bvneq(bv1, bv2);
+
     bv_destroy(bv1);
     bv_destroy(bv2);
 }
@@ -202,6 +237,7 @@ static void test_bv_and(TestCase *tc, void *data)
     BitVector *and_bv;
     BitVector *bv1 = bv_new();
     BitVector *bv2 = bv_new();
+    BitVector *not_bv1, *not_bv2, *or_bv, *not_and_bv;
     char set1[AND_SIZE];
     char set2[AND_SIZE];
     int i;
@@ -224,12 +260,23 @@ static void test_bv_and(TestCase *tc, void *data)
         }
     }
 
+    not_bv1 = bv_not(bv1); not_bv2 = bv_not(bv2);
+    and_bv = bv_and(not_bv1, not_bv2);
+    not_and_bv = bv_not(and_bv);
+    or_bv = bv_or(bv1, bv2);
+    Assert(bv_eq(not_and_bv, or_bv), "BitVectors should be equal");
+    bv_destroy(not_bv1); bv_destroy(not_bv2);
+    bv_destroy(and_bv);
+    bv_destroy(not_and_bv);
+    bv_destroy(or_bv);
+
     and_bv = bv_and(bv1, bv2);
 
     Aiequal(count, and_bv->count);
     for (i = 0; i < AND_SIZE; i++) {
         Aiequal(set2[i], bv_get(and_bv, i));
     }
+    
 
     bv1 = bv_and_x(bv1, bv2);
     Assert(bv_eq(bv1, and_bv), "BitVectors should be equal");
@@ -468,10 +515,6 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     BitVector *not_bv;
     (void)data; /* suppress unused argument warning */
 
-    /*
-    clock_t t = clock(), total_t = 0;
-    */
-
     for (i = BV_SCAN_INC; i < BV_SCAN_SIZE; i += BV_SCAN_INC) {
         bv_set_fast(bv, i);
         Aiequal(bv_get(bv, i), 1);
@@ -480,12 +523,6 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     }
 
     not_bv = bv_not(bv);
-    /*
-    t = clock() - t;
-    total_t += t;
-    printf("bv_set took %0.3f secs\n", (double) (t) / CLOCKS_PER_SEC);
-    t = clock();
-    */
 
     for (i = BV_SCAN_INC; i < BV_SCAN_SIZE; i += BV_SCAN_INC) {
         Aiequal(i, bv_scan_next_from(bv, i - BV_SCAN_INC / 2));
@@ -494,12 +531,19 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     Aiequal(-1, bv_scan_next_from(bv, i - BV_SCAN_INC / 2));
     Aiequal(-1, bv_scan_next_unset_from(not_bv, i - BV_SCAN_INC / 2));
 
-    /*
-    t = clock() - t;
-    total_t += t;
-    printf("bv_scan_next_from took %0.3f secs\n", (double) (t) / CLOCKS_PER_SEC);
-    t = clock();
-    */
+    /* test scan_next_from where size is actually greater than the highest set
+     * bit */
+    bv->size++;
+    not_bv->size++;
+
+    bv_scan_reset(bv);
+    bv_scan_reset(not_bv);
+    for (i = BV_SCAN_INC; i < BV_SCAN_SIZE; i += BV_SCAN_INC) {
+        Aiequal(i, bv_scan_next_from(bv, i - BV_SCAN_INC / 2));
+        Aiequal(i, bv_scan_next_unset_from(not_bv, i - BV_SCAN_INC / 2));
+    }
+    Aiequal(-1, bv_scan_next_from(bv, i - BV_SCAN_INC / 2));
+    Aiequal(-1, bv_scan_next_unset_from(not_bv, i - BV_SCAN_INC / 2));
 
     bv_scan_reset(bv);
     bv_scan_reset(not_bv);
@@ -510,12 +554,6 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     Aiequal(-1, bv_scan_next(bv));
     Aiequal(-1, bv_scan_next_unset(not_bv));
 
-    /*
-    t = clock() - t;
-    total_t += t;
-    printf("bv_scan_next took %0.3f secs\n", (double) (t) / CLOCKS_PER_SEC);
-    */
-
     bv_clear(bv);
     bv_destroy(not_bv);
     for (i = 0; i < BV_DENSE_SCAN_SIZE; i++) {
@@ -523,23 +561,12 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     }
     not_bv = bv_not(bv);
 
-    /*
-    t = clock();
-    */
-
     for (i = 0; i < BV_DENSE_SCAN_SIZE; i++) {
         Aiequal(i, bv_scan_next_from(bv, i));
         Aiequal(i, bv_scan_next_unset_from(not_bv, i));
     }
     Aiequal(-1, bv_scan_next_from(bv, i));
     Aiequal(-1, bv_scan_next_unset_from(not_bv, i));
-
-    /*
-    t = clock() - t;
-    total_t += t;
-    printf("dense bv_scan_next_from took %0.3f secs\n", (double) (t) / CLOCKS_PER_SEC);
-    t = clock();
-    */
 
     bv_scan_reset(bv);
     bv_scan_reset(not_bv);
@@ -549,14 +576,6 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
     }
     Aiequal(-1, bv_scan_next(bv));
     Aiequal(-1, bv_scan_next_unset(not_bv));
-
-    /*
-    t = clock() - t;
-    total_t += t;
-    printf("dense bv_scan_next took %0.3f secs\n", (double) t / CLOCKS_PER_SEC);
-    printf("total time %0.3f seconds\n",
-           (double) total_t / CLOCKS_PER_SEC);
-    */
 
     bv_destroy(bv);
     bv_destroy(not_bv);
