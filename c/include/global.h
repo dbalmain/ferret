@@ -12,6 +12,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <string.h>
 
 #define FRT_MAX_WORD_SIZE 255
 #define FRT_MAX_FILE_PATH 1024
@@ -23,11 +24,14 @@ extern "C" {
 #  define FRT_INLINE
 #endif
 
-/* This version error out if it can't inline the function */
 #if __GNUC__ >= 3
 #  define FRT_ALWAYS_INLINE inline __attribute__ ((always_inline))
+#  define likely(x)   __builtin_expect(!!(x), 1)
+#  define unlikely(x) __builtin_expect(!!(x), 0)
 #else
 #  define FRT_ALWAYS_INLINE
+#  define likely(x)   (x)
+#  define unlikely(x) (x)
 #endif
 
 #ifdef __cplusplus
