@@ -7,8 +7,12 @@
  *
  * FuzzyStuff
  *
- * The main method here is the fuzq_score method which scores a term against
- * another term. The other methods all act in support.
+ * The main method here is the fuzq_score_mn method which scores a term
+ * against another term. The other methods all act in support.
+ *
+ * To learn more about the fuzzy scoring algorithm see;
+ *
+ *     http://en.wikipedia.org/wiki/Levenshtein_distance
  *
  ****************************************************************************/
 
@@ -51,6 +55,14 @@ static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
     return fuzq_calculate_max_distance(fuzq, m);
 }
 
+/**
+ * Calculate the similarity score for the +target+ against the query.
+ *
+ * @params fuzq The Fuzzy Query
+ * @params target *the term to compare against minus the prefix
+ * @params m the string length of +target+
+ * @params n the string length of the query string minus length of the prefix
+ */
 static INLINE float fuzq_score_mn(FuzzyQuery *fuzq,
                                   const char *target,
                                   const int m, const int n)
