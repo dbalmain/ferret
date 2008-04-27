@@ -161,7 +161,7 @@ static Symbol date, field, cat, number;
 struct Data test_data[SEARCH_DOCS_SIZE] = {
     {"20050930", "word1",
         "cat1/",                ".123"},
-    {"20051001", "word1 word2 the quick brown fox",
+    {"20051001", "word1 word2 the quick brown fox the quick brown fox",
         "cat1/sub1",            "0.954"},
     {"20051002", "word1 word3",
         "cat1/sub1/subsub1",    "908.123434"},

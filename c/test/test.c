@@ -258,7 +258,7 @@ static int report(TestSuite *suite)
     }
 
     dptr = suite->head;
-    fprintf(stdout, "%-15s\t\tTotal\tFail\tFailed %%\n", "Failed Tests");
+    fprintf(stdout, "%-24sTotal\tFail\tFailed %%\n", "Failed Tests");
     fprintf(stdout, "===================================================\n");
     while (dptr != NULL) {
         if (dptr->failed != 0) {

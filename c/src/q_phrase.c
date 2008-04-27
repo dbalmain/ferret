@@ -116,16 +116,12 @@ static int pp_pos_cmp(const void *const p1, const void *const p2)
 
 static bool pp_less_than(const PhPos *pp1, const PhPos *pp2)
 {
-    /* docs will all be equal when this method is used */
-    return pp1->position < pp2->position;
-    /*
-    if (PP(p)->doc == PP(p)->doc) {
-        return PP(p)->position < PP(p)->position;
+    if (pp1->position == pp2->position) {
+        return pp1->offset > pp2->offset;
     }
     else {
-        return PP(p)->doc < PP(p)->doc;
+        return pp1->position < pp2->position;
     }
-    */
 }
 
 static void pp_destroy(PhPos *pp)
@@ -234,7 +230,7 @@ static float phsc_score(Scorer *self)
     /* normalize */
     return raw_score * sim_decode_norm(
         self->similarity,
-        phsc->norms[phsc->phrase_pos[phsc->pp_first_idx]->doc]);
+        phsc->norms[self->doc]);
 }
 
 static bool phsc_next(Scorer *self)
@@ -278,7 +274,7 @@ static Explanation *phsc_explain(Scorer *self, int doc_num)
 
     phsc_skip_to(self, doc_num);
 
-    phrase_freq = (self->doc == doc_num) ? phsc->freq : (float)0.0;
+    phrase_freq = (self->doc == doc_num) ? phsc->freq : 0.0f;
     return expl_new(sim_tf(self->similarity, phrase_freq),
                     "tf(phrase_freq=%f)", phrase_freq);
 }
