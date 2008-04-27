@@ -12,11 +12,26 @@
  *
  ****************************************************************************/
 
+/**
+ * Calculate the maximum nomber of allowed edits (or maximum edit distance)
+ * for a word to be a match.
+ *
+ * Note that fuzq->text_len and m are both the lengths text *after* the prefix
+ * so `MIN(fuzq->text_len, m) + fuzq->pre_len)` actually gets the byte length
+ * of the shorter string out of the query string and the index term being
+ * compared.
+ */
 static INLINE int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m)
 {
     return (int)((1.0 - fuzq->min_sim) * (MIN(fuzq->text_len, m) + fuzq->pre_len));
 }
 
+/**
+ * The max-distance formula gets used a lot - it needs to be calculated for
+ * every possible match in the index - so we cache the results for all
+ * lengths up to the TYPICAL_LONGEST_WORD limit. For words longer than this we
+ * calculate the value live.
+ */
 static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
 {
     int i;
@@ -25,6 +40,10 @@ static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
     }
 }
 
+/**
+ * Return the cached max-distance value if the word is within the
+ * TYPICAL_LONGEST_WORD limit.
+ */
 static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
 {
     if (m < TYPICAL_LONGEST_WORD)
@@ -172,10 +191,7 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
         te = ir->terms(ir, field_num);
     }
 
-    if (te == NULL) {
-        if (prefix) free(prefix);
-        return q;
-    }
+    assert(NULL != te);
 
     fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
     fuzq->text = term + pre_len;

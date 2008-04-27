@@ -1,225 +1,180 @@
-require 'rake'
-require 'rake/clean'
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
-require 'rake/testtask'
-
 $:. << 'lib'
-require 'ferret/version'
+# Some parts of this Rakefile where taken from Jim Weirich's Rakefile for
+# Rake. Other parts where taken from the David Heinemeier Hansson's Rails
+# Rakefile. Both are under MIT-LICENSE. Thanks to both for their excellent
+# projects.
 
+require 'rake'
+require 'rake/testtask'
+require 'rake/rdoctask'
+require 'rake/clean'
+require 'ferret_version'
 
-def say(msg='')
+begin
+  require 'rubygems'
+  require 'rake/gempackagetask'
+rescue Exception
+  nil
+end
+
+CURRENT_VERSION = Ferret::VERSION
+if ENV['REL']
+  PKG_VERSION = ENV['REL']
+else
+  PKG_VERSION = CURRENT_VERSION
+end
+
+def announce(msg='')
   STDERR.puts msg
 end
 
-def prompt(msg)
-  STDERR.print "#{msg} [Yna]: "
-  while true
-    case STDIN.gets.chomp!
-    when /^(y(es)?)?$/i: return true
-    when /^no?$/i: return false
-    when /^a(bort)?$/i: fail('aborted')
-    else
-      STDERR.print "Sorry, I don't understand. Please type y, n or a: "
-    end
-  end
+EXT = "ferret_ext.so"
+EXT_SRC = FileList["../c/src/*.[c]", "../c/include/*.h",
+                   "../c/lib/libstemmer_c/src_c/*.[ch]",
+                   "../c/lib/libstemmer_c/runtime/*.[ch]",
+                   "../c/lib/libstemmer_c/libstemmer/*.[ch]",
+                   "../c/lib/libstemmer_c/include/libstemmer.h"]
+EXT_SRC.exclude('../**/ind.[ch]')
+
+EXT_SRC_DEST = EXT_SRC.map {|fn| File.join("ext", File.basename(fn))}
+SRC = (FileList["ext/*.[ch]"] + EXT_SRC_DEST).uniq
+
+CLEAN.include(FileList['**/*.o', '**/*.obj', 'InstalledFiles',
+                       '.config', 'ext/cferret.c'])
+CLOBBER.include(FileList['ext/*.so'], 'ext/Makefile', EXT_SRC_DEST)
+POLISH = Rake::FileList.new.include(FileList['**/*.so'], 'ext/Makefile')
+
+desc "Clean specifically for the release."
+task :polish => [:clean] do
+  POLISH.each { |fn| rm_r fn rescue nil }
 end
 
-windows = (RUBY_PLATFORM =~ /win/) rescue nil
-SUDO = windows ? "" : "sudo "
+desc "Run tests with Valgrind"
+task :valgrind do
+  sh "valgrind --gen-suppressions=yes --suppressions=ferret_valgrind.supp " +
+     "--leak-check=yes --show-reachable=yes -v ruby test/test_all.rb"
+  #sh "valgrind --suppressions=ferret_valgrind.supp " +
+  #   "--leak-check=yes --show-reachable=yes -v ruby test/unit/index/tc_index_reader.rb"
+  #valgrind --gen-suppressions=yes --suppressions=ferret_valgrind.supp --leak-check=yes --show-reachable=yes -v ruby test/test_all.rb
+end
 
-
-task :default => 'test:unit'
-#task :default => :build do
+task :default => :test_all
+#task :default => :ext do
 #  sh "ruby test/unit/index/tc_index.rb"
 #end
 
-  BZLIB_SRC = FileList["../c/lib/bzlib/*.h"] +
-              FileList["../c/lib/bzlib/*.c"].map do |fn|
-                fn.gsub(%r{/([^/]*.c)}, '/BZ_\1')
-              end
-##############################################################################
-# Building
-##############################################################################
-
-task :build => 'build:compile'
-namespace :build do
-  EXT = "ferret_ext.so"
-  # Note: libstemmer.[h] is necessary so that the file isn't included when it
-  # doesn't exist. It needs to have one regular expression element.
-  EXT_SRC = FileList["../c/src/*.[ch]", "../c/include/*.h",
-                     "../c/lib/bzlib/*.[ch]",
-                     "../c/lib/libstemmer_c/src_c/*.[ch]",
-                     "../c/lib/libstemmer_c/runtime/*.[ch]",
-                     "../c/lib/libstemmer_c/libstemmer/*.[ch]",
-                     "../c/lib/libstemmer_c/include/libstemmer.[h]"]
-  EXT_SRC.exclude('../c/**/ind.[ch]',
-                  '../c/**/symbol.[ch]',
-                  '../c/include/threading.h',
-                  '../c/include/scanner.h',
-                  '../c/include/internal.h',
-                  '../c/src/lang.c',
-                  '../c/include/lang.h')
-
-  EXT_SRC_MAP = {}
-  EXT_SRC_DEST = EXT_SRC.map do |fn|
-    ext_fn = File.join("ext", File.basename(fn))
-    if fn =~ /.c$/ and fn =~ /(bzlib|stemmer)/
-      prefix = $1.upcase
-      ext_fn.gsub!(/ext\//, "ext/#{prefix}_")
-    end
-    EXT_SRC_MAP[fn] = ext_fn
-  end
-  SRC = FileList["ext/*.[ch]", EXT_SRC_DEST, 'ext/internal.h'].uniq
-
-  CLEAN.include   ['**/*.o', '**/*.obj', '.config', 'ext/cferret.c']
-  CLOBBER.include ['doc/api', 'ext/*.so', 'ext/Makefile',
-                   'ext/internal.h', EXT_SRC_DEST]
-
-  # The following block creates file tasks for all of the c files. They
-  # belong in the ../c directory in source the working copy and they need
-  # to be linked to in the ext directory
-  EXT_SRC.each do |fn|
-    dest_fn = EXT_SRC_MAP[fn]
-    # prepend lib files to avoid conflicts
-    file dest_fn => fn do |t|
-      ln fn, dest_fn
-
-      if fn =~ /stemmer/
-        # flatten the directory structure for lib_stemmer
-        open(dest_fn) do |in_f|
-          open(dest_fn + ".out", "w") do |out_f|
-            in_f.each do |line|
-              out_f.write(line.sub(/(#include ["<])[.a-z_\/]*\//, '\1'))
-            end
-          end
-        end
-        mv dest_fn + ".out", dest_fn
-      end
-    end
-  end if File.exists?("../c")
-
-  file 'ext/internal.h' => '../c/include/internal.h' do
-    File.open('ext/internal.h', 'w') do |f|
-      File.readlines('../c/include/internal.h').each do |l|
-        next if l =~ /ALLOC/ and l !~ /ZERO|MP_/
-        f.puts(l)
-      end
-    end
-  end
-
-  desc "Build the extension (ferret_ext.so). You'll need a C compiler and Make."
-  task :compile => ["ext/#{EXT}"] + SRC
-
-  file "ext/#{EXT}" => "ext/Makefile" do
-    cd "ext"
-    if windows and ENV['make'].nil?
-      begin
-        sh "nmake"
-      rescue Exception => e
-        path = ':\Program Files\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT'
-        if File.exists? "f#{path}"
-          sh "f#{path}"
-        elsif File.exists? "c#{path}"
-          sh "c#{path}"
-        else
-          say
-          say "***************************************************************"
-          say "You need to have Visual C++ 6 to build Ferret on Windows."
-          say "If you have it installed, you may need to run;"
-          say ' C:\Program Files\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT'
-          say "***************************************************************"
-          say
-          raise e
-        end
-        sh "nmake"
-      end
-    else
-      sh "make"
-    end
-    cd ".."
-  end
-
-  file "ext/Makefile" => SRC do
-    cd "ext"
-    `ruby extconf.rb`
-    cd ".."
-  end
-end
-
-##############################################################################
-# Testing
-##############################################################################
-
-task :test => 'test:units'
-namespace :test do
-  desc "Run tests with Valgrind"
-  task :valgrind do
-    sh "valgrind --suppressions=ferret_valgrind.supp " +
-       "--leak-check=yes --show-reachable=yes " +
-       "-v ruby test/unit/index/tc_index_reader.rb"
-  end
-
-  desc "Run all tests"
-  task :all => [ :units ]
-
-  desc "run unit tests in test/unit"
-  Rake::TestTask.new("units" => :build) do |t|
-    t.libs << "test/unit"
-    t.pattern = 'test/unit/t[cs]_*.rb'
-    t.verbose = true
-  end
-  task :unit => :units
-
-  desc "run tests using locally installed gem"
-  Rake::TestTask.new("installed") do |t|
-    t.libs << "test/unit"
-    t.ruby_opts << '-rtest/test_installed'
-    t.pattern = 'test/unit/t[cs]_*.rb'
-    t.verbose = true
-  end
-end
-
-##############################################################################
-# Documentation
-##############################################################################
+desc "Run all tests"
+task :test_all => [ :test_units ]
 
 desc "Generate API documentation"
-task :doc => 'doc:rdoc'
-namespace :doc do
-  if allison = Gem.cache.search('allison').last
-    allison_template = File.join(allison.full_gem_path, 'lib/allison.rb')
-  end
-  desc "Generate documentation for the application"
-  $rd = Rake::RDocTask.new do |rdoc|
-    rdoc.rdoc_dir = 'doc/api'
-    rdoc.title    = "Ferret Search Library Documentation"
-    rdoc.options << '--line-numbers'
-    rdoc.options << '--inline-source'
-    rdoc.options << '--charset=utf-8'
-    rdoc.template = allison_template if allison_template
-    rdoc.rdoc_files.include('README')
-    rdoc.rdoc_files.include('TODO')
-    rdoc.rdoc_files.include('TUTORIAL')
-    rdoc.rdoc_files.include('MIT-LICENSE')
-    rdoc.rdoc_files.include('lib/**/*.rb')
-    rdoc.rdoc_files.include('ext/r_*.c')
-    rdoc.rdoc_files.include('ext/ferret.c')
-  end
+task :doc => [ :appdoc ]
 
-  desc "Look for TODO and FIXME tags in the code"
-  task :todo do
-    FileList['**/*.rb', 'ext/*.[ch]'].egrep /[#*].*(FIXME|TODO|TBD)/i
-  end
+desc "run unit tests in test/unit"
+Rake::TestTask.new("test_units" => :ext) do |t|
+  t.libs << "test/unit"
+  t.pattern = 'test/unit/t[cs]_*.rb'
+  #t.pattern = 'test/unit/search/tc_index_searcher.rb'
+  t.verbose = true
 end
 
-##############################################################################
-# Packaging and Installing
-##############################################################################
+desc "Generate documentation for the application"
+rd = Rake::RDocTask.new("appdoc") do |rdoc|
+  rdoc.rdoc_dir = 'doc/api'
+  rdoc.title    = "Ferret Search Library Documentation"
+  rdoc.options << '--line-numbers'
+  rdoc.options << '--inline-source'
+  rdoc.options << '--charset=utf-8'
+  rdoc.rdoc_files.include('README')
+  rdoc.rdoc_files.include('TODO')
+  rdoc.rdoc_files.include('TUTORIAL')
+  rdoc.rdoc_files.include('MIT-LICENSE')
+  rdoc.rdoc_files.include('lib/**/*.rb')
+  rdoc.rdoc_files.include('ext/r_*.c')
+  rdoc.rdoc_files.include('ext/ferret.c')
+end
+
+EXT_SRC.each do |fn|
+  dest_fn = File.join("ext", File.basename(fn))
+  file dest_fn => fn do |t|
+    begin
+      raise "copy for release" if ENV["REL"]
+      ln_s File.join("..", fn), dest_fn
+    rescue Exception => e
+      cp File.expand_path(fn), dest_fn
+    end
+
+    if fn =~ /stemmer/
+      # flatten the directory structure for lib_stemmer
+      open(dest_fn) do |in_f|
+        open(dest_fn + ".out", "w") do |out_f|
+          in_f.each {|line| out_f.write(line.sub(/(#include ["<])[.a-z_\/]*\//) {"#{$1}"})}
+        end
+      end
+      mv dest_fn + ".out", dest_fn
+    end
+  end
+end if File.exists?("../c")
+
+desc "Build the extension"
+task :ext => ["ext/#{EXT}"] + SRC do
+  rm_f 'ext/mem_pool.*'
+  rm_f 'ext/defines.h'
+end
+
+file "ext/#{EXT}" => ["ext/Makefile"] do
+  cp "ext/inc/lang.h", "ext/lang.h"
+  cp "ext/inc/threading.h", "ext/threading.h"
+  cd "ext"
+  if (/mswin/ =~ RUBY_PLATFORM) and ENV['make'].nil?
+    begin
+      sh "nmake"
+    rescue Exception => e
+      puts
+      puts "**********************************************************************"
+      puts "You may need to call VCVARS32.BAT to set the environment variables."
+      puts '  "f:\Program Files\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT"'
+      puts "**********************************************************************"
+      puts
+      raise e
+    end
+  else
+    sh "make"
+  end
+  cd ".."
+end
+
+file "ext/lang.h" => ["ext/inc/lang.h"] do
+  rm_f "ext/lang.h"
+  cp "ext/inc/lang.h", "ext/lang.h"
+end
+
+file "ext/threading.h" => ["ext/inc/threading.h"] do
+  rm_f "ext/threading.h"
+  cp "ext/inc/threading.h", "ext/threading.h"
+end
+
+file "ext/Makefile" => SRC do
+  cd "ext"
+  `ruby extconf.rb`
+  cd ".."
+end
+
+# Make Parsers ---------------------------------------------------------------
+
+RACC_SRC = FileList["lib/**/*.y"]
+RACC_OUT = RACC_SRC.collect { |fn| fn.sub(/\.y$/, '.tab.rb') }
+
+task :parsers => RACC_OUT
+rule(/\.tab\.rb$/ => [proc {|tn| tn.sub(/\.tab\.rb$/, '.y')}]) do |t|
+  sh "racc #{t.source}" 
+end
+
+# Create Packages ------------------------------------------------------------
 
 PKG_FILES = FileList[
   'setup.rb',
   '[-A-Z]*',
+  'ext/**/*.[ch]', 
   'lib/**/*.rb', 
   'lib/**/*.rhtml', 
   'lib/**/*.css', 
@@ -227,216 +182,157 @@ PKG_FILES = FileList[
   'test/**/*.rb',
   'test/**/wordfile',
   'rake_utils/**/*.rb',
-  'Rakefile',
-  SRC
+  'Rakefile'
 ]
+PKG_FILES.exclude('**/*.o')
+PKG_FILES.exclude('**/Makefile')
+PKG_FILES.exclude('ext/ferret_ext.so')
 
-spec = Gem::Specification.new do |s|
-  
-  #### Basic information.
-  s.name = 'ferret'
-  s.version = Ferret::VERSION
-  s.summary = "Ruby indexing library."
-  s.description = "Ferret is a super fast, highly configurable search library."
 
-  #### Dependencies and requirements.
-  s.add_dependency('rake')
-  s.files = PKG_FILES.to_a
-  s.extensions << "ext/extconf.rb"
-  s.require_path = 'lib'
-  s.bindir = 'bin'
-  s.executables = ['ferret-browser']
-  s.default_executable = 'ferret-browser'
-
-  #### Author and project details.
-  s.author = "David Balmain"
-  s.email = "dbalmain@gmail.com"
-  s.homepage = "http://ferret.davebalmain.com/trac"
-  s.rubyforge_project = "ferret"
-
-  s.has_rdoc = true
-  s.extra_rdoc_files = $rd.rdoc_files.reject { |fn| fn =~ /\.rb$/ }.to_a
-  s.rdoc_options <<
-    '--title' <<  'Ferret -- Ruby Search Library' <<
-    '--main' << 'README' << '--line-numbers' <<
-    'TUTORIAL' << 'TODO'
-
-  key_file = File.expand_path('~/.gem/gem-private_key.pem')
-  key_file = nil unless File.exists?(key_file)
-  cert_file = File.expand_path('~/.gem/gem-public_cert.pem')
-  cert_file = nil unless File.exists?(cert_file)
-  if key_file and cert_file
-    s.signing_key = key_file
-    s.cert_chain  = cert_file
-  end
-
-  if windows
-    s.files = PKG_FILES.to_a + ["ext/#{EXT}"]
-    s.extensions.clear
-    s.platform = Gem::Platform::WIN32
-  else
-    s.platform = Gem::Platform::RUBY
-  end
-end
-
-package_task = Rake::GemPackageTask.new(spec) do |pkg|
-  unless windows
-    pkg.need_zip = true
-    pkg.need_tar = true
-  end
-end
-
-desc "Run :gem and install the resulting gem"
-task :install => :gem do
-  sh "#{SUDO}gem install pkg/ferret-#{Ferret::VERSION}.gem --no-rdoc --no-ri -l"
-end
-
-desc "Run :clobber and uninstall the .gem"
-task :uninstall => :clobber do
-  sh "#{SUDO}gem uninstall ferret"
-end
-
-desc "Same as :install but you must be rootgem"
-task :root_install => :gem do
-  sh "gem install pkg/ferret-#{Ferret::VERSION}.gem --no-rdoc --no-ri -l"
-end
-
-desc "Same as :uninstall but you must be root"
-task :root_uninstall => :clobber do
-  sh "gem uninstall ferret"
-end
-
-def list_changes_since_last_release
-  tag_listing = `svn list svn://davebalmain.com/ferret/tags`
-  last_tag = tag_listing.split("\n").last
-  log = `svn log --stop-on-copy svn://davebalmain.com/ferret/tags/#{last_tag}`
-  first_log = log.split(/-------+/)[-2]
-  last_revision = /^r(\d+)\s+\|/.match(first_log)[1]
-  `svn log .. -rHEAD:#{last_revision}`
-end
-
-desc "List changes since last release"
-task :changes do
-  puts list_changes_since_last_release
-end
-
-if ENV['FERRET_DEV']
-  ##############################################################################
-  # Releasing
-  ##############################################################################
-
-  desc "Generate and upload a new release"
-  task :release => 'release:release'
-  namespace :release do
-    task :release => [:status_check, 'test:all', :package, :tag] do
-      say 
-      say "**************************************************************"
-      say "* Release #{Ferret::VERSION} Complete."
-      say "* Packages ready to upload."
-      say "**************************************************************"
-      say 
-      reversion("lib/ferret/version.rb")
-    end
-
-    # Validate that everything is ready to go for a release.
-    task :status_check do
-      # Are all source files checked in?
-      unless `svn -q --ignore-externals status` =~ /^$/
-        fail "'svn -q status' is not clean ... do you have unchecked-in files?"
-      end
-      
-      say "No outstanding checkins found ... OK"
-    end
-
-    def reversion(fn)
-      new_version = nil
-      begin
-        print "Ferret is currently at #{Ferret::VERSION}. What version now? "
-        new_version = STDIN.gets.chomp!
-      end until prompt("Change to version #{new_version}?")
-      
-      if ENV['RELTEST']
-        say "Would change the version in lib/ferret/version.rb from"
-        say "    #{Ferret::VERSION} => #{new_version}"
-        say "and then commit the changes with the command"
-        say "   svn ci -m \"Updated to version #{new_version}\" " +
-            "lib/ferret/version.rb"
-      else
-        open(fn) do |ferret_in|
-          open(fn + ".new", "w") do |ferret_out|
-            ferret_in.each do |line|
-              if line =~ /^  VERSION\s*=\s*/
-                ferret_out.puts "  VERSION = '#{new_version}'"
-              else
-                ferret_out.puts line
-              end
-            end
-          end
-        end
-        mv fn + ".new", fn
-        sh %{svn ci -m "Updated to version #{new_version}" lib/ferret/version.rb}
-      end
-    end
-
-    # Tag all the SVN files with the latest release number
-    task :tag => :status_check do
-      reltag = "REL-#{Ferret::VERSION}"
-      say "Tagging SVN with [#{reltag}]"
-      if ENV['RELTEST']
-        say "Release Task Testing, skipping SVN tagging. Would do;"
-        say %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
-      else
-        sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
-      end
-    end
-
-  end
-
-  ##############################################################################
-  # Publishing
-  ##############################################################################
-
-  namespace :publish do
-    PUBLISH_PROMPT = <<-EOF
-      Make sure you updated RELEASE_NOTES and RELEASE_CHANGES and that the
-      package exists. Are you sure you want to continue?
+if ! defined?(Gem)
+  puts "Package Target requires RubyGEMs"
+else
+  spec = Gem::Specification.new do |s|
+    
+    #### Basic information.
+    s.name = 'ferret'
+    s.version = PKG_VERSION
+    s.summary = "Ruby indexing library."
+    s.description = <<-EOF
+      Ferret is a port of the Java Lucene project. It is a powerful
+      indexing and search library.
     EOF
-    desc "Publish gem on rubyforge for download. Will only do the linux version"
-    task :release do
-      exit unless prompt(PUBLISH_PROMPT)
-      require 'rubyforge'
-      require 'rake/contrib/rubyforgepublisher'
-      version = Ferret::VERSION
 
-      packages = %w(gem tgz zip).map {|ext| "pkg/ferret-#{version}.#{ext}"}
+    #### Dependencies and requirements.
+    s.add_dependency('rake')
+    s.files = PKG_FILES.to_a
+    s.extensions << "ext/extconf.rb"
+    s.require_path = 'lib'
+    s.autorequire = 'ferret'
+    s.bindir = 'bin'
+    s.executables = ['ferret-browser']
+    s.default_executable = 'ferret-browser'
 
-      rubyforge = RubyForge.new
-      rubyforge.login
-      rubyforge.add_release('ferret', 'ferret',
-                            "ferret-#{version}", *packages)
+    #### Author and project details.
+    s.author = "David Balmain"
+    s.email = "dbalmain@gmail.com"
+    s.homepage = "http://ferret.davebalmain.com/trac"
+    s.rubyforge_project = "ferret"
+
+    s.has_rdoc = true
+    s.extra_rdoc_files = rd.rdoc_files.reject { |fn| fn =~ /\.rb$/ }.to_a
+    s.rdoc_options <<
+      '--title' <<  'Ferret -- Ruby Indexer' <<
+      '--main' << 'README' << '--line-numbers' <<
+      'TUTORIAL' << 'TODO'
+
+    if RUBY_PLATFORM =~ /mswin/
+      s.files = PKG_FILES.to_a + ["ext/#{EXT}"]
+      s.extensions.clear
+      s.platform = Gem::Platform::WIN32
     end
+  end
 
-    desc "Publish the documentation"
-    task :docs => 'doc:rdoc' do
-      sh %{rsync -rzv --delete doc/api/ www@davebalmain.com:/var/www/ferret/api}
+  package_task = Rake::GemPackageTask.new(spec) do |pkg|
+    unless RUBY_PLATFORM =~ /mswin/
+      pkg.need_zip = true
+      pkg.need_tar = true
     end
-
-    desc "Publish the documentation and release"
-    task :all => [:doc, :release]
   end
 end
-   
 
+# Support Tasks ------------------------------------------------------
 
+desc "Look for TODO and FIXME tags in the code"
+task :todo do
+  FileList['**/*.rb'].egrep /#.*(FIXME|TODO|TBD)/
+end
+# --------------------------------------------------------------------
+# Creating a release
 
-#
-# In case I ever need to add another racc parser, here's how
-#
-# # Make Parsers ---------------------------------------------------------------
-# 
-# RACC_SRC = FileList["lib/**/*.y"]
-# 
-# task :parsers => RACC_OUT
-# rule(/\.tab\.rb$/ => [proc {|tn| tn.sub(/\.tab\.rb$/, '.y')}]) do |t|
-#   sh "racc #{t.source}" 
-# end
+desc "Make a new release"
+task :release => [
+  :prerelease,
+  :polish,
+  :test_all,
+  :update_version,
+  :package,
+  :tag] do
+  announce 
+  announce "**************************************************************"
+  announce "* Release #{PKG_VERSION} Complete."
+  announce "* Packages ready to upload."
+  announce "**************************************************************"
+  announce 
+end
+
+# Validate that everything is ready to go for a release.
+task :prerelease do
+  announce 
+  announce "**************************************************************"
+  announce "* Making RubyGem Release #{PKG_VERSION}"
+  announce "* (current version #{CURRENT_VERSION})"
+  announce "**************************************************************"
+  announce  
+
+  # Is a release number supplied?
+  unless ENV['REL']
+    fail "Usage: rake release REL=x.y.z [REUSE=tag_suffix]"
+  end
+
+  # Is the release different than the current release.
+  # (or is REUSE set?)
+  if PKG_VERSION == CURRENT_VERSION && ! ENV['REUSE']
+    fail "Current version is #{PKG_VERSION}, must specify REUSE=tag_suffix to reuse version"
+  end
+
+  # Are all source files checked in?
+  data = `svn -q --ignore-externals status`
+  unless data =~ /^$/
+    fail "'svn -q status' is not clean ... do you have unchecked-in files?"
+  end
+  
+  announce "No outstanding checkins found ... OK"
+end
+
+def reversion(fn)
+  open(fn) do |ferret_in|
+    open(fn + ".new", "w") do |ferret_out|
+      ferret_in.each do |line|
+        if line =~ /^  VERSION\s*=\s*/
+          ferret_out.puts "  VERSION = '#{PKG_VERSION}'"
+        else
+          ferret_out.puts line
+        end
+      end
+    end
+  end
+  mv fn + ".new", fn
+end
+
+task :update_version => [:prerelease] do
+  if PKG_VERSION == CURRENT_VERSION
+    announce "No version change ... skipping version update"
+  else
+    announce "Updating Ferret version to #{PKG_VERSION}"
+    reversion("lib/ferret_version.rb")
+    if ENV['RELTEST']
+      announce "Release Task Testing, skipping commiting of new version"
+    else
+      sh %{svn ci -m "Updated to version #{PKG_VERSION}" lib/ferret_version.rb}
+    end
+  end
+end
+
+desc "Tag all the SVN files with the latest release number (REL=x.y.z)"
+task :tag => [:prerelease] do
+  reltag = "REL-#{PKG_VERSION}"
+  reltag << ENV['REUSE'] if ENV['REUSE']
+  announce "Tagging SVN with [#{reltag}]"
+  if ENV['RELTEST']
+    announce "Release Task Testing, skipping SVN tagging. Would do the following;"
+    announce %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
+  else
+    sh %{svn copy -m "creating release #{reltag}" svn://www.davebalmain.com/ferret/trunk svn://www.davebalmain.com/ferret/tags/#{reltag}}
+  end
+end
