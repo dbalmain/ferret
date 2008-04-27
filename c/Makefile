@@ -148,7 +148,7 @@ gen_valsupp: testall
                 -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(DEP_DIR)/$*.P; \
             rm -f $*.d
 
--include $(OBJS:%.o=$(DEP_DIR)/%.P)
+-include $(FRT_OBJS:%.o=$(DEP_DIR)/%.P)
 
 src/q_parser.c: src/q_parser.y
 
