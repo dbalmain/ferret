@@ -843,6 +843,8 @@ static void test_prefix_query(TestCase *tc, void *data)
 
     prq = prefixq_new(cat, "cat1/sub2");
     check_to_s(tc, prq, cat, "cat1/sub2*");
+    prq->boost = 20.0f;
+    check_to_s(tc, prq, cat, "cat1/sub2*^20.0");
     check_hits(tc, searcher, prq, "3, 4, 13, 15", -1);
     q_deref(prq);
 

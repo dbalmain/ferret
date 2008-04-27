@@ -114,8 +114,11 @@ end
 
 $gcov_results   = OpenStruct.new(:files => {})
 def gcov_sorted_keys
-  $gcov_results.files.keys.sort_by {|fn|
-      $gcov_results.files[fn].percent
+  $gcov_results.files.keys.sort {|fn1, fn2|
+      res = $gcov_results.files[fn1].percent <=>
+            $gcov_results.files[fn2].percent
+      res = fn2 <=> fn1 if res == 0
+      res
   }.reverse
 end
 

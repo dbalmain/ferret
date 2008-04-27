@@ -168,7 +168,27 @@ static void test_fuzziness_long(TestCase *tc, void *data)
 }
 
 /**
- * Test query hashing to to_s functionality
+ * Test query->to_s functionality
+ */
+static void test_fuzzy_query_to_s(TestCase *tc, void *data)
+{
+    Query *q;
+    (void)data;
+
+    q = fuzq_new_conf(I("A"), "a", 0.4f, 2, 100);
+    check_to_s(tc, q, I("A"), "a~0.4");
+    check_to_s(tc, q, I("B"), "A:a~0.4");
+    q_deref(q);
+
+    q = fuzq_new_conf(I("field"), "mispell", 0.5f, 2, 100);
+    check_to_s(tc, q, I("field"), "mispell~");
+    check_to_s(tc, q, I("notfield"), "field:mispell~");
+    q_deref(q);
+
+}
+
+/**
+ * Test query hashing functionality
  */
 static void test_fuzzy_query_hash(TestCase *tc, void *data)
 {
@@ -177,8 +197,6 @@ static void test_fuzzy_query_hash(TestCase *tc, void *data)
 
     q1 = fuzq_new_conf(I("A"), "a", 0.4f, 2, 100);
     q2 = fuzq_new_conf(I("A"), "a", 0.4f, 2, 100);
-    check_to_s(tc, q1, I("A"), "a~0.4");
-    check_to_s(tc, q1, I("B"), "A:a~0.4");
 
     Assert(q_eq(q1, q1), "Test same queries are equal");
     Aiequal(q_hash(q1), q_hash(q2));
@@ -205,11 +223,6 @@ static void test_fuzzy_query_hash(TestCase *tc, void *data)
     Assert(!q_eq(q1, q2), "field differs");
     q_deref(q2);
 
-    q2 = fuzq_new_conf(I("field"), "mispell", 0.5f, 2, 100);
-    check_to_s(tc, q2, I("field"), "mispell~");
-    check_to_s(tc, q2, I("notfield"), "field:mispell~");
-    q_deref(q2);
-
     q_deref(q1);
 }
 
@@ -224,6 +237,7 @@ TestSuite *ts_q_fuzzy(TestSuite *suite)
     tst_run_test(suite, test_fuzziness, (void *)store);
     tst_run_test(suite, test_fuzziness_long, (void *)store);
     tst_run_test(suite, test_fuzzy_query_hash, (void *)store);
+    tst_run_test(suite, test_fuzzy_query_to_s, (void *)store);
 
     store_deref(store);
     return suite;
