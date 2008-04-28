@@ -2,6 +2,7 @@ require 'set'
 require 'erb'
 require 'rake'
 require 'rake/clean'
+require 'ostruct'
 
 class String
   def /(path)
@@ -55,6 +56,12 @@ def vsh(msg, script)
 end
 
 ###
+# Useful Constants
+###
+
+DAY = 24 * 60 * 60 # seconds in day
+
+###
 # Path Constants
 #
 # Note: The following may look like a lot of work to do every time Rake is run
@@ -104,7 +111,16 @@ ABF_BASENAMES   = ALL_BUILD_FILES.map do |src|
   FILE2SRC[dep_file(src)] = FILE2SRC[basename] = FILE2SRC[src] = src
   basename
 end
-$gcov_results   = []
+
+$gcov_results   = OpenStruct.new(:files => {})
+def gcov_sorted_keys
+  $gcov_results.files.keys.sort {|fn1, fn2|
+      res = $gcov_results.files[fn1].percent <=>
+            $gcov_results.files[fn2].percent
+      res = fn2 <=> fn1 if res == 0
+      res
+  }.reverse
+end
 
 ###
 # Dependency Handling
@@ -171,7 +187,7 @@ def check_coptions
   }
   if copts != old_copts
     File.open(copts_file, 'w') {|f| f.write(Marshal.dump(copts))}
-    Rake::Task[:clean].invoke
+    Rake::Task[:scrub].invoke
   end
 end
 
@@ -189,7 +205,6 @@ CLEAN  .include([ '*.o',
                   '**/*.gcno',
                   '*.gcov',
                   'y.tab.c'])
-
 CLOBBER.include([ '*.a',
                   '**/*.o',
                   '.rake/HAVE_',
@@ -199,8 +214,15 @@ CLOBBER.include([ '*.a',
                   DEP_DIR,
                   GCOV_DIR])
 
-task :default => :testall
+SCRUB = FileList[CLEAN, '**/*.o']
+desc "clean for rebuild"
+task :scrub do
+  SCRUB.each {|fn| rm_r fn rescue nil}
+end
 
+###
+# Test Helpers
+###
 def run_tests
   check_coptions
   Rake::Task[:testall].invoke
@@ -213,6 +235,16 @@ def use_cpp
   LDFLAGS << ' -lz'
   FileList['.rake/HAVE_*'].each {|fn| CFLAGS << File.read(fn)}
 end
+
+###
+# gcov Helpers
+###
+GCOV_HIST_FILE = ".rake/gcov.history"
+def load_gcov_history
+  Marshal.load(File.read(GCOV_HIST_FILE))
+end
+
+task :default => :testall
 
 desc "Run all tests"
 task :test do
@@ -228,23 +260,46 @@ end
 desc "Generate and print gcov results"
 task :gcov => :do_gcov do
   puts "\ngcov Results\n=============\n"
-  $gcov_results.each do |percent, line_cnt, fn|
-    puts "%25s %6.2f%% (%4d)" % [fn, percent, line_cnt]
+  total_lines = 0
+  total_lines_covered = 0
+  gcov_sorted_keys.each do |fn|
+    res = $gcov_results.files[fn]
+    puts "%25s %6.2f%% (%4d)" % [fn, res.percent, res.line_count]
   end
+  puts "Total Lines:         %s" % $gcov_results.total_lines
+  puts "Total Lines covered: %s (%0.2f%%)" % 
+            [$gcov_results.covered_lines, $gcov_results.percent]
 end
 
-task :gcov2html => :do_gcov do
+desc "Generate .rake/gcov_results.html"
+task :gcov2html => [:do_gcov, '.rake/gcov_history.jpg'] do
   puts "Generating .rake/gcov_results.html..."
   File.open('.rake/gcov_results.html', 'w') do |f|
     f.write(ERB.new(File.read('.rake/gcov_results.erb')).result(binding))
   end
 end
 
+file '.rake/gcov_history.data' => GCOV_HIST_FILE do |t|
+  history = load_gcov_history
+  start = history.start_date
+  File.open(t.name, 'w') do |f|
+    history.data.each do |d|
+      f.write "%s %.2f\n" %
+        [Time.at((d.day + start) * DAY).strftime("%Y-%m-%d"), d.percent]
+    end
+  end
+end
+
+file '.rake/gcov_history.jpg' => '.rake/gcov_history.data' do |t|
+  sh "gnuplot .rake/gcov_history.plot"
+end
+
 task :do_gcov do
   CFLAGS << " -fprofile-arcs -ftest-coverage"
   run_tests
-  gcov_results = []
+  gcov_result_map = {}
   gcov_scanner = /File '([^']+)'\nLines executed:(\d+.\d+)% of (\d+)/
+  total_lines = covered_lines = 0
   OBJS.each do |obj|
     bn = obj.pathmap('%n')
     %w{gcda gcno}.each do |ext|
@@ -255,12 +310,27 @@ task :do_gcov do
                 File.exists?(GCOV_DIR/"#{bn}.gcda")
     gcov_cmd = "gcov -o .gcov/ #{obj}"
     details = IO.popen(gcov_cmd).read.scan(gcov_scanner)
-    details.each do |filename, percent, line_cnt|
+    details.each do |filename, percent, line_count|
       next if filename =~ /^\//
-      $gcov_results << [percent.to_f, line_cnt, filename]
+      line_count = line_count.to_i
+      percent = percent.to_f
+      $gcov_results.files[filename] = OpenStruct.new(:percent => percent,
+                                                     :line_count => line_count)
+      total_lines += line_count
+      covered_lines += (0.01 * percent * line_count).to_i
     end
   end
-  $gcov_results = $gcov_results.sort_by{|res| res[0]}.reverse
+  $gcov_results.total_lines = total_lines
+  $gcov_results.covered_lines = covered_lines
+  $gcov_results.percent = percent = 100.0 * covered_lines /total_lines
+  history = load_gcov_history
+  today = Time.now.to_i/DAY - history.start_date
+  history.data.pop if history.data.last.day == today
+  history.data << OpenStruct.new(:day => today,
+                                 :total => total_lines,
+                                 :covered => covered_lines,
+                                 :percent => percent)
+  File.open(GCOV_HIST_FILE, 'w') {|f| f.write(Marshal.dump(history))}
 end
 
 desc "Build the benchmark runner"
@@ -450,7 +520,8 @@ end
 namespace :publish do
   desc "Publish the gcoverage results"
   task :gcov => :gcov2html do
-    sh %{scp .rake/gcov_results.html www@davebalmain.com:/var/www/ferret}
+    sh "scp .rake/gcov_results.html .rake/gcov_history.jpg " + 
+         "www@davebalmain.com:/var/www/ferret"
   end
 end
 

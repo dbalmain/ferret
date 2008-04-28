@@ -258,13 +258,13 @@ static int report(TestSuite *suite)
     }
 
     dptr = suite->head;
-    fprintf(stdout, "%-15s\t\tTotal\tFail\tFailed %%\n", "Failed Tests");
+    fprintf(stdout, "%-24sTotal\tFail\tFailed %%\n", "Failed Tests");
     fprintf(stdout, "===================================================\n");
     while (dptr != NULL) {
         if (dptr->failed != 0) {
             double percent =
                 ((double) dptr->failed / (double) dptr->num_test);
-            fprintf(stdout, "%-15s\t\t%5d\t%4d\t%6.2f%%\n", dptr->name,
+            fprintf(stdout, "%-24s%5d\t%4d\t%6.2f%%\n", dptr->name,
                     dptr->num_test, dptr->failed, percent * 100);
         }
         dptr = dptr->next;
@@ -455,6 +455,7 @@ bool tst_flt_delta_equal(int line_num, TestCase *tc, const double expected,
     if ((diff * diff) < delta) {
         return true;
     }
+    fprintf(stderr, "diff = %g\n", diff);
 
     tc->failed = true;
     tst_msg(tc->name, tc->suite->name, line_num,

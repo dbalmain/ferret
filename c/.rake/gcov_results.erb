@@ -15,15 +15,16 @@
   <body>
     <h1>Ferret gcov Results</h1>
     <table cellpadding="0" cellspacing="5">
-    <% $gcov_results.each do |percent, line_cnt, filename| %>
+    <% gcov_sorted_keys.each do |fn| %>
       <tr>
-        <th class="filename"><%= filename %></th>
+        <th class="filename"><%= fn %></th>
         <td class="result">
-          <div class="bar" style="width:<%=percent%>%;">&nbsp;<div>
+          <div class="bar" style="width:<%=$gcov_results.files[fn].percent%>%;">&nbsp;<div>
         </td>
       </tr>
     <% end %>
     </table>
+    <img src="gcov_history.jpg" alt="Overall gcov coverage results"/>
     <script type="text/javascript">
       var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
       document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));

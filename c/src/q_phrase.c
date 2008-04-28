@@ -116,16 +116,12 @@ static int pp_pos_cmp(const void *const p1, const void *const p2)
 
 static bool pp_less_than(const PhPos *pp1, const PhPos *pp2)
 {
-    /* docs will all be equal when this method is used */
-    return pp1->position < pp2->position;
-    /*
-    if (PP(p)->doc == PP(p)->doc) {
-        return PP(p)->position < PP(p)->position;
+    if (pp1->position == pp2->position) {
+        return pp1->offset < pp2->offset;
     }
     else {
-        return PP(p)->doc < PP(p)->doc;
+        return pp1->position < pp2->position;
     }
-    */
 }
 
 static void pp_destroy(PhPos *pp)
@@ -167,6 +163,7 @@ typedef struct PhraseScorer
     int     slop;
     bool    first_time : 1;
     bool    more : 1;
+    bool    check_repeats : 1;
 } PhraseScorer;
 
 static void phsc_init(PhraseScorer *phsc)
@@ -234,7 +231,7 @@ static float phsc_score(Scorer *self)
     /* normalize */
     return raw_score * sim_decode_norm(
         self->similarity,
-        phsc->norms[phsc->phrase_pos[phsc->pp_first_idx]->doc]);
+        phsc->norms[self->doc]);
 }
 
 static bool phsc_next(Scorer *self)
@@ -278,7 +275,7 @@ static Explanation *phsc_explain(Scorer *self, int doc_num)
 
     phsc_skip_to(self, doc_num);
 
-    phrase_freq = (self->doc == doc_num) ? phsc->freq : (float)0.0;
+    phrase_freq = (self->doc == doc_num) ? phsc->freq : 0.0f;
     return expl_new(sim_tf(self->similarity, phrase_freq),
                     "tf(phrase_freq=%f)", phrase_freq);
 }
@@ -294,12 +291,17 @@ static void phsc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-static Scorer *phsc_new(Weight *weight, TermDocEnum **term_pos_enum,
+static Scorer *phsc_new(Weight *weight,
+                        TermDocEnum **term_pos_enum,
                         PhrasePosition *positions, int pos_cnt,
-                        Similarity *similarity, uchar *norms)
+                        Similarity *similarity,
+                        uchar *norms,
+                        int slop)
 {
     int i;
     Scorer *self                = scorer_new(PhraseScorer, similarity);
+    HashSet *term_set           = NULL;
+
 
     PhSc(self)->weight          = weight;
     PhSc(self)->norms           = norms;
@@ -307,12 +309,33 @@ static Scorer *phsc_new(Weight *weight, TermDocEnum **term_pos_enum,
     PhSc(self)->phrase_pos      = ALLOC_N(PhPos *, pos_cnt);
     PhSc(self)->pp_first_idx    = 0;
     PhSc(self)->pp_cnt          = pos_cnt;
-    PhSc(self)->slop            = 0;
+    PhSc(self)->slop            = slop;
     PhSc(self)->first_time      = true;
     PhSc(self)->more            = true;
-
+    PhSc(self)->check_repeats   = false;
+    
+    if (slop) {
+        term_set = hs_new_str((free_ft)NULL);
+    }
     for (i = 0; i < pos_cnt; i++) {
+        /* check for repeats */
+        if (slop && !PhSc(self)->check_repeats) {
+            char **terms = positions[i].terms;
+            const int t_cnt = ary_size(terms);
+            int j;
+            for (j = 0; j < t_cnt; j++) {
+                if (hs_add(term_set, terms[j])) {
+                    PhSc(self)->check_repeats = true;
+                    goto repeat_check_done;
+                }
+            }
+        }
+repeat_check_done:
         PhSc(self)->phrase_pos[i] = pp_new(term_pos_enum[i], positions[i].pos);
+    }
+
+    if (slop) {
+        hs_destroy(term_set);
     }
 
     self->score     = &phsc_score;
@@ -375,8 +398,13 @@ static Scorer *exact_phrase_scorer_new(Weight *weight,
                                        PhrasePosition *positions, int pp_cnt,
                                        Similarity *similarity, uchar *norms)
 {
-    Scorer *self =
-        phsc_new(weight, term_pos_enum, positions, pp_cnt, similarity, norms);
+    Scorer *self = phsc_new(weight,
+                            term_pos_enum,
+                            positions,
+                            pp_cnt,
+                            similarity,
+                            norms,
+                            0);
 
     PhSc(self)->phrase_freq = &ephsc_phrase_freq;
     return self;
@@ -385,6 +413,33 @@ static Scorer *exact_phrase_scorer_new(Weight *weight,
 /***************************************************************************
  * SloppyPhraseScorer
  ***************************************************************************/
+
+static bool sphsc_check_repeats(PhPos *pp,
+                                PhPos **positions,
+                                const int p_cnt)
+{
+    int j;
+    for (j = 0; j < p_cnt; j++) {
+        PhPos *ppj = positions[j];
+        /* If offsets are equal, either we are at the current PhPos +pp+ or
+         * +pp+ and +ppj+ are supposed to match in the same position in which
+         * case we don't need to check. */
+        if (ppj->offset == pp->offset) {
+            continue;
+        }
+        /* the two phrase positions are matching on the same term
+         * which we want to avoid */
+        if ((ppj->position + ppj->offset) == (pp->position + pp->offset)) {
+            if (!pp_next_position(pp)) {
+                /* We have no matches for this document */
+                return false;
+            }
+            /* we changed the position so we need to start check again */
+            j = -1;
+        }
+    }
+    return true;
+}
 
 static float sphsc_phrase_freq(Scorer *self)
 {
@@ -395,11 +450,19 @@ static float sphsc_phrase_freq(Scorer *self)
 
     int last_pos = 0, pos, next_pos, start, match_length, i;
     bool done = false;
+    bool check_repeats = phsc->check_repeats;
     float freq = 0.0;
 
     for (i = 0; i < pp_cnt; i++) {
         pp = phsc->phrase_pos[i];
-        pp_first_position(pp);
+        /* we should always have at least one position or this functions
+         * shouldn't have been called. */
+        assert(pp_first_position(pp));
+        if (check_repeats && i > 0) {
+            if (!sphsc_check_repeats(pp, phsc->phrase_pos, i - 1)) {
+                goto return_freq;
+            }
+        }
         if (pp->position > last_pos) {
             last_pos = pp->position;
         }
@@ -412,8 +475,10 @@ static float sphsc_phrase_freq(Scorer *self)
         next_pos = PP(pq_top(pq))->position;
         while (pos <= next_pos) {
             start = pos;        /* advance pp to min window */
-            if (!pp_next_position(pp)) {
-                done = true;    /* ran out of a positions for a term - done */
+            if (!pp_next_position(pp)
+                || (check_repeats
+                    && !sphsc_check_repeats(pp, phsc->phrase_pos, pp_cnt))) {
+                done = true;
                 break;
             }
             pos = pp->position;
@@ -431,6 +496,8 @@ static float sphsc_phrase_freq(Scorer *self)
         pq_push(pq, pp);        /* restore pq */
     } while (!done);
 
+return_freq:
+
     pq_destroy(pq);
     return freq;
 }
@@ -441,10 +508,14 @@ static Scorer *sloppy_phrase_scorer_new(Weight *weight,
                                         int pp_cnt, Similarity *similarity,
                                         int slop, uchar *norms)
 {
-    Scorer *self =
-        phsc_new(weight, term_pos_enum, positions, pp_cnt, similarity, norms);
+    Scorer *self = phsc_new(weight,
+                            term_pos_enum,
+                            positions,
+                            pp_cnt,
+                            similarity,
+                            norms,
+                            slop);
 
-    PhSc(self)->slop        = slop;
     PhSc(self)->phrase_freq = &sphsc_phrase_freq;
     return self;
 }
@@ -1123,4 +1194,9 @@ void phq_append_multi_term(Query *self, const char *term)
     else {
         ary_push(phq->positions[index].terms, estrdup(term));
     }
+}
+
+void frt_phq_set_slop(FrtQuery *self, int slop)
+{
+    PhQ(self)->slop = slop;
 }
