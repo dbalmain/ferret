@@ -325,6 +325,7 @@ extern FrtQuery *frt_phq_new(FrtSymbol field);
 extern void frt_phq_add_term(FrtQuery *self, const char *term, int pos_inc);
 extern void frt_phq_add_term_abs(FrtQuery *self, const char *term, int position);
 extern void frt_phq_append_multi_term(FrtQuery *self, const char *term);
+extern void frt_phq_set_slop(FrtQuery *self, int slop);
 
 /***************************************************************************
  * FrtMultiTermQuery

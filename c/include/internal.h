@@ -737,6 +737,7 @@
 #define phq_add_term_abs                        frt_phq_add_term_abs
 #define phq_append_multi_term                   frt_phq_append_multi_term
 #define phq_new                                 frt_phq_new
+#define phq_set_slop                            frt_phq_set_slop
 #define pl_add_occ                              frt_pl_add_occ
 #define pl_cmp                                  frt_pl_cmp
 #define pl_new                                  frt_pl_new

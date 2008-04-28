@@ -163,13 +163,13 @@ struct Data test_data[SEARCH_DOCS_SIZE] = {
         "cat1/",                ".123"},
     {"20051001", "word1 word2 the quick brown fox the quick brown fox",
         "cat1/sub1",            "0.954"},
-    {"20051002", "word1 word3",
+    {"20051002", "word1 word3 one two one",
         "cat1/sub1/subsub1",    "908.123434"},
-    {"20051003", "word1 word3",
+    {"20051003", "word1 word3 one two",
         "cat1/sub2",            "3999"},
     {"20051004", "word1 word2",
         "cat1/sub2/subsub2",    "+.3413"},
-    {"20051005", "word1",
+    {"20051005", "word1 one two x x x x x one two",
         "cat2/sub1",            "-1.1298"},
     {"20051006", "word1 word3",
         "cat2/sub1",            "2"},
@@ -264,7 +264,7 @@ void check_hits(TestCase *tc, Searcher *searcher, Query *query,
     int total_hits = s2l(expected_hits, num_array);
     TopDocs *top_docs
         = searcher_search(searcher, query, 0, total_hits + 1, NULL, NULL, NULL);
-    if (!Aiequal(total_hits, top_docs->total_hits)) {
+    if (!tc->failed && !Aiequal(total_hits, top_docs->total_hits)) {
         int i;
         Tmsg_nf("\texpected;\n\t    ");
         for (i = 0; i < total_hits; i++) {
@@ -296,7 +296,7 @@ void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                "doc %d was found unexpectedly", hit->doc);
         /* only check the explanation if we got the correct docs. Obviously we
          * might want to remove this to visually check the explanations */
-        if (total_hits == top_docs->total_hits) {
+        if (!tc->failed && total_hits == top_docs->total_hits) {
             Explanation *e = searcher_explain(searcher, query, hit->doc);
             if (! Afequal(hit->score, e->value)) {
                char *t;
@@ -313,6 +313,8 @@ free(t);
         }
     }
     td_destroy(top_docs);
+
+    /* test search_unscored method */
     qsort(num_array, total_hits, sizeof(int), &icmp_risky);
     count = searcher_search_unscored(searcher, query,
                                      num_array2, ARRAY_SIZE, 0);
@@ -524,7 +526,7 @@ static void test_phrase_query(TestCase *tc, void *data)
     check_to_s(tc, phq, NULL, "field:\"quick brown fox\"");
     check_hits(tc, searcher, phq, "1", 1);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 16, 17", 17);
     q_deref(phq);
 
@@ -535,10 +537,10 @@ static void test_phrase_query(TestCase *tc, void *data)
     check_to_s(tc, phq, NULL, "field:\"quick <> fox\"");
     check_hits(tc, searcher, phq, "1, 11, 14", 14);
 
-    ((PhraseQuery *)phq)->slop = 1;
+    phq_set_slop(phq, 1);
     check_hits(tc, searcher, phq, "1, 11, 14, 16", 14);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 11, 14, 16, 17", 14);
     phq_add_term(phq, "red", -1);
     check_to_s(tc, phq, NULL, "field:\"quick red fox\"~4");
@@ -565,6 +567,16 @@ static void test_phrase_query(TestCase *tc, void *data)
     phq_add_term(phq, "QUICK", 1);
     check_hits(tc, searcher, phq, "11, 14", 14);
     check_to_s(tc, phq, NULL, "field:\"WORD3&the THE&quick QUICK\"");
+    q_deref(phq);
+
+    /* test repeating terms check */
+    phq = phq_new(field);
+    phq_add_term(phq, "one", 0);
+    phq_add_term(phq, "two", 1);
+    phq_add_term(phq, "one", 1);
+    check_hits(tc, searcher, phq, "2", 2);
+    phq_set_slop(phq, 2);
+    check_hits(tc, searcher, phq, "2", 2);
     q_deref(phq);
 
     phq = phq_new(I("not a field"));
@@ -602,7 +614,7 @@ static void test_phrase_query_hash(TestCase *tc, void *data)
     Assert(q_eq(q1, q1), "Test query equals itself");
     Assert(q_eq(q1, q2), "Queries should be equal");
 
-    ((PhraseQuery *)q2)->slop = 5;
+    phq_set_slop(q2, 5);
     Assert(q_hash(q1) != q_hash(q2), "Queries should not be equal");
     Assert(!q_eq(q1, q2), "Queries should not be equal");
     q_deref(q2);
@@ -656,7 +668,7 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     check_to_s(tc, phq, NULL, "field:\"quick|fast brown|red|hairy fox\"");
     check_hits(tc, searcher, phq, "1, 8, 11, 14", -1);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, phq, NULL, "field:\"quick|fast brown|red|hairy fox\"~4");
 
@@ -673,6 +685,22 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
                "QUICK|FAST&brown|red|hairy fox\"~4");
     q_deref(phq);
 
+    /* test repeating terms check */
+    phq = phq_new(field);
+    phq_add_term(phq, "WORD3", 0);
+    phq_append_multi_term(phq, "x");
+    phq_add_term(phq, "one", 0);
+    phq_add_term(phq, "two", 1);
+    phq_add_term(phq, "one", 1);
+    check_hits(tc, searcher, phq, "2", -1);
+    check_to_s(tc, phq, NULL, "field:\"WORD3|x&one two one\"");
+
+    phq_set_slop(phq, 4);
+    check_hits(tc, searcher, phq, "2", -1);
+    check_to_s(tc, phq, NULL, "field:\"WORD3|x&one two one\"~4");
+    q_deref(phq);
+
+    /* test phrase query on non-existing field doesn't break anything */
     phq = phq_new(I("not a field"));
     phq_add_term(phq, "the", 0);
     phq_add_term(phq, "quick", 1);
@@ -716,7 +744,7 @@ static void test_multi_phrase_query_hash(TestCase *tc, void *data)
     Assert(q_eq(q1, q1), "Test query equals itself");
     Assert(q_eq(q1, q2), "Queries should be equal");
 
-    ((PhraseQuery *)q2)->slop = 5;
+    phq_set_slop(q2, 5);
     Assert(q_hash(q1) != q_hash(q2), "Queries should not be equal");
     Assert(!q_eq(q1, q2), "Queries should not be equal");
 

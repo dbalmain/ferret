@@ -455,6 +455,7 @@ bool tst_flt_delta_equal(int line_num, TestCase *tc, const double expected,
     if ((diff * diff) < delta) {
         return true;
     }
+    fprintf(stderr, "diff = %g\n", diff);
 
     tc->failed = true;
     tst_msg(tc->name, tc->suite->name, line_num,
