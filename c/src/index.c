@@ -5579,6 +5579,11 @@ Hash *dw_invert_field(DocWriter *dw,
             if (store_offsets) {
                 while (NULL != (tk = ts->next(ts))) {
                     pos += tk->pos_inc;
+                    /* if for some reason pos gets set to some number less
+                     * than 0 the we'll start pos at 0 */
+                    if (pos < 0) {
+                        pos = 0;
+                    }
                     dw_add_posting(mp, curr_plists, fld_plists, doc_num,
                                    tk->text, tk->len, pos);
                     dw_add_offsets(dw, pos,

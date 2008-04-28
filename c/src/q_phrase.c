@@ -777,13 +777,10 @@ static TVPosEnum *tvpe_new_merge(char **terms, int t_cnt, TermVector *tv,
         TVTerm *tv_term = tv_get_tv_term(tv, terms[i]);
         if (tv_term) {
             TVPosEnum *tvpe = tvpe_new(tv_term->positions, tv_term->freq, 0);
-            if (tvpe_next(tvpe)) {
-                pq_push(tvpe_pq, tvpe);
-                total_positions += tv_term->freq;
-            }
-            else {
-                free(tvpe);
-            }
+            /* got tv_term so tvpe_next should always return true once here */
+            assert(tvpe_next(tvpe));
+            pq_push(tvpe_pq, tvpe);
+            total_positions += tv_term->freq;
         }
     }
     if (tvpe_pq->size == 0) {

@@ -539,8 +539,9 @@ MatchVector *matchv_add(MatchVector *self, int start, int end)
         REALLOC_N(self->matches, MatchRange, self->capa);
     }
     self->matches[self->size].start = start;
-    self->matches[self->size].end = end;
-    self->matches[self->size++].score = 1.0;
+    self->matches[self->size].end   = end;
+    self->matches[self->size].score = 1.0;
+    self->size++;
     return self;
 }
 
@@ -1522,9 +1523,9 @@ static Weight *msea_create_weight(Searcher *self, Query *query)
                          free);
     Query *rewritten_query = self->rewrite(self, query);
     /* terms get copied directly to df_map so no need to free here */
-    HashSet *terms = frt_hs_new((hash_ft)&frt_term_hash,
-                                (eq_ft)&frt_term_eq,
-                                (free_ft)NULL);
+    HashSet *terms = hs_new((hash_ft)&term_hash,
+                            (eq_ft)&term_eq,
+                            (free_ft)NULL);
     HashSetEntry *hse;
 
     rewritten_query->extract_terms(rewritten_query, terms);
@@ -1800,8 +1801,7 @@ static TermVector *msea_get_term_vector(Searcher *self, const int doc_num,
     MultiSearcher *msea = MSEA(self);
     int i = msea_get_searcher_index(self, doc_num);
     Searcher *s = msea->searchers[i];
-    return s->get_term_vector(s, doc_num - msea->starts[i],
-                              field);
+    return s->get_term_vector(s, doc_num - msea->starts[i], field);
 }
 
 static Similarity *msea_get_similarity(Searcher *self)

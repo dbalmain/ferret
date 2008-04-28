@@ -493,7 +493,9 @@ static VALUE
 frb_q_get_terms(VALUE self, VALUE searcher)
 {
     VALUE rterms = rb_ary_new();
-    HashSet *terms = term_set_new();
+    HashSet *terms = hs_new((hash_ft)&term_hash,
+                            (eq_ft)&term_eq,
+                            (free_ft)term_destroy);
     HashSetEntry *hse;
     GET_Q();
     Searcher *sea = (Searcher *)DATA_PTR(searcher);

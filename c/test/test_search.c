@@ -201,7 +201,9 @@ static void prepare_search_index(Store *store)
     int i;
     IndexWriter *iw;
 
-    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    FieldInfos *fis = fis_new(STORE_YES,
+                              INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     index_create(store, fis);
     fis_deref(fis);
 
@@ -513,7 +515,9 @@ static void test_boolean_query_hash(TestCase *tc, void *data)
 
 static void test_phrase_query(TestCase *tc, void *data)
 {
+    MatchVector *mv;
     Searcher *searcher = (Searcher *)data;
+    Explanation *explanation;
     Query *q;
     Query *phq = phq_new(field);
     Weight *w;
@@ -596,16 +600,67 @@ static void test_phrase_query(TestCase *tc, void *data)
     phq_add_term(phq, "the", 0);
     phq_add_term(phq, "quick", 1);
     check_hits(tc, searcher, phq, "", -1);
+    explanation = searcher->explain(searcher, phq, 0);
+    Afequal(0.0, explanation->value);
+    expl_destroy(explanation);
     q_deref(phq);
 
-    /* test single term case, query is rewritten to TermQuery */
+    /* test single-term case, query is rewritten to TermQuery */
     phq = phq_new(field);
     phq_add_term(phq, "word2", 1);
     check_hits(tc, searcher, phq, "4, 8, 1", -1);
     q = searcher_rewrite(searcher, phq);
     Aiequal(q->type, TERM_QUERY);
-    q_deref(phq);
     q_deref(q);
+
+    /* test single-position/multi-term query is rewritten as MultiTermQuery */
+    phq_append_multi_term(phq, "word3");
+    check_hits(tc, searcher, phq, "1,2,3,4,6,8,11,14", -1);
+    q = searcher_rewrite(searcher, phq);
+    Aiequal(q->type, MULTI_TERM_QUERY);
+    q_deref(q);
+
+    /* check boost doesn't break anything */;
+    phq_add_term(phq, "one", 1); /* make sure it won't be rewritten */
+    phq->boost = 10.0;
+    check_hits(tc, searcher, phq, "2,3", -1);
+    q_deref(phq);
+
+    /* test get_matchv_i */
+    phq = phq_new(field);
+    phq_add_term(phq, "quick", 0);
+    phq_add_term(phq, "brown", 1);
+    check_hits(tc, searcher, phq, "1", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    phq_set_slop(phq, 4);
+    check_hits(tc, searcher, phq, "1,16,17", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    mv = searcher_get_match_vector(searcher, phq, 16, field);
+    if (Aiequal(1, mv->size)) {
+        Aiequal(2, mv->matches[0].start);
+        Aiequal(5, mv->matches[0].end);
+    }
+    matchv_destroy(mv);
+    phq_add_term(phq, "chicken", 1);
+    check_hits(tc, searcher, phq, "", -1);
+    mv = searcher_get_match_vector(searcher, phq, 16, field);
+    Aiequal(0, mv->size);
+    matchv_destroy(mv);
+    q_deref(phq);
 }
 
 static void test_phrase_query_hash(TestCase *tc, void *data)
@@ -665,9 +720,11 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *phq, *q;
+    MatchVector *mv;
 
     phq = phq_new(field);
-    phq_add_term(phq, "quick", 0);
+    /* ok to use append_multi_term to start */
+    phq_append_multi_term(phq, "quick");
     phq_append_multi_term(phq, "fast");
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, phq, field, "\"quick|fast\"");
@@ -730,6 +787,44 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     q_deref(phq);
     q_deref(q);
 
+    /* test get_matchv_i */
+    phq = phq_new(field);
+    phq_add_term(phq, "quick", 0);
+    phq_add_term(phq, "brown", 1);
+    phq_append_multi_term(phq, "dirty");
+    phq_append_multi_term(phq, "red");
+    check_hits(tc, searcher, phq, "1,11", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    phq_set_slop(phq, 1);
+    check_hits(tc, searcher, phq, "1,11,17", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    mv = searcher_get_match_vector(searcher, phq, 17, field);
+    if (Aiequal(1, mv->size)) {
+        Aiequal(5, mv->matches[0].start);
+        Aiequal(7, mv->matches[0].end);
+    }
+    matchv_destroy(mv);
+    phq_add_term(phq, "chicken", 1);
+    phq_append_multi_term(phq, "turtle");
+    check_hits(tc, searcher, phq, "", -1);
+    mv = searcher_get_match_vector(searcher, phq, 17, field);
+    Aiequal(0, mv->size);
+    matchv_destroy(mv);
+    q_deref(phq);
 }
 
 static void test_multi_phrase_query_hash(TestCase *tc, void *data)
@@ -1405,7 +1500,9 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
 {
     int i;
     IndexWriter *iw;
-    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    FieldInfos *fis = fis_new(STORE_YES,
+                              INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     index_create(store, fis);
     fis_deref(fis);
 
