@@ -7,6 +7,13 @@
 
 #define PhQ(query) ((PhraseQuery *)(query))
 
+/**
+ * Use to sort the phrase positions into positional order. For phrase
+ * positions matching at the same position (a very unusual case) we order by
+ * first terms. The only real reason for the sorting by first terms is to get
+ * consistant order of positions when testing. Functionally it makes no
+ * difference.
+ */
 static int phrase_pos_cmp(const void *p1, const void *p2)
 {
     int pos1 = ((PhrasePosition *)p1)->pos;
