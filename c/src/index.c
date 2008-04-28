@@ -365,12 +365,12 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
 
 FieldInfo *fis_get_field(FieldInfos *fis, Symbol name)
 {
-    return (FieldInfo *)h_get(fis->field_dict, name);
+    return (FieldInfo *)h_get(fis->field_dict, I(name));
 }
 
 int fis_get_field_num(FieldInfos *fis, Symbol name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
     if (fi) {
         return fi->number;
     }
@@ -381,7 +381,7 @@ int fis_get_field_num(FieldInfos *fis, Symbol name)
 
 FieldInfo *fis_get_or_add_field(FieldInfos *fis, Symbol name)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
+    FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, I(name));
     if (!fi) {
         fi = (FieldInfo*)fi_new(name, fis->store, fis->index, fis->term_vector);
         fis_add_field(fis, fi);
@@ -4547,7 +4547,7 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
                                   Symbol field)
 {
-    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, field);
+    FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, I(field));
     FieldsReader *fr;
 
     if (!fi || !fi_store_term_vector(fi) || !SR(ir)->fr ||
