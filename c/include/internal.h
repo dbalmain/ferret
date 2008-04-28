@@ -907,7 +907,6 @@
 #define term_eq                                 frt_term_eq
 #define term_hash                               frt_term_hash
 #define term_new                                frt_term_new
-#define term_set_new                            frt_term_set_new
 #define tf_new_i                                frt_tf_new_i
 #define thread_exit                             frt_thread_exit
 #define thread_getspecific                      frt_thread_getspecific

@@ -516,9 +516,12 @@ static void test_phrase_query(TestCase *tc, void *data)
     Searcher *searcher = (Searcher *)data;
     Query *q;
     Query *phq = phq_new(field);
+    Weight *w;
+    char *t, e[100];
     check_to_s(tc, phq, field, "\"\"");
     check_to_s(tc, phq, NULL, "field:\"\"");
 
+    
     phq_add_term(phq, "quick", 1);
     phq_add_term(phq, "brown", 1);
     phq_add_term(phq, "fox", 1);
@@ -528,6 +531,16 @@ static void test_phrase_query(TestCase *tc, void *data)
 
     phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 16, 17", 17);
+
+    /* test PhraseWeight.to_s */
+    w = searcher->create_weight(searcher, phq);
+    sprintf(e, "PhraseWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    phq->boost = 10.5f;
+    sprintf(e, "PhraseWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    w->destroy(w);
+
     q_deref(phq);
 
     phq = phq_new(field);

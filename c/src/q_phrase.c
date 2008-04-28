@@ -564,15 +564,8 @@ static Scorer *phw_scorer(Weight *self, IndexReader *ir)
         else {
             tps[i] = mtdpe_new(ir, field_num, terms, t_cnt);
         }
-        if (tps[i] == NULL) {
-            /* free everything we just created and return NULL */
-            int j;
-            for (j = 0; j < i; j++) {
-                tps[i]->close(tps[i]);
-            }
-            free(tps);
-            return NULL;
-        }
+        /* neither mtdpe_new nor ir->term_positions should return NULL */
+        assert(NULL != tps[i]);
     }
 
     if (phq->slop == 0) {       /* optimize exact (common) case */

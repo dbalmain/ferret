@@ -1397,9 +1397,7 @@ static TermVector *cdfsea_get_term_vector(Searcher *self, const int doc_num,
 
 static Similarity *cdfsea_get_similarity(Searcher *self)
 {
-    (void)self;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
-    return NULL;
+    return self->similarity;
 }
 
 static void cdfsea_close(Searcher *self)
@@ -1415,6 +1413,7 @@ static Searcher *cdfsea_new(Hash *df_map, int max_doc)
     CDFSEA(self)->df_map    = df_map;
     CDFSEA(self)->max_doc   = max_doc;
 
+    self->similarity        = sim_create_default();
     self->doc_freq          = &cdfsea_doc_freq;
     self->get_doc           = &cdfsea_get_doc;
     self->max_doc           = &cdfsea_max_doc;
@@ -1514,14 +1513,18 @@ static int *msea_get_doc_freqs(Searcher *self, HashSet *terms)
 
 static Weight *msea_create_weight(Searcher *self, Query *query)
 {
-    Jx
     int i, *doc_freqs;
     Searcher *cdfsea;
     Weight *w;
-    Hash *df_map = h_new((hash_ft)&term_hash, (eq_ft)&term_eq,
-                             (free_ft)NULL, free);
+    Hash *df_map = h_new((hash_ft)&term_hash,
+                         (eq_ft)&term_eq,
+                         (free_ft)term_destroy,
+                         free);
     Query *rewritten_query = self->rewrite(self, query);
-    HashSet *terms = term_set_new();
+    /* terms get copied directly to df_map so no need to free here */
+    HashSet *terms = frt_hs_new((hash_ft)&frt_term_hash,
+                                (eq_ft)&frt_term_eq,
+                                (free_ft)NULL);
     HashSetEntry *hse;
 
     rewritten_query->extract_terms(rewritten_query, terms);

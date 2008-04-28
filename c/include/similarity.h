@@ -11,9 +11,6 @@ typedef struct FrtSearcher FrtSearcher;
  *
  ****************************************************************************/
 
-#define frt_term_set_new() \
-    frt_hs_new((hash_ft)&frt_term_hash, (eq_ft)&frt_term_eq, (free_ft)&frt_term_destroy)
-
 typedef struct FrtTerm
 {
     FrtSymbol field;
