@@ -167,7 +167,11 @@ struct Data test_data[SEARCH_DOCS_SIZE] = {
         "cat1/sub1/subsub1",    "908.123434"},
     {"20051003", "word1 word3 one two",
         "cat1/sub2",            "3999"},
-    {"20051004", "word1 word2",
+    /* we have 33 * "word2" below to cause cache miss in TermQuery */
+    {"20051004", "word1 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2",
         "cat1/sub2/subsub2",    "+.3413"},
     {"20051005", "word1 one two x x x x x one two",
         "cat2/sub1",            "-1.1298"},
@@ -330,8 +334,12 @@ free(t);
 
 static void test_term_query(TestCase *tc, void *data)
 {
+    MatchVector *mv;
+    HashSet *hs;
     Searcher *searcher = (Searcher *)data;
     TopDocs *top_docs;
+    Weight *w;
+    char *t, e[100];
     Query *tq = tq_new(field, "word2");
     check_to_s(tc, tq, field, "word2");
     check_to_s(tc, tq, NULL, "field:word2");
@@ -339,6 +347,16 @@ static void test_term_query(TestCase *tc, void *data)
     check_hits(tc, searcher, tq, "4, 8, 1", -1);
     check_to_s(tc, tq, field, "word2^100.0");
     check_to_s(tc, tq, NULL, "field:word2^100.0");
+
+    /* test PhraseWeight.to_s */
+    w = searcher->create_weight(searcher, tq);
+    sprintf(e, "TermWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    tq->boost = 10.5f;
+    sprintf(e, "TermWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    w->destroy(w);
+
     q_deref(tq);
 
     tq = tq_new(field, "2342");
@@ -368,6 +386,27 @@ static void test_term_query(TestCase *tc, void *data)
     Aiequal(SEARCH_DOCS_SIZE, top_docs->total_hits);
     Aiequal(SEARCH_DOCS_SIZE - 10, top_docs->size);
     td_destroy(top_docs);
+    q_deref(tq);
+
+    tq = tq_new(field, "quick");
+    /* test get_matchv_i */
+    check_hits(tc, searcher, tq, "1,11,14,16,17", -1);
+    mv = searcher_get_match_vector(searcher, tq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(3, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(7, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+
+    /* test extract_terms */
+    hs = hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy);
+    tq->extract_terms(tq, hs);
+    Aiequal(1, hs->size);
+    Asequal("quick", ((Term *)hs->first->elem)->text);
+    Apequal(field, ((Term *)hs->first->elem)->field);
+    hs_destroy(hs);
     q_deref(tq);
 }
 

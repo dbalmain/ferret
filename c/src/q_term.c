@@ -146,9 +146,8 @@ static Scorer *tw_scorer(Weight *self, IndexReader *ir)
 {
     TermQuery *tq = TQ(self->query);
     TermDocEnum *tde = ir_term_docs_for(ir, tq->field, tq->term);
-    if (!tde) {
-        return NULL;
-    }
+    /* ir_term_docs_for should always return a TermDocEnum */
+    assert(NULL != tde);
 
     return tsc_new(self, tde, ir_get_norms(ir, tq->field));
 }
