@@ -5940,14 +5940,9 @@ static int sm_append_postings(SegmentMerger *sm, SegmentMergeInfo **matches,
                 doc = doc_map[doc]; /* work around deletions */
             }
             doc += base;          /* convert to merged space */
+            assert(doc == 0 || doc > last_doc);
 
-#ifdef DEBUG
-            if (doc && doc <= last_doc) {
-                RAISE(STATE_ERROR, "Docs not ordered, %d < %d", doc, last_doc);
-            }
-#endif
             df++;
-
             if (0 == (df % skip_interval)) {
                 skip_buf_add(skip_buf, last_doc);
             }

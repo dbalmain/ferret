@@ -211,19 +211,19 @@ typedef enum
 
 struct FrtQuery
 {
-    int           ref_cnt;
-    float         boost;
-    FrtWeight        *weight;
-    FrtQuery        *(*rewrite)(FrtQuery *self, FrtIndexReader *ir);
-    void          (*extract_terms)(FrtQuery *self, FrtHashSet *terms);
-    FrtSimilarity   *(*get_similarity)(FrtQuery *self, FrtSearcher *searcher);
-    char         *(*to_s)(FrtQuery *self, FrtSymbol field);
-    unsigned long (*hash)(FrtQuery *self);
-    int           (*eq)(FrtQuery *self, FrtQuery *o);
-    void          (*destroy_i)(FrtQuery *self);
-    FrtWeight       *(*create_weight_i)(FrtQuery *self, FrtSearcher *searcher);
-    FrtMatchVector  *(*get_matchv_i)(FrtQuery *self, FrtMatchVector *mv, FrtTermVector *tv);
-    FrtQueryType type;
+    int             ref_cnt;
+    float           boost;
+    FrtWeight      *weight;
+    FrtQuery       *(*rewrite)(FrtQuery *self, FrtIndexReader *ir);
+    void            (*extract_terms)(FrtQuery *self, FrtHashSet *terms);
+    FrtSimilarity  *(*get_similarity)(FrtQuery *self, FrtSearcher *searcher);
+    char           *(*to_s)(FrtQuery *self, FrtSymbol field);
+    unsigned long   (*hash)(FrtQuery *self);
+    int             (*eq)(FrtQuery *self, FrtQuery *o);
+    void            (*destroy_i)(FrtQuery *self);
+    FrtWeight      *(*create_weight_i)(FrtQuery *self, FrtSearcher *searcher);
+    FrtMatchVector *(*get_matchv_i)(FrtQuery *self, FrtMatchVector *mv, FrtTermVector *tv);
+    FrtQueryType    type;
 };
 
 /* Internal FrtQuery Functions */

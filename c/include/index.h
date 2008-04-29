@@ -547,6 +547,7 @@ typedef struct FrtTVTerm
  *
  ****************************************************************************/
 
+#define FRT_TV_FIELD_INIT_CAPA 8
 typedef struct FrtTermVector
 {
     int       field_num;
@@ -560,60 +561,6 @@ typedef struct FrtTermVector
 extern void frt_tv_destroy(FrtTermVector *tv);
 extern int frt_tv_get_tv_term_index(FrtTermVector *tv, const char *term);
 extern FrtTVTerm *frt_tv_get_tv_term(FrtTermVector *tv, const char *term);
-
-/****************************************************************************
- *
- * FrtTermVectorsWriter
- *
- ****************************************************************************/
-
-#define FRT_TV_FIELD_INIT_CAPA 8
-
-typedef struct FrtTermVectorsWriter
-{
-    FrtOutStream *tvx_out;
-    FrtOutStream *tvd_out;
-    FrtFieldInfos *fis;
-    FrtTVField *fields;
-    off_t tvd_ptr;
-} FrtTermVectorsWriter;
-
-extern FrtTermVectorsWriter *frt_tvw_open(FrtStore *store,
-                                   const char *segment,
-                                   FrtFieldInfos *fis);
-extern void frt_tvw_open_doc(FrtTermVectorsWriter *tvw);
-extern void frt_tvw_close_doc(FrtTermVectorsWriter *tvw);
-extern void frt_tvw_add_postings(FrtTermVectorsWriter *tvw,
-                             int field_num,
-                             FrtPostingList **plists,
-                             int posting_count,
-                             FrtOffset *offsets,
-                             int offset_count);
-extern void frt_tvw_close(FrtTermVectorsWriter *tvw);
-
-/****************************************************************************
- *
- * FrtTermVectorsReader
- *
- ****************************************************************************/
-
-typedef struct FrtTermVectorsReader
-{
-  int size;
-  FrtInStream *tvx_in;
-  FrtInStream *tvd_in;
-  FrtFieldInfos *fis;
-} FrtTermVectorsReader;
-
-extern FrtTermVectorsReader *frt_tvr_open(FrtStore *store,
-                                   const char *segment,
-                                   FrtFieldInfos *fis);
-extern FrtTermVectorsReader *frt_tvr_clone(FrtTermVectorsReader *orig);
-extern void frt_tvr_close(FrtTermVectorsReader *tvr);
-extern FrtHash *frt_tvr_get_tv(FrtTermVectorsReader *tvr, int doc_num);
-extern FrtTermVector *frt_tvr_get_field_tv(FrtTermVectorsReader *tvr,
-                                    int doc_num,
-                                    int field_num);
 
 /****************************************************************************
  *
@@ -882,7 +829,6 @@ typedef struct FrtDocWriter
     FrtStore *store;
     FrtSegmentInfo *si;
     FrtFieldInfos *fis;
-    FrtTermVectorsWriter *tvw;
     FrtFieldsWriter *fw;
     FrtMemoryPool *mp;
     FrtAnalyzer *analyzer;

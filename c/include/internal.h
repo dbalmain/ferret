@@ -314,8 +314,6 @@
 #define TermQuery               FrtTermQuery
 #define TermVector              FrtTermVector
 #define TermVectorValue         FrtTermVectorValue
-#define TermVectorsReader       FrtTermVectorsReader
-#define TermVectorsWriter       FrtTermVectorsWriter
 #define TermWriter              FrtTermWriter
 #define Token                   FrtToken
 #define TokenFilter             FrtTokenFilter
@@ -946,16 +944,6 @@
 #define tv_destroy                              frt_tv_destroy
 #define tv_get_tv_term                          frt_tv_get_tv_term
 #define tv_get_tv_term_index                    frt_tv_get_tv_term_index
-#define tvr_clone                               frt_tvr_clone
-#define tvr_close                               frt_tvr_close
-#define tvr_get_field_tv                        frt_tvr_get_field_tv
-#define tvr_get_tv                              frt_tvr_get_tv
-#define tvr_open                                frt_tvr_open
-#define tvw_add_postings                        frt_tvw_add_postings
-#define tvw_close                               frt_tvw_close
-#define tvw_close_doc                           frt_tvw_close_doc
-#define tvw_open                                frt_tvw_open
-#define tvw_open_doc                            frt_tvw_open_doc
 #define u16                                     frt_u16
 #define u32                                     frt_u32
 #define u32malloc                               frt_u32malloc
