@@ -7,6 +7,8 @@
 
 #define ARRAY_SIZE 40
 
+static Symbol date, field, cat, number;
+
 static void test_byte_float_conversion(TestCase *tc, void *data)
 {
     int i;
@@ -84,7 +86,7 @@ static void test_default_similarity(TestCase *tc, void *data)
     ary_push(positions[3].terms, (char *)"term4");
     ary_push(positions[3].terms, (char *)"term5");
 
-    Afequal(1.0/4, sim_length_norm(dsim, I("field"), 16));
+    Afequal(1.0/4, sim_length_norm(dsim, field, 16));
     Afequal(1.0/4, sim_query_norm(dsim, 16));
     Afequal(3.0, sim_tf(dsim, 9));
     Afequal(1.0/10, sim_sloppy_freq(dsim, 9));
@@ -92,8 +94,8 @@ static void test_default_similarity(TestCase *tc, void *data)
     Afequal(4.0, sim_coord(dsim, 12, 3));
     searcher.doc_freq = &my_doc_freq;
     searcher.max_doc = &my_max_doc;
-    Afequal(1.0, sim_idf_term(dsim, I("field"), positions[0].terms[0], &searcher));
-    Afequal(12.0, sim_idf_phrase(dsim, I("field"), positions, 4, &searcher));
+    Afequal(1.0, sim_idf_term(dsim, field, positions[0].terms[0], &searcher));
+    Afequal(12.0, sim_idf_phrase(dsim, field, positions, 4, &searcher));
 
     ary_free(positions[0].terms);
     ary_free(positions[1].terms);
@@ -155,14 +157,12 @@ struct Data {
     char *number;
 };
 
-static Symbol date, field, cat, number;
-
 #define SEARCH_DOCS_SIZE 18
 struct Data test_data[SEARCH_DOCS_SIZE] = {
     {"20050930", "word1",
         "cat1/",                ".123"},
     {"20051001", "word1 word2 the quick brown fox the quick brown fox",
-        "cat1/sub1",            "0.954"},
+        "cat1/sub1",            "0.0"},
     {"20051002", "word1 word3 one two one",
         "cat1/sub1/subsub1",    "908.123434"},
     {"20051003", "word1 word3 one two",
@@ -200,6 +200,7 @@ struct Data test_data[SEARCH_DOCS_SIZE] = {
     {"20051017", "word1 the brown fox is quick and red",
         "cat1/",                "-1.0"}
 };
+
 static void prepare_search_index(Store *store)
 {
     int i;
@@ -208,6 +209,8 @@ static void prepare_search_index(Store *store)
     FieldInfos *fis = fis_new(STORE_YES,
                               INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+    FieldInfo *fi = fi_new(I("empty-field"), STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fis_add_field(fis, fi);
     index_create(store, fis);
     fis_deref(fis);
 
@@ -332,9 +335,24 @@ free(t);
     }
 }
 
+void check_match_vector(TestCase *tc, Searcher *searcher, Query *query,
+                        int doc, Symbol field, char *ranges)
+{
+    static int range_array[ARRAY_SIZE];
+    MatchVector *mv = searcher_get_match_vector(searcher, query, doc, field);
+    int num_matches = s2l(ranges, range_array)/2;
+    if (Aiequal(num_matches, mv->size)) {
+        int i;
+        for (i = 0; i < num_matches; i++) {
+            Aiequal(range_array[i*2    ], mv->matches[i].start);
+            Aiequal(range_array[i*2 + 1], mv->matches[i].end);
+        }
+    }
+    matchv_destroy(mv);
+}
+
 static void test_term_query(TestCase *tc, void *data)
 {
-    MatchVector *mv;
     HashSet *hs;
     Searcher *searcher = (Searcher *)data;
     TopDocs *top_docs;
@@ -391,14 +409,7 @@ static void test_term_query(TestCase *tc, void *data)
     tq = tq_new(field, "quick");
     /* test get_matchv_i */
     check_hits(tc, searcher, tq, "1,11,14,16,17", -1);
-    mv = searcher_get_match_vector(searcher, tq, 1, field);
-    if (Aiequal(2, mv->size)) {
-        Aiequal(3, mv->matches[0].start);
-        Aiequal(3, mv->matches[0].end);
-        Aiequal(7, mv->matches[1].start);
-        Aiequal(7, mv->matches[1].end);
-    }
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, tq, 1, field, "3,3,7,7");
 
     /* test extract_terms */
     hs = hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy);
@@ -554,7 +565,6 @@ static void test_boolean_query_hash(TestCase *tc, void *data)
 
 static void test_phrase_query(TestCase *tc, void *data)
 {
-    MatchVector *mv;
     Searcher *searcher = (Searcher *)data;
     Explanation *explanation;
     Query *q;
@@ -670,35 +680,15 @@ static void test_phrase_query(TestCase *tc, void *data)
     phq_add_term(phq, "quick", 0);
     phq_add_term(phq, "brown", 1);
     check_hits(tc, searcher, phq, "1", -1);
-    mv = searcher_get_match_vector(searcher, phq, 1, field);
-    if (Aiequal(2, mv->size)) {
-        Aiequal(3, mv->matches[0].start);
-        Aiequal(4, mv->matches[0].end);
-        Aiequal(7, mv->matches[1].start);
-        Aiequal(8, mv->matches[1].end);
-    }
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 1, field, "3,4,7,8");
+
     phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1,16,17", -1);
-    mv = searcher_get_match_vector(searcher, phq, 1, field);
-    if (Aiequal(2, mv->size)) {
-        Aiequal(3, mv->matches[0].start);
-        Aiequal(4, mv->matches[0].end);
-        Aiequal(7, mv->matches[1].start);
-        Aiequal(8, mv->matches[1].end);
-    }
-    matchv_destroy(mv);
-    mv = searcher_get_match_vector(searcher, phq, 16, field);
-    if (Aiequal(1, mv->size)) {
-        Aiequal(2, mv->matches[0].start);
-        Aiequal(5, mv->matches[0].end);
-    }
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 16, field, "2,5");
+
     phq_add_term(phq, "chicken", 1);
     check_hits(tc, searcher, phq, "", -1);
-    mv = searcher_get_match_vector(searcher, phq, 16, field);
-    Aiequal(0, mv->size);
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 16, field, "");
     q_deref(phq);
 }
 
@@ -759,7 +749,6 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *phq, *q;
-    MatchVector *mv;
 
     phq = phq_new(field);
     /* ok to use append_multi_term to start */
@@ -833,36 +822,17 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     phq_append_multi_term(phq, "dirty");
     phq_append_multi_term(phq, "red");
     check_hits(tc, searcher, phq, "1,11", -1);
-    mv = searcher_get_match_vector(searcher, phq, 1, field);
-    if (Aiequal(2, mv->size)) {
-        Aiequal(3, mv->matches[0].start);
-        Aiequal(4, mv->matches[0].end);
-        Aiequal(7, mv->matches[1].start);
-        Aiequal(8, mv->matches[1].end);
-    }
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 1, field, "3,4,7,8");
+
     phq_set_slop(phq, 1);
     check_hits(tc, searcher, phq, "1,11,17", -1);
-    mv = searcher_get_match_vector(searcher, phq, 1, field);
-    if (Aiequal(2, mv->size)) {
-        Aiequal(3, mv->matches[0].start);
-        Aiequal(4, mv->matches[0].end);
-        Aiequal(7, mv->matches[1].start);
-        Aiequal(8, mv->matches[1].end);
-    }
-    matchv_destroy(mv);
-    mv = searcher_get_match_vector(searcher, phq, 17, field);
-    if (Aiequal(1, mv->size)) {
-        Aiequal(5, mv->matches[0].start);
-        Aiequal(7, mv->matches[0].end);
-    }
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 1, field, "3,4,7,8");
+    check_match_vector(tc, searcher, phq, 17, field, "5,7");
+
     phq_add_term(phq, "chicken", 1);
     phq_append_multi_term(phq, "turtle");
     check_hits(tc, searcher, phq, "", -1);
-    mv = searcher_get_match_vector(searcher, phq, 17, field);
-    Aiequal(0, mv->size);
-    matchv_destroy(mv);
+    check_match_vector(tc, searcher, phq, 17, field, "");
     q_deref(phq);
 }
 
@@ -1063,10 +1033,28 @@ static void test_prefix_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
+static void rq_new_lower_gt_upper(void *p)
+{ (void)p; rq_new(date, "20050101", "20040101", true, true); }
+
+static void rq_new_include_lower_and_null_lower(void *p)
+{ (void)p; rq_new(date, NULL, "20040101", true, true); }
+
+static void rq_new_include_upper_and_null_upper(void *p)
+{ (void)p; rq_new(date, "20050101", NULL, true, true); }
+
+static void rq_new_null_lower_and_upper(void *p)
+{ (void)p; rq_new(date, NULL, NULL, false, false); }
+
 static void test_range_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *rq;
+
+    Araise(ARG_ERROR, &rq_new_lower_gt_upper, NULL);
+    Araise(ARG_ERROR, &rq_new_include_lower_and_null_lower, NULL);
+    Araise(ARG_ERROR, &rq_new_include_upper_and_null_upper, NULL);
+    Araise(ARG_ERROR, &rq_new_null_lower_and_upper, NULL);
+
     rq = rq_new(date, "20051006", "20051010", true, true);
     check_hits(tc, searcher, rq, "6,7,8,9,10", -1);
     q_deref(rq);
@@ -1127,6 +1115,29 @@ static void test_range_query(TestCase *tc, void *data)
     /* above range - no results */
     rq = rq_new(date, "30051006", "30051010", false, false);
     check_hits(tc, searcher, rq, "", -1);
+    q_deref(rq);
+
+    /* test get_matchv_i */
+    /* NOTE: if you are reading this to learn how to use RangeQuery the
+     * following is not a good idea. You should usually only use a RangeQuery
+     * on an untokenized field. This is just done for testing purposes to
+     * check that it works correctly. */
+    rq = rq_new(field, "word1", "word3", true, true);
+    check_hits(tc, searcher, rq, "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17", -1);
+    check_match_vector(tc, searcher, rq, 2, I("not a field"), "");
+    check_match_vector(tc, searcher, rq, 2, field, "0,0,1,1");
+    q_deref(rq);
+
+    rq = rq_new(field, "word1", "word3", false, true);
+    check_match_vector(tc, searcher, rq, 2, field, "1,1");
+    q_deref(rq);
+
+    rq = rq_new(field, "word1", "word3", true, false);
+    check_match_vector(tc, searcher, rq, 2, field, "0,0");
+    q_deref(rq);
+
+    rq = rq_new(field, "word1", "word3", false, false);
+    check_match_vector(tc, searcher, rq, 2, field, "");
     q_deref(rq);
 }
 
@@ -1193,18 +1204,80 @@ static void test_range_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
+static void trq_new_int_lower_gt_upper(void *p)
+{ (void)p; trq_new(date, "20050101", "20040101", true, true); }
+
+static void trq_new_float_lower_gt_upper(void *p)
+{ (void)p; trq_new(number, "2.5", "-2.5", true, true); }
+
+static void trq_new_string_lower_gt_upper(void *p)
+{ (void)p; trq_new(cat, "cat_b", "cat_a", true, true); }
+
+static void trq_new_include_lower_and_null_lower(void *p)
+{ (void)p; trq_new(date, NULL, "20040101", true, true); }
+
+static void trq_new_include_upper_and_null_upper(void *p)
+{ (void)p; trq_new(date, "20050101", NULL, true, true); }
+
+static void trq_new_null_lower_and_upper(void *p)
+{ (void)p; trq_new(date, NULL, NULL, false, false); }
+
 static void test_typed_range_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *trq;
+
+    Araise(ARG_ERROR, trq_new_int_lower_gt_upper, NULL);
+    Araise(ARG_ERROR, trq_new_float_lower_gt_upper, NULL);
+    Araise(ARG_ERROR, trq_new_string_lower_gt_upper, NULL);
+    Araise(ARG_ERROR, trq_new_include_lower_and_null_lower, NULL);
+    Araise(ARG_ERROR, trq_new_include_upper_and_null_upper, NULL);
+    Araise(ARG_ERROR, trq_new_null_lower_and_upper, NULL);
+
     trq = trq_new(number, "-1.0", "1.0", true, true);
     check_hits(tc, searcher, trq, "0,1,4,10,15,17", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    check_match_vector(tc, searcher, trq, 10, number, "0,0");
+    check_match_vector(tc, searcher, trq, 17, number, "0,0");
+    check_match_vector(tc, searcher, trq, 2, number, "");
     q_deref(trq);
 
     trq = trq_new(number, "-1.0", "1.0", false, false);
     check_hits(tc, searcher, trq, "0,1,4,15", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    check_match_vector(tc, searcher, trq, 10, number, "");
+    check_match_vector(tc, searcher, trq, 17, number, "");
     q_deref(trq);
 
+    trq = trq_new(number, "-1.0", "1.0", false, true);
+    check_hits(tc, searcher, trq, "0,1,4,10,15", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    check_match_vector(tc, searcher, trq, 10, number, "0,0");
+    check_match_vector(tc, searcher, trq, 17, number, "");
+    q_deref(trq);
+
+    trq = trq_new(number, "-1.0", "1.0", true, false);
+    check_hits(tc, searcher, trq, "0,1,4,15,17", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    check_match_vector(tc, searcher, trq, 10, number, "");
+    check_match_vector(tc, searcher, trq, 17, number, "0,0");
+    q_deref(trq);
+
+    /* test field with no numbers */
+    trq = trq_new(field, "-1.0", "1.0", false, true);
+    check_hits(tc, searcher, trq, "", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "");
+    q_deref(trq);
+
+    /* test empty field */
+    trq = trq_new(I("empty-field"), "-1.0", "1.0", false, true);
+    check_hits(tc, searcher, trq, "", -1);
+    check_match_vector(tc, searcher, trq, 0, number, "");
+    q_deref(trq);
+
+    /* FIXME: This was a hexidecimal test but unfortunately scanf doesn't do
+     * hexidecimal on some machines. Would be nice to test for this in
+     * ./configure when we eventually integrate autotools */
     /* text hexadecimal */
     trq = trq_new(number, "1.0", "10", false, true);
     check_hits(tc, searcher, trq, "6,7,9,12", -1);
@@ -1212,12 +1285,52 @@ static void test_typed_range_query(TestCase *tc, void *data)
 
     /* test single bound */
     trq = trq_new(number, NULL, "0", false, true);
+    check_hits(tc, searcher, trq, "1,5,11,15,16,17", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "0.0");
+    check_match_vector(tc, searcher, trq, 5, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new_less(number, "0", true);
+    check_hits(tc, searcher, trq, "1,5,11,15,16,17", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "0.0");
+    check_match_vector(tc, searcher, trq, 5, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new(number, NULL, "0", false, false);
     check_hits(tc, searcher, trq, "5,11,15,16,17", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "");
+    check_match_vector(tc, searcher, trq, 5, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new_less(number, "0", false);
+    check_hits(tc, searcher, trq, "5,11,15,16,17", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "");
+    check_match_vector(tc, searcher, trq, 5, number, "0,0");
     q_deref(trq);
 
     /* test single bound */
-    trq = trq_new(number, "0", NULL, false, false);
+    trq = trq_new(number, "0", NULL, true, false);
     check_hits(tc, searcher, trq, "0,1,2,3,4,6,7,8,9,10,12,13,14", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "0.0");
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new_more(number, "0", true);
+    check_hits(tc, searcher, trq, "0,1,2,3,4,6,7,8,9,10,12,13,14", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "0.0");
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new(number, "0", NULL, false, false);
+    check_hits(tc, searcher, trq, "0,2,3,4,6,7,8,9,10,12,13,14", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "");
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
+    q_deref(trq);
+
+    trq = trq_new_more(number, "0", false);
+    check_hits(tc, searcher, trq, "0,2,3,4,6,7,8,9,10,12,13,14", -1);
+    check_match_vector(tc, searcher, trq, 1, number, "");
+    check_match_vector(tc, searcher, trq, 0, number, "0,0");
     q_deref(trq);
 
     /* below range - no results */
@@ -1233,6 +1346,30 @@ static void test_typed_range_query(TestCase *tc, void *data)
     /* should be normal range query for string fields */
     trq = trq_new(cat, "cat2", NULL, true, false);
     check_hits(tc, searcher, trq, "5,6,7,8,9,10,11,12", -1);
+    q_deref(trq);
+
+    /* test get_matchv_i */
+    /* NOTE: if you are reading this to learn how to use RangeQuery the
+     * following is not a good idea. You should usually only use a RangeQuery
+     * on an untokenized field. This is just done for testing purposes to
+     * check that it works correctly. */
+    /* The following tests should use the basic RangeQuery functionality */
+    trq = trq_new(field, "word1", "word3", true, true);
+    check_hits(tc, searcher, trq, "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17", -1);
+    check_match_vector(tc, searcher, trq, 2, I("not a field"), "");
+    check_match_vector(tc, searcher, trq, 2, field, "0,0,1,1");
+    q_deref(trq);
+
+    trq = trq_new(field, "word1", "word3", false, true);
+    check_match_vector(tc, searcher, trq, 2, field, "1,1");
+    q_deref(trq);
+
+    trq = trq_new(field, "word1", "word3", true, false);
+    check_match_vector(tc, searcher, trq, 2, field, "0,0");
+    q_deref(trq);
+
+    trq = trq_new(field, "word1", "word3", false, false);
+    check_match_vector(tc, searcher, trq, 2, field, "");
     q_deref(trq);
 }
 
@@ -1542,6 +1679,8 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
     FieldInfos *fis = fis_new(STORE_YES,
                               INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
+    FieldInfo *fi = fi_new(I("empty-field"), STORE_NO, INDEX_NO, TERM_VECTOR_NO);
+    fis_add_field(fis, fi);
     index_create(store, fis);
     fis_deref(fis);
 

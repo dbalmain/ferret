@@ -373,9 +373,28 @@ static void test_tv_multi_doc(TestCase *tc, void *data)
         }
     }
     for (i = 0; i < NUM_TERMS; i++) {
-        Aiequal(i, tv_get_tv_term_index(tv, tv->terms[i].text));
+        char buf[100];
+        int len = sprintf(buf, tv->terms[i].text);
+        assert(strlen(tv->terms[i].text) < 100);
+
+        Aiequal(i, tv_get_term_index(tv, buf));
+
+        /* make the word lexically less than it was but greater than any other
+         * word in the index that originally came before it. */
+        buf[len - 1]--;
+        buf[len    ] = '~';
+        buf[len + 1] = '\0';
+        Aiequal(-1, tv_get_term_index(tv, buf));
+        Aiequal(i, tv_scan_to_term_index(tv, buf));
+
+        /* make the word lexically more than it was by less than any other
+         * word in the index that originally came after it. */
+        buf[len - 1]++;
+        buf[len    ] = '.';
+        Aiequal(-1, tv_get_term_index(tv, buf));
+        Aiequal(i + 1, tv_scan_to_term_index(tv, buf));
     }
-    Aiequal(-1, tv_get_tv_term_index(tv, "UnKnOwN TeRm"));
+    Aiequal(-1, tv_get_term_index(tv, "UnKnOwN TeRm"));
     h_destroy(tvs);
 
     fr_close(fr);

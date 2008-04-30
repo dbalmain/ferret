@@ -559,7 +559,8 @@ typedef struct FrtTermVector
 } FrtTermVector;
 
 extern void frt_tv_destroy(FrtTermVector *tv);
-extern int frt_tv_get_tv_term_index(FrtTermVector *tv, const char *term);
+extern int frt_tv_get_term_index(FrtTermVector *tv, const char *term);
+extern int frt_tv_scan_to_term_index(FrtTermVector *tv, const char *term);
 extern FrtTVTerm *frt_tv_get_tv_term(FrtTermVector *tv, const char *term);
 
 /****************************************************************************

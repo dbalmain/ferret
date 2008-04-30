@@ -942,8 +942,9 @@
 #define ts_new_i                                frt_ts_new_i
 #define ts_next                                 frt_ts_next
 #define tv_destroy                              frt_tv_destroy
+#define tv_get_term_index                       frt_tv_get_term_index
 #define tv_get_tv_term                          frt_tv_get_tv_term
-#define tv_get_tv_term_index                    frt_tv_get_tv_term_index
+#define tv_scan_to_term_index                   frt_tv_scan_to_term_index
 #define u16                                     frt_u16
 #define u32                                     frt_u32
 #define u32malloc                               frt_u32malloc

@@ -408,8 +408,8 @@ static BitVector *trfilt_get_bv_i(Filter *filt, IndexReader *ir)
                     SET_DOCS(num >  lnum && num <  unum);
                     break;
                 case TRC_NONE:
-                    RAISE(ARG_ERROR, "Nil bounds for range. A range must "
-                          "include either lower bound or an upper bound");
+                    /* should never happen. Error should have been raised */
+                    assert(false);
             }
             tde->close(tde);
             te->close(te);
@@ -467,22 +467,28 @@ static MatchVector *rq_get_matchv_i(Query *self, MatchVector *mv,
 {
     Range *range = RQ(((ConstantScoreQuery *)self)->original)->range;
     if (tv->field == range->field) {
+        const int term_cnt = tv->term_cnt;
         int i, j;
         char *upper_text = range->upper_term;
         char *lower_text = range->lower_term;
         int upper_limit = range->include_upper ? 1 : 0;
-        int lower_limit = range->include_lower ? 1 : 0;
 
-        for (i = tv->term_cnt - 1; i >= 0; i--) {
+        i = lower_text ? tv_scan_to_term_index(tv, lower_text) : 0;
+        if (i < term_cnt && !range->include_lower && lower_text
+            && 0 == strcmp(lower_text, tv->terms[i].text)) {
+            i++;
+        }
+
+        for (; i < term_cnt; i++) {
             TVTerm *tv_term = &(tv->terms[i]);
             char *text = tv_term->text;
-            if ((!upper_text || strcmp(text, upper_text) < upper_limit) && 
-                (!lower_text || strcmp(lower_text, text) < lower_limit)) {
-                const int tv_term_freq = tv_term->freq;
-                for (j = 0; j < tv_term_freq; j++) {
-                    int pos = tv_term->positions[j];
-                    matchv_add(mv, pos, pos);
-                }
+            const int tv_term_freq = tv_term->freq;
+            if (upper_text && strcmp(text, upper_text) >= upper_limit) {
+                break;
+            } 
+            for (j = 0; j < tv_term_freq; j++) {
+                int pos = tv_term->positions[j];
+                matchv_add(mv, pos, pos);
             }
         }
     }
@@ -527,10 +533,11 @@ Query *rq_new_more(Symbol field, const char *lower_term,
 Query *rq_new(Symbol field, const char *lower_term,
               const char *upper_term, bool include_lower, bool include_upper)
 {
-    Query *self     = q_new(RangeQuery);
-
-    RQ(self)->range = range_new(field, lower_term, upper_term,
-                                include_lower, include_upper); 
+    Query *self;
+    Range *range            = range_new(field, lower_term, upper_term,
+                                        include_lower, include_upper); 
+    self                    = q_new(RangeQuery);
+    RQ(self)->range         = range;
 
     self->type              = RANGE_QUERY;
     self->rewrite           = &rq_rewrite;
@@ -552,8 +559,9 @@ Query *rq_new(Symbol field, const char *lower_term,
 for (i = tv->term_cnt - 1; i >= 0; i--) {\
     TVTerm *tv_term = &(tv->terms[i]);\
     char *text = tv_term->text;\
-    double num = sscanf(text, "%lg%n", &num, &len);\
-    if ((int)strlen(text) != len) { /* We have a number */\
+    double num;\
+    sscanf(text, "%lg%n", &num, &len);\
+    if ((int)strlen(text) == len) { /* We have a number */\
         if (cond) {\
             const int tv_term_freq = tv_term->freq;\
             for (j = 0; j < tv_term_freq; j++) {\
@@ -573,8 +581,11 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
         int len = 0;
         const char *lt = range->lower_term;
         const char *ut = range->upper_term;
-        if ((!lt || (sscanf(lt,"%lg%n",&lnum,&len) && (int)strlen(lt) == len))&&
-            (!ut || (sscanf(ut,"%lg%n",&unum,&len) && (int)strlen(ut) == len)))
+        if ((!lt
+             || (sscanf(lt,"%lg%n",&lnum,&len) && (int)strlen(lt) == len))
+            &&
+            (!ut
+             || (sscanf(ut,"%lg%n",&unum,&len) && (int)strlen(ut) == len)))
         {
             TypedRangeCheck check = TRC_NONE;
             int i = 0, j = 0;
@@ -614,8 +625,8 @@ static MatchVector *trq_get_matchv_i(Query *self, MatchVector *mv,
                     SET_TERMS(num >  lnum && num <  unum);
                     break;
                 case TRC_NONE:
-                    RAISE(ARG_ERROR, "Nil bounds for range. A range must "
-                          "include either lower bound or an upper bound");
+                    /* should never happen. Error should have been raised */
+                    assert(false);
             }
 
         }
@@ -654,10 +665,11 @@ Query *trq_new_more(Symbol field, const char *lower_term,
 Query *trq_new(Symbol field, const char *lower_term,
                const char *upper_term, bool include_lower, bool include_upper)
 {
-    Query *self     = q_new(RangeQuery);
-
-    RQ(self)->range = trange_new(field, lower_term, upper_term,
-                                 include_lower, include_upper); 
+    Query *self;
+    Range *range            = trange_new(field, lower_term, upper_term,
+                                         include_lower, include_upper); 
+    self                    = q_new(RangeQuery);
+    RQ(self)->range         = range;
 
     self->type              = TYPED_RANGE_QUERY;
     self->rewrite           = &trq_rewrite;

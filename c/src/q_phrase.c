@@ -461,10 +461,12 @@ static float sphsc_phrase_freq(Scorer *self)
     float freq = 0.0;
 
     for (i = 0; i < pp_cnt; i++) {
+        bool res;
         pp = phsc->phrase_pos[i];
         /* we should always have at least one position or this functions
          * shouldn't have been called. */
-        assert(pp_first_position(pp));
+        res = pp_first_position(pp);
+        assert(res);(void)res;
         if (check_repeats && i > 0) {
             if (!sphsc_check_repeats(pp, phsc->phrase_pos, i - 1)) {
                 goto return_freq;
@@ -778,7 +780,8 @@ static TVPosEnum *tvpe_new_merge(char **terms, int t_cnt, TermVector *tv,
         if (tv_term) {
             TVPosEnum *tvpe = tvpe_new(tv_term->positions, tv_term->freq, 0);
             /* got tv_term so tvpe_next should always return true once here */
-            assert(tvpe_next(tvpe));
+            bool res = tvpe_next(tvpe);
+            assert(res);(void)res;
             pq_push(tvpe_pq, tvpe);
             total_positions += tv_term->freq;
         }

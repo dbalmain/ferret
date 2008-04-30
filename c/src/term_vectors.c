@@ -24,7 +24,7 @@ void tv_destroy(TermVector *tv)
     free(tv);
 }
 
-int tv_get_tv_term_index(TermVector *tv, const char *term)
+int tv_scan_to_term_index(TermVector *tv, const char *term)
 {
     int lo = 0;                 /* search starts array */
     int hi = tv->term_cnt - 1;  /* for 1st element < n, return its index */
@@ -32,7 +32,7 @@ int tv_get_tv_term_index(TermVector *tv, const char *term)
     int cmp;
     char *mid_term;
 
-    while (hi > lo) {
+    while (hi >= lo) {
         mid = (lo + hi) >> 1;
         mid_term = tv->terms[mid].text;
         cmp = strcmp(term, mid_term);
@@ -46,15 +46,24 @@ int tv_get_tv_term_index(TermVector *tv, const char *term)
             return mid;
         }
     }
-    if (hi >= 0 && strcmp(term, tv->terms[hi].text) == 0) {
-        return hi;
-    }
-    return -1;
+    return lo;
 }
 
-extern TVTerm *tv_get_tv_term(TermVector *tv, const char *term)
+int tv_get_term_index(TermVector *tv, const char *term)
 {
-    int index = tv_get_tv_term_index(tv, term);
+    int index = tv_scan_to_term_index(tv, term);
+    if (index < tv->term_cnt && (0 == strcmp(term, tv->terms[index].text))) {
+        /* found term */
+        return index;
+    }
+    else {
+        return -1;
+    }
+}
+
+TVTerm *tv_get_tv_term(TermVector *tv, const char *term)
+{
+    int index = tv_get_term_index(tv, term);
     if (index >= 0) {
         return &(tv->terms[index]);
     }
