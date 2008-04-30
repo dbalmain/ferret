@@ -36,35 +36,6 @@ void bv_clear(BitVector *bv)
     bv->size = 0;
 }
 
-void bv_unset(BitVector *bv, int bit)
-{
-    frt_u32 *word_p;
-    int word = bit >> 5;
-    frt_u32 bitmask = 1 << (bit & 31);
-
-    /* Check to see if we need to grow the BitVector */
-    if (unlikely(bit >= bv->size)) {
-        bv->size = bit + 1; /* size is max range of bits set */
-        if (word >= bv->capa) {
-            int capa = bv->capa << 1;
-            while (capa <= word) {
-                capa <<= 1;
-            }
-            FRT_REALLOC_N(bv->bits, frt_u32, capa);
-            memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
-                   sizeof(frt_u32) * (capa - bv->capa));
-            bv->capa = capa;
-        }
-    }
-
-    /* Set the required bit */
-    word_p = &(bv->bits[word]);
-    if ((bitmask & *word_p) != 0) {
-        bv->count--; /* update count */
-        *word_p &= ~bitmask;
-    }
-}
-
 int bv_recount(BitVector *bv)
 {
     unsigned int extra = ((bv->size & 31) >> 3) + 1;
