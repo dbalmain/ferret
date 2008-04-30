@@ -1,6 +1,6 @@
 #include "bitvector.h"
-#include <string.h>
 #include "internal.h"
+#include <string.h>
 
 BitVector *bv_new_capa(int capa)
 {
@@ -125,8 +125,17 @@ unsigned long bv_hash(BitVector *bv)
             hash = (hash << 1) ^ word;
         }
     }
-    hash = (hash << 1) | bv->extends_as_ones;
-    return hash;
+    return (hash << 1) | bv->extends_as_ones;
+}
+
+static INLINE void bv_capa(BitVector *bv, int capa, int size)
+{
+    int word_size = (size >> 5) + 1;
+    REALLOC_N(bv->bits, u32, capa);
+    bv->capa = capa;
+    bv->size = size;
+    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
+           sizeof(u32) * (capa - word_size));
 }
 
 static INLINE void bv_recapa(BitVector *bv, int new_capa)
@@ -146,31 +155,18 @@ static BitVector *bv_and_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     int word_size;
     int capa = 4;
 
-    if (bv1->extends_as_ones && bv2->extends_as_ones) {
-        size = max2(bv1->size, bv2->size);
-        bv->extends_as_ones = true;
-    }
-    else if (bv1->extends_as_ones || bv2->extends_as_ones) {
-        size = max2(bv1->size, bv2->size);
-        bv->extends_as_ones = false;
-    }
-    else {
-        size = min2(bv1->size, bv2->size);
-        bv->extends_as_ones = false;
-    }
+    bv->extends_as_ones = (bv1->extends_as_ones & bv2->extends_as_ones);
+
+    if (bv1->extends_as_ones || bv2->extends_as_ones)
+         size = max2(bv1->size, bv2->size);
+    else size = min2(bv1->size, bv2->size);
 
     word_size = (size >> 5) + 1;
-    while (capa < word_size) {
-        capa <<= 1;
-    }
+    capa = max2(frt_round2(word_size), 4);
+
     bv_recapa(bv1, capa);
     bv_recapa(bv2, capa);
-    REALLOC_N(bv->bits, u32, capa);
-    bv->capa = capa;
-    bv->size = size;
-
-    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(u32) * (capa - word_size));
+    bv_capa(bv, capa, size);
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] & bv2->bits[i];
@@ -195,26 +191,12 @@ static BitVector *bv_or_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     int i;
     int max_size = max2(bv1->size, bv2->size);
     int word_size = (max_size >> 5) + 1;
-    int capa = 4;
-    while (capa < word_size) {
-        capa <<= 1;
-    }
-    REALLOC_N(bv->bits, u32, capa);
-    bv->capa = capa;
-    bv->size = max_size;
+    int capa = max2(frt_round2(word_size), 4);
 
+    bv->extends_as_ones = (bv1->extends_as_ones | bv2->extends_as_ones);
     bv_recapa(bv1, capa);
     bv_recapa(bv2, capa);
-
-    if (bv1->extends_as_ones || bv2->extends_as_ones) {
-        bv->extends_as_ones = true;
-    }
-    else {
-        bv->extends_as_ones = false;
-    }
-
-    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(u32) * (capa - word_size));
+    bv_capa(bv, capa, max_size);
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] | bv2->bits[i];
@@ -238,26 +220,12 @@ static BitVector *bv_xor_i(BitVector *bv, BitVector *bv1, BitVector *bv2)
     int i;
     int max_size = max2(bv1->size, bv2->size);
     int word_size = (max_size >> 5) + 1;
-    int capa = 4;
-    while (capa < word_size) {
-        capa <<= 1;
-    }
-    REALLOC_N(bv->bits, u32, capa);
-    bv->capa = capa;
-    bv->size = max_size;
+    int capa = max2(frt_round2(word_size), 4);
 
+    bv->extends_as_ones = (bv1->extends_as_ones ^ bv2->extends_as_ones);
     bv_recapa(bv1, capa);
     bv_recapa(bv2, capa);
-
-    if (bv1->extends_as_ones != bv2->extends_as_ones) {
-        bv->extends_as_ones = true;
-    }
-    else {
-        bv->extends_as_ones = false;
-    }
-
-    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(u32) * (capa - word_size));
+    bv_capa(bv, capa, max_size);
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = bv1->bits[i] ^ bv2->bits[i];
@@ -280,16 +248,10 @@ static BitVector *bv_not_i(BitVector *bv, BitVector *bv1)
 {
     int i;
     int word_size = (bv1->size >> 5) + 1;
-    int capa = 4;
-    while (capa < word_size) {
-        capa <<= 1;
-    }
-    REALLOC_N(bv->bits, u32, capa);
-    bv->capa = capa;
-    bv->size = bv1->size;
+    int capa = max2(frt_round2(word_size), 4);
+
     bv->extends_as_ones = !bv1->extends_as_ones;
-    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(u32) * (capa - word_size));
+    bv_capa(bv, capa, bv1->size);
 
     for (i = 0; i < word_size; i++) {
         bv->bits[i] = ~(bv1->bits[i]);

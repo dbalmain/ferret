@@ -132,6 +132,46 @@ extern void frt_do_clean_up();
 extern void frt_dummy_free(void *p);
 
 /**
+ * Returns the count of leading [MSB] 0 bits in +word+.
+ */
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_leading_zeros(frt_u32 word)
+{
+#ifdef __GNUC__
+    return __builtin_clz(word);
+#else
+    static const int count_leading_zeros[] = {
+        8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+                if (word & 0xff) return count_leading_zeros[word & 0xff];
+    word >>= 8; if (word & 0xff) return count_leading_zeros[word & 0xff] + 8;
+    word >>= 8; if (word & 0xff) return count_leading_zeros[word & 0xff] + 16;
+    word >>= 8;                  return count_leading_zeros[word & 0xff] + 24;
+#endif
+}
+
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_leading_ones(frt_u32 word)
+{
+    return frt_count_leading_zeros(~word);
+}
+
+/**
  * Return the count of trailing [LSB] 0 bits in +word+.
  */
 
@@ -207,6 +247,15 @@ extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_zeros(frt_u32 word)
 {
     return frt_count_ones(~word);
+}
+
+/**
+ * Round up to the next power of 2
+ */
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_round2(frt_u32 word)
+{
+    return 1 << (32 - frt_count_leading_zeros(word));
 }
 
 /**
