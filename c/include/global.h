@@ -138,7 +138,9 @@ extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_leading_zeros(frt_u32 word)
 {
 #ifdef __GNUC__
-    return __builtin_clz(word);
+    if (word)
+        return __builtin_clz(word);
+    return 32;
 #else
     static const int count_leading_zeros[] = {
         8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -179,7 +181,9 @@ extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_trailing_zeros(frt_u32 word)
 {
 #ifdef __GNUC__
-    return __builtin_ctz(word);
+    if (word)
+        return __builtin_ctz(word);
+    return 32;
 #else
     static const int count_trailing_zeros[] = {
         8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
