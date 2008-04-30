@@ -25,11 +25,17 @@ extern "C" {
 #endif
 
 #if __GNUC__ >= 3
-#  define FRT_ALWAYS_INLINE inline __attribute__ ((always_inline))
+#  define FRT_ATTR_ALWAYS_INLINE inline __attribute__ ((always_inline))
+#  define FRT_ATTR_MALLOC               __attribute__ ((malloc))
+#  define FRT_ATTR_PURE                 __attribute__ ((pure))
+#  define FRT_ATTR_CONST                __attribute__ ((const))
 #  define likely(x)   __builtin_expect(!!(x), 1)
 #  define unlikely(x) __builtin_expect(!!(x), 0)
 #else
-#  define FRT_ALWAYS_INLINE
+#  define FRT_ATTR_ALWAYS_INLINE
+#  define FRT_ATTR_MALLOC
+#  define FRT_ATTR_PURE
+#  define FRT_ATTR_CONST
 #  define likely(x)   (x)
 #  define unlikely(x) (x)
 #endif
@@ -124,6 +130,84 @@ extern void frt_do_clean_up();
  * @param p the object which this function will be called on.
  */
 extern void frt_dummy_free(void *p);
+
+/**
+ * Return the count of trailing [LSB] 0 bits in +word+.
+ */
+
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_trailing_zeros(frt_u32 word)
+{
+#ifdef __GNUC__
+    return __builtin_ctz(word);
+#else
+    static const int count_trailing_zeros[] = {
+        8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        7, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+        4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
+    };
+                if (word & 0xff) return count_trailing_zeros[word & 0xff];
+    word >>= 8; if (word & 0xff) return count_trailing_zeros[word & 0xff] + 8;
+    word >>= 8; if (word & 0xff) return count_trailing_zeros[word & 0xff] + 16;
+    word >>= 8;                  return count_trailing_zeros[word & 0xff] + 24;
+#endif
+}
+
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_trailing_ones(frt_u32 word)
+{
+    return frt_count_trailing_zeros(~word);
+}
+
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_ones(frt_u32 word)
+{
+#ifdef __GNUC__
+    return __builtin_popcount(word);
+#else
+    static const frt_uchar count_ones[] = {
+        0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+        1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+        1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+        3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+    };
+    return count_ones[(word      ) & 0xff]
+        +  count_ones[(word >> 8 ) & 0xff]
+        +  count_ones[(word >> 16) & 0xff]
+        +  count_ones[(word >> 24) & 0xff];
+#endif
+}
+
+extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+int frt_count_zeros(frt_u32 word)
+{
+    return frt_count_ones(~word);
+}
 
 /**
  * For coverage, we don't want FRT_XEXIT to actually exit on uncaught

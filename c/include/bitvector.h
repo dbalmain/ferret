@@ -20,8 +20,9 @@ typedef struct FrtBitVector
     /** capa is the number of words (U32) allocated for the bits */
     int capa;
 
-    /** count is the running count of bits set. This is kept up to date by
-     *frt_bv_set and frt_bv_unset. You can reset this value by calling frt_bv_recount */
+    /** count is the running count of bits set. This is kept up to
+     * date by frt_bv_set and frt_bv_unset. You can reset this value
+     * by calling frt_bv_recount */
     int count;
 
     /** curr_bit is used by scan_next to record the previously  scanned bit */
@@ -32,45 +33,109 @@ typedef struct FrtBitVector
 } FrtBitVector;
 
 /**
- * Create a new FrtBitVector with a capacity of +FRT_BV_INIT_CAPA+. Note that the
- * FrtBitVector is growable and will adjust it's capacity when you use frt_bv_set.
+ * Create a new FrtBitVector with a capacity of
+ * +FRT_BV_INIT_CAPA+. Note that the FrtBitVector is growable and will
+ * adjust it's capacity when you use frt_bv_set.
  *
  * @return FrtBitVector with a capacity of +FRT_BV_INIT_CAPA+.
  */
-extern FrtBitVector *frt_bv_new();
+extern FRT_ATTR_MALLOC
+FrtBitVector *frt_bv_new();
 
 /**
- * Create a new FrtBitVector with a capacity of +capa+. Note that the FrtBitVector
- * is growable and will adjust it's capacity when you use frt_bv_set.
+ * Create a new FrtBitVector with a capacity of +capa+. Note that the
+ * FrtBitVector is growable and will adjust it's capacity when you use
+ * frt_bv_set.
  *
  * @param capa the initial capacity of the FrtBitVector
  * @return FrtBitVector with a capacity of +capa+.
  */
-extern FrtBitVector *frt_bv_new_capa(int capa);
+extern FRT_ATTR_MALLOC
+FrtBitVector *frt_bv_new_capa(int capa);
 
 /**
- * Destroy a FrtBitVector, freeing all memory allocated to that FrtBitVector
+ * Destroy a FrtBitVector, freeing all memory allocated to that
+ * FrtBitVector
  *
  * @param bv FrtBitVector to destroy
  */
 extern void frt_bv_destroy(FrtBitVector *bv);
 
 /**
- * Set the bit at position +index+. If +index+ is outside of the range of the
- * FrtBitVector, that is >= FrtBitVector.size, FrtBitVector.size will be set to +index+
- * + 1. If it is greater than the capacity of the FrtBitVector, the capacity will
- * be expanded to accomodate.
+ * Set the bit at position +index+ with +value+. If +index+ is outside
+ * of the range of the FrtBitVector, that is >= FrtBitVector.size,
+ * FrtBitVector.size will be set to +index+ + 1. If it is greater than
+ * the capacity of the FrtBitVector, the capacity will be expanded to
+ * accomodate.
+ *
+ * @param bv the FrtBitVector to set the bit in
+ * @param index the index of the bit to set
+ * @param value the boolean value
+ */
+
+/*
+ * FIXME: if the top set bit is unset, size is not adjusted. This will not
+ * cause any bugs in this code but could cause problems if users are relying
+ * on the fact that size is accurate.
+ */
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_set_value(FrtBitVector *bv, int bit, bool value)
+{
+    frt_u32 *word_p;
+    int word = bit >> 5;
+    frt_u32 bitmask = 1 << (bit & 31);
+
+    /* Check to see if we need to grow the BitVector */
+    if (unlikely(bit >= bv->size)) {
+        bv->size = bit + 1; /* size is max range of bits set */
+        if (word >= bv->capa) {
+            int capa = bv->capa << 1;
+            while (capa <= word) {
+                capa <<= 1;
+            }
+            FRT_REALLOC_N(bv->bits, frt_u32, capa);
+            memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
+                   sizeof(frt_u32) * (capa - bv->capa));
+            bv->capa = capa;
+        }
+    }
+
+    /* Set the required bit */
+    word_p = &(bv->bits[word]);
+    if ((!!(bitmask & *word_p)) != value) {
+        if (value) {
+            bv->count++;
+            *word_p |= bitmask;
+        }
+        else {
+            bv->count--;
+            *word_p &= ~bitmask;
+        }
+    }
+}
+
+/**
+ * Set the bit at position +index+. If +index+ is outside of the range
+ * of the FrtBitVector, that is >= FrtBitVector.size,
+ * FrtBitVector.size will be set to +index+ + 1. If it is greater than
+ * the capacity of the FrtBitVector, the capacity will be expanded to
+ * accomodate.
  *
  * @param bv the FrtBitVector to set the bit in
  * @param index the index of the bit to set
  */
-extern void frt_bv_set(FrtBitVector *bv, int index);
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_set(FrtBitVector *bv, int bit)
+{
+    frt_bv_set_value(bv, bit, 1);
+}
 
 /**
  * Unsafely set the bit at position +index+. If you choose to use this
- * function you must create the FrtBitVector with a large enough capacity to
- * accomodate all of the frt_bv_set_fast operations. You must also set bits in
- * order and only one time per bit. Otherwise, use the safe frt_bv_set function.
+ * function you must create the FrtBitVector with a large enough
+ * capacity to accomodate all of the frt_bv_set_fast operations. You
+ * must also set bits in order and only one time per bit. Otherwise,
+ * use the safe frt_bv_set function.
  *
  * So this is ok;
  * <pre>
@@ -92,27 +157,46 @@ extern void frt_bv_set(FrtBitVector *bv, int index);
  * @param bv the FrtBitVector to set the bit in
  * @param index the index of the bit to set
  */
-extern FRT_INLINE void frt_bv_set_fast(FrtBitVector *bv, int bit);
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_set_fast(FrtBitVector *bv, int bit)
+{
+    bv->count++;
+    bv->size = bit + 1;
+    bv->bits[bit >> 5] |= (1 << (bit & 31));
+}
 
 /**
- * Return 1 if the bit at +index+ was set or 0 otherwise. If +index+ is out of
- * range, that is greater then the BitVectors capacity, it will also return 0.
+ * Return 1 if the bit at +index+ was set or 0 otherwise. If +index+
+ * is out of range, that is greater then the BitVectors capacity, it
+ * will also return 0.
  *
  * @param bv the FrtBitVector to check in
  * @param index the index of the bit to check
  * @return 1 if the bit was set, 0 otherwise
  */
-extern int frt_bv_get(FrtBitVector *bv, int index);
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_get(FrtBitVector *bv, int bit)
+{
+    /* out of range so return 0 because it can't have been set */
+    if (unlikely(bit >= bv->size)) {
+        return bv->extends_as_ones;
+    }
+    return (bv->bits[bit >> 5] >> (bit & 31)) & 0x01;
+}
 
 /**
- * Unset the bit at position +index+. If the +index+ was out of range, that is
- * greater than the BitVectors capacity then do nothing. (frt_bv_get will return 0
- * in this case anyway).
+ * Unset the bit at position +index+. If the +index+ was out of range,
+ * that is greater than the BitVectors capacity then do
+ * nothing. (frt_bv_get will return 0 in this case anyway).
  *
  * @param bv the FrtBitVector to unset the bit in
  * @param index the index of the bit to unset
  */
-extern void frt_bv_unset(FrtBitVector *bv, int bit);
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_unset(FrtBitVector *bv, int bit)
+{
+    frt_bv_set_value(bv, bit, 0);
+}
 
 /**
  * Clear all set bits. This function will set all set bits to 0.
@@ -122,11 +206,12 @@ extern void frt_bv_unset(FrtBitVector *bv, int bit);
 extern void frt_bv_clear(FrtBitVector *bv);
 
 /**
- * Resets the set bit count by running through the whole FrtBitVector and
- * counting all set bits. A running count of the bits is kept by frt_bv_set,
- *frt_bv_get and frt_bv_set_fast so this function is only necessary if the count could
- * have been corrupted somehow or if the FrtBitVector has been constructed in a
- * different way (for example being read from the file_system).
+ * Resets the set bit count by running through the whole FrtBitVector
+ * and counting all set bits. A running count of the bits is kept by
+ * frt_bv_set, *frt_bv_get and frt_bv_set_fast so this function is
+ * only necessary if the count could have been corrupted somehow or if
+ * the FrtBitVector has been constructed in a different way (for
+ * example being read from the file_system).
  *
  * @param bv the FrtBitVector to count the bits in
  * @return the number of set bits in the FrtBitVector. FrtBitVector.count is also
@@ -135,53 +220,108 @@ extern void frt_bv_clear(FrtBitVector *bv);
 extern int frt_bv_recount(FrtBitVector *bv);
 
 /**
- * Reset the FrtBitVector for scanning. This function should be called before
- * using frt_bv_scan_next to scan through all set bits in the FrtBitVector. This is
- * not necessary when using frt_bv_scan_next_from.
+ * Reset the FrtBitVector for scanning. This function should be called
+ * before using frt_bv_scan_next to scan through all set bits in the
+ * FrtBitVector. This is not necessary when using
+ * frt_bv_scan_next_from.
  *
  * @param bv the FrtBitVector to reset for scanning
  */
 extern void frt_bv_scan_reset(FrtBitVector *bv);
 
 /**
- * Scan the FrtBitVector for the next set bit. Before using this function you
- * should reset the FrtBitVector for scanning using +frt_bv_scan_reset+. You can the
- * repeated call frt_bv_scan_next to get each set bit until it finally returns
- * -1.
- *
- * @param bv the FrtBitVector to scan
- * @return the next set bits index or -1 if no more bits are set
- */
-extern int frt_bv_scan_next(FrtBitVector *bv);
-
-/**
- * Scan the FrtBitVector for the next set bit after +from+. If no more bits are
- * set then return -1, otherwise return the index of teh next set bit.
+ * Scan the FrtBitVector for the next set bit after +from+. If no more
+ * bits are set then return -1, otherwise return the index of teh next
+ * set bit.
  *
  * @param bv the FrtBitVector to scan
  * @return the next set bit's index or -1 if no more bits are set
  */
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_scan_next_from(FrtBitVector *bv, const int bit)
+{
+    frt_u32 pos  = bit >> 5;
+    frt_u32 word = bv->bits[pos];
 
-extern int frt_bv_scan_next_from(FrtBitVector *bv, register const int from);
+    if (bit >= bv->size)
+        return -1;
+
+    /* Keep only the bits above this position */
+    word &= ~0 << (bit & 31);
+    if (word)
+        goto done;
+
+    for (pos++; pos < (frt_u32)bv->size; ++pos)
+    {
+        if ( (word = bv->bits[pos]) )
+            goto done;
+    }
+    return -1;
+ done:
+    return bv->curr_bit = (pos << 5) + frt_count_trailing_zeros(word);
+}
+
 /**
- * Scan the FrtBitVector for the next unset bit. Before using this function you
- * should reset the FrtBitVector for scanning using +frt_bv_scan_reset+. You can the
- * repeated call frt_bv_scan_next to get each unset bit until it finally returns
- * -1.
+ * Scan the FrtBitVector for the next set bit. Before using this
+ * function you should reset the FrtBitVector for scanning using
+ * +frt_bv_scan_reset+. You can the repeatedly call frt_bv_scan_next
+ * to get each set bit until it finally returns -1.
  *
  * @param bv the FrtBitVector to scan
- * @return the next unset bits index or -1 if no more bits are unset
+ * @return the next set bits index or -1 if no more bits are set
  */
-extern int frt_bv_scan_next_unset(FrtBitVector *bv);
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_scan_next(FrtBitVector *bv)
+{
+    return frt_bv_scan_next_from(bv, bv->curr_bit + 1);
+}
 
 /**
- * Scan the FrtBitVector for the next unset bit after +from+. If no more bits are
- * unset then return -1, otherwise return the index of teh next unset bit.
+ * Scan the FrtBitVector for the next unset bit after +from+. If no
+ * more bits are unset then return -1, otherwise return the index of
+ * teh next unset bit.
  *
  * @param bv the FrtBitVector to scan
  * @return the next unset bit's index or -1 if no more bits are unset
  */
-extern int frt_bv_scan_next_unset_from(FrtBitVector *bv, register const int from);
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_scan_next_unset_from(FrtBitVector *bv, const int bit)
+{
+    frt_u32 pos  = bit >> 5;
+    frt_u32 word = bv->bits[pos];
+
+    if (bit >= bv->size)
+        return -1;
+
+    /* Set all of the bits below this position */
+    word |= (1 << (bit & 31)) - 1;
+    if (~word)
+        goto done;
+
+    for (pos++; pos < (frt_u32)bv->size; ++pos)
+    {
+        if ( ~(word = bv->bits[pos]) )
+            goto done;
+    }
+    return -1;
+ done:
+    return bv->curr_bit = (pos << 5) + frt_count_trailing_ones(word);
+}
+
+/**
+ * Scan the FrtBitVector for the next unset bit. Before using this
+ * function you should reset the FrtBitVector for scanning using
+ * +frt_bv_scan_reset+. You can the repeated call frt_bv_scan_next to
+ * get each unset bit until it finally returns -1.
+ *
+ * @param bv the FrtBitVector to scan
+ * @return the next unset bits index or -1 if no more bits are unset
+ */
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_scan_next_unset(FrtBitVector *bv)
+{
+    return frt_bv_scan_next_unset_from(bv, bv->curr_bit + 1);
+}
 
 /**
  * Check whether the two BitVectors have the same bits set.
