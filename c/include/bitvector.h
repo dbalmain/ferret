@@ -217,7 +217,37 @@ extern void frt_bv_clear(FrtBitVector *bv);
  * @return the number of set bits in the FrtBitVector. FrtBitVector.count is also
  *   set
  */
-extern int frt_bv_recount(FrtBitVector *bv);
+extern FRT_ATTR_ALWAYS_INLINE
+int frt_bv_recount(FrtBitVector *bv)
+{
+    unsigned int extra = ((bv->size & 31) >> 3) + 1;
+    unsigned int len   = bv->size >> 5;
+    unsigned int idx, count = 0;
+
+    if (bv->extends_as_ones) {
+        for (idx = 0; idx < len; ++idx) {
+            count += frt_count_zeros(bv->bits[idx]);
+        }
+        switch (extra) {
+            case 4: count += frt_count_zeros(bv->bits[idx] | 0x00ffffff);
+            case 3: count += frt_count_zeros(bv->bits[idx] | 0xff00ffff);
+            case 2: count += frt_count_zeros(bv->bits[idx] | 0xffff00ff);
+            case 1: count += frt_count_zeros(bv->bits[idx] | 0xffffff00);
+        }
+    }
+    else {
+        for (idx = 0; idx < len; ++idx) {
+            count += frt_count_ones(bv->bits[idx]);
+        }
+        switch (extra) {
+            case 4: count += frt_count_ones(bv->bits[idx] & 0xff000000);
+            case 3: count += frt_count_ones(bv->bits[idx] & 0x00ff0000);
+            case 2: count += frt_count_ones(bv->bits[idx] & 0x0000ff00);
+            case 1: count += frt_count_ones(bv->bits[idx] & 0x000000ff);
+        }
+    }
+    return bv->count = count;
+}
 
 /**
  * Reset the FrtBitVector for scanning. This function should be called
@@ -340,6 +370,113 @@ extern int frt_bv_eq(FrtBitVector *bv1, FrtBitVector *bv2);
  */
 extern unsigned long frt_bv_hash(FrtBitVector *bv);
 
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_capa(FrtBitVector *bv, int capa, int size)
+{
+    int word_size = (size >> 5) + 1;
+    FRT_REALLOC_N(bv->bits, frt_u32, capa);
+    bv->capa = capa;
+    bv->size = size;
+    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
+           sizeof(frt_u32) * (capa - word_size));
+}
+
+extern FRT_ATTR_ALWAYS_INLINE
+void frt_bv_recapa(FrtBitVector *bv, int new_capa)
+{
+    if (bv->capa < new_capa) {
+        FRT_REALLOC_N(bv->bits, frt_u32, new_capa);
+        memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
+               sizeof(frt_u32) * (new_capa - bv->capa));
+        bv->capa = new_capa;
+    }
+}
+
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_and_i(FrtBitVector *bv, FrtBitVector *bv1,
+                           FrtBitVector *bv2)
+{
+    int i, size, word_size, capa = 4;
+
+    bv->extends_as_ones = (bv1->extends_as_ones & bv2->extends_as_ones);
+
+    if (bv1->extends_as_ones || bv2->extends_as_ones)
+         size = frt_max2(bv1->size, bv2->size);
+    else size = frt_min2(bv1->size, bv2->size);
+
+    word_size = (size >> 5) + 1;
+    capa = frt_max2(frt_round2(word_size), 4);
+
+    frt_bv_recapa(bv1, capa);
+    frt_bv_recapa(bv2, capa);
+    frt_bv_capa(bv, capa, size);
+
+    for (i = 0; i < word_size; i++)
+        bv->bits[i] = bv1->bits[i] & bv2->bits[i];
+
+    frt_bv_recount(bv);
+    return bv;
+}
+
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_or_i(FrtBitVector *bv,
+                          FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    int i;
+    int max_size = frt_max2(bv1->size, bv2->size);
+    int word_size = (max_size >> 5) + 1;
+    int capa = frt_max2(frt_round2(word_size), 4);
+
+    bv->extends_as_ones = (bv1->extends_as_ones | bv2->extends_as_ones);
+    frt_bv_recapa(bv1, capa);
+    frt_bv_recapa(bv2, capa);
+    frt_bv_capa(bv, capa, max_size);
+
+    for (i = 0; i < word_size; i++) {
+        bv->bits[i] = bv1->bits[i] | bv2->bits[i];
+    }
+    frt_bv_recount(bv);
+    return bv;
+}
+
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_xor_i(FrtBitVector *bv,
+                           FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    int i;
+    int max_size = frt_max2(bv1->size, bv2->size);
+    int word_size = (max_size >> 5) + 1;
+    int capa = frt_max2(frt_round2(word_size), 4);
+
+    bv->extends_as_ones = (bv1->extends_as_ones ^ bv2->extends_as_ones);
+    frt_bv_recapa(bv1, capa);
+    frt_bv_recapa(bv2, capa);
+    frt_bv_capa(bv, capa, max_size);
+
+    for (i = 0; i < word_size; i++) {
+        bv->bits[i] = bv1->bits[i] ^ bv2->bits[i];
+    }
+    frt_bv_recount(bv);
+    return bv;
+}
+
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_not_i(FrtBitVector *bv, FrtBitVector *bv1)
+{
+    int i;
+    int word_size = (bv1->size >> 5) + 1;
+    int capa = frt_max2(frt_round2(word_size), 4);
+
+    bv->extends_as_ones = !bv1->extends_as_ones;
+    frt_bv_capa(bv, capa, bv1->size);
+
+    for (i = 0; i < word_size; i++) {
+        bv->bits[i] = ~(bv1->bits[i]);
+    }
+    frt_bv_recount(bv);
+    return bv;
+}
+
 /**
  * ANDs two BitVectors (+bv1+ and +bv2+) together and return the resultant
  * FrtBitVector
@@ -348,7 +485,11 @@ extern unsigned long frt_bv_hash(FrtBitVector *bv);
  * @param bv2 second FrtBitVector to AND
  * @return A FrtBitVector with all bits set that are set in both bv1 and bv2
  */
-extern FrtBitVector *frt_bv_and(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_and(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_and_i(frt_bv_new(), bv1, bv2);
+}
 
 /**
  * ORs two BitVectors (+bv1+ and +bv2+) together and return the resultant
@@ -358,7 +499,12 @@ extern FrtBitVector *frt_bv_and(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv2 second FrtBitVector to OR
  * @return A FrtBitVector with all bits set that are set in both bv1 and bv2
  */
-extern FrtBitVector *frt_bv_or(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_or(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_or_i(frt_bv_new(), bv1, bv2);
+}
+
 
 /**
  * XORs two BitVectors (+bv1+ and +bv2+) together and return the resultant
@@ -368,7 +514,11 @@ extern FrtBitVector *frt_bv_or(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv2 second FrtBitVector to XOR
  * @return A FrtBitVector with all bits set that are equal in bv1 and bv2
  */
-extern FrtBitVector *frt_bv_xor(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_xor(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_xor_i(frt_bv_new(), bv1, bv2);
+}
 
 /**
  * Returns FrtBitVector with all of +bv+'s bits flipped
@@ -376,7 +526,11 @@ extern FrtBitVector *frt_bv_xor(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv FrtBitVector to flip
  * @return A FrtBitVector with all bits set that are set in both bv1 and bv2
  */
-extern FrtBitVector *frt_bv_not(FrtBitVector *bv);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_not(FrtBitVector *bv)
+{
+    return frt_bv_not_i(frt_bv_new(), bv);
+}
 
 /**
  * ANDs two BitVectors together +bv1+ and +bv2+ in place of +bv1+
@@ -386,7 +540,11 @@ extern FrtBitVector *frt_bv_not(FrtBitVector *bv);
  * @return A FrtBitVector
  * @return bv1 with all bits set that where set in both bv1 and bv2
  */
-extern FrtBitVector *frt_bv_and_x(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_and_x(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_and_i(bv1, bv1, bv2);
+}
 
 /**
  * ORs two BitVectors together
@@ -395,7 +553,11 @@ extern FrtBitVector *frt_bv_and_x(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv2 second FrtBitVector to OR
  * @return bv1
  */
-extern FrtBitVector *frt_bv_or_x(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_or_x(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_or_i(bv1, bv1, bv2);
+}
 
 /**
  * XORs two BitVectors together +bv1+ and +bv2+ in place of +bv1+
@@ -404,7 +566,11 @@ extern FrtBitVector *frt_bv_or_x(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv2 second FrtBitVector to XOR
  * @return bv1
  */
-extern FrtBitVector *frt_bv_xor_x(FrtBitVector *bv1, FrtBitVector *bv2);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_xor_x(FrtBitVector *bv1, FrtBitVector *bv2)
+{
+    return frt_bv_xor_i(bv1, bv1, bv2);
+}
 
 /**
  * Flips all bits in the FrtBitVector +bv+
@@ -412,7 +578,11 @@ extern FrtBitVector *frt_bv_xor_x(FrtBitVector *bv1, FrtBitVector *bv2);
  * @param bv FrtBitVector to flip
  * @return A +bv+ with all it's bits flipped
  */
-extern FrtBitVector *frt_bv_not_x(FrtBitVector *bv);
+extern FRT_ATTR_ALWAYS_INLINE
+FrtBitVector *frt_bv_not_x(FrtBitVector *bv)
+{
+    return frt_bv_not_i(bv, bv);
+}
 
 #ifdef __cplusplus
 } // extern "C"
