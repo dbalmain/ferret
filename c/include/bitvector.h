@@ -373,90 +373,84 @@ extern unsigned long frt_bv_hash(FrtBitVector *bv);
 extern FRT_ATTR_ALWAYS_INLINE
 void frt_bv_capa(FrtBitVector *bv, int capa, int size)
 {
-    int word_size = (size >> 5) + 1;
-    FRT_REALLOC_N(bv->bits, frt_u32, capa);
-    bv->capa = capa;
-    bv->size = size;
-    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
-           sizeof(frt_u32) * (capa - word_size));
-}
-
-extern FRT_ATTR_ALWAYS_INLINE
-void frt_bv_recapa(FrtBitVector *bv, int new_capa)
-{
-    if (bv->capa < new_capa) {
-        FRT_REALLOC_N(bv->bits, frt_u32, new_capa);
-        memset(bv->bits + bv->capa, (bv->extends_as_ones ? 0xFF : 0),
-               sizeof(frt_u32) * (new_capa - bv->capa));
-        bv->capa = new_capa;
+    int word_size = FRT_TO_WORD(size);
+    if (bv->capa < capa)
+    {
+        FRT_REALLOC_N(bv->bits, frt_u32, capa);
+        bv->capa = capa;
+        memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
+               sizeof(frt_u32) * (capa - word_size));
     }
+    bv->size = size;
 }
 
+#define frt_bv_and_ext(dest, src, extends_as_ones, i, max) do { \
+    if (extends_as_ones)                                        \
+         memcpy(&dest[i], &src[i], sizeof(*dest)*(max - i));    \
+    else memset(&dest[i], 0x00   , sizeof(*dest)*(max - i));    \
+} while(0)
+
+#define frt_bv_or_ext(dest, src, extends_as_ones, i, max) do { \
+    if (extends_as_ones)                                       \
+         memset(&dest[i], 0xFF   , sizeof(*dest)*(max - i));   \
+    else memcpy(&dest[i], &src[i], sizeof(*dest)*(max - i));   \
+} while(0)
+
+#define frt_bv_xor_ext(dest, src, extends_as_ones, i, max) do { \
+    frt_u32 n = (extends_as_ones ? 0xffffffff : 0);             \
+    for (; i < max; ++i)                                        \
+        dest[i] = src[i] ^ n;                                   \
+} while(0)
+
+#define FRT_BV_OP(bv, a, b, op, ext_cb) do {                          \
+    int i;                                                            \
+    int a_wsz = FRT_TO_WORD(a->size);                                 \
+    int b_wsz = FRT_TO_WORD(b->size);                                 \
+    int max_size = frt_max2(a->size, b->size);                        \
+    int min_size = frt_min2(a->size, b->size);                        \
+    int max_word_size = FRT_TO_WORD(max_size);                        \
+    int min_word_size = FRT_TO_WORD(min_size);                        \
+    int capa = frt_max2(frt_round2(max_word_size), 4);                \
+                                                                      \
+    bv->extends_as_ones = (a->extends_as_ones op b->extends_as_ones); \
+    frt_bv_capa(bv, capa, max_size);                                  \
+                                                                      \
+    for (i = 0; i < min_word_size; ++i)                               \
+        bv->bits[i] = a->bits[i] op b->bits[i];                       \
+                                                                      \
+    if (a_wsz != b_wsz) {                                             \
+        frt_u32 *bits = a->bits;                                      \
+        bool extends_as_ones = b->extends_as_ones;                    \
+        if (a_wsz < b_wsz) {                                          \
+            bits = b->bits;                                           \
+            extends_as_ones = a->extends_as_ones;                     \
+        }                                                             \
+        ext_cb(bv->bits, bits, extends_as_ones, i, max_word_size);    \
+    }                                                                 \
+    frt_bv_recount(bv);                                               \
+} while(0)
+
 extern FRT_ATTR_ALWAYS_INLINE
-FrtBitVector *frt_bv_and_i(FrtBitVector *bv, FrtBitVector *bv1,
-                           FrtBitVector *bv2)
+FrtBitVector *frt_bv_and_i(FrtBitVector *bv,
+                           FrtBitVector *a, FrtBitVector *b)
 {
-    int i, size, word_size, capa = 4;
-
-    bv->extends_as_ones = (bv1->extends_as_ones & bv2->extends_as_ones);
-
-    if (bv1->extends_as_ones || bv2->extends_as_ones)
-         size = frt_max2(bv1->size, bv2->size);
-    else size = frt_min2(bv1->size, bv2->size);
-
-    word_size = (size >> 5) + 1;
-    capa = frt_max2(frt_round2(word_size), 4);
-
-    frt_bv_recapa(bv1, capa);
-    frt_bv_recapa(bv2, capa);
-    frt_bv_capa(bv, capa, size);
-
-    for (i = 0; i < word_size; i++)
-        bv->bits[i] = bv1->bits[i] & bv2->bits[i];
-
-    frt_bv_recount(bv);
+    FRT_BV_OP(bv, a, b, &, frt_bv_and_ext);
     return bv;
 }
 
 extern FRT_ATTR_ALWAYS_INLINE
 FrtBitVector *frt_bv_or_i(FrtBitVector *bv,
-                          FrtBitVector *bv1, FrtBitVector *bv2)
+                          FrtBitVector *a, FrtBitVector *b)
 {
-    int i;
-    int max_size = frt_max2(bv1->size, bv2->size);
-    int word_size = (max_size >> 5) + 1;
-    int capa = frt_max2(frt_round2(word_size), 4);
-
-    bv->extends_as_ones = (bv1->extends_as_ones | bv2->extends_as_ones);
-    frt_bv_recapa(bv1, capa);
-    frt_bv_recapa(bv2, capa);
-    frt_bv_capa(bv, capa, max_size);
-
-    for (i = 0; i < word_size; i++) {
-        bv->bits[i] = bv1->bits[i] | bv2->bits[i];
-    }
-    frt_bv_recount(bv);
+    FRT_BV_OP(bv, a, b, |, frt_bv_or_ext);
     return bv;
 }
 
 extern FRT_ATTR_ALWAYS_INLINE
 FrtBitVector *frt_bv_xor_i(FrtBitVector *bv,
-                           FrtBitVector *bv1, FrtBitVector *bv2)
+                           FrtBitVector *a, FrtBitVector *b)
 {
-    int i;
-    int max_size = frt_max2(bv1->size, bv2->size);
-    int word_size = (max_size >> 5) + 1;
-    int capa = frt_max2(frt_round2(word_size), 4);
-
-    bv->extends_as_ones = (bv1->extends_as_ones ^ bv2->extends_as_ones);
-    frt_bv_recapa(bv1, capa);
-    frt_bv_recapa(bv2, capa);
-    frt_bv_capa(bv, capa, max_size);
-
-    for (i = 0; i < word_size; i++) {
-        bv->bits[i] = bv1->bits[i] ^ bv2->bits[i];
-    }
-    frt_bv_recount(bv);
+    FRT_BV_OP(bv, a, b, ^, frt_bv_xor_ext);
     return bv;
 }
 
@@ -464,15 +458,15 @@ extern FRT_ATTR_ALWAYS_INLINE
 FrtBitVector *frt_bv_not_i(FrtBitVector *bv, FrtBitVector *bv1)
 {
     int i;
-    int word_size = (bv1->size >> 5) + 1;
+    int word_size = FRT_TO_WORD(bv1->size);
     int capa = frt_max2(frt_round2(word_size), 4);
 
     bv->extends_as_ones = !bv1->extends_as_ones;
     frt_bv_capa(bv, capa, bv1->size);
 
-    for (i = 0; i < word_size; i++) {
+    for (i = 0; i < word_size; i++)
         bv->bits[i] = ~(bv1->bits[i]);
-    }
+
     frt_bv_recount(bv);
     return bv;
 }

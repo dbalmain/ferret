@@ -70,6 +70,7 @@ typedef void (*frt_free_ft)(void *key);
 #define FRT_MAX3(a, b, c) ((a) > (b) ? ((a) > (c) ? (a) : (c)) : ((b) > (c) ? (b) : (c)))
 
 #define FRT_ABS(n) ((n >= 0) ? n : -n)
+#define FRT_TO_WORD(n) (((n) >> 5) + 1)
 
 #define FRT_RECAPA(self, len, capa, ptr, type) \
   do {\
