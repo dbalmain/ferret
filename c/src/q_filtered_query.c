@@ -164,11 +164,11 @@ static Weight *fqw_new(Query *query, Weight *sub_weight, Similarity *sim)
  *
  ***************************************************************************/
 
-static char *fq_to_s(Query *self, const char *field)
+static char *fq_to_s(Query *self, Symbol default_field)
 {
     FilteredQuery *fq = FQQ(self);
     char *filter_str = fq->filter->to_s(fq->filter);
-    char *query_str = fq->query->to_s(fq->query, field);
+    char *query_str = fq->query->to_s(fq->query, default_field);
     char *buffer;
     if (self->boost == 1.0) {
         buffer = strfmt("FilteredQuery(query:%s, filter:%s)",

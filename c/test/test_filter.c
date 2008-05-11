@@ -11,15 +11,17 @@ struct FilterData {
     char *flipflop;
 };
 
-static const char *num = "num";
-static const char *date = "date";
-static const char *flipflop = "flipflop";
+static Symbol num, date, flipflop;
 
 void prepare_filter_index(Store *store)
 {
     int i;
     IndexWriter *iw;
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_NO);
+
+    num      = intern("num");
+    date     = intern("date");
+    flipflop = intern("flipflop");
 
     struct FilterData data[FILTER_DOCS_SIZE] = {
         {"0", "20040601", "on"},
@@ -222,20 +224,20 @@ static void test_query_filter_hash(TestCase *tc, void *data)
 {
     Filter *f1, *f2;
     (void)data;
-    f1 = qfilt_new_nr(tq_new("A", "a"));
-    f2 = qfilt_new_nr(tq_new("A", "a"));
+    f1 = qfilt_new_nr(tq_new(I("A"), "a"));
+    f2 = qfilt_new_nr(tq_new(I("A"), "a"));
 
     Aiequal(filt_hash(f1), filt_hash(f2));
     Assert(filt_eq(f1, f2), "Queries are equal");
     Assert(filt_eq(f1, f1), "Queries are equal");
     filt_deref(f2);
 
-    f2 = qfilt_new_nr(tq_new("A", "b"));
+    f2 = qfilt_new_nr(tq_new(I("A"), "b"));
     Assert(filt_hash(f1) != filt_hash(f2), "texts differ");
     Assert(!filt_eq(f1, f2), "texts differ");
     filt_deref(f2);
 
-    f2 = qfilt_new_nr(tq_new("B", "a"));
+    f2 = qfilt_new_nr(tq_new(I("B"), "a"));
     Assert(filt_hash(f1) != filt_hash(f2), "fields differ");
     Assert(!filt_eq(f1, f2), "fields differ");
     filt_deref(f2);
@@ -247,7 +249,7 @@ static float odd_number_filter(int doc_num, float score, Searcher *sea, void *ar
 {
     float is_ok = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = lazy_doc_get(lazy_doc, I("num"));
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
     (void)arg;
@@ -265,7 +267,7 @@ static float distance_filter(int doc_num, float score, Searcher *sea, void *arg)
     int start_point = *((int *)arg);
     float distance = 0.0;
     LazyDoc *lazy_doc = searcher_get_lazy_doc(sea, doc_num);
-    LazyDocField *lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, "num");
+    LazyDocField *lazy_df = lazy_doc_get(lazy_doc, I("num"));
     char *num = lazy_df_get_data(lazy_df, 0);
     (void)score;
 

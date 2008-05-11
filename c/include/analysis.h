@@ -7,6 +7,7 @@ extern "C" {
 
 #include "global.h"
 #include "hash.h"
+#include "symbol.h"
 #include "multimapper.h"
 #include <wchar.h>
 
@@ -185,7 +186,7 @@ extern FrtTokenStream *frt_mapping_filter_add(FrtTokenStream *ts, const char *pa
 typedef struct FrtAnalyzer
 {
     FrtTokenStream *current_ts;
-    FrtTokenStream *(*get_ts)(struct FrtAnalyzer *a, char *field, char *text);
+    FrtTokenStream *(*get_ts)(struct FrtAnalyzer *a, FrtSymbol field, char *text);
     void (*destroy_i)(struct FrtAnalyzer *a);
     int ref_cnt;
 } FrtAnalyzer;
@@ -197,7 +198,7 @@ extern void frt_a_deref(FrtAnalyzer *a);
 extern FrtAnalyzer *frt_analyzer_new(FrtTokenStream *ts,
                               void (*destroy)(FrtAnalyzer *a),
                               FrtTokenStream *(*get_ts)(FrtAnalyzer *a,
-                                                     char *field,
+                                                     FrtSymbol field,
                                                      char *text));
 extern void frt_a_standard_destroy(FrtAnalyzer *a);
 extern FrtAnalyzer *frt_non_analyzer_new();
@@ -229,7 +230,9 @@ typedef struct FrtPerFieldAnalyzer
 } FrtPerFieldAnalyzer;
 
 extern FrtAnalyzer *frt_per_field_analyzer_new(FrtAnalyzer *a);
-extern void frt_pfa_add_field(FrtAnalyzer *self, char *field, FrtAnalyzer *analyzer);
+extern void frt_pfa_add_field(FrtAnalyzer *self,
+                              FrtSymbol field,
+                              FrtAnalyzer *analyzer);
 
 #ifdef __cplusplus
 } // extern "C"

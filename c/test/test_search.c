@@ -17,7 +17,7 @@ static void test_byte_float_conversion(TestCase *tc, void *data)
     }
 }
 
-static int my_doc_freq(Searcher *searcher, const char *field,
+static int my_doc_freq(Searcher *searcher, Symbol field,
                        const char *term)
 {
     (void)searcher; (void)field; (void)term;
@@ -84,7 +84,7 @@ static void test_default_similarity(TestCase *tc, void *data)
     ary_push(positions[3].terms, (char *)"term4");
     ary_push(positions[3].terms, (char *)"term5");
 
-    Afequal(1.0/4, sim_length_norm(dsim, "field", 16));
+    Afequal(1.0/4, sim_length_norm(dsim, I("field"), 16));
     Afequal(1.0/4, sim_query_norm(dsim, 16));
     Afequal(3.0, sim_tf(dsim, 9));
     Afequal(1.0/10, sim_sloppy_freq(dsim, 9));
@@ -92,8 +92,8 @@ static void test_default_similarity(TestCase *tc, void *data)
     Afequal(4.0, sim_coord(dsim, 12, 3));
     searcher.doc_freq = &my_doc_freq;
     searcher.max_doc = &my_max_doc;
-    Afequal(1.0, sim_idf_term(dsim, "field", positions[0].terms[0], &searcher));
-    Afequal(12.0, sim_idf_phrase(dsim, "field", positions, 4, &searcher));
+    Afequal(1.0, sim_idf_term(dsim, I("field"), positions[0].terms[0], &searcher));
+    Afequal(12.0, sim_idf_phrase(dsim, I("field"), positions, 4, &searcher));
 
     ary_free(positions[0].terms);
     ary_free(positions[1].terms);
@@ -155,24 +155,25 @@ struct Data {
     char *number;
 };
 
-static const char *date = "date";
-static const char *field = "field";
-static const char *cat = "cat";
-static const char *number = "number";
+static Symbol date, field, cat, number;
 
 #define SEARCH_DOCS_SIZE 18
 struct Data test_data[SEARCH_DOCS_SIZE] = {
     {"20050930", "word1",
         "cat1/",                ".123"},
-    {"20051001", "word1 word2 the quick brown fox",
+    {"20051001", "word1 word2 the quick brown fox the quick brown fox",
         "cat1/sub1",            "0.954"},
-    {"20051002", "word1 word3",
+    {"20051002", "word1 word3 one two one",
         "cat1/sub1/subsub1",    "908.123434"},
-    {"20051003", "word1 word3",
+    {"20051003", "word1 word3 one two",
         "cat1/sub2",            "3999"},
-    {"20051004", "word1 word2",
+    /* we have 33 * "word2" below to cause cache miss in TermQuery */
+    {"20051004", "word1 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2 word2 word2 "
+                 "word2 word2 word2 word2 word2 word2 word2",
         "cat1/sub2/subsub2",    "+.3413"},
-    {"20051005", "word1",
+    {"20051005", "word1 one two x x x x x one two",
         "cat2/sub1",            "-1.1298"},
     {"20051006", "word1 word3",
         "cat2/sub1",            "2"},
@@ -204,7 +205,9 @@ static void prepare_search_index(Store *store)
     int i;
     IndexWriter *iw;
 
-    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    FieldInfos *fis = fis_new(STORE_YES,
+                              INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     index_create(store, fis);
     fis_deref(fis);
 
@@ -248,7 +251,7 @@ static void test_get_doc(TestCase *tc, void *data)
     doc_destroy(doc);
 }
 
-void check_to_s(TestCase *tc, Query *query, const char *field, char *q_str)
+void check_to_s(TestCase *tc, Query *query, Symbol field, char *q_str)
 {
     char *q_res = query->to_s(query, field);
     Asequal(q_str, q_res);
@@ -267,7 +270,7 @@ void check_hits(TestCase *tc, Searcher *searcher, Query *query,
     int total_hits = s2l(expected_hits, num_array);
     TopDocs *top_docs
         = searcher_search(searcher, query, 0, total_hits + 1, NULL, NULL, NULL);
-    if (!Aiequal(total_hits, top_docs->total_hits)) {
+    if (!tc->failed && !Aiequal(total_hits, top_docs->total_hits)) {
         int i;
         Tmsg_nf("\texpected;\n\t    ");
         for (i = 0; i < total_hits; i++) {
@@ -299,7 +302,7 @@ void check_hits(TestCase *tc, Searcher *searcher, Query *query,
                "doc %d was found unexpectedly", hit->doc);
         /* only check the explanation if we got the correct docs. Obviously we
          * might want to remove this to visually check the explanations */
-        if (total_hits == top_docs->total_hits) {
+        if (!tc->failed && total_hits == top_docs->total_hits) {
             Explanation *e = searcher_explain(searcher, query, hit->doc);
             if (! Afequal(hit->score, e->value)) {
                char *t;
@@ -316,6 +319,8 @@ free(t);
         }
     }
     td_destroy(top_docs);
+
+    /* test search_unscored method */
     qsort(num_array, total_hits, sizeof(int), &icmp_risky);
     count = searcher_search_unscored(searcher, query,
                                      num_array2, ARRAY_SIZE, 0);
@@ -329,15 +334,29 @@ free(t);
 
 static void test_term_query(TestCase *tc, void *data)
 {
+    MatchVector *mv;
+    HashSet *hs;
     Searcher *searcher = (Searcher *)data;
     TopDocs *top_docs;
+    Weight *w;
+    char *t, e[100];
     Query *tq = tq_new(field, "word2");
-    check_to_s(tc, tq, (char *)field, "word2");
-    check_to_s(tc, tq, "", "field:word2");
+    check_to_s(tc, tq, field, "word2");
+    check_to_s(tc, tq, NULL, "field:word2");
     tq->boost = 100;
     check_hits(tc, searcher, tq, "4, 8, 1", -1);
-    check_to_s(tc, tq, (char *)field, "word2^100.0");
-    check_to_s(tc, tq, "", "field:word2^100.0");
+    check_to_s(tc, tq, field, "word2^100.0");
+    check_to_s(tc, tq, NULL, "field:word2^100.0");
+
+    /* test PhraseWeight.to_s */
+    w = searcher->create_weight(searcher, tq);
+    sprintf(e, "TermWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    tq->boost = 10.5f;
+    sprintf(e, "TermWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    w->destroy(w);
+
     q_deref(tq);
 
     tq = tq_new(field, "2342");
@@ -348,7 +367,7 @@ static void test_term_query(TestCase *tc, void *data)
     check_hits(tc, searcher, tq, "", -1);
     q_deref(tq);
 
-    tq = tq_new("not_a_field", "word2");
+    tq = tq_new(I("not_a_field"), "word2");
     check_hits(tc, searcher, tq, "", -1);
     q_deref(tq);
 
@@ -368,26 +387,47 @@ static void test_term_query(TestCase *tc, void *data)
     Aiequal(SEARCH_DOCS_SIZE - 10, top_docs->size);
     td_destroy(top_docs);
     q_deref(tq);
+
+    tq = tq_new(field, "quick");
+    /* test get_matchv_i */
+    check_hits(tc, searcher, tq, "1,11,14,16,17", -1);
+    mv = searcher_get_match_vector(searcher, tq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(3, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(7, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+
+    /* test extract_terms */
+    hs = hs_new((hash_ft)&term_hash, (eq_ft)&term_eq, (free_ft)&term_destroy);
+    tq->extract_terms(tq, hs);
+    Aiequal(1, hs->size);
+    Asequal("quick", ((Term *)hs->first->elem)->text);
+    Apequal(field, ((Term *)hs->first->elem)->field);
+    hs_destroy(hs);
+    q_deref(tq);
 }
 
 static void test_term_query_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
-    q1 = tq_new("A", "a");
+    q1 = tq_new(I("A"), "a");
 
-    q2 = tq_new("A", "a");
+    q2 = tq_new(I("A"), "a");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     Assert(q_eq(q1, q1), "Queries are equal");
     q_deref(q2);
 
-    q2 = tq_new("A", "b");
+    q2 = tq_new(I("A"), "b");
     Assert(q_hash(q1) != q_hash(q2), "texts differ");
     Assert(!q_eq(q1, q2), "texts differ");
     q_deref(q2);
 
-    q2 = tq_new("B", "a");
+    q2 = tq_new(I("B"), "a");
     Assert(q_hash(q1) != q_hash(q2), "fields differ");
     Assert(!q_eq(q1, q2), "fields differ");
     q_deref(q2);
@@ -423,7 +463,6 @@ static void test_boolean_query(TestCase *tc, void *data)
     bq_add_query_nr(bq, tq2, BC_MUST_NOT);
     check_hits(tc, searcher, bq, "0,1,4,5,7,9,10,12,13,15,16,17", -1);
     q_deref(bq);
-    return;
 
     tq2 = tq_new(field, "word3");
     bq = bq_new(false);
@@ -440,8 +479,8 @@ static void test_boolean_query(TestCase *tc, void *data)
     q_deref(bq);
 
     bq = bq_new(false);
-    tq1 = tq_new("not a field", "word1");
-    tq2 = tq_new("not a field", "word3");
+    tq1 = tq_new(I("not a field"), "word1");
+    tq2 = tq_new(I("not a field"), "word3");
     tq3 = tq_new(field, "word2");
     bq_add_query_nr(bq, tq1, BC_SHOULD);
     bq_add_query_nr(bq, tq2, BC_SHOULD);
@@ -458,9 +497,9 @@ static void test_boolean_query_hash(TestCase *tc, void *data)
     Query *tq1, *tq2, *tq3, *q1, *q2;
     (void)data;
 
-    tq1 = tq_new("A", "1");
-    tq2 = tq_new("B", "2");
-    tq3 = tq_new("C", "3");
+    tq1 = tq_new(I("A"), "1");
+    tq2 = tq_new(I("B"), "2");
+    tq3 = tq_new(I("C"), "3");
     q1 = bq_new(false);
     bq_add_query(q1, tq1, BC_MUST);
     bq_add_query(q1, tq2, BC_MUST);
@@ -515,48 +554,63 @@ static void test_boolean_query_hash(TestCase *tc, void *data)
 
 static void test_phrase_query(TestCase *tc, void *data)
 {
+    MatchVector *mv;
     Searcher *searcher = (Searcher *)data;
+    Explanation *explanation;
     Query *q;
     Query *phq = phq_new(field);
+    Weight *w;
+    char *t, e[100];
     check_to_s(tc, phq, field, "\"\"");
-    check_to_s(tc, phq, "", "field:\"\"");
+    check_to_s(tc, phq, NULL, "field:\"\"");
 
+    
     phq_add_term(phq, "quick", 1);
     phq_add_term(phq, "brown", 1);
     phq_add_term(phq, "fox", 1);
     check_to_s(tc, phq, field, "\"quick brown fox\"");
-    check_to_s(tc, phq, "", "field:\"quick brown fox\"");
+    check_to_s(tc, phq, NULL, "field:\"quick brown fox\"");
     check_hits(tc, searcher, phq, "1", 1);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 16, 17", 17);
+
+    /* test PhraseWeight.to_s */
+    w = searcher->create_weight(searcher, phq);
+    sprintf(e, "PhraseWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    phq->boost = 10.5f;
+    sprintf(e, "PhraseWeight(%f)", w->value);
+    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    w->destroy(w);
+
     q_deref(phq);
 
     phq = phq_new(field);
     phq_add_term(phq, "quick", 1);
     phq_add_term(phq, "fox", 2);
     check_to_s(tc, phq, field, "\"quick <> fox\"");
-    check_to_s(tc, phq, "", "field:\"quick <> fox\"");
+    check_to_s(tc, phq, NULL, "field:\"quick <> fox\"");
     check_hits(tc, searcher, phq, "1, 11, 14", 14);
 
-    ((PhraseQuery *)phq)->slop = 1;
+    phq_set_slop(phq, 1);
     check_hits(tc, searcher, phq, "1, 11, 14, 16", 14);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 11, 14, 16, 17", 14);
     phq_add_term(phq, "red", -1);
-    check_to_s(tc, phq, "", "field:\"quick red fox\"~4");
+    check_to_s(tc, phq, NULL, "field:\"quick red fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "RED", 0);
-    check_to_s(tc, phq, "", "field:\"quick red RED&fox\"~4");
+    check_to_s(tc, phq, NULL, "field:\"quick red RED&fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "QUICK", -1);
     phq_add_term(phq, "red", 0);
-    check_to_s(tc, phq, "", "field:\"quick QUICK&red&red RED&fox\"~4");
+    check_to_s(tc, phq, NULL, "field:\"quick QUICK&red&red RED&fox\"~4");
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "green", 0);
     phq_add_term(phq, "yellow", 0);
-    check_to_s(tc, phq, "",
+    check_to_s(tc, phq, NULL,
                "field:\"quick QUICK&red&red RED&fox&green&yellow\"~4");
     q_deref(phq);
 
@@ -568,23 +622,84 @@ static void test_phrase_query(TestCase *tc, void *data)
     phq_add_term(phq, "quick", 0);
     phq_add_term(phq, "QUICK", 1);
     check_hits(tc, searcher, phq, "11, 14", 14);
-    check_to_s(tc, phq, "", "field:\"WORD3&the THE&quick QUICK\"");
+    check_to_s(tc, phq, NULL, "field:\"WORD3&the THE&quick QUICK\"");
     q_deref(phq);
 
-    phq = phq_new("not a field");
+    /* test repeating terms check */
+    phq = phq_new(field);
+    phq_add_term(phq, "one", 0);
+    phq_add_term(phq, "two", 1);
+    phq_add_term(phq, "one", 1);
+    check_hits(tc, searcher, phq, "2", 2);
+    phq_set_slop(phq, 2);
+    check_hits(tc, searcher, phq, "2", 2);
+    q_deref(phq);
+
+    phq = phq_new(I("not a field"));
     phq_add_term(phq, "the", 0);
     phq_add_term(phq, "quick", 1);
     check_hits(tc, searcher, phq, "", -1);
+    explanation = searcher->explain(searcher, phq, 0);
+    Afequal(0.0, explanation->value);
+    expl_destroy(explanation);
     q_deref(phq);
 
-    /* test single term case, query is rewritten to TermQuery */
+    /* test single-term case, query is rewritten to TermQuery */
     phq = phq_new(field);
     phq_add_term(phq, "word2", 1);
     check_hits(tc, searcher, phq, "4, 8, 1", -1);
     q = searcher_rewrite(searcher, phq);
     Aiequal(q->type, TERM_QUERY);
-    q_deref(phq);
     q_deref(q);
+
+    /* test single-position/multi-term query is rewritten as MultiTermQuery */
+    phq_append_multi_term(phq, "word3");
+    check_hits(tc, searcher, phq, "1,2,3,4,6,8,11,14", -1);
+    q = searcher_rewrite(searcher, phq);
+    Aiequal(q->type, MULTI_TERM_QUERY);
+    q_deref(q);
+
+    /* check boost doesn't break anything */;
+    phq_add_term(phq, "one", 1); /* make sure it won't be rewritten */
+    phq->boost = 10.0;
+    check_hits(tc, searcher, phq, "2,3", -1);
+    q_deref(phq);
+
+    /* test get_matchv_i */
+    phq = phq_new(field);
+    phq_add_term(phq, "quick", 0);
+    phq_add_term(phq, "brown", 1);
+    check_hits(tc, searcher, phq, "1", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    phq_set_slop(phq, 4);
+    check_hits(tc, searcher, phq, "1,16,17", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    mv = searcher_get_match_vector(searcher, phq, 16, field);
+    if (Aiequal(1, mv->size)) {
+        Aiequal(2, mv->matches[0].start);
+        Aiequal(5, mv->matches[0].end);
+    }
+    matchv_destroy(mv);
+    phq_add_term(phq, "chicken", 1);
+    check_hits(tc, searcher, phq, "", -1);
+    mv = searcher_get_match_vector(searcher, phq, 16, field);
+    Aiequal(0, mv->size);
+    matchv_destroy(mv);
+    q_deref(phq);
 }
 
 static void test_phrase_query_hash(TestCase *tc, void *data)
@@ -606,7 +721,7 @@ static void test_phrase_query_hash(TestCase *tc, void *data)
     Assert(q_eq(q1, q1), "Test query equals itself");
     Assert(q_eq(q1, q2), "Queries should be equal");
 
-    ((PhraseQuery *)q2)->slop = 5;
+    phq_set_slop(q2, 5);
     Assert(q_hash(q1) != q_hash(q2), "Queries should not be equal");
     Assert(!q_eq(q1, q2), "Queries should not be equal");
     q_deref(q2);
@@ -629,7 +744,7 @@ static void test_phrase_query_hash(TestCase *tc, void *data)
     Assert(!q_eq(q1, q2), "Queries should not be equal");
     q_deref(q2);
 
-    q2 = phq_new("other_field");
+    q2 = phq_new(I("other_field"));
     phq_add_term(q2, "quick", 1);
     phq_add_term(q2, "brown", 2);
     phq_add_term(q2, "fox", 0);
@@ -644,40 +759,58 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
 {
     Searcher *searcher = (Searcher *)data;
     Query *phq, *q;
+    MatchVector *mv;
 
     phq = phq_new(field);
-    phq_add_term(phq, "quick", 0);
+    /* ok to use append_multi_term to start */
+    phq_append_multi_term(phq, "quick");
     phq_append_multi_term(phq, "fast");
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, phq, field, "\"quick|fast\"");
-    check_to_s(tc, phq, "", "field:\"quick|fast\"");
+    check_to_s(tc, phq, NULL, "field:\"quick|fast\"");
 
     phq_add_term(phq, "brown", 1);
     phq_append_multi_term(phq, "red");
     phq_append_multi_term(phq, "hairy");
     phq_add_term(phq, "fox", 1);
     check_to_s(tc, phq, field, "\"quick|fast brown|red|hairy fox\"");
-    check_to_s(tc, phq, "", "field:\"quick|fast brown|red|hairy fox\"");
+    check_to_s(tc, phq, NULL, "field:\"quick|fast brown|red|hairy fox\"");
     check_hits(tc, searcher, phq, "1, 8, 11, 14", -1);
 
-    ((PhraseQuery *)phq)->slop = 4;
+    phq_set_slop(phq, 4);
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
-    check_to_s(tc, phq, "", "field:\"quick|fast brown|red|hairy fox\"~4");
+    check_to_s(tc, phq, NULL, "field:\"quick|fast brown|red|hairy fox\"~4");
 
     phq_add_term(phq, "QUICK", -1);
     phq_append_multi_term(phq, "FAST");
     check_hits(tc, searcher, phq, "1, 8, 11, 14, 16, 17", -1);
-    check_to_s(tc, phq, "",
+    check_to_s(tc, phq, NULL,
                "field:\"quick|fast QUICK|FAST&brown|red|hairy fox\"~4");
 
     phq_add_term(phq, "WORD3", -3);
     phq_append_multi_term(phq, "WORD2");
     check_hits(tc, searcher, phq, "1, 8, 11, 14", -1);
-    check_to_s(tc, phq, "", "field:\"WORD3|WORD2 quick|fast "
+    check_to_s(tc, phq, NULL, "field:\"WORD3|WORD2 quick|fast "
                "QUICK|FAST&brown|red|hairy fox\"~4");
     q_deref(phq);
 
-    phq = phq_new("not a field");
+    /* test repeating terms check */
+    phq = phq_new(field);
+    phq_add_term(phq, "WORD3", 0);
+    phq_append_multi_term(phq, "x");
+    phq_add_term(phq, "one", 0);
+    phq_add_term(phq, "two", 1);
+    phq_add_term(phq, "one", 1);
+    check_hits(tc, searcher, phq, "2", -1);
+    check_to_s(tc, phq, NULL, "field:\"WORD3|x&one two one\"");
+
+    phq_set_slop(phq, 4);
+    check_hits(tc, searcher, phq, "2", -1);
+    check_to_s(tc, phq, NULL, "field:\"WORD3|x&one two one\"~4");
+    q_deref(phq);
+
+    /* test phrase query on non-existing field doesn't break anything */
+    phq = phq_new(I("not a field"));
     phq_add_term(phq, "the", 0);
     phq_add_term(phq, "quick", 1);
     phq_append_multi_term(phq, "THE");
@@ -693,6 +826,44 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     q_deref(phq);
     q_deref(q);
 
+    /* test get_matchv_i */
+    phq = phq_new(field);
+    phq_add_term(phq, "quick", 0);
+    phq_add_term(phq, "brown", 1);
+    phq_append_multi_term(phq, "dirty");
+    phq_append_multi_term(phq, "red");
+    check_hits(tc, searcher, phq, "1,11", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    phq_set_slop(phq, 1);
+    check_hits(tc, searcher, phq, "1,11,17", -1);
+    mv = searcher_get_match_vector(searcher, phq, 1, field);
+    if (Aiequal(2, mv->size)) {
+        Aiequal(3, mv->matches[0].start);
+        Aiequal(4, mv->matches[0].end);
+        Aiequal(7, mv->matches[1].start);
+        Aiequal(8, mv->matches[1].end);
+    }
+    matchv_destroy(mv);
+    mv = searcher_get_match_vector(searcher, phq, 17, field);
+    if (Aiequal(1, mv->size)) {
+        Aiequal(5, mv->matches[0].start);
+        Aiequal(7, mv->matches[0].end);
+    }
+    matchv_destroy(mv);
+    phq_add_term(phq, "chicken", 1);
+    phq_append_multi_term(phq, "turtle");
+    check_hits(tc, searcher, phq, "", -1);
+    mv = searcher_get_match_vector(searcher, phq, 17, field);
+    Aiequal(0, mv->size);
+    matchv_destroy(mv);
+    q_deref(phq);
 }
 
 static void test_multi_phrase_query_hash(TestCase *tc, void *data)
@@ -720,7 +891,7 @@ static void test_multi_phrase_query_hash(TestCase *tc, void *data)
     Assert(q_eq(q1, q1), "Test query equals itself");
     Assert(q_eq(q1, q2), "Queries should be equal");
 
-    ((PhraseQuery *)q2)->slop = 5;
+    phq_set_slop(q2, 5);
     Assert(q_hash(q1) != q_hash(q2), "Queries should not be equal");
     Assert(!q_eq(q1, q2), "Queries should not be equal");
 
@@ -764,37 +935,37 @@ static void test_multi_term_query(TestCase *tc, void *data)
     Query *mtq = multi_tq_new_conf(field, 4, 0.5);
     check_hits(tc, searcher, mtq, "", -1);
     check_to_s(tc, mtq, field, "\"\"");
-    check_to_s(tc, mtq, "", "field:\"\"");
+    check_to_s(tc, mtq, NULL, "field:\"\"");
 
     multi_tq_add_term(mtq, "brown");
     check_hits(tc, searcher, mtq, "1, 8, 16, 17", -1);
     check_to_s(tc, mtq, field, "\"brown\"");
-    check_to_s(tc, mtq, "", "field:\"brown\"");
+    check_to_s(tc, mtq, NULL, "field:\"brown\"");
 
     multi_tq_add_term_boost(mtq, "fox", 0.1f);
     check_hits(tc, searcher, mtq, "1, 8, 16, 17", -1);
     check_to_s(tc, mtq, field, "\"brown\"");
-    check_to_s(tc, mtq, "", "field:\"brown\"");
+    check_to_s(tc, mtq, NULL, "field:\"brown\"");
 
     multi_tq_add_term_boost(mtq, "fox", 0.6f);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, mtq, field, "\"fox^0.6|brown\"");
-    check_to_s(tc, mtq, "", "field:\"fox^0.6|brown\"");
+    check_to_s(tc, mtq, NULL, "field:\"fox^0.6|brown\"");
 
     multi_tq_add_term_boost(mtq, "fast", 50.0f);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", 8);
     check_to_s(tc, mtq, field, "\"fox^0.6|brown|fast^50.0\"");
-    check_to_s(tc, mtq, "", "field:\"fox^0.6|brown|fast^50.0\"");
+    check_to_s(tc, mtq, NULL, "field:\"fox^0.6|brown|fast^50.0\"");
 
 
     mtq->boost = 80.1f;
-    check_to_s(tc, mtq, "", "field:\"fox^0.6|brown|fast^50.0\"^80.1");
+    check_to_s(tc, mtq, NULL, "field:\"fox^0.6|brown|fast^50.0\"^80.1");
     multi_tq_add_term(mtq, "word1");
-    check_to_s(tc, mtq, "", "field:\"fox^0.6|brown|word1|fast^50.0\"^80.1");
+    check_to_s(tc, mtq, NULL, "field:\"fox^0.6|brown|word1|fast^50.0\"^80.1");
     multi_tq_add_term(mtq, "word2");
-    check_to_s(tc, mtq, "", "field:\"brown|word1|word2|fast^50.0\"^80.1");
+    check_to_s(tc, mtq, NULL, "field:\"brown|word1|word2|fast^50.0\"^80.1");
     multi_tq_add_term(mtq, "word3");
-    check_to_s(tc, mtq, "", "field:\"brown|word1|word2|fast^50.0\"^80.1");
+    check_to_s(tc, mtq, NULL, "field:\"brown|word1|word2|fast^50.0\"^80.1");
 /*
 char *t;
 Explanation *e = searcher_explain(searcher, mtq, 8);
@@ -811,7 +982,7 @@ static void test_multi_term_query_hash(TestCase *tc, void *data)
     (void)data;
 
 
-    check_to_s(tc, q1, "", "field:\"\"");
+    check_to_s(tc, q1, NULL, "field:\"\"");
     Assert(q_hash(q1) == q_hash(q2), "Queries should be equal");
     Assert(q_eq(q1, q1), "Same queries should be equal");
     Assert(q_eq(q1, q2), "Queries should be equal");
@@ -846,6 +1017,8 @@ static void test_prefix_query(TestCase *tc, void *data)
 
     prq = prefixq_new(cat, "cat1/sub2");
     check_to_s(tc, prq, cat, "cat1/sub2*");
+    prq->boost = 20.0f;
+    check_to_s(tc, prq, cat, "cat1/sub2*^20.0");
     check_hits(tc, searcher, prq, "3, 4, 13, 15", -1);
     q_deref(prq);
 
@@ -854,7 +1027,7 @@ static void test_prefix_query(TestCase *tc, void *data)
     check_hits(tc, searcher, prq, "1, 2, 3, 4, 13, 14, 15, 16", -1);
     q_deref(prq);
 
-    prq = prefixq_new("unknown field", "cat1/sub");
+    prq = prefixq_new(I("unknown field"), "cat1/sub");
     check_to_s(tc, prq, cat, "unknown field:cat1/sub*");
     check_hits(tc, searcher, prq, "", -1);
     q_deref(prq);
@@ -869,20 +1042,20 @@ static void test_prefix_query_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
-    q1 = prefixq_new("A", "a");
+    q1 = prefixq_new(I("A"), "a");
 
-    q2 = prefixq_new("A", "a");
+    q2 = prefixq_new(I("A"), "a");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "TermQueries are equal");
     Assert(q_eq(q1, q1), "TermQueries are same");
     q_deref(q2);
 
-    q2 = prefixq_new("A", "b");
+    q2 = prefixq_new(I("A"), "b");
     Assert(q_hash(q1) != q_hash(q2), "TermQueries are not equal");
     Assert(!q_eq(q1, q2), "TermQueries are not equal");
     q_deref(q2);
 
-    q2 = prefixq_new("B", "a");
+    q2 = prefixq_new(I("B"), "a");
     Assert(q_hash(q1) != q_hash(q2), "TermQueries are not equal");
     Assert(!q_eq(q1, q2), "TermQueries are not equal");
     q_deref(q2);
@@ -942,7 +1115,7 @@ static void test_range_query(TestCase *tc, void *data)
     check_hits(tc, searcher, rq, "15,16,17", -1);
     q_deref(rq);
 
-    rq = rq_new("not_a_field", "20051006", "20051010", false, false);
+    rq = rq_new(I("not_a_field"), "20051006", "20051010", false, false);
     check_hits(tc, searcher, rq, "", -1);
     q_deref(rq);
 
@@ -1185,7 +1358,7 @@ static void test_wildcard_query(TestCase *tc, void *data)
     check_hits(tc, searcher, wq, "0, 17", -1);
     q_deref(wq);
 
-    wq = wcq_new("unknown_field", "cat1/");
+    wq = wcq_new(I("unknown_field"), "cat1/");
     check_hits(tc, searcher, wq, "", -1);
     q_deref(wq);
 
@@ -1208,20 +1381,20 @@ static void test_wildcard_query_hash(TestCase *tc, void *data)
 {
     Query *q1, *q2;
     (void)data;
-    q1 = wcq_new("A", "a*");
+    q1 = wcq_new(I("A"), "a*");
 
-    q2 = wcq_new("A", "a*");
+    q2 = wcq_new(I("A"), "a*");
     Assert(q_eq(q1, q1), "Test same queries are equal");
     Aiequal(q_hash(q1), q_hash(q2));
     Assert(q_eq(q1, q2), "Queries are equal");
     q_deref(q2);
 
-    q2 = wcq_new("A", "a?");
+    q2 = wcq_new(I("A"), "a?");
     Assert(q_hash(q1) != q_hash(q2), "Queries are not equal");
     Assert(!q_eq(q1, q2), "Queries are not equal");
     q_deref(q2);
 
-    q2 = wcq_new("B", "a?");
+    q2 = wcq_new(I("B"), "a?");
     Assert(q_hash(q1) != q_hash(q2), "Queries are not equal");
     Assert(!q_eq(q1, q2), "Queries are not equal");
     q_deref(q2);
@@ -1241,7 +1414,7 @@ static void test_match_all_query_hash(TestCase *tc, void *data)
     Assert(q_eq(q1, q2), "Queries are equal");
     q_deref(q2);
 
-    q2 = wcq_new("A", "a*");
+    q2 = wcq_new(I("A"), "a*");
     Assert(q_hash(q1) != q_hash(q2), "Queries are not equal");
     Assert(!q_eq(q1, q2), "Queries are not equal");
     q_deref(q2);
@@ -1305,6 +1478,11 @@ TestSuite *ts_search(TestSuite *suite)
     IndexReader *ir;
     Searcher *searcher;
 
+    date    = intern("date");
+    field   = intern("field");
+    cat     = intern("cat");
+    number  = intern("number");
+
     suite = ADD_SUITE(suite);
 
     tst_run_test(suite, test_explanation, NULL);
@@ -1361,7 +1539,9 @@ static void prepare_multi_search_index(Store *store, struct Data data[],
 {
     int i;
     IndexWriter *iw;
-    FieldInfos *fis = fis_new(STORE_YES, INDEX_YES, TERM_VECTOR_YES);
+    FieldInfos *fis = fis_new(STORE_YES,
+                              INDEX_YES,
+                              TERM_VECTOR_WITH_POSITIONS_OFFSETS);
     index_create(store, fis);
     fis_deref(fis);
 
@@ -1386,9 +1566,9 @@ static void test_query_combine(TestCase *tc, void *data)
     (void)data;
 
     queries = ALLOC_N(Query *, 3);
-    queries[0] = tq_new("A", "a");
-    queries[1] = tq_new("A", "a");
-    queries[2] = tq_new("A", "a");
+    queries[0] = tq_new(I("A"), "a");
+    queries[1] = tq_new(I("A"), "a");
+    queries[2] = tq_new(I("A"), "a");
 
     cq = q_combine(queries, 3);
     Assert(q_eq(cq, queries[1]), "One unique query submitted");
@@ -1398,9 +1578,9 @@ static void test_query_combine(TestCase *tc, void *data)
     q_deref(queries[1]);
 
     q = bq_new(false);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
 
     queries[1] = q;
 
@@ -1413,9 +1593,9 @@ static void test_query_combine(TestCase *tc, void *data)
     q_deref(queries[1]); /* queries[1] */
 
     q = bq_new(true);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
 
     queries[1] = q;
 
@@ -1424,21 +1604,21 @@ static void test_query_combine(TestCase *tc, void *data)
     q_deref(cq);
     Aiequal(1, queries[0]->ref_cnt);
 
-    bq_add_query_nr(q, tq_new("B", "b"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("C", "c"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("B"), "b"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("C"), "c"), BC_SHOULD);
 
     cq = q_combine(queries, 3);
     Aiequal(BOOLEAN_QUERY, cq->type);
 
     bq = (BooleanQuery *)cq;
     Aiequal(3, bq->clause_cnt);
-    q = tq_new("A", "a");
+    q = tq_new(I("A"), "a");
     Assert(q_eq(bq->clauses[0]->query, q), "Query should be equal");
     q_deref(q);
-    q = tq_new("B", "b");
+    q = tq_new(I("B"), "b");
     Assert(q_eq(bq->clauses[1]->query, q), "Query should be equal");
     q_deref(q);
-    q = tq_new("C", "c");
+    q = tq_new(I("C"), "c");
     Assert(q_eq(bq->clauses[2]->query, q), "Query should be equal");
     q_deref(q);
 
@@ -1449,9 +1629,9 @@ static void test_query_combine(TestCase *tc, void *data)
     q_deref(queries[2]);
 
     q = bq_new(true);
-    bq_add_query_nr(q, tq_new("A", "a"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("B", "b"), BC_SHOULD);
-    bq_add_query_nr(q, tq_new("C", "c"), BC_MUST);
+    bq_add_query_nr(q, tq_new(I("A"), "a"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("B"), "b"), BC_SHOULD);
+    bq_add_query_nr(q, tq_new(I("C"), "c"), BC_MUST);
     queries[2] = q;
 
     cq = q_combine(queries, 3);
@@ -1459,13 +1639,13 @@ static void test_query_combine(TestCase *tc, void *data)
 
     bq = (BooleanQuery *)cq;
     Aiequal(4, bq->clause_cnt);
-    q = tq_new("A", "a");
+    q = tq_new(I("A"), "a");
     Assert(q_eq(bq->clauses[0]->query, q), "Query should be equal");
     q_deref(q);
-    q = tq_new("B", "b");
+    q = tq_new(I("B"), "b");
     Assert(q_eq(bq->clauses[1]->query, q), "Query should be equal");
     q_deref(q);
-    q = tq_new("C", "c");
+    q = tq_new(I("C"), "c");
     Assert(q_eq(bq->clauses[2]->query, q), "Query should be equal");
     q_deref(q);
     Assert(q_eq(bq->clauses[3]->query, queries[2]), "Query should be equal");
@@ -1487,6 +1667,11 @@ TestSuite *ts_multi_search(TestSuite *suite)
     IndexReader *ir0, *ir1;
     Searcher **searchers;
     Searcher *searcher;
+
+    date    = intern("date");
+    field   = intern("field");
+    cat     = intern("cat");
+    number  = intern("number");
 
     suite = tst_add_suite(suite, "test_multi_search");
 

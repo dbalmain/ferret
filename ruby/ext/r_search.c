@@ -126,6 +126,8 @@ static VALUE sym_pre_tag;
 static VALUE sym_post_tag;      
 static VALUE sym_ellipsis;      
 
+static Symbol fsym_id;
+
 extern VALUE cIndexReader;
 extern void frb_ir_free(void *p);
 extern void frb_ir_mark(void *p);
@@ -195,7 +197,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
     int capa = len * 64 + 100;
     int p = 0;
     char *str = ALLOC_N(char, len * 64 + 100);
-    char *field = "id";
+    Symbol field = fsym_id;
     VALUE rstr;
 
     if (argc) {
@@ -213,7 +215,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
         char *value = "";
         size_t value_len = 0;
         LazyDoc *lzd = sea->get_lazy_doc(sea, doc_id);
-        LazyDocField *lzdf = h_get(lzd->field_dict, field);
+        LazyDocField *lzdf = lazy_doc_get(lzd, field);
         if (NULL != lzdf) {
             value = lazy_df_get_data(lzdf, 0);
             value_len = strlen(value);
@@ -249,7 +251,7 @@ frb_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
          * 4 times field elements to make space for '"' around fields and ','
          * between fields. Add 100 for '[', ']' and good safety.
          */
-        len += strlen(f->name) + f->len * 3 + 100 + 4 * f->size;
+        len += sym_len(f->name) + f->len * 3 + 100 + 4 * f->size;
     }
 
     if (len > *slen) {
@@ -259,11 +261,13 @@ frb_lzd_load_to_json(LazyDoc *lzd, char **str, char *s, int *slen)
     }
 
 	for (i = 0; i < lzd->size; i++) {
+        char *field_name;
 		f = lzd->fields[i];
+        field_name = S(f->name);
 		if (i)  *(s++) = ',';
         *(s++) = '"';
-        l = strlen(f->name);
-        memcpy(s, f->name, l);
+        l = strlen(field_name);
+        memcpy(s, field_name, l);
         s += l;
         *(s++) = '"';
         *(s++) = ':';
@@ -400,7 +404,8 @@ frb_q_to_s(int argc, VALUE *argv, VALUE self)
 {
     GET_Q();
     VALUE rstr, rfield;
-    char *str, *field = "";
+    char *str;
+    Symbol field = NULL;
     if (rb_scan_args(argc, argv, "01", &rfield)) {
         field = frb_field(rfield);
     }
@@ -488,7 +493,9 @@ static VALUE
 frb_q_get_terms(VALUE self, VALUE searcher)
 {
     VALUE rterms = rb_ary_new();
-    HashSet *terms = term_set_new();
+    HashSet *terms = hs_new((hash_ft)&term_hash,
+                            (eq_ft)&term_eq,
+                            (free_ft)term_destroy);
     HashSetEntry *hse;
     GET_Q();
     Searcher *sea = (Searcher *)DATA_PTR(searcher);
@@ -596,7 +603,7 @@ frb_get_q(Query *q)
 static VALUE
 frb_tq_init(VALUE self, VALUE rfield, VALUE rterm)
 {
-    char *field = frb_field(rfield);
+    Symbol field = frb_field(rfield);
     char *term = rs2s(rb_obj_as_string(rterm));
     Query *q = tq_new(field, term);
     Frt_Wrap_Struct(self, NULL, &frb_q_free, q);
@@ -713,7 +720,7 @@ frb_mtq_add_term(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-typedef Query *(*mtq_maker_ft)(const char *field, const char *term);
+typedef Query *(*mtq_maker_ft)(Symbol field, const char *term);
 
 static int
 get_max_terms(VALUE rmax_terms, int max_terms)
@@ -912,7 +919,7 @@ frb_bc_to_s(VALUE self)
     char *qstr, *ostr = "", *str;
     int len;
     GET_BC();
-    qstr = bc->query->to_s(bc->query, "");
+    qstr = bc->query->to_s(bc->query, NULL);
     switch (bc->occur) {
         case BC_SHOULD:
             ostr = "Should";
@@ -2174,7 +2181,7 @@ frb_sf_init(int argc, VALUE *argv, VALUE self)
     VALUE rval;
     int type = SORT_TYPE_AUTO;
     int is_reverse = false;
-    char *field;
+    Symbol field;
 
     if (rb_scan_args(argc, argv, "11", &rfield, &roptions) == 2) {
         if (Qnil != (rval = rb_hash_aref(roptions, sym_type))) {
@@ -2191,8 +2198,8 @@ frb_sf_init(int argc, VALUE *argv, VALUE self)
     field = frb_field(rfield);
 
     sf = sort_field_new(field, type, is_reverse);
-    if (sf->field == NULL && field) {
-        sf->field = estrdup(field);
+    if (sf->field == NULL) {
+        sf->field = field;
     }
 
     Frt_Wrap_Struct(self, NULL, &frb_sf_free, sf);
@@ -2226,7 +2233,7 @@ static VALUE
 frb_sf_get_name(VALUE self)
 {
     GET_SF();
-    return sf->field ? ID2SYM(rb_intern(sf->field)) : Qnil;
+    return sf->field ? FSYM2SYM(sf->field) : Qnil;
 }
 
 /*
@@ -2348,7 +2355,7 @@ frb_parse_sort_str(Sort *sort, char *xsort_str)
         } else if (strcmp("DOC_ID", s) == 0) {
             sf = sort_field_doc_new(reverse);
         } else {
-            sf = sort_field_auto_new(s, reverse);
+            sf = sort_field_auto_new(I(s), reverse);
         }
         frb_get_sf(sf);
         sort_add_sort_field(sort, sf);
@@ -2368,8 +2375,7 @@ frb_sort_add(Sort *sort, VALUE rsf, bool reverse)
             sort_add_sort_field(sort, sf);
             break;
         case T_SYMBOL:
-            rsf = rb_obj_as_string(rsf);
-            sf = sort_field_auto_new(rs2s(rsf), reverse);
+            sf = sort_field_auto_new(frb_field(rsf), reverse);
             /* need to give it a ruby object so it'll be freed when the
              * sort is garbage collected */
             rsf = frb_get_sf(sf);
@@ -2615,10 +2621,10 @@ frb_get_cwrapped_filter(VALUE rval)
         REF(filter);
     }
     else {
-        filter = filt_create(sizeof(CWrappedFilter), "CWrappedFilter");
-        filter->hash     = &cwfilt_hash;
-        filter->eq       = &cwfilt_eq;
-        filter->get_bv_i = &cwfilt_get_bv_i;
+        filter               = filt_new(CWrappedFilter);
+        filter->hash         = &cwfilt_hash;
+        filter->eq           = &cwfilt_eq;
+        filter->get_bv_i     = &cwfilt_get_bv_i;
         CWF(filter)->rfilter = rval;
     }
     return filter;
@@ -4416,6 +4422,8 @@ void
 Init_Search(void)
 {
     mSearch = rb_define_module_under(mFerret, "Search");
+
+    fsym_id = I("id");
 
     Init_Hit();
     Init_TopDocs();

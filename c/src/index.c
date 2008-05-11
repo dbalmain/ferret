@@ -1,4 +1,5 @@
 #include "index.h"
+#include "symbol.h"
 #include "similarity.h"
 #include "helper.h"
 #include "array.h"
@@ -277,14 +278,15 @@ static void fi_check_params(int store, int index, int term_vector)
     }
 }
 
-FieldInfo *fi_new(const char *name,
+FieldInfo *fi_new(Symbol name,
                   StoreValue store,
                   IndexValue index,
                   TermVectorValue term_vector)
 {
     FieldInfo *fi = ALLOC(FieldInfo);
+    assert(NULL != name);
     fi_check_params(store, index, term_vector);
-    fi->name = estrdup(name);
+    fi->name = name;
     fi->boost = 1.0;
     fi->bits = 0;
     fi_set_store(fi, store);
@@ -297,16 +299,15 @@ FieldInfo *fi_new(const char *name,
 void fi_deref(FieldInfo *fi)
 {
     if (0 == --(fi->ref_cnt)) {
-        free(fi->name);
         free(fi);
     }
 }
 
 char *fi_to_s(FieldInfo *fi)
 {
-    char *str = ALLOC_N(char, strlen(fi->name) + 200);
+    char *str = ALLOC_N(char, strlen((char *)fi->name) + 200);
     char *s = str;
-    s += sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", fi->name,
+    s += sprintf(str, "[\"%s\":(%s%s%s%s%s%s%s%s", (char *)fi->name,
                  fi_is_stored(fi) ? "is_stored, " : "",
                  fi_is_compressed(fi) ? "is_compressed, " : "",
                  fi_is_indexed(fi) ? "is_indexed, " : "",
@@ -335,7 +336,7 @@ FieldInfos *fis_new(StoreValue store, IndexValue index,
 {
     FieldInfos *fis = ALLOC(FieldInfos);
     fi_check_params(store, index, term_vector);
-    fis->field_dict = h_new_str((free_ft)NULL, (free_ft)&fi_deref);
+    fis->field_dict = h_new_ptr((free_ft)&fi_deref);
     fis->size = 0;
     fis->capa = FIELD_INFOS_INIT_CAPA;
     fis->fields = ALLOC_N(FieldInfo *, fis->capa);
@@ -354,7 +355,7 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
     }
     if (!h_set_safe(fis->field_dict, fi->name, fi)) {
         RAISE(ARG_ERROR,
-              "Field :%s already exists", fi->name);
+              "Field :%s already exists", (char *)fi->name);
     }
     fi->number = fis->size;
     fis->fields[fis->size] = fi;
@@ -362,12 +363,12 @@ FieldInfo *fis_add_field(FieldInfos *fis, FieldInfo *fi)
     return fi;
 }
 
-FieldInfo *fis_get_field(FieldInfos *fis, const char *name)
+FieldInfo *fis_get_field(FieldInfos *fis, Symbol name)
 {
     return (FieldInfo *)h_get(fis->field_dict, name);
 }
 
-int fis_get_field_num(FieldInfos *fis, const char *name)
+int fis_get_field_num(FieldInfos *fis, Symbol name)
 {
     FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (fi) {
@@ -378,7 +379,7 @@ int fis_get_field_num(FieldInfos *fis, const char *name)
     }
 }
 
-FieldInfo *fis_get_or_add_field(FieldInfos *fis, const char *name)
+FieldInfo *fis_get_or_add_field(FieldInfos *fis, Symbol name)
 {
     FieldInfo *fi = (FieldInfo *)h_get(fis->field_dict, name);
     if (!fi) {
@@ -417,12 +418,11 @@ FieldInfos *fis_read(InStream *is)
             for (i = is_read_vint(is); i > 0; i--) {
                 fi = ALLOC_AND_ZERO(FieldInfo);
                 TRY
-                    fi->name = is_read_string_safe(is);
+                    fi->name = intern_and_free(is_read_string_safe(is));
                     tmp.i = is_read_u32(is);
                     fi->boost = tmp.f;
                     fi->bits = is_read_vint(is);
                 XCATCHALL
-                    free(fi->name);
                     free(fi);
                 XENDTRY
                 fis_add_field(fis, fi);
@@ -449,7 +449,7 @@ void fis_write(FieldInfos *fis, OutStream *os)
     os_write_vint(os, fis->size);
     for (i = 0; i < fis_size; i++) {
         fi = fis->fields[i];
-        os_write_string(os, fi->name);
+        os_write_string(os, S(fi->name));
         tmp.f = fi->boost;
         os_write_u32(os, tmp.i);
         os_write_vint(os, fi->bits);
@@ -524,7 +524,7 @@ char *fis_to_s(FieldInfos *fis)
                        "    store: %s\n"
                        "    index: %s\n"
                        "    term_vector: %s\n",
-                       fi->name, fi->boost, fi_store_str(fi),
+                       (char *)fi->name, fi->boost, fi_store_str(fi),
                        fi_index_str(fi), fi_term_vector_str(fi));
     }
 
@@ -1196,11 +1196,11 @@ u64 sis_read_current_version(Store *store)
  *
  ****************************************************************************/
 
-static LazyDocField *lazy_df_new(const char *name, const int size,
+static LazyDocField *lazy_df_new(Symbol name, const int size,
                                  bool is_compressed)
 {
     LazyDocField *self = ALLOC(LazyDocField);
-    self->name = estrdup(name);
+    self->name = name;
     self->size = size;
     self->data = ALLOC_AND_ZERO_N(LazyDocFieldData, size);
     self->is_compressed = is_compressed;
@@ -1215,7 +1215,6 @@ static void lazy_df_destroy(LazyDocField *self)
             free(self->data[i].text);
          }
     }
-    free(self->name);
     free(self->data);
     free(self);
 }
@@ -1470,7 +1469,7 @@ void lazy_df_get_bytes(LazyDocField *self, char *buf, int start, int len)
 static LazyDoc *lazy_doc_new(int size, InStream *fdt_in)
 {
     LazyDoc *self = ALLOC(LazyDoc);
-    self->field_dict = h_new_str(NULL, (free_ft)&lazy_df_destroy);
+    self->field_dictionary = h_new_ptr((free_ft)&lazy_df_destroy);
     self->size = size;
     self->fields = ALLOC_AND_ZERO_N(LazyDocField *, size);
     self->fields_in = is_clone(fdt_in);
@@ -1479,7 +1478,7 @@ static LazyDoc *lazy_doc_new(int size, InStream *fdt_in)
 
 void lazy_doc_close(LazyDoc *self)
 {
-    h_destroy(self->field_dict);
+    h_destroy(self->field_dictionary);
     is_close(self->fields_in);
     free(self->fields);
     free(self);
@@ -1488,8 +1487,13 @@ void lazy_doc_close(LazyDoc *self)
 static void lazy_doc_add_field(LazyDoc *self, LazyDocField *lazy_df, int i)
 {
     self->fields[i] = lazy_df;
-    h_set(self->field_dict, lazy_df->name, lazy_df);
+    h_set(self->field_dictionary, lazy_df->name, lazy_df);
     lazy_df->doc = self;
+}
+
+LazyDocField *frt_lazy_doc_get(LazyDoc *self, Symbol field)
+{
+    return (LazyDocField *)h_get(self->field_dictionary, field);
 }
 
 /****************************************************************************
@@ -1539,10 +1543,10 @@ void fr_close(FieldsReader *fr)
     free(fr);
 }
 
-static DocField *fr_df_new(char *name, int size, bool is_compressed)
+static DocField *fr_df_new(Symbol name, int size, bool is_compressed)
 {
     DocField *df = ALLOC(DocField);
-    df->name = estrdup(name);
+    df->name = name;
     df->capa = df->size = size;
     df->data = ALLOC_N(char *, df->capa);
     df->lengths = ALLOC_N(int, df->capa);
@@ -1662,7 +1666,7 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
     const int num_terms = is_read_vint(fdt_in);
 
     tv->field_num = field_num;
-    tv->field = estrdup(fi->name);
+    tv->field = fi->name;
 
     if (num_terms > 0) {
         int i, j, delta_start, delta_len, total_len, freq;
@@ -1716,7 +1720,7 @@ static TermVector *fr_read_term_vector(FieldsReader *fr, int field_num)
 
 Hash *fr_get_tv(FieldsReader *fr, int doc_num)
 {
-    Hash *term_vectors = h_new_str((free_ft)NULL, (free_ft)&tv_destroy);
+    Hash *term_vectors = h_new_ptr((free_ft)&tv_destroy);
     int i;
     InStream *fdx_in = fr->fdx_in;
     InStream *fdt_in = fr->fdt_in;
@@ -3937,16 +3941,17 @@ bool ir_index_exists(Store *store)
     return sis_current_segment_generation(store) != 1;
 }
 
-int ir_get_field_num(IndexReader *ir, const char *field)
+int ir_get_field_num(IndexReader *ir, Symbol field)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num < 0) {
-        RAISE(ARG_ERROR, "Field :%s does not exist in this index", field);
+        RAISE(ARG_ERROR,
+              "Field :%s does not exist in this index", (char *)field);
     }
     return field_num;
 }
 
-int ir_doc_freq(IndexReader *ir, const char *field, const char *term)
+int ir_doc_freq(IndexReader *ir, Symbol field, const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -3966,7 +3971,7 @@ static void ir_set_norm_i(IndexReader *ir, int doc_num, int field_num, uchar val
     mutex_unlock(&ir->mutex);
 }
 
-void ir_set_norm(IndexReader *ir, int doc_num, const char *field, uchar val)
+void ir_set_norm(IndexReader *ir, int doc_num, Symbol field, uchar val)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -3989,13 +3994,13 @@ uchar *ir_get_norms_i(IndexReader *ir, int field_num)
     return norms;
 }
 
-uchar *ir_get_norms(IndexReader *ir, const char *field)
+uchar *ir_get_norms(IndexReader *ir, Symbol field)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     return ir_get_norms_i(ir, field_num);
 }
 
-uchar *ir_get_norms_into(IndexReader *ir, const char *field, uchar *buf)
+uchar *ir_get_norms_into(IndexReader *ir, Symbol field, uchar *buf)
 {
     int field_num = fis_get_field_num(ir->fis, field);
     if (field_num >= 0) {
@@ -4027,7 +4032,7 @@ void ir_delete_doc(IndexReader *ir, int doc_num)
     }
 }
 
-Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
+Document *ir_get_doc_with_term(IndexReader *ir, Symbol field,
                                const char *term)
 {
     TermDocEnum *tde = ir_term_docs_for(ir, field, term);
@@ -4042,7 +4047,7 @@ Document *ir_get_doc_with_term(IndexReader *ir, const char *field,
     return doc;
 }
 
-TermEnum *ir_terms(IndexReader *ir, const char *field)
+TermEnum *ir_terms(IndexReader *ir, Symbol field)
 {
     TermEnum *te = NULL;
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4052,7 +4057,7 @@ TermEnum *ir_terms(IndexReader *ir, const char *field)
     return te;
 }
 
-TermEnum *ir_terms_from(IndexReader *ir, const char *field,
+TermEnum *ir_terms_from(IndexReader *ir, Symbol field,
                            const char *term)
 {
     TermEnum *te = NULL;
@@ -4063,7 +4068,7 @@ TermEnum *ir_terms_from(IndexReader *ir, const char *field,
     return te;
 }
 
-TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
+TermDocEnum *ir_term_docs_for(IndexReader *ir, Symbol field,
                               const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4074,7 +4079,7 @@ TermDocEnum *ir_term_docs_for(IndexReader *ir, const char *field,
     return tde;
 }
 
-TermDocEnum *ir_term_positions_for(IndexReader *ir, const char *field,
+TermDocEnum *ir_term_positions_for(IndexReader *ir, Symbol field,
                                    const char *term)
 {
     int field_num = fis_get_field_num(ir->fis, field);
@@ -4540,7 +4545,7 @@ static TermDocEnum *sr_term_positions(IndexReader *ir)
 }
 
 static TermVector *sr_term_vector(IndexReader *ir, int doc_num,
-                                  const char *field)
+                                  Symbol field)
 {
     FieldInfo *fi = (FieldInfo *)h_get(ir->fis->field_dict, field);
     FieldsReader *fr;
@@ -4841,7 +4846,7 @@ static TermDocEnum *mr_term_positions(IndexReader *ir)
 }
 
 static TermVector *mr_term_vector(IndexReader *ir, int doc_num,
-                                  const char *field)
+                                  Symbol field)
 {
     GET_READER();
     return reader->term_vector(reader, doc_num - MR(ir)->starts[i], field);
@@ -5513,23 +5518,25 @@ static void dw_add_posting(MemoryPool *mp,
                            int len,
                            int pos)
 {
-    HashEntry *pl_he = h_set_ext(curr_plists, text);
-    if (pl_he->value) {
-        pl_add_occ(mp, (PostingList *)pl_he->value, pos);
-    }
-    else {
-        HashEntry *fld_pl_he = h_set_ext(fld_plists, text);
-        PostingList *pl = (PostingList *)fld_pl_he->value;
+    HashEntry *pl_he;
+    if (h_set_ext(curr_plists, text, &pl_he)) {
         Posting *p =  p_new(mp, doc_num, pos);
-        if (!pl) {
+        HashEntry *fld_pl_he;
+        PostingList *pl;
+
+        if (h_set_ext(fld_plists, text, &fld_pl_he)) {
             fld_pl_he->value = pl = pl_new(mp, text, len, p);
             pl_he->key = fld_pl_he->key = (char *)pl->term;
         }
         else {
+            pl = (PostingList *)fld_pl_he->value;
             pl_add_posting(pl, p);
             pl_he->key = (char *)pl->term;
         }
         pl_he->value = pl;
+    }
+    else {
+        pl_add_occ(mp, (PostingList *)pl_he->value, pos);
     }
 }
 
@@ -5572,6 +5579,11 @@ Hash *dw_invert_field(DocWriter *dw,
             if (store_offsets) {
                 while (NULL != (tk = ts->next(ts))) {
                     pos += tk->pos_inc;
+                    /* if for some reason pos gets set to some number less
+                     * than 0 the we'll start pos at 0 */
+                    if (pos < 0) {
+                        pos = 0;
+                    }
                     dw_add_posting(mp, curr_plists, fld_plists, doc_num,
                                    tk->text, tk->len, pos);
                     dw_add_offsets(dw, pos,
@@ -5928,14 +5940,9 @@ static int sm_append_postings(SegmentMerger *sm, SegmentMergeInfo **matches,
                 doc = doc_map[doc]; /* work around deletions */
             }
             doc += base;          /* convert to merged space */
+            assert(doc == 0 || doc > last_doc);
 
-#ifdef DEBUG
-            if (doc && doc <= last_doc) {
-                RAISE(STATE_ERROR, "Docs not ordered, %d < %d", doc, last_doc);
-            }
-#endif
             df++;
-
             if (0 == (df % skip_interval)) {
                 skip_buf_add(skip_buf, last_doc);
             }
@@ -6349,7 +6356,7 @@ void iw_commit(IndexWriter *iw)
     mutex_unlock(&iw->mutex);
 }
 
-void iw_delete_term(IndexWriter *iw, const char *field, const char *term)
+void iw_delete_term(IndexWriter *iw, Symbol field, const char *term)
 {
     int field_num = fis_get_field_num(iw->fis, field);
     if (field_num >= 0) {
@@ -6383,7 +6390,7 @@ void iw_delete_term(IndexWriter *iw, const char *field, const char *term)
     }
 }
 
-void iw_delete_terms(IndexWriter *iw, const char *field,
+void iw_delete_terms(IndexWriter *iw, Symbol field,
                      char **terms, const int term_cnt)
 {
     int field_num = fis_get_field_num(iw->fis, field);

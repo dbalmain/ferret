@@ -2,6 +2,7 @@
 #include "search.h"
 #include "array.h"
 #include "helper.h"
+#include "symbol.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,10 +14,10 @@
  *
  ****************************************************************************/
 
-Term *term_new(const char *field, const char *text)
+Term *term_new(Symbol field, const char *text)
 {
     Term *t = ALLOC(Term);
-    t->field = estrdup(field);
+    t->field = field;
     t->text = estrdup(text);
     return t;
 }
@@ -24,19 +25,18 @@ Term *term_new(const char *field, const char *text)
 void term_destroy(Term *self)
 {
     free(self->text);
-    free(self->field);
     free(self);
 }
 
 int term_eq(const void *t1, const void *t2)
 {
     return (strcmp(((Term *)t1)->text, ((Term *)t2)->text)) == 0 &&
-        (strcmp(((Term *)t1)->field, ((Term *)t2)->field) == 0);
+        (((Term *)t1)->field == ((Term *)t2)->field);
 }
 
 unsigned long term_hash(const void *t)
 {
-    return str_hash(((Term *)t)->text) * str_hash(((Term *)t)->field);
+    return str_hash(((Term *)t)->text) * sym_hash(((Term *)t)->field);
 }
 
 /****************************************************************************
@@ -45,7 +45,7 @@ unsigned long term_hash(const void *t)
  *
  ****************************************************************************/
 
-static float simdef_length_norm(Similarity *s, const char *field, int num_terms)
+static float simdef_length_norm(Similarity *s, Symbol field, int num_terms)
 {
     (void)s;
     (void)field;
@@ -70,14 +70,14 @@ static float simdef_sloppy_freq(struct Similarity *s, int distance)
     return (float)(1.0 / (double)(distance + 1));
 }
 
-static float simdef_idf_term(struct Similarity *s, const char *field, char *term,
+static float simdef_idf_term(struct Similarity *s, Symbol field, char *term,
                       Searcher *searcher)
 {
     return s->idf(s, searcher->doc_freq(searcher, field, term),
                   searcher->max_doc(searcher));
 }
 
-static float simdef_idf_phrase(struct Similarity *s, const char *field,
+static float simdef_idf_phrase(struct Similarity *s, Symbol field,
                         PhrasePosition *positions,
                         int pp_cnt, Searcher *searcher)
 {

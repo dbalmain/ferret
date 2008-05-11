@@ -1,4 +1,5 @@
 #include "search.h"
+#include "symbol.h"
 #include <string.h>
 #include "internal.h"
 
@@ -11,7 +12,6 @@
 void filt_destroy_i(Filter *filt)
 {
     h_destroy(filt->cache);
-    free(filt->name);
     free(filt);
 }
 void filt_deref(Filter *filt)
@@ -39,7 +39,7 @@ BitVector *filt_get_bv(Filter *filt, IndexReader *ir)
 
 static char *filt_to_s_i(Filter *filt)
 {
-    return estrdup(filt->name);
+    return estrdup(S(filt->name));
 }
 
 static unsigned long filt_hash_default(Filter *filt)
@@ -54,11 +54,11 @@ static int filt_eq_default(Filter *filt, Filter *o)
     return false;
 }
 
-Filter *filt_create(size_t size, const char *name)
+Filter *filt_create(size_t size, Symbol name)
 {
     Filter *filt    = (Filter *)emalloc(size);
     filt->cache     = co_hash_create();
-    filt->name      = estrdup(name);
+    filt->name      = name;
     filt->to_s      = &filt_to_s_i;
     filt->hash      = &filt_hash_default;
     filt->eq        = &filt_eq_default;
@@ -69,13 +69,13 @@ Filter *filt_create(size_t size, const char *name)
 
 unsigned long filt_hash(Filter *filt)
 {
-    return str_hash(filt->name) ^ filt->hash(filt);
+    return sym_hash(filt->name) ^ filt->hash(filt);
 }
 
 int filt_eq(Filter *filt, Filter *o)
 {
     return ((filt == o)
-            || ((strcmp(filt->name, o->name) == 0)
+            || ((filt->name == o->name)
                 && (filt->eq == o->eq)
                 && (filt->eq(filt, o))));
 }
@@ -96,7 +96,7 @@ typedef struct QueryFilter
 static char *qfilt_to_s(Filter *filt)
 {
     Query *query = QF(filt)->query;
-    char *query_str = query->to_s(query, "");
+    char *query_str = query->to_s(query, NULL);
     char *filter_str = strfmt("QueryFilter< %s >", query_str);
     free(query_str);
     return filter_str;

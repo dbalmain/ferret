@@ -1,5 +1,6 @@
 #include <string.h>
 #include "search.h"
+#include "symbol.h"
 #include "internal.h"
 
 /****************************************************************************
@@ -10,15 +11,15 @@
 
 #define WCQ(query) ((WildCardQuery *)(query))
 
-static char *wcq_to_s(Query *self, const char *current_field)
+static char *wcq_to_s(Query *self, Symbol default_field)
 {
     char *buffer, *bptr;
-    const char *field = WCQ(self)->field;
+    const char *field_str = S(WCQ(self)->field);
     const char *pattern = WCQ(self)->pattern;
-    bptr = buffer = ALLOC_N(char, strlen(pattern) + strlen(field) + 35);
+    bptr = buffer = ALLOC_N(char, strlen(pattern) + strlen(field_str) + 35);
 
-    if (strcmp(field, current_field) != 0) {
-        bptr += sprintf(bptr, "%s:", field);
+    if (WCQ(self)->field != default_field) {
+        bptr += sprintf(bptr, "%s:", field_str);
     }
     bptr += sprintf(bptr, "%s", pattern);
 
@@ -80,18 +81,17 @@ bool wc_match(const char *pattern, const char *text)
 static Query *wcq_rewrite(Query *self, IndexReader *ir)
 {
     Query *q;
-    const char *field = WCQ(self)->field;
     const char *pattern = WCQ(self)->pattern;
     const char *first_star = strchr(pattern, WILD_STRING);
     const char *first_ques = strchr(pattern, WILD_CHAR);
 
     if (NULL == first_star && NULL == first_ques) {
-        q = tq_new(field, pattern);
+        q = tq_new(WCQ(self)->field, pattern);
         q->boost = self->boost;
     }
     else {
-        const int field_num = fis_get_field_num(ir->fis, field);
-        q = multi_tq_new_conf(field, MTQMaxTerms(self), 0.0);
+        const int field_num = fis_get_field_num(ir->fis, WCQ(self)->field);
+        q = multi_tq_new_conf(WCQ(self)->field, MTQMaxTerms(self), 0.0);
 
         if (field_num >= 0) {
             TermEnum *te;
@@ -132,27 +132,26 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
 
 static void wcq_destroy(Query *self)
 {
-    free(WCQ(self)->field);
     free(WCQ(self)->pattern);
     q_destroy_i(self);
 }
 
 static unsigned long wcq_hash(Query *self)
 {
-    return str_hash(WCQ(self)->field) ^ str_hash(WCQ(self)->pattern);
+    return sym_hash(WCQ(self)->field) ^ str_hash(WCQ(self)->pattern);
 }
 
 static int wcq_eq(Query *self, Query *o)
 {
     return (strcmp(WCQ(self)->pattern, WCQ(o)->pattern) == 0)
-        && (strcmp(WCQ(self)->field,   WCQ(o)->field) == 0);
+        && (WCQ(self)->field == WCQ(o)->field);
 }
 
-Query *wcq_new(const char *field, const char *pattern)
+Query *wcq_new(Symbol field, const char *pattern)
 {
     Query *self = q_new(WildCardQuery);
 
-    WCQ(self)->field        = estrdup(field);
+    WCQ(self)->field        = field;
     WCQ(self)->pattern      = estrdup(pattern);
     MTQMaxTerms(self)       = WILD_CARD_QUERY_MAX_TERMS;
 

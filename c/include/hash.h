@@ -64,7 +64,7 @@ typedef struct FrtHash
     /* the following function pointers are used internally and should not be
      * used outside of the Hash methods */
     FrtHashEntry *(*lookup_i)(struct FrtHash *self,
-                                    register const void *key);
+                              register const void *key);
     unsigned long (*hash_i)(const void *key);
     int           (*eq_i)(const void *key1, const void *key2);
     void          (*free_key_i)(void *p);
@@ -113,7 +113,7 @@ extern unsigned long frt_ptr_hash(const void *const ptr);
 extern int frt_ptr_eq(const void *q1, const void *q2);
 
 /**
- * Create a new Hash that uses any type of object as it's key. The
+ * Create a new Hash that uses any type of object as its key. The
  * Hash will store all keys and values so if you want to destroy those
  * values when the Hash is destroyed then you should pass free functions.
  * NULL will suffice otherwise.
@@ -129,12 +129,12 @@ extern int frt_ptr_eq(const void *q1, const void *q2);
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new(frt_hash_ft hash,
-                                  frt_eq_ft eq,
-                                  frt_free_ft free_key,
-                                  frt_free_ft free_value);
+                          frt_eq_ft eq,
+                          frt_free_ft free_key,
+                          frt_free_ft free_value);
 
 /**
- * Create a new Hash that uses null-terminated strings as it's keys. The
+ * Create a new Hash that uses null-terminated strings as its keys. The
  * Hash will store all keys and values so if you want to destroy those
  * values when the Hash is destroyed then you should pass free functions.
  * NULL will suffice otherwise.
@@ -148,13 +148,12 @@ extern FrtHash *frt_h_new(frt_hash_ft hash,
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new_str(frt_free_ft free_key,
-                                      frt_free_ft free_value);
+                              frt_free_ft free_value);
 
 /**
- * Create a new Hash that uses integers as it's keys. The
- * Hash will store all values so if you want to destroy those
- * values when the Hash is destroyed then you should pass a free function.
- * NULL will suffice otherwise.
+ * Create a new Hash that uses integers as its keys. The Hash will store all
+ * values so if you want to destroy those values when the Hash is destroyed
+ * then you should pass a free function.  NULL will suffice otherwise.
  *
  * @param free_value function to free the value stored in the Hash when
  *    an entry is deleted, replaced or when the Hash is destroyed. If you
@@ -162,6 +161,18 @@ extern FrtHash *frt_h_new_str(frt_free_ft free_key,
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new_int(frt_free_ft free_value);
+
+/**
+ * Create a new Hash that uses pointers as its keys. The Hash will store all
+ * values so if you want to destroy those values when the Hash is destroyed
+ * then you should pass a free function. NULL will suffice otherwise.
+ *
+ * @param free_value function to free the value stored in the Hash when
+ *    an entry is deleted, replaced or when the Hash is destroyed. If you
+ *    pass NULL in place of this parameter the value will not be destroyed.
+ * @return A newly allocated Hash
+ */
+#define frt_h_new_ptr(free_value) frt_h_new_int(free_value)
 
 /**
  * Destroy the Hash. This function will also destroy all keys and values
@@ -278,10 +289,13 @@ extern int frt_h_set_safe(FrtHash *self, const void *key, void *value);
  *
  * @param self the Hash to add the value to
  * @param key the key to use to reference the value
- * @return HashEntry a pointer to the hash entry object now reserved for this
+ * @param he HashEntry a pointer to the hash entry object now reserved for this
  * value. Be sure to set both the *key* and the *value*
+ * @return true if the key was empty, false otherwise
  */
-extern FrtHashEntry *frt_h_set_ext(FrtHash *ht, const void *key);
+extern FRT_INLINE bool h_set_ext(FrtHash *self,
+                                 const void *key,
+                                 FrtHashEntry **he);
 
 /**
  * Check whether key +key+ exists in the Hash.
@@ -481,7 +495,18 @@ extern FrtHashEntry *frt_h_lookup(FrtHash *ht,
 typedef FrtHashEntry *(*frt_h_lookup_ft)(FrtHash *ht,
                                             register const void *key);
 
-extern void frt_h_str_print_keys(FrtHash *ht);
+extern void frt_h_str_print_keys(FrtHash *ht, FILE *out);
+
+/**
+ * The Hash implementation actually keeps a buffer of old hash tables around
+ * for performance reasons. If you want all memory freed when your program
+ * finishes (useful if you are using valgrind) you should call this method on
+ * exit.
+ *
+ * One way to do this is to register it with atexit(). This is done for you
+ * when you call +frt_init+.
+ */
+extern void frt_hash_finalize();
 
 #ifdef __cplusplus
 } // extern "C"

@@ -106,17 +106,17 @@ typedef enum
 
 typedef struct FrtFieldInfo
 {
-    char *name;
+    FrtSymbol name;
     float boost;
     unsigned int bits;
     int number;
     int ref_cnt;
 } FrtFieldInfo;
 
-extern FrtFieldInfo *frt_fi_new(const char *name,
-                         FrtStoreValue store,
-                         FrtIndexValue index,
-                         FrtTermVectorValue term_vector);
+extern FrtFieldInfo *frt_fi_new(FrtSymbol name,
+                                FrtStoreValue store,
+                                FrtIndexValue index,
+                                FrtTermVectorValue term_vector);
 extern char *frt_fi_to_s(FrtFieldInfo *fi);
 extern void frt_fi_deref(FrtFieldInfo *fi);
 
@@ -154,11 +154,11 @@ typedef struct FrtFieldInfos
 FrtFieldInfos *frt_fis_new(FrtStoreValue store, FrtIndexValue index,
                                   FrtTermVectorValue term_vector);
 extern FrtFieldInfo *frt_fis_add_field(FrtFieldInfos *fis, FrtFieldInfo *fi);
-extern FrtFieldInfo *frt_fis_get_field(FrtFieldInfos *fis, const char *name);
-extern int frt_fis_get_field_num(FrtFieldInfos *fis, const char *name);
+extern FrtFieldInfo *frt_fis_get_field(FrtFieldInfos *fis, FrtSymbol name);
+extern int frt_fis_get_field_num(FrtFieldInfos *fis, FrtSymbol name);
 extern FrtFieldInfo *frt_fis_by_number(FrtFieldInfos *fis, int num);
 extern FrtFieldInfo *frt_fis_get_or_add_field(FrtFieldInfos *fis,
-                                              const char *name);
+                                              FrtSymbol name);
 extern void frt_fis_write(FrtFieldInfos *fis, FrtOutStream *os);
 extern FrtFieldInfos *frt_fis_read(FrtInStream *is);
 extern char *frt_fis_to_s(FrtFieldInfos *fis);
@@ -551,73 +551,20 @@ typedef struct FrtTVTerm
  *
  ****************************************************************************/
 
+#define FRT_TV_FIELD_INIT_CAPA 8
 typedef struct FrtTermVector
 {
-    int     field_num;
-    char   *field;
-    int     term_cnt;
+    int       field_num;
+    FrtSymbol field;
+    int       term_cnt;
     FrtTVTerm *terms;
-    int     offset_cnt;
+    int       offset_cnt;
     FrtOffset *offsets;
 } FrtTermVector;
 
 extern void frt_tv_destroy(FrtTermVector *tv);
 extern int frt_tv_get_tv_term_index(FrtTermVector *tv, const char *term);
 extern FrtTVTerm *frt_tv_get_tv_term(FrtTermVector *tv, const char *term);
-
-/****************************************************************************
- *
- * FrtTermVectorsWriter
- *
- ****************************************************************************/
-
-#define FRT_TV_FIELD_INIT_CAPA 8
-
-typedef struct FrtTermVectorsWriter
-{
-    FrtOutStream *tvx_out;
-    FrtOutStream *tvd_out;
-    FrtFieldInfos *fis;
-    FrtTVField *fields;
-    off_t tvd_ptr;
-} FrtTermVectorsWriter;
-
-extern FrtTermVectorsWriter *frt_tvw_open(FrtStore *store,
-                                   const char *segment,
-                                   FrtFieldInfos *fis);
-extern void frt_tvw_open_doc(FrtTermVectorsWriter *tvw);
-extern void frt_tvw_close_doc(FrtTermVectorsWriter *tvw);
-extern void frt_tvw_add_postings(FrtTermVectorsWriter *tvw,
-                             int field_num,
-                             FrtPostingList **plists,
-                             int posting_count,
-                             FrtOffset *offsets,
-                             int offset_count);
-extern void frt_tvw_close(FrtTermVectorsWriter *tvw);
-
-/****************************************************************************
- *
- * FrtTermVectorsReader
- *
- ****************************************************************************/
-
-typedef struct FrtTermVectorsReader
-{
-  int size;
-  FrtInStream *tvx_in;
-  FrtInStream *tvd_in;
-  FrtFieldInfos *fis;
-} FrtTermVectorsReader;
-
-extern FrtTermVectorsReader *frt_tvr_open(FrtStore *store,
-                                   const char *segment,
-                                   FrtFieldInfos *fis);
-extern FrtTermVectorsReader *frt_tvr_clone(FrtTermVectorsReader *orig);
-extern void frt_tvr_close(FrtTermVectorsReader *tvr);
-extern FrtHash *frt_tvr_get_tv(FrtTermVectorsReader *tvr, int doc_num);
-extern FrtTermVector *frt_tvr_get_field_tv(FrtTermVectorsReader *tvr,
-                                    int doc_num,
-                                    int field_num);
 
 /****************************************************************************
  *
@@ -636,12 +583,12 @@ typedef struct FrtLazyDocFieldData
 typedef struct FrtLazyDoc FrtLazyDoc;
 typedef struct FrtLazyDocField
 {
-    char             *name;
+    FrtSymbol           name;
     FrtLazyDocFieldData *data;
     FrtLazyDoc          *doc;
-    int               size; /* number of data elements */
-    int               len;  /* length of data elements concatenated */
-    bool              is_compressed : 2; /* set to 2 after all data is loaded */
+    int                 size; /* number of data elements */
+    int                 len;  /* length of data elements concatenated */
+    bool                is_compressed : 2; /* set to 2 after all data is loaded */
 } FrtLazyDocField;
 
 extern char *frt_lazy_df_get_data(FrtLazyDocField *self, int i);
@@ -651,13 +598,14 @@ extern void frt_lazy_df_get_bytes(FrtLazyDocField *self, char *buf,
 /* * * FrtLazyDoc * * */
 struct FrtLazyDoc
 {
-    FrtHash *field_dict;
+    FrtHash *field_dictionary;
     int size;
     FrtLazyDocField **fields;
     FrtInStream *fields_in;
 };
 
 extern void frt_lazy_doc_close(FrtLazyDoc *self);
+extern FrtLazyDocField *frt_lazy_doc_get(FrtLazyDoc *self, FrtSymbol field);
 
 /****************************************************************************
  *
@@ -667,7 +615,7 @@ extern void frt_lazy_doc_close(FrtLazyDoc *self);
 
 typedef struct FrtFieldsReader
 {
-    int         size;
+    int           size;
     FrtFieldInfos *fis;
     FrtStore      *store;
     FrtInStream   *fdx_in;
@@ -763,7 +711,7 @@ struct FrtIndexReader
     FrtTermDocEnum        *(*term_docs)(FrtIndexReader *ir);
     FrtTermDocEnum        *(*term_positions)(FrtIndexReader *ir);
     FrtTermVector         *(*term_vector)(FrtIndexReader *ir, int doc_num,
-                                       const char *field);
+                                          FrtSymbol field);
     FrtHash    *(*term_vectors)(FrtIndexReader *ir, int doc_num);
     bool                (*is_deleted)(FrtIndexReader *ir, int doc_num);
     bool                (*has_deletions)(FrtIndexReader *ir);
@@ -794,28 +742,29 @@ struct FrtIndexReader
 
 extern FrtIndexReader *frt_ir_create(FrtStore *store, FrtSegmentInfos *sis, int is_owner);
 extern FrtIndexReader *frt_ir_open(FrtStore *store);
-extern int frt_ir_get_field_num(FrtIndexReader *ir, const char *field);
+extern int frt_ir_get_field_num(FrtIndexReader *ir, FrtSymbol field);
 extern bool frt_ir_index_exists(FrtStore *store);
 extern void frt_ir_close(FrtIndexReader *ir);
 extern void frt_ir_commit(FrtIndexReader *ir);
 extern void frt_ir_delete_doc(FrtIndexReader *ir, int doc_num);
 extern void frt_ir_undelete_all(FrtIndexReader *ir);
-extern int frt_ir_doc_freq(FrtIndexReader *ir, const char *field, const char *term);
-extern void frt_ir_set_norm(FrtIndexReader *ir, int doc_num, const char *field,
+extern int frt_ir_doc_freq(FrtIndexReader *ir, FrtSymbol field, const char *term);
+extern void frt_ir_set_norm(FrtIndexReader *ir, int doc_num, FrtSymbol field,
                         frt_uchar val);
 extern frt_uchar *frt_ir_get_norms_i(FrtIndexReader *ir, int field_num);
-extern frt_uchar *frt_ir_get_norms(FrtIndexReader *ir, const char *field);
-extern frt_uchar *frt_ir_get_norms_into(FrtIndexReader *ir, const char *field, frt_uchar *buf);
+extern frt_uchar *frt_ir_get_norms(FrtIndexReader *ir, FrtSymbol field);
+extern frt_uchar *frt_ir_get_norms_into(FrtIndexReader *ir, FrtSymbol field, frt_uchar *buf);
 extern void frt_ir_destroy(FrtIndexReader *self);
-extern FrtDocument *frt_ir_get_doc_with_term(FrtIndexReader *ir, const char *field,
+extern FrtDocument *frt_ir_get_doc_with_term(FrtIndexReader *ir, FrtSymbol field,
                                       const char *term);
-extern FrtTermEnum *frt_ir_terms(FrtIndexReader *ir, const char *field);
-extern FrtTermEnum *frt_ir_terms_from(FrtIndexReader *ir, const char *field,
+extern FrtTermEnum *frt_ir_terms(FrtIndexReader *ir, FrtSymbol field);
+extern FrtTermEnum *frt_ir_terms_from(FrtIndexReader *ir, FrtSymbol field,
                                const char *t);
-extern FrtTermDocEnum *frt_ir_term_docs_for(FrtIndexReader *ir, const char *field,
+extern FrtTermDocEnum *frt_ir_term_docs_for(FrtIndexReader *ir, FrtSymbol field,
                                      const char *term);
-extern FrtTermDocEnum *frt_ir_term_positions_for(FrtIndexReader *ir, const char *fld,
-                                          const char *t);
+extern FrtTermDocEnum *frt_ir_term_positions_for(FrtIndexReader *ir,
+                                                 FrtSymbol field,
+                                                 const char *t);
 extern void frt_ir_add_cache(FrtIndexReader *ir);
 extern bool frt_ir_is_latest(FrtIndexReader *ir);
 
@@ -884,7 +833,6 @@ typedef struct FrtDocWriter
     FrtStore *store;
     FrtSegmentInfo *si;
     FrtFieldInfos *fis;
-    FrtTermVectorsWriter *tvw;
     FrtFieldsWriter *fw;
     FrtMemoryPool *mp;
     FrtAnalyzer *analyzer;
@@ -942,9 +890,9 @@ extern void frt_index_create(FrtStore *store, FrtFieldInfos *fis);
 extern bool frt_index_is_locked(FrtStore *store);
 extern FrtIndexWriter *frt_iw_open(FrtStore *store, FrtAnalyzer *analyzer,
                             const FrtConfig *config);
-extern void frt_iw_delete_term(FrtIndexWriter *iw, const char *field,
+extern void frt_iw_delete_term(FrtIndexWriter *iw, FrtSymbol field,
                            const char *term);
-extern void frt_iw_delete_terms(FrtIndexWriter *iw, const char *field,
+extern void frt_iw_delete_terms(FrtIndexWriter *iw, FrtSymbol field,
                             char **terms, const int term_cnt);
 extern void frt_iw_close(FrtIndexWriter *iw);
 extern void frt_iw_add_doc(FrtIndexWriter *iw, FrtDocument *doc);

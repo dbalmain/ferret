@@ -1,4 +1,5 @@
 #include "document.h"
+#include "symbol.h"
 #include <string.h>
 #include "internal.h"
 
@@ -8,10 +9,10 @@
  *
  ****************************************************************************/
 
-DocField *df_new(const char *name)
+DocField *df_new(Symbol name)
 {
     DocField *df = ALLOC(DocField);
-    df->name = estrdup(name);
+    df->name = name;
     df->size = 0;
     df->capa = DF_INIT_CAPA;
     df->data = ALLOC_N(char *, df->capa);
@@ -49,7 +50,6 @@ void df_destroy(DocField *df)
     }
     free(df->data);
     free(df->lengths);
-    free(df->name);
     free(df);
 }
 
@@ -62,7 +62,7 @@ char *df_to_s(DocField *df)
 #define APPEND(dst, src) ((dst)[0] = (src)[0], 1)
 #define APPEND2(dst, src) (APPEND(dst, src), APPEND(dst+1, src+1), 2)
 
-    int i, len = 0, namelen = strlen(df->name);
+    int i, len = 0, namelen = sym_len(df->name);
     char *str, *s;
     for (i = 0; i < df->size; i++) {
         len += df->lengths[i] + 4;
@@ -101,7 +101,7 @@ char *df_to_s(DocField *df)
 Document *doc_new()
 {
     Document *doc = ALLOC(Document);
-    doc->field_dict = h_new_str(NULL, (free_ft)&df_destroy);
+    doc->field_dict = h_new_ptr((free_ft)&df_destroy);
     doc->size = 0;
     doc->capa = DOC_INIT_CAPA;
     doc->fields = ALLOC_N(DocField *, doc->capa);
@@ -113,7 +113,7 @@ DocField *doc_add_field(Document *doc, DocField *df)
 {
     if (!h_set_safe(doc->field_dict, df->name, df)) {
         RAISE(EXCEPTION, "tried to add %s field which alread existed\n",
-              df->name);
+              S(df->name));
     }
     if (doc->size >= doc->capa) {
         doc->capa <<= 1;
@@ -124,7 +124,7 @@ DocField *doc_add_field(Document *doc, DocField *df)
     return df;
 }
 
-DocField *doc_get_field(Document *doc, const char *name)
+DocField *doc_get_field(Document *doc, Symbol name)
 {
     return (DocField *)h_get(doc->field_dict, name);
 }

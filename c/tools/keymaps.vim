@@ -1,5 +1,6 @@
 map <F2> :source tools/keymaps.vim<CR>
 map <F12> :call <SID>FerretizeCurrent(expand("<cword>"))<CR>
+map <F11> :call <SID>InternCurrent(expand("<cword>"))<CR>
 
 function! <SID>FerretizeCurrent(word)
   normal msHmt
@@ -21,4 +22,8 @@ function! <SID>FerretizeCurrent(word)
   exec(":bufdo! %s/\\<".a:word."\\>/".replace_str."/ge | update")
   exe ":silent! :b! ".bn
   normal 'tzt`s
+endfunction
+
+function! <SID>InternCurrent(word)
+  exec("s/\"\\?\\<".a:word."\\>\"\\?/I(&)/")
 endfunction

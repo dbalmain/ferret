@@ -2,8 +2,8 @@
 
 %%{
     machine StdTok;
-    include URL "src/url.rl";
-    include Email "src/email.rl";
+    include URL "url.rl";
+    include Email "email.rl";
 
     token = frt_alpha frt_alnum*;
 
@@ -37,7 +37,7 @@
 
         #// Ignore whitespace and other crap
         0 { return; };
-        (any - frt_alnum);
+        (any - frt_alnum) {};
 
         *|;
 }%%

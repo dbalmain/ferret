@@ -1,4 +1,6 @@
 #include "global.h"
+#include "symbol.h"
+#include "hash.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,6 +43,11 @@ INLINE int max2(int a, int b)
 int scmp(const void *p1, const void *p2)
 {
     return strcmp(*(char **) p1, *(char **) p2);
+}
+
+void frt_strsort(char **str_array, int size)
+{
+    qsort(str_array, size, sizeof(char *), &scmp);
 }
 
 int icmp(const void *p1, const void *p2)
@@ -444,4 +451,8 @@ void init(int argc, const char *const argv[])
     SETSIG_IF_UNSET(SIGFPE , action);
     SETSIG_IF_UNSET(SIGBUS , action);
     SETSIG_IF_UNSET(SIGSEGV, action);
+
+    symbol_init();
+
+    atexit(&hash_finalize);
 }

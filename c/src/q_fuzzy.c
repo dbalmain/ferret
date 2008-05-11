@@ -7,16 +7,35 @@
  *
  * FuzzyStuff
  *
- * The main method here is the fuzq_score method which scores a term against
- * another term. The other methods all act in support.
+ * The main method here is the fuzq_score_mn method which scores a term
+ * against another term. The other methods all act in support.
+ *
+ * To learn more about the fuzzy scoring algorithm see;
+ *
+ *     http://en.wikipedia.org/wiki/Levenshtein_distance
  *
  ****************************************************************************/
 
+/**
+ * Calculate the maximum nomber of allowed edits (or maximum edit distance)
+ * for a word to be a match.
+ *
+ * Note that fuzq->text_len and m are both the lengths text *after* the prefix
+ * so `MIN(fuzq->text_len, m) + fuzq->pre_len)` actually gets the byte length
+ * of the shorter string out of the query string and the index term being
+ * compared.
+ */
 static INLINE int fuzq_calculate_max_distance(FuzzyQuery *fuzq, int m)
 {
     return (int)((1.0 - fuzq->min_sim) * (MIN(fuzq->text_len, m) + fuzq->pre_len));
 }
 
+/**
+ * The max-distance formula gets used a lot - it needs to be calculated for
+ * every possible match in the index - so we cache the results for all
+ * lengths up to the TYPICAL_LONGEST_WORD limit. For words longer than this we
+ * calculate the value live.
+ */
 static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
 {
     int i;
@@ -25,6 +44,10 @@ static void fuzq_initialize_max_distances(FuzzyQuery *fuzq)
     }
 }
 
+/**
+ * Return the cached max-distance value if the word is within the
+ * TYPICAL_LONGEST_WORD limit.
+ */
 static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
 {
     if (m < TYPICAL_LONGEST_WORD)
@@ -32,6 +55,14 @@ static INLINE int fuzq_get_max_distance(FuzzyQuery *fuzq, int m)
     return fuzq_calculate_max_distance(fuzq, m);
 }
 
+/**
+ * Calculate the similarity score for the +target+ against the query.
+ *
+ * @params fuzq The Fuzzy Query
+ * @params target *the term to compare against minus the prefix
+ * @params m the string length of +target+
+ * @params n the string length of the query string minus length of the prefix
+ */
 static INLINE float fuzq_score_mn(FuzzyQuery *fuzq,
                                   const char *target,
                                   const int m, const int n)
@@ -118,15 +149,15 @@ float fuzq_score(FuzzyQuery *fuzq, const char *target)
 
 #define FzQ(query) ((FuzzyQuery *)(query))
 
-static char *fuzq_to_s(Query *self, const char *curr_field)
+static char *fuzq_to_s(Query *self, Symbol curr_field)
 {
     char *buffer, *bptr;
     char *term = FzQ(self)->term;
-    char *field = FzQ(self)->field;
-    bptr = buffer = ALLOC_N(char, strlen(term) + strlen(field) + 70);
+    Symbol field = FzQ(self)->field;
+    bptr = buffer = ALLOC_N(char, strlen(term) + sym_len(field) + 70);
 
-    if (strcmp(curr_field, field) != 0) {
-        bptr += sprintf(bptr, "%s:", field);
+    if (curr_field != field) {
+        bptr += sprintf(bptr, "%s:", S(field));
     }
 
     bptr += sprintf(bptr, "%s~", term);
@@ -151,15 +182,14 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
     int pre_len = fuzq->pre_len;
     char *prefix = NULL;
     const char *term = fuzq->term;
-    const char *field = fuzq->field;
-    const int field_num = fis_get_field_num(ir->fis, field);
+    const int field_num = fis_get_field_num(ir->fis, fuzq->field);
     TermEnum *te;
 
     if (field_num < 0) {
         return bq_new(true);
     }
     if (fuzq->pre_len >= (int)strlen(term)) {
-        return tq_new(field, term);
+        return tq_new(fuzq->field, term);
     }
 
     q = multi_tq_new_conf(fuzq->field, MTQMaxTerms(self), fuzq->min_sim);
@@ -173,10 +203,7 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
         te = ir->terms(ir, field_num);
     }
 
-    if (te == NULL) {
-        if (prefix) free(prefix);
-        return q;
-    }
+    assert(NULL != te);
 
     fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
     fuzq->text = term + pre_len;
@@ -204,14 +231,13 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
 static void fuzq_destroy(Query *self)
 {
     free(FzQ(self)->term);
-    free(FzQ(self)->field);
     free(FzQ(self)->da);
     q_destroy_i(self);
 }
 
 static unsigned long fuzq_hash(Query *self)
 {
-    return str_hash(FzQ(self)->term) ^ str_hash(FzQ(self)->field)
+    return str_hash(FzQ(self)->term) ^ sym_hash(FzQ(self)->field)
         ^ float2int(FzQ(self)->min_sim) ^ FzQ(self)->pre_len;
 }
 
@@ -221,17 +247,17 @@ static int fuzq_eq(Query *self, Query *o)
     FuzzyQuery *fq2 = FzQ(o);
 
     return (strcmp(fq1->term, fq2->term) == 0)
-        && (strcmp(fq1->field, fq2->field) == 0)
+        && (fq1->field == fq2->field)
         && (fq1->pre_len == fq2->pre_len)
         && (fq1->min_sim == fq2->min_sim);
 }
 
-Query *fuzq_new_conf(const char *field, const char *term,
+Query *fuzq_new_conf(Symbol field, const char *term,
                      float min_sim, int pre_len, int max_terms)
 {
     Query *self = q_new(FuzzyQuery);
 
-    FzQ(self)->field      = estrdup(field);
+    FzQ(self)->field      = field;
     FzQ(self)->term       = estrdup(term);
     FzQ(self)->pre_len    = pre_len ? pre_len : DEF_PRE_LEN;
     FzQ(self)->min_sim    = min_sim ? min_sim : DEF_MIN_SIM;
@@ -248,7 +274,7 @@ Query *fuzq_new_conf(const char *field, const char *term,
     return self;
 }
 
-Query *fuzq_new(const char *field, const char *term)
+Query *fuzq_new(Symbol field, const char *term)
 {
     return fuzq_new_conf(field, term, 0.0f, 0, 0);
 }

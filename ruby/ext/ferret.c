@@ -4,6 +4,7 @@
 #include "hash.h"
 #include "hashset.h"
 #include "threading.h"
+#include "symbol.h"
 #include "internal.h"
 
 /* Object Map */
@@ -168,7 +169,7 @@ rs2s(VALUE rstr)
 }
 
 char *
-nstrdup(VALUE rstr)
+rstrdup(VALUE rstr)
 {
     char *old = rs2s(rstr);
     int len = RSTRING(rstr)->len;
@@ -177,18 +178,25 @@ nstrdup(VALUE rstr)
     return new;
 }
 
-char *
+Symbol
+rintern(VALUE rstr)
+{
+    char *old = rs2s(rstr);
+    return frt_intern(old);
+}
+
+Symbol
 frb_field(VALUE rfield)
 {
     switch (TYPE(rfield)) {
         case T_SYMBOL:
-            return rb_id2name(SYM2ID(rfield));
+            return SYM2FSYM(rfield);
         case T_STRING:
-            return rs2s(rfield);
+            return I(rs2s(rfield));
         default:
             rb_raise(rb_eArgError, "field name must be a symbol");
+            return NULL;
     }
-    return NULL;
 }
 
 /*
@@ -281,10 +289,10 @@ void FRT_EXIT(const char *err_type, const char *fmt, ...)
 static ID id_field;
 static ID id_text;
 
-VALUE frb_get_term(const char *field, const char *text)
+VALUE frb_get_term(Symbol field, const char *text)
 {
     return rb_struct_new(cTerm,
-                         ID2SYM(rb_intern(field)),
+                         FSYM2SYM(field),
                          rb_str_new2(text),
                          NULL);
 }
@@ -337,6 +345,10 @@ void Init_ferret_ext(void)
     VALUE cParseError;
     VALUE cStateError;
     VALUE cFileNotFoundError;
+
+    const char *const progname[] = {"ruby"};
+
+    frt_init(1, progname);
 
     /* initialize object map */
     object_map = h_new(&value_hash, &value_eq, NULL, NULL);

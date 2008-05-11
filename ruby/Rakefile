@@ -54,7 +54,9 @@ namespace :build do
                      "../c/lib/libstemmer_c/libstemmer/*.[ch]",
                      "../c/lib/libstemmer_c/include/libstemmer.[h]"]
   EXT_SRC.exclude('../c/**/ind.[ch]',
+                  '../c/**/symbol.[ch]',
                   '../c/include/threading.h',
+                  '../c/include/scanner.h',
                   '../c/include/internal.h',
                   '../c/src/lang.c',
                   '../c/include/lang.h')
@@ -81,7 +83,7 @@ namespace :build do
     dest_fn = EXT_SRC_MAP[fn]
     # prepend lib files to avoid conflicts
     file dest_fn => fn do |t|
-      safe_ln fn, dest_fn
+      ln fn, dest_fn
 
       if fn =~ /stemmer/
         # flatten the directory structure for lib_stemmer

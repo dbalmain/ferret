@@ -1,10 +1,95 @@
+/*****************************************************************************
+ * QueryParser
+ * ===========
+ *
+ * Brief Overview
+ * --------------
+ *
+ * === Creating a QueryParser
+ *
+ *  +qp_new+ allocates a new QueryParser and assigns three very important
+ *  HashSets; +qp->def_fields+, +qp->tkz_fields+ and +qp->all_fields+. The
+ *  query language allows you to assign a field or a set of fields to each
+ *  part of the query.
+ *
+ *    - +qp->def_fields+ is the set of fields that a query is applied to by
+ *      default when no fields are specified.
+ *    - +qp->all_fields+ is the set of fields that gets searched when the user
+ *      requests a search of all fields.
+ *    - +qp->tkz_fields+ is the set of fields that gets tokenized before being
+ *      added to the query parser.
+ *
+ * === qp_parse
+ *
+ *  The main QueryParser method is +qp_parse+. It gets called with a the query
+ *  string and returns a Query object which can then be passed to the
+ *  IndexSearcher. The first thing it does is to clean the query string if
+ *  +qp->clean_str+ is set to true. The cleaning is done with the
+ *  +qp_clean_str+.
+ *  
+ *  It then calls the yacc parser which will set +qp->result+ to the parsed
+ *  query. If parsing fails in any way, +qp->result+ should be set to NULL, in
+ *  which case qp_parse does one of two things depending on the value of
+ *  +qp->handle_parse_errors+;
+ *
+ *    - If it is set to true, qp_parse attempts to do a very basic parsing of
+ *      the query by ignoring all special characters and parsing the query as
+ *      a plain boolean query.
+ *    - If it is set to false, qp_parse will raise a PARSE_ERROR and hopefully
+ *      free all allocated memory.
+ *
+ * === The Lexer
+ *
+ *  +yylex+ is the lexing method called by the QueryParser. It breaks the
+ *  query up into special characters;
+ *  
+ *      ( "&:()[]{}!\"~^|<>=*?+-" )
+ *
+ *  and tokens; 
+ *  
+ *    - QWRD
+ *    - WILD_STR
+ *    - AND['AND', '&&']
+ *    - OR['OR', '||']
+ *    - REQ['REQ', '+']
+ *    - NOT['NOT', '-', '~']
+ *
+ *  QWRD tokens are query word tokens which are made up of characters other
+ *  than the special characters. They can also contain special characters when
+ *  escaped with a backslash '\'. WILD_STR is the same as QWRD except that it
+ *  may also contain '?' and '*' characters.
+ *
+ * === The Parser
+ *
+ *  For a better understanding of the how the query parser works, it is a good
+ *  idea to study the Ferret Query Language (FQL) described below. Once you
+ *  understand FQL the one tricky part that needs to be mentioned is how
+ *  fields are handled. This is where +qp->def_fields+ and +qp->all_fields
+ *  come into play. When no fields are specified then the default fields are
+ *  used. The '*:' field specifier will search all fields contained in the
+ *  all_fields set.  Otherwise all fields specified in the field descripter
+ *  separated by '|' will be searched. For example 'title|content:' will
+ *  search the title and content fields. When fields are specified like this,
+ *  the parser will push the fields onto a stack and all queries modified by
+ *  the field specifier will be applied to the fields on top of the stack.
+ *  The parser uses the FLDS macro to handle the current fields. It takes the
+ *  current query building function in the parser and calls it for all the
+ *  current search fields (on top of the stack).
+ * 
+ * Ferret Query Language (FQL)
+ * ---------------------------
+ *
+ * FIXME to be continued...
+ *****************************************************************************/
 %{
 #include <string.h>
 #include <ctype.h>
 #include <wctype.h>
+#include <assert.h>
 #include "except.h"
 #include "search.h"
 #include "array.h"
+#include "symbol.h"
 #include "internal.h"
 
 typedef struct Phrase {
@@ -49,12 +134,13 @@ static void bca_destroy(BCArray *bca);
 
 static BooleanClause *get_bool_cls(Query *q, BCType occur);
 
-static Query *get_term_q(QParser *qp, char *field, char *word);
-static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop);
-static Query *get_wild_q(QParser *qp, char *field, char *pattern);
+static Query *get_term_q(QParser *qp, Symbol field, char *word);
+static Query *get_fuzzy_q(QParser *qp, Symbol field, char *word,
+                          char *slop);
+static Query *get_wild_q(QParser *qp, Symbol field, char *pattern);
 
-static HashSet *first_field(QParser *qp, char *field);
-static HashSet *add_field(QParser *qp, char *field);
+static HashSet *first_field(QParser *qp, const char *field);
+static HashSet *add_field(QParser *qp, const char *field);
 
 static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop);
 
@@ -63,22 +149,32 @@ static Phrase *ph_add_word(Phrase *self, char *word);
 static Phrase *ph_add_multi_word(Phrase *self, char *word);
 static void ph_destroy(Phrase *self);
 
-static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
+static Query *get_r_q(QParser *qp, Symbol field, char *from, char *to,
                       bool inc_lower, bool inc_upper);
 
+static void qp_push_fields(QParser *self, HashSet *fields, bool destroy);
+static void qp_pop_fields(QParser *self);
+
+/**
+ * +FLDS+ calls +func+ for all fields on top of the field stack. +func+
+ * must return a query. If there is more than one field on top of FieldStack
+ * then +FLDS+ will combing all the queries returned by +func+ into a single
+ * BooleanQuery which it than assigns to +q+. If there is only one field, the
+ * return value of +func+ is assigned to +q+ directly.
+ */
 #define FLDS(q, func) do {\
     TRY {\
-        char *field;\
+        Symbol field;\
         if (qp->fields->size == 0) {\
             q = NULL;\
         } else if (qp->fields->size == 1) {\
-            field = (char *)qp->fields->first->elem;\
+            field = (Symbol)qp->fields->first->elem;\
             q = func;\
         } else {\
-            Query *volatile sq;HashSetEntry *volatile hse;\
+            Query *volatile sq; HashSetEntry *volatile hse;\
             q = bq_new_max(false, qp->max_clauses);\
             for (hse = qp->fields->first; hse; hse = hse->next) {\
-                field = (char *)hse->elem;\
+                field = (Symbol)hse->elem;\
                 sq = func;\
                 TRY\
                   if (sq) bq_add_query_nr(q, sq, BC_SHOULD);\
@@ -156,9 +252,9 @@ term_q    : QWRD                      { FLDS($$, get_term_q(qp, field, $1)); Y}
           ;
 wild_q    : WILD_STR                  { FLDS($$, get_wild_q(qp, field, $1)); Y}
           ;
-field_q   : field ':' q { qp->fields = qp->def_fields; }
+field_q   : field ':' q { qp_pop_fields(qp); }
                                       { $$ = $3; }
-          | '*' { qp->fields = qp->all_fields; } ':' q {qp->fields = qp->def_fields;}
+          | '*' { qp_push_fields(qp, qp->all_fields, false); } ':' q { qp_pop_fields(qp); }
                                       { $$ = $4; }
           ;
 field     : QWRD                      { $$ = first_field(qp, $1); }
@@ -193,6 +289,16 @@ range_q   : '[' QWRD QWRD ']' { FLDS($$, get_r_q(qp, field, $2,  $3,  true,  tru
 static const char *special_char = "&:()[]{}!\"~^|<>=*?+-";
 static const char *not_word =   " \t()[]{}!\"~^|<>=";
 
+/**
+ * +get_word+ gets the next query-word from the query string. A query-word is
+ * basically a string of non-special or escaped special characters. It is
+ * Analyzer agnostic. It is up to the get_*_q methods to tokenize the word and
+ * turn it into a +Query+. See the documentation for each get_*_q method to
+ * see how it handles tokenization.
+ *
+ * Note that +get_word+ is also responsible for returning field names and
+ * matching the special tokens 'AND', 'NOT', 'REQ' and 'OR'.
+ */
 static int get_word(YYSTYPE *lvalp, QParser *qp)
 {
     bool is_wild = false;
@@ -236,8 +342,10 @@ static int get_word(YYSTYPE *lvalp, QParser *qp)
             default:
                 *bufp++ = c;
         }
-        /* we've exceeded the static buffer. switch to the dynamic
-           one. */
+        /* we've exceeded the static buffer. switch to the dynamic one. The
+         * dynamic buffer is allocated enough space to hold the whole query
+         * string so it's capacity doesn't need to be checked again once
+         * allocated. */
         if (!qp->dynbuf && ((bufp - buf) == MAX_WORD_SIZE)) {
             qp->dynbuf = ALLOC_AND_ZERO_N(char, strlen(qp->qstr) + 1);
             strncpy(qp->dynbuf, buf, MAX_WORD_SIZE);
@@ -247,8 +355,8 @@ static int get_word(YYSTYPE *lvalp, QParser *qp)
     }
 get_word_done:
     qp->qstrp--;
-    /* check for keywords. There are only four so we have a bit of a hack which
-     * just checks for all of them. */
+    /* check for keywords. There are only four so we have a bit of a hack
+     * which just checks for all of them. */
     *bufp = '\0';
     len = (int)(bufp - buf);
     if (qp->use_keywords) {
@@ -268,6 +376,33 @@ get_word_done:
     return QWRD;
 }
 
+/**
+ * +yylex+ is the lexing method called by the QueryParser. It breaks the
+ * query up into special characters;
+ * 
+ *     ( "&:()[]{}!\"~^|<>=*?+-" )
+ *
+ * and tokens; 
+ * 
+ *   - QWRD
+ *   - WILD_STR
+ *   - AND['AND', '&&']
+ *   - OR['OR', '||']
+ *   - REQ['REQ', '+']
+ *   - NOT['NOT', '-', '~']
+ *
+ * QWRD tokens are query word tokens which are made up of characters other
+ * than the special characters. They can also contain special characters when
+ * escaped with a backslash '\'. WILD_STR is the same as QWRD except that it
+ * may also contain '?' and '*' characters.
+ *
+ * If any of the special chars are seen they will usually be returned straight
+ * away. The exceptions are the wild chars '*' and '?', and '&' which will be
+ * treated as a plain old word character unless followed by another '&'.
+ * 
+ * If no special characters or tokens are found then yylex delegates to
+ * +get_word+ which will fetch the next query-word.
+ */
 static int yylex(YYSTYPE *lvalp, QParser *qp)
 {
     char c, nc;
@@ -306,6 +441,11 @@ static int yylex(YYSTYPE *lvalp, QParser *qp)
     return get_word(lvalp, qp);
 }
 
+/**
+ * yyerror gets called if there is an parse error with the yacc parser.
+ * It is responsible for clearing any memory that was allocated during the
+ * parsing process.
+ */
 static int yyerror(QParser *qp, char const *msg)
 {
     qp->destruct = true;
@@ -321,19 +461,30 @@ static int yyerror(QParser *qp, char const *msg)
                  "couldn't parse query ``%s''. Error message "
                  " was %s", buf, (char *)msg);
     }
+    while (qp->fields_top->next != NULL) {
+        qp_pop_fields(qp);
+    }
     return 0;
 }
 
 #define BQ(query) ((BooleanQuery *)(query))
 
-static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
+/**
+ * The QueryParser caches a tokenizer for each field so that it doesn't need
+ * to allocate a new tokenizer for each term in the query. This would be quite
+ * expensive as tokenizers use quite a large hunk of memory.
+ *
+ * This method returns the query parser for a particular field and sets it up
+ * with the text to be tokenized.
+ */
+static TokenStream *get_cached_ts(QParser *qp, Symbol field, char *text)
 {
     TokenStream *ts;
-    if (!qp->tokenized_fields || hs_exists(qp->tokenized_fields, field)) {
+    if (hs_exists(qp->tokenized_fields, field)) {
         ts = (TokenStream *)h_get(qp->ts_cache, field);
         if (!ts) {
             ts = a_get_ts(qp->analyzer, field, text);
-            h_set(qp->ts_cache, estrdup(field), ts);
+            h_set(qp->ts_cache, field, ts);
         }
         else {
             ts->reset(ts, text);
@@ -346,16 +497,11 @@ static TokenStream *get_cached_ts(QParser *qp, char *field, char *text)
     return ts;
 }
 
-static char *get_cached_field(Hash *field_cache, const char *field)
-{
-    char *cached_field = (char *)h_get(field_cache, field);
-    if (!cached_field) {
-        cached_field = estrdup(field);
-        h_set(field_cache, cached_field, cached_field);
-    }
-    return cached_field;
-}
-
+/**
+ * Turns a BooleanClause array into a BooleanQuery. It will optimize the query
+ * if 0 or 1 clauses are present to NULL or the actual query in the clause
+ * respectively.
+ */
 static Query *get_bool_q(BCArray *bca)
 {
     Query *q;
@@ -391,6 +537,10 @@ static Query *get_bool_q(BCArray *bca)
     return q;
 }
 
+/**
+ * Base method for appending BooleanClauses to a BooleanClause array. This
+ * method doesn't care about the type of clause (MUST, SHOULD, MUST_NOT).
+ */
 static void bca_add_clause(BCArray *bca, BooleanClause *clause)
 {
     if (bca->size >= bca->capa) {
@@ -401,6 +551,10 @@ static void bca_add_clause(BCArray *bca, BooleanClause *clause)
     bca->size++;
 }
 
+/**
+ * Add the first clause to a BooleanClause array. This method is also
+ * responsible for allocating a new BooleanClause array.
+ */
 static BCArray *first_cls(BooleanClause *clause)
 {
     BCArray *bca = ALLOC_AND_ZERO(BCArray);
@@ -412,6 +566,12 @@ static BCArray *first_cls(BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add AND clause to the BooleanClause array. The means that it will set the
+ * clause being added and the previously added clause from SHOULD clauses to
+ * MUST clauses. (If they are currently MUST_NOT clauses they stay as they
+ * are.)
+ */
 static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause)
 {
     if (clause) {
@@ -428,6 +588,9 @@ static BCArray *add_and_cls(BCArray *bca, BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add SHOULD clause to the BooleanClause array.
+ */
 static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause)
 {
     if (clause) {
@@ -436,6 +599,10 @@ static BCArray *add_or_cls(BCArray *bca, BooleanClause *clause)
     return bca;
 }
 
+/**
+ * Add AND or OR clause to the BooleanClause array, depending on the default
+ * clause type.
+ */
 static BCArray *add_default_cls(QParser *qp, BCArray *bca,
                                 BooleanClause *clause)
 {
@@ -448,6 +615,9 @@ static BCArray *add_default_cls(QParser *qp, BCArray *bca,
     return bca;
 }
 
+/**
+ * destroy array of BooleanClauses
+ */
 static void bca_destroy(BCArray *bca)
 {
     int i;
@@ -458,6 +628,9 @@ static void bca_destroy(BCArray *bca)
     free(bca);
 }
 
+/**
+ * Turn a query into a BooleanClause for addition to a BooleanQuery.
+ */
 static BooleanClause *get_bool_cls(Query *q, BCType occur)
 {
     if (q) {
@@ -468,7 +641,15 @@ static BooleanClause *get_bool_cls(Query *q, BCType occur)
     }
 }
 
-static Query *get_term_q(QParser *qp, char *field, char *word)
+/**
+ * Create a TermQuery. The word will be tokenized and if the tokenization
+ * produces more than one token, a PhraseQuery will be returned. For example,
+ * if the word is dbalmain@gmail.com and a LetterTokenizer is used then a
+ * PhraseQuery "dbalmain gmail com" will be returned which is actually exactly
+ * what we want as it will match any documents containing the same email
+ * address and tokenized with the same tokenizer.
+ */
+static Query *get_term_q(QParser *qp, Symbol field, char *word)
 {
     Query *q;
     Token *token;
@@ -501,7 +682,13 @@ static Query *get_term_q(QParser *qp, char *field, char *word)
     return q;
 }
 
-static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop_str)
+/**
+ * Create a FuzzyQuery. The word will be tokenized and only the first token
+ * will be used. If there are any more tokens after tokenization, they will be
+ * ignored.
+ */
+static Query *get_fuzzy_q(QParser *qp, Symbol field, char *word,
+                          char *slop_str)
 {
     Query *q;
     Token *token;
@@ -522,6 +709,10 @@ static Query *get_fuzzy_q(QParser *qp, char *field, char *word, char *slop_str)
     return q;
 }
 
+/**
+ * Downcase a string taking locale into account and works for multibyte
+ * character sets.
+ */
 static char *lower_str(char *str)
 {
     const int max_len = (int)strlen(str) + 1;
@@ -547,7 +738,16 @@ static char *lower_str(char *str)
     return str;
 }
 
-static Query *get_wild_q(QParser *qp, char *field, char *pattern)
+/**
+ * Create a WildCardQuery. No tokenization will be performed on the pattern
+ * but the pattern will be downcased if +qp->wild_lower+ is set to true and
+ * the field in question is a tokenized field.
+ *
+ * Note: this method will not always return a WildCardQuery. It could be
+ * optimized to a MatchAllQuery if the pattern is '*' or a PrefixQuery if the
+ * only wild char (*, ?) in the pattern is a '*' at the end of the pattern.
+ */
+static Query *get_wild_q(QParser *qp, Symbol field, char *pattern)
 {
     Query *q;
     bool is_prefix = false;
@@ -588,21 +788,32 @@ static Query *get_wild_q(QParser *qp, char *field, char *pattern)
     return q;
 }
 
-static HashSet *add_field(QParser *qp, char *field)
+/**
+ * Adds another field to the top of the FieldStack.
+ */
+static HashSet *add_field(QParser *qp, const char *field_name)
 {
+    Symbol field = intern(field_name);
     if (qp->allow_any_fields || hs_exists(qp->all_fields, field)) {
-        hs_add(qp->fields, get_cached_field(qp->field_cache, field));
+        hs_add(qp->fields, field);
     }
     return qp->fields;
 }
 
-static HashSet *first_field(QParser *qp, char *field)
+/**
+ * The method gets called when a field modifier ("field1|field2:") is seen. It
+ * will push a new FieldStack object onto the stack and add +field+ to its
+ * fields set.
+ */
+static HashSet *first_field(QParser *qp, const char *field)
 {
-    qp->fields = qp->fields_buf;
-    hs_clear(qp->fields);
+    qp_push_fields(qp, hs_new_ptr(NULL), true);
     return add_field(qp, field);
 }
 
+/**
+ * Destroy a phrase object freeing all allocated memory.
+ */
 static void ph_destroy(Phrase *self)
 {
     int i;
@@ -614,6 +825,9 @@ static void ph_destroy(Phrase *self)
 }
 
 
+/**
+ * Allocate a new Phrase object
+ */
 static Phrase *ph_new()
 {
   Phrase *self = ALLOC_AND_ZERO(Phrase);
@@ -622,6 +836,10 @@ static Phrase *ph_new()
   return self;
 }
 
+/**
+ * Add the first word to the phrase. This method is also in charge of
+ * allocating a new Phrase object.
+ */
 static Phrase *ph_first_word(char *word)
 {
     Phrase *self = ph_new();
@@ -633,6 +851,9 @@ static Phrase *ph_first_word(char *word)
     return self;
 }
 
+/**
+ * Add a new word to the Phrase
+ */
 static Phrase *ph_add_word(Phrase *self, char *word)
 {
     if (word) {
@@ -655,6 +876,10 @@ static Phrase *ph_add_word(Phrase *self, char *word)
     return self;
 }
 
+/**
+ * Adds a word to the Phrase object in the same position as the previous word
+ * added to the Phrase. This will later be turned into a multi-PhraseQuery.
+ */
 static Phrase *ph_add_multi_word(Phrase *self, char *word)
 {
     const int index = self->size - 1;
@@ -666,7 +891,35 @@ static Phrase *ph_add_multi_word(Phrase *self, char *word)
     return self;
 }
 
-static Query *get_phrase_query(QParser *qp, char *field,
+/**
+ * Build a phrase query for a single field. It might seem like a better idea
+ * to build the PhraseQuery once and duplicate it for each field but this
+ * would be buggy in the case of PerFieldAnalyzers in which case a different
+ * tokenizer could be used for each field.
+ *
+ * Note that the query object returned by this method is not always a
+ * PhraseQuery. If there is only one term in the query then the query is
+ * simplified to a TermQuery. If there are multiple terms but only a single
+ * position, then a MultiTermQuery is retured.
+ *
+ * Note that each word in the query gets tokenized. Unlike get_term_q, if the
+ * word gets tokenized into more than one token, the rest of the tokens are
+ * ignored. For example, if you have the phrase;
+ *
+ *      "email: dbalmain@gmail.com"
+ * 
+ * the Phrase object will contain to positions with the words 'email:' and
+ * 'dbalmain@gmail.com'. Now, if you are using a LetterTokenizer then the
+ * second word will be tokenized into the tokens ['dbalmain', 'gmail', 'com']
+ * and only the first token will be used, so the resulting phrase query will
+ * actually look like this;
+ *
+ *      "email dbalmain"
+ *
+ * This problem can easily be solved by using the StandardTokenizer or any
+ * custom tokenizer which will leave dbalmain@gmail.com as a single token.
+ */
+static Query *get_phrase_query(QParser *qp, Symbol field,
                                Phrase *phrase, char *slop_str)
 {
     const int pos_cnt = phrase->size;
@@ -686,13 +939,14 @@ static Query *get_phrase_query(QParser *qp, char *field,
 
             for (i = 0; i < word_count; i++) {
                 token = ts_next(get_cached_ts(qp, field, words[i]));
-                free(words[i]);
                 if (token) {
+                    free(words[i]);
                     last_word = words[i] = estrdup(token->text);
                     ++term_cnt;
                 }
                 else {
-                    words[i] = estrdup("");
+                    /* empty words will later be ignored */
+                    words[i][0] = '\0';
                 }
             }
 
@@ -706,6 +960,7 @@ static Query *get_phrase_query(QParser *qp, char *field,
                 default:
                     q = multi_tq_new_conf(field, term_cnt, 0.0);
                     for (i = 0; i < word_count; i++) {
+                        /* ignore empty words */
                         if (words[i][0]) {
                             multi_tq_add_term(q, words[i]);
                         }
@@ -771,6 +1026,11 @@ static Query *get_phrase_query(QParser *qp, char *field,
     return q;
 }
 
+/**
+ * Get a phrase query from the Phrase object. The Phrase object is built up by
+ * the query parser as the all PhraseQuery didn't work well for this. Once the
+ * PhraseQuery has been built the Phrase object needs to be destroyed.
+ */
 static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
 {
     Query *volatile q = NULL;
@@ -779,11 +1039,18 @@ static Query *get_phrase_q(QParser *qp, Phrase *phrase, char *slop_str)
     return q;
 }
 
-static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
+/**
+ * Gets a RangeQuery object.
+ *
+ * Just like with WildCardQuery, RangeQuery needs to downcase its terms if the
+ * tokenizer also downcased its terms.
+ */
+static Query *get_r_q(QParser *qp, Symbol field, char *from, char *to,
                       bool inc_lower, bool inc_upper)
 {
     Query *rq;
-    if (qp->wild_lower) {
+    if (qp->wild_lower
+        && (!qp->tokenized_fields || hs_exists(qp->tokenized_fields, field))) {
         if (from) {
             lower_str(from);
         }
@@ -792,6 +1059,9 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
         }
     }
 /*
+ * terms don't get tokenized as it doesn't really make sense to do so for
+ * range queries.
+
     if (from) {
         TokenStream *stream = get_cached_ts(qp, field, from);
         Token *token = ts_next(stream);
@@ -810,31 +1080,76 @@ static Query *get_r_q(QParser *qp, char *field, char *from, char *to,
     return rq;
 }
 
+/**
+ * Every time the query parser sees a new field modifier ("field1|field2:")
+ * it pushes a new FieldStack object onto the stack and sets its fields to the
+ * fields specified in the fields modifier. If the field modifier is '*',
+ * fs->fields is set to all_fields. fs->fields is set to +qp->def_field+ at
+ * the bottom of the stack (ie the very first set of fields pushed onto the
+ * stack).
+ */
+static void qp_push_fields(QParser *self, HashSet *fields, bool destroy)
+{
+    FieldStack *fs = ALLOC(FieldStack); 
+
+    fs->next    = self->fields_top;
+    fs->fields  = fields;
+    fs->destroy = destroy;
+
+    self->fields_top = fs;
+    self->fields = fields;
+}
+
+/**
+ * Pops the top of the fields stack and frees any memory used by it. This will
+ * get called when query modified by a field modifier ("field1|field2:") has
+ * been fully parsed and the field specifier no longer applies.
+ */
+static void qp_pop_fields(QParser *self)
+{
+    FieldStack *fs = self->fields_top; 
+
+    if (fs->destroy) {
+        hs_destroy(fs->fields);
+    }
+    self->fields_top = fs->next;
+    if (self->fields_top) {
+        self->fields = self->fields_top->fields;
+    }
+    free(fs);
+}
+
+/**
+ * Free all memory allocated by the QueryParser.
+ */
 void qp_destroy(QParser *self)
 {
-    if (self->close_def_fields) {
-        hs_destroy(self->def_fields);
-    }
-    if (self->tokenized_fields) {
+    if (self->tokenized_fields != self->all_fields) {
         hs_destroy(self->tokenized_fields);
     }
-    if (self->dynbuf) {
-        free(self->dynbuf);
+    if (self->def_fields != self->all_fields) {
+        hs_destroy(self->def_fields);
     }
     hs_destroy(self->all_fields);
-    hs_destroy(self->fields_buf);
-    h_destroy(self->field_cache);
+
+    qp_pop_fields(self);
+    assert(NULL == self->fields_top);
+
     h_destroy(self->ts_cache);
     tk_destroy(self->non_tokenizer);
     a_deref(self->analyzer);
     free(self);
 }
 
-QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
-                HashSet *tokenized_fields, Analyzer *analyzer)
+/**
+ * Creates a new QueryParser setting all boolean parameters to their defaults.
+ * If +def_fields+ is NULL then +all_fields+ is used in place of +def_fields+.
+ * Not also that this method ensures that all fields that exist in
+ * +def_fields+ must also exist in +all_fields+. This should make sense.
+ */
+QParser *qp_new(Analyzer *analyzer)
 {
     QParser *self = ALLOC(QParser);
-    HashSetEntry *hse;
     self->or_default = true;
     self->wild_lower = true;
     self->clean_str = false;
@@ -844,48 +1159,64 @@ QParser *qp_new(HashSet *all_fields, HashSet *def_fields,
     self->use_keywords = true;
     self->use_typed_range_query = false;
     self->def_slop = 0;
-    self->fields_buf = hs_new_str(NULL);
-    self->all_fields = all_fields;
-    self->tokenized_fields = tokenized_fields;
-    if (def_fields) {
-        HashSetEntry *hse;
-        self->def_fields = def_fields;
-        for (hse = def_fields->first; hse; hse = hse->next) {
-            if (!hs_exists(self->all_fields, hse->elem)) {
-                hs_add(self->all_fields, estrdup((char *)hse->elem));
-            }
-        }
-        self->close_def_fields = true;
-    }
-    else {
-        self->def_fields = all_fields;
-        self->close_def_fields = false;
-    }
-    self->field_cache = h_new_str((free_ft)NULL, &free);
-    for (hse = self->all_fields->first; hse; hse = hse->next) {
-        char *field = estrdup((char *)hse->elem);
-        h_set(self->field_cache, field, field);
-    }
-    self->fields = self->def_fields;
+
+    self->tokenized_fields = hs_new_ptr(NULL);
+    self->all_fields = hs_new_ptr(NULL);
+    self->def_fields = hs_new_ptr(NULL);
+
+    self->fields_top = NULL;
+    qp_push_fields(self, self->def_fields, false);
+
     /* make sure all_fields contains the default fields */
     self->analyzer = analyzer;
-    self->ts_cache = h_new_str(&free, (free_ft)&ts_deref);
+    self->ts_cache = h_new_ptr((free_ft)&ts_deref);
     self->buf_index = 0;
-    self->dynbuf = 0;
+    self->dynbuf = NULL;
     self->non_tokenizer = non_tokenizer_new();
     mutex_init(&self->mutex, NULL);
     return self;
 }
 
+void qp_add_field(QParser *self,
+                  Symbol field,
+                  bool is_default,
+                  bool is_tokenized)
+{
+    hs_add(self->all_fields, field);
+    if (is_default) {
+        hs_add(self->def_fields, field);
+    }
+    if (is_tokenized) {
+        hs_add(self->tokenized_fields, field);
+    }
+}
+
 /* these chars have meaning within phrases */
 static const char *PHRASE_CHARS = "<>|\"";
 
-static void str_insert(char *str, int len, char chr)
+/**
+ * +str_insert_char+ inserts a character at the beginning of a string by
+ * shifting the rest of the string right.
+ */
+static void str_insert_char(char *str, int len, char chr)
 {
     memmove(str+1, str, len*sizeof(char));
     *str = chr;
 }
 
+/**
+ * +qp_clean_str+ basically scans the query string and ensures that all open
+ * and close parentheses '()' and quotes '"' are balanced. It does this by
+ * inserting or appending extra parentheses or quotes to the string. This
+ * obviously won't necessarily be exactly what the user wanted but we are
+ * never going to know that anyway. The main job of this method is to help the
+ * query at least parse correctly.
+ *
+ * It also checks that all special characters within phrases (ie between
+ * quotes) are escaped correctly unless they have meaning within a phrase
+ * ( <>,|," ). Note that '<' and '>' will also be escaped unless the appear
+ * together like so; '<>'.
+ */
 char *qp_clean_str(char *str)
 {
     int b, pb = -1;
@@ -904,8 +1235,8 @@ char *qp_clean_str(char *str)
                 *nsp++ = '\\'; /* this was left off the first time through */
             }
             *nsp++ = b;
-            /* \\ has escaped itself so has no power. Assign pb random char : */
-            pb = ((b == '\\') ? ':' : b);
+            /* \ has escaped itself so has no power. Assign pb random char 'r' */
+            pb = ((b == '\\') ? 'r' : b);
             continue;
         }
         switch (b) {
@@ -930,7 +1261,7 @@ char *qp_clean_str(char *str)
             case ')':
                 if (!quote_open) {
                     if (br_cnt == 0) {
-                        str_insert(new_str, (int)(nsp - new_str), '(');
+                        str_insert_char(new_str, (int)(nsp - new_str), '(');
                         nsp++;
                     }
                     else {
@@ -975,18 +1306,35 @@ char *qp_clean_str(char *str)
     return new_str;  
 }
 
+/**
+ * Takes a string and finds whatever tokens it can using the QueryParser's
+ * analyzer. It then turns these tokens (if any) into a boolean query. If it
+ * fails to find any tokens, this method will return NULL.
+ */
 static Query *qp_get_bad_query(QParser *qp, char *str)
 {
     Query *volatile q = NULL;
     qp->recovering = true;
+    assert(qp->fields_top->next == NULL);
     FLDS(q, get_term_q(qp, field, str));
     return q;
 }
 
+/**
+ * +qp_parse+ takes a string and turns it into a Query object using Ferret's
+ * query language. It must either raise an error or return a query object. It
+ * must not return NULL. If the yacc parser fails it will use a very basic
+ * boolean query parser which takes whatever tokens it can find in the query
+ * and terns them into a boolean query on the default fields.
+ */
 Query *qp_parse(QParser *self, char *qstr)
 {
     Query *result = NULL;
     mutex_lock(&self->mutex);
+    /* if qp->fields_top->next is not NULL we have a left over field-stack
+     * object that was not popped during the last query parse */
+    assert(NULL == self->fields_top->next);
+
     self->recovering = self->destruct = false;
     if (self->clean_str) {
         self->qstrp = self->qstr = qp_clean_str(qstr);

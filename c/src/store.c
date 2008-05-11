@@ -69,7 +69,7 @@ Store *store_new()
     store->ref_cnt = 1;
     mutex_init(&store->mutex_i, NULL);
     mutex_init(&store->mutex, NULL);
-    store->locks = hs_new(ptr_hash, ptr_eq, (free_ft)&close_lock_i);
+    store->locks = hs_new_ptr((free_ft)&close_lock_i);
     return store;
 }
 
@@ -598,12 +598,14 @@ INLINE void os_write_vll(OutStream *os, register u64 num)
     }
 }
 
+INLINE void os_write_string_len(OutStream *os, const char *str, int len)
+{
+    os_write_vint(os, len);
+    os_write_bytes(os, (uchar *)str, len);
+}
 void os_write_string(OutStream *os, const char *str)
 {
-    int len = (int)strlen(str);
-    os_write_vint(os, len);
-
-    os_write_bytes(os, (uchar *)str, len);
+    os_write_string_len(os, str, (int)strlen(str));
 }
 
 /**

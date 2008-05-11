@@ -539,8 +539,9 @@ MatchVector *matchv_add(MatchVector *self, int start, int end)
         REALLOC_N(self->matches, MatchRange, self->capa);
     }
     self->matches[self->size].start = start;
-    self->matches[self->size].end = end;
-    self->matches[self->size++].score = 1.0;
+    self->matches[self->size].end   = end;
+    self->matches[self->size].score = 1.0;
+    self->size++;
     return self;
 }
 
@@ -623,7 +624,7 @@ void matchv_destroy(MatchVector *self)
 MatchVector *searcher_get_match_vector(Searcher *self,
                                        Query *query,
                                        const int doc_num,
-                                       const char *field)
+                                       Symbol field)
 {
     MatchVector *mv = matchv_new();
     bool rewrite = query->get_matchv_i == q_get_matchv_i;
@@ -835,7 +836,7 @@ static char *highlight_field(MatchVector *mv,
 char **searcher_highlight(Searcher *self,
                           Query *query,
                           const int doc_num,
-                          const char *field,
+                          Symbol field,
                           const int excerpt_len,
                           const int num_excerpts,
                           const char *pre_tag,
@@ -847,7 +848,7 @@ char **searcher_highlight(Searcher *self,
     LazyDoc *lazy_doc = self->get_lazy_doc(self, doc_num);
     LazyDocField *lazy_df = NULL;
     if (lazy_doc) {
-        lazy_df = (LazyDocField *)h_get(lazy_doc->field_dict, field);
+        lazy_df = lazy_doc_get(lazy_doc, field);
     }
     if (tv && lazy_df && tv->term_cnt > 0 && tv->terms[0].positions != NULL
         && tv->offsets != NULL) {
@@ -993,7 +994,7 @@ static Similarity *sea_get_similarity(Searcher *self)
 
 #define ISEA(searcher) ((IndexSearcher *)(searcher))
 
-int isea_doc_freq(Searcher *self, const char *field, const char *term)
+int isea_doc_freq(Searcher *self, Symbol field, const char *term)
 {
     return ir_doc_freq(ISEA(self)->ir, field, term);
 }
@@ -1243,7 +1244,7 @@ static Explanation *isea_explain_w(Searcher *self, Weight *w, int doc_num)
 
 static TermVector *isea_get_term_vector(Searcher *self,
                                           const int doc_num,
-                                          const char *field)
+                                          Symbol field)
 {
     IndexReader *ir = ISEA(self)->ir;
     return ir->term_vector(ir, doc_num, field);
@@ -1295,16 +1296,16 @@ Searcher *isea_new(IndexReader *ir)
 #define CDFSEA(searcher) ((CachedDFSearcher *)(searcher))
 typedef struct CachedDFSearcher
 {
-    Searcher    super;
-    Hash  *df_map;
-    int         max_doc;
+    Searcher super;
+    Hash     *df_map;
+    int      max_doc;
 } CachedDFSearcher;
 
-static int cdfsea_doc_freq(Searcher *self, const char *field, const char *text)
+static int cdfsea_doc_freq(Searcher *self, Symbol field, const char *text)
 {
     Term term;
     int *df;
-    term.field = (char *)field;
+    term.field = field;
     term.text = (char *)text;
     df = (int *)h_get(CDFSEA(self)->df_map, &term);
     return df ? *df : 0;
@@ -1388,7 +1389,7 @@ static Explanation *cdfsea_explain_w(Searcher *self, Weight *w, int doc_num)
 }
 
 static TermVector *cdfsea_get_term_vector(Searcher *self, const int doc_num,
-                                          const char *field)
+                                          Symbol field)
 {
     (void)self; (void)doc_num; (void)field;
     RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
@@ -1397,9 +1398,7 @@ static TermVector *cdfsea_get_term_vector(Searcher *self, const int doc_num,
 
 static Similarity *cdfsea_get_similarity(Searcher *self)
 {
-    (void)self;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
-    return NULL;
+    return self->similarity;
 }
 
 static void cdfsea_close(Searcher *self)
@@ -1415,6 +1414,7 @@ static Searcher *cdfsea_new(Hash *df_map, int max_doc)
     CDFSEA(self)->df_map    = df_map;
     CDFSEA(self)->max_doc   = max_doc;
 
+    self->similarity        = sim_create_default();
     self->doc_freq          = &cdfsea_doc_freq;
     self->get_doc           = &cdfsea_get_doc;
     self->max_doc           = &cdfsea_max_doc;
@@ -1466,7 +1466,7 @@ static INLINE int msea_get_searcher_index(Searcher *self, int n)
     return hi;
 }
 
-static int msea_doc_freq(Searcher *self, const char *field, const char *term)
+static int msea_doc_freq(Searcher *self, Symbol field, const char *term)
 {
     int i;
     int doc_freq = 0;
@@ -1514,14 +1514,18 @@ static int *msea_get_doc_freqs(Searcher *self, HashSet *terms)
 
 static Weight *msea_create_weight(Searcher *self, Query *query)
 {
-    Jx
     int i, *doc_freqs;
     Searcher *cdfsea;
     Weight *w;
-    Hash *df_map = h_new((hash_ft)&term_hash, (eq_ft)&term_eq,
-                             (free_ft)NULL, free);
+    Hash *df_map = h_new((hash_ft)&term_hash,
+                         (eq_ft)&term_eq,
+                         (free_ft)term_destroy,
+                         free);
     Query *rewritten_query = self->rewrite(self, query);
-    HashSet *terms = term_set_new();
+    /* terms get copied directly to df_map so no need to free here */
+    HashSet *terms = hs_new((hash_ft)&term_hash,
+                            (eq_ft)&term_eq,
+                            (free_ft)NULL);
     HashSetEntry *hse;
 
     rewritten_query->extract_terms(rewritten_query, terms);
@@ -1792,13 +1796,12 @@ static Explanation *msea_explain_w(Searcher *self, Weight *w, int doc_num)
 }
 
 static TermVector *msea_get_term_vector(Searcher *self, const int doc_num,
-                                        const char *field)
+                                        Symbol field)
 {
     MultiSearcher *msea = MSEA(self);
     int i = msea_get_searcher_index(self, doc_num);
     Searcher *s = msea->searchers[i];
-    return s->get_term_vector(s, doc_num - msea->starts[i],
-                              field);
+    return s->get_term_vector(s, doc_num - msea->starts[i], field);
 }
 
 static Similarity *msea_get_similarity(Searcher *self)

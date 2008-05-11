@@ -1,13 +1,11 @@
 #include "testhelper.h"
+#include "symbol.h"
 #include "search.h"
 #include "test.h"
 
 #define ARRAY_SIZE 20
 
-static char *search = "search";
-static char *string = "string";
-static char *integer = "integer";
-static char *flt = "flt";
+static Symbol search, string, integer, flt;
 
 typedef struct SortTestData {
     char *search;
@@ -151,13 +149,13 @@ static void do_test_top_docs(TestCase *tc, Searcher *searcher, Query *query,
     }
 }
 
-#define TEST_SF_TO_S(mstr, msf) \
+#define TEST_SF_TO_S(_str, _sf) \
     do {\
-        SortField *msf_p = msf;\
-        char *fstr = sort_field_to_s(msf_p);\
-        Asequal(mstr, fstr);\
-        free(fstr);\
-        sort_field_destroy(msf_p);\
+        SortField *_sf_p = _sf;\
+        char *_field = sort_field_to_s(_sf_p);\
+        Asequal(_str, _field);\
+        free(_field);\
+        sort_field_destroy(_sf_p);\
     } while (0)
 
 
@@ -168,21 +166,29 @@ static void test_sort_field_to_s(TestCase *tc, void *data)
     TEST_SF_TO_S("<SCORE>!", sort_field_score_new(true));
     TEST_SF_TO_S("<DOC>", sort_field_doc_new(false));
     TEST_SF_TO_S("<DOC>!", sort_field_doc_new(true));
-    TEST_SF_TO_S("date:<integer>", sort_field_int_new("date", false));
-    TEST_SF_TO_S("date:<integer>!", sort_field_int_new("date", true));
-    TEST_SF_TO_S("price:<float>", sort_field_float_new("price", false));
-    TEST_SF_TO_S("price:<float>!", sort_field_float_new("price", true));
-    TEST_SF_TO_S("content:<string>", sort_field_string_new("content", false));
-    TEST_SF_TO_S("content:<string>!", sort_field_string_new("content", true));
-    TEST_SF_TO_S("auto_field:<auto>", sort_field_auto_new("auto_field", false));
-    TEST_SF_TO_S("auto_field:<auto>!", sort_field_auto_new("auto_field", true));
+    TEST_SF_TO_S("date:<integer>",
+                 sort_field_int_new(I("date"), false));
+    TEST_SF_TO_S("date:<integer>!",
+                 sort_field_int_new(I("date"), true));
+    TEST_SF_TO_S("price:<float>",
+                 sort_field_float_new(I("price"), false));
+    TEST_SF_TO_S("price:<float>!",
+                 sort_field_float_new(I("price"), true));
+    TEST_SF_TO_S("content:<string>",
+                 sort_field_string_new(I("content"), false));
+    TEST_SF_TO_S("content:<string>!",
+                 sort_field_string_new(I("content"), true));
+    TEST_SF_TO_S("auto_field:<auto>",
+                 sort_field_auto_new(I("auto_field"), false));
+    TEST_SF_TO_S("auto_field:<auto>!",
+                 sort_field_auto_new(I("auto_field"), true));
 }
 
-#define TEST_SORT_TO_S(mstr, msort) \
+#define TEST_SORT_TO_S(_expected_str, _sort) \
     do {\
-        char *fstr = sort_to_s(msort);\
-        Asequal(mstr, fstr);\
-        free(fstr);\
+        char *_str = sort_to_s(_sort);\
+        Asequal(_expected_str, _str);\
+        free(_str);\
     } while (0)
 
 static void test_sort_to_s(TestCase *tc, void *data)
@@ -195,18 +201,18 @@ static void test_sort_to_s(TestCase *tc, void *data)
     TEST_SORT_TO_S("Sort[<SCORE>]", sort);
     sort_add_sort_field(sort, sort_field_doc_new(true));
     TEST_SORT_TO_S("Sort[<SCORE>, <DOC>!]", sort);
-    sort_add_sort_field(sort, sort_field_int_new("date", true));
+    sort_add_sort_field(sort, sort_field_int_new(I("date"), true));
     TEST_SORT_TO_S("Sort[<SCORE>, <DOC>!, date:<integer>!]", sort);
-    sort_add_sort_field(sort, sort_field_float_new("price", false));
+    sort_add_sort_field(sort, sort_field_float_new(I("price"), false));
     TEST_SORT_TO_S("Sort[<SCORE>, <DOC>!, date:<integer>!, price:<float>]", sort);
-    sort_add_sort_field(sort, sort_field_string_new("content", true));
+    sort_add_sort_field(sort, sort_field_string_new(I("content"), true));
     TEST_SORT_TO_S("Sort[<SCORE>, <DOC>!, date:<integer>!, price:<float>, content:<string>!]", sort);
-    sort_add_sort_field(sort, sort_field_auto_new("auto_field", false));
+    sort_add_sort_field(sort, sort_field_auto_new(I("auto_field"), false));
     TEST_SORT_TO_S("Sort[<SCORE>, <DOC>!, date:<integer>!, price:<float>, content:<string>!, auto_field:<auto>]", sort);
     sort_clear(sort);
-    sort_add_sort_field(sort, sort_field_string_new("content", true));
+    sort_add_sort_field(sort, sort_field_string_new(I("content"), true));
     TEST_SORT_TO_S("Sort[content:<string>!]", sort);
-    sort_add_sort_field(sort, sort_field_auto_new("auto_field", false));
+    sort_add_sort_field(sort, sort_field_auto_new(I("auto_field"), false));
     TEST_SORT_TO_S("Sort[content:<string>!, auto_field:<auto>]", sort);
     sort_destroy(sort);
 }
@@ -306,6 +312,12 @@ TestSuite *ts_sort(TestSuite *suite)
 {
     Searcher *sea, **searchers;
     Store *store = open_ram_store(), *fs_store;
+
+    search = intern("search");
+    string = intern("string");
+    integer = intern("integer");
+    flt = intern("flt");
+
     sort_test_setup(store);
 
     suite = ADD_SUITE(suite);

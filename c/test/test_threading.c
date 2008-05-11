@@ -1,4 +1,6 @@
 #include "search.h"
+#include "symbol.h"
+#include "internal.h"
 #include "ind.h"
 #include "testhelper.h"
 #include "test.h"
@@ -71,8 +73,8 @@ static void do_add_doc(Index *index)
     Document *doc = doc_new();
     int n = rand();
 
-    doc_add_field(doc, df_add_data(df_new(id), strfmt("%d", n)))->destroy_data = true;
-    doc_add_field(doc, df_add_data(df_new(contents), num_to_str(n)))->destroy_data = true;
+    doc_add_field(doc, df_add_data(df_new(I(id)), strfmt("%d", n)))->destroy_data = true;
+    doc_add_field(doc, df_add_data(df_new(I(contents)), num_to_str(n)))->destroy_data = true;
     tlog("Adding %d\n", n);
     index_add_doc(index, doc);
     doc_destroy(doc);
@@ -156,14 +158,15 @@ TestSuite *ts_threading(TestSuite *suite)
     HashSet *def_fields = hs_new_str(NULL);
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_new(id, STORE_YES, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(I(id), STORE_YES, INDEX_UNTOKENIZED,
                               TERM_VECTOR_YES));
     index_create(store, fis);
     fis_deref(fis);
 
-    hs_add(def_fields, contents);
+    hs_add(def_fields, (char *)I(contents));
     store->clear_all(store);
     index = index_new(store, a, def_fields, true);
+    hs_destroy(def_fields);
 
     suite = ADD_SUITE(suite);
 

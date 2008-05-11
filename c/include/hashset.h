@@ -37,9 +37,9 @@ typedef struct FrtHashSet
 } FrtHashSet;
 
 /**
- * Create a new FrtHashSet. The function will allocate a FrtHashSet Struct setting
- * the functions used to hash the objects it will contain and the eq function.
- * This should be used for non-string types.
+ * Create a new FrtHashSet. The function will allocate a FrtHashSet Struct
+ * setting the functions used to hash the objects it will contain and the eq
+ * function. This should be used for non-string types.
  *
  * @param hash function to hash objects added to the FrtHashSet
  * @param eq function to determine whether two items are equal
@@ -52,14 +52,27 @@ extern FrtHashSet *frt_hs_new(frt_hash_ft hash_func,
                                  frt_free_ft free_func);
 
 /**
- * Create a new FrtHashSet specifically for strings. This will create a FrtHashSet
- * as if you used frt_hs_new with the standard string hash and eq functions.
+ * Create a new FrtHashSet specifically for strings. This will create a
+ * FrtHashSet as if you used frt_hs_new with the standard string hash and eq
+ * functions.
  *
  * @param free_elem function used to free elements as added to the FrtHashSet
  *   when the FrtHashSet if destroyed or duplicate elements are added to the Set
  * @return a newly allocated FrtHashSet structure
  */
 extern FrtHashSet *frt_hs_new_str(frt_free_ft free_func);
+
+/**
+ * Create a new FrtHashSet specifically for pointers. Note that the only way
+ * two pointers will be considered equal is if they have the same address. So
+ * you can add the string "key" twice if it is stored at two different
+ * addresses.
+ *
+ * @param free_elem function used to free elements as added to the FrtHashSet
+ *   when the FrtHashSet if destroyed or duplicate elements are added to the Set
+ * @return a newly allocated FrtHashSet structure
+ */
+extern FrtHashSet *frt_hs_new_ptr(frt_free_ft free_func);
 
 /**
  * Free the memory allocated by the FrtHashSet, but don't free the elements added

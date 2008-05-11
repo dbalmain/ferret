@@ -11,15 +11,15 @@
 static unsigned long field_index_hash(const void *p)
 {
     FieldIndex *self = (FieldIndex *)p;
-    return str_hash(self->field) ^ (unsigned long)(self->klass);
+    return sym_hash(self->field) ^ (unsigned long)(self->klass);
 }
 
 static int field_index_eq(const void *p1, const void *p2)
 {
     FieldIndex *fi1 = (FieldIndex *)p1;
     FieldIndex *fi2 = (FieldIndex *)p2;
-    return (strcmp(fi1->field, fi2->field) == 0) &&
-        fi1->klass->type == fi2->klass->type;
+    return (fi1->field == fi2->field) &&
+        (fi1->klass->type == fi2->klass->type);
 }
 
 static void field_index_destroy(void *p)
@@ -31,7 +31,7 @@ static void field_index_destroy(void *p)
     free(self);
 }
 
-FieldIndex *field_index_get(IndexReader *ir, const char *field,
+FieldIndex *field_index_get(IndexReader *ir, Symbol field,
                             const FieldIndexClass *klass)
 {
     int length = 0;
@@ -45,7 +45,7 @@ FieldIndex *field_index_get(IndexReader *ir, const char *field,
     if (field_num < 0) {
         RAISE(ARG_ERROR,
               "Cannot sort by field \"%s\". It doesn't exist in the index.",
-              field);
+              S(field));
     }
 
     if (!ir->field_index_cache) {

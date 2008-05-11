@@ -76,6 +76,7 @@ extern "C" {
 #define HAS_ISO_VARARGS                    FRT_HAS_ISO_VARARGS
 #define HAS_VARARGS                        FRT_HAS_VARARGS
 #define HS_MIN_SIZE                        FRT_HS_MIN_SIZE
+#define I                                  FRT_I
 #define INDEX_ERROR                        FRT_INDEX_ERROR
 #define INDEX_INTERVAL                     FRT_INDEX_INTERVAL
 #define INDEX_NO                           FRT_INDEX_NO
@@ -130,6 +131,7 @@ extern "C" {
 #define RECAPA                             FRT_RECAPA
 #define REF                                FRT_REF
 #define RETURN_EARLY                       FRT_RETURN_EARLY
+#define S                                  FRT_S
 #define SCANNER                            FRT_SCANNER
 #define SCORER_NULLIFY                     FRT_SCORER_NULLIFY
 #define SEGMENTS_FILE_NAME                 FRT_SEGMENTS_FILE_NAME
@@ -220,6 +222,7 @@ extern "C" {
 #define FieldInfo               FrtFieldInfo
 #define FieldInfos              FrtFieldInfos
 #define FieldInverter           FrtFieldInverter
+#define FieldStack              FrtFieldStack
 #define FieldsReader            FrtFieldsReader
 #define FieldsWriter            FrtFieldsWriter
 #define Filter                  FrtFilter
@@ -272,6 +275,7 @@ extern "C" {
 #define PriorityQueueInsertEnum FrtPriorityQueueInsertEnum
 #define QParser                 FrtQParser
 #define Query                   FrtQuery
+#define QueryParser             FrtQueryParser
 #define QueryType               FrtQueryType
 #define RAMFile                 FrtRAMFile
 #define RangeQuery              FrtRangeQuery
@@ -302,6 +306,7 @@ extern "C" {
 #define Store                   FrtStore
 #define StoreValue              FrtStoreValue
 #define StringIndex             FrtStringIndex
+#define Symbol                  FrtSymbol
 #define TVField                 FrtTVField
 #define TVTerm                  FrtTVTerm
 #define Term                    FrtTerm
@@ -313,8 +318,6 @@ extern "C" {
 #define TermQuery               FrtTermQuery
 #define TermVector              FrtTermVector
 #define TermVectorValue         FrtTermVectorValue
-#define TermVectorsReader       FrtTermVectorsReader
-#define TermVectorsWriter       FrtTermVectorsWriter
 #define TermWriter              FrtTermWriter
 #define Token                   FrtToken
 #define TokenFilter             FrtTokenFilter
@@ -323,6 +326,7 @@ extern "C" {
 #define TypedRangeQuery         FrtTypedRangeQuery
 #define Weight                  FrtWeight
 #define WildCardQuery           FrtWildCardQuery
+#define __Symbol                Frt__Symbol
 
 /* Functions */
 #define a_deref                                 frt_a_deref
@@ -525,15 +529,16 @@ extern "C" {
 #define h_lookup_ft                             frt_h_lookup_ft
 #define h_new                                   frt_h_new
 #define h_new_int                               frt_h_new_int
+#define h_new_ptr                               frt_h_new_ptr
 #define h_new_str                               frt_h_new_str
 #define h_rem                                   frt_h_rem
 #define h_rem_int                               frt_h_rem_int
 #define h_set                                   frt_h_set
-#define h_set_ext                               frt_h_set_ext
 #define h_set_int                               frt_h_set_int
 #define h_set_safe                              frt_h_set_safe
 #define h_set_safe_int                          frt_h_set_safe_int
 #define h_str_print_keys                        frt_h_str_print_keys
+#define hash_finalize                           frt_hash_finalize
 #define hash_ft                                 frt_hash_ft
 #define hlp_string_diff                         frt_hlp_string_diff
 #define hs_add                                  frt_hs_add
@@ -545,6 +550,7 @@ extern "C" {
 #define hs_free                                 frt_hs_free
 #define hs_merge                                frt_hs_merge
 #define hs_new                                  frt_hs_new
+#define hs_new_ptr                              frt_hs_new_ptr
 #define hs_new_str                              frt_hs_new_str
 #define hs_orig                                 frt_hs_orig
 #define hs_rem                                  frt_hs_rem
@@ -584,6 +590,8 @@ extern "C" {
 #define index_term_id                           frt_index_term_id
 #define init                                    frt_init
 #define int2float                               frt_int2float
+#define intern                                  frt_intern
+#define intern_and_free                         frt_intern_and_free
 #define ir_add_cache                            frt_ir_add_cache
 #define ir_close                                frt_ir_close
 #define ir_commit                               frt_ir_commit
@@ -638,6 +646,7 @@ extern "C" {
 #define lazy_df_get_bytes                       frt_lazy_df_get_bytes
 #define lazy_df_get_data                        frt_lazy_df_get_data
 #define lazy_doc_close                          frt_lazy_doc_close
+#define lazy_doc_get                            frt_lazy_doc_get
 #define legacy_standard_tokenizer_new           frt_legacy_standard_tokenizer_new
 #define letter_analyzer_new                     frt_letter_analyzer_new
 #define letter_tokenizer_new                    frt_letter_tokenizer_new
@@ -730,6 +739,7 @@ extern "C" {
 #define phq_add_term_abs                        frt_phq_add_term_abs
 #define phq_append_multi_term                   frt_phq_append_multi_term
 #define phq_new                                 frt_phq_new
+#define phq_set_slop                            frt_phq_set_slop
 #define pl_add_occ                              frt_pl_add_occ
 #define pl_cmp                                  frt_pl_cmp
 #define pl_new                                  frt_pl_new
@@ -762,6 +772,7 @@ extern "C" {
 #define q_weight                                frt_q_weight
 #define qfilt_new                               frt_qfilt_new
 #define qfilt_new_nr                            frt_qfilt_new_nr
+#define qp_add_field                            frt_qp_add_field
 #define qp_clean_str                            frt_qp_clean_str
 #define qp_default_fuzzy_min_sim                frt_qp_default_fuzzy_min_sim
 #define qp_default_fuzzy_pre_len                frt_qp_default_fuzzy_pre_len
@@ -885,6 +896,10 @@ extern "C" {
 #define stpe_new                                frt_stpe_new
 #define str_hash                                frt_str_hash
 #define strfmt                                  frt_strfmt
+#define strsort                                 frt_strsort
+#define sym_hash                                frt_sym_hash
+#define sym_len                                 frt_sym_len
+#define symbol_init                             frt_symbol_init
 #define td_destroy                              frt_td_destroy
 #define td_new                                  frt_td_new
 #define td_to_s                                 frt_td_to_s
@@ -894,7 +909,6 @@ extern "C" {
 #define term_eq                                 frt_term_eq
 #define term_hash                               frt_term_hash
 #define term_new                                frt_term_new
-#define term_set_new                            frt_term_set_new
 #define tf_new_i                                frt_tf_new_i
 #define thread_exit                             frt_thread_exit
 #define thread_getspecific                      frt_thread_getspecific
@@ -934,16 +948,6 @@ extern "C" {
 #define tv_destroy                              frt_tv_destroy
 #define tv_get_tv_term                          frt_tv_get_tv_term
 #define tv_get_tv_term_index                    frt_tv_get_tv_term_index
-#define tvr_clone                               frt_tvr_clone
-#define tvr_close                               frt_tvr_close
-#define tvr_get_field_tv                        frt_tvr_get_field_tv
-#define tvr_get_tv                              frt_tvr_get_tv
-#define tvr_open                                frt_tvr_open
-#define tvw_add_postings                        frt_tvw_add_postings
-#define tvw_close                               frt_tvw_close
-#define tvw_close_doc                           frt_tvw_close_doc
-#define tvw_open                                frt_tvw_open
-#define tvw_open_doc                            frt_tvw_open_doc
 #define u16                                     frt_u16
 #define u32                                     frt_u32
 #define u32malloc                               frt_u32malloc

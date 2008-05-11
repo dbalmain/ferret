@@ -2,24 +2,17 @@
 #include "testhelper.h"
 #include "test.h"
 
-static char *body = "body";
-static char *title = "title";
-static char *text = "text";
-static char *author = "author";
-static char *year = "year";
-static char *changing_field = "changing_field";
-static char *compressed_field = "compressed_field";
-static char *tag = "tag";
+static Symbol body, title, text, author, year, changing_field, compressed_field, tag;
 
 static FieldInfos *prep_all_fis()
 {
     FieldInfos *fis = fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_NO);
-    fis_add_field(fis, fi_new("tv", STORE_NO, INDEX_YES, TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv un-t", STORE_NO, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(I("tv"), STORE_NO, INDEX_YES, TERM_VECTOR_YES));
+    fis_add_field(fis, fi_new(I("tv un-t"), STORE_NO, INDEX_UNTOKENIZED,
                               TERM_VECTOR_YES));
-    fis_add_field(fis, fi_new("tv+offsets", STORE_NO, INDEX_YES,
+    fis_add_field(fis, fi_new(I("tv+offsets"), STORE_NO, INDEX_YES,
                               TERM_VECTOR_WITH_OFFSETS));
-    fis_add_field(fis, fi_new("tv+offsets un-t", STORE_NO, INDEX_UNTOKENIZED,
+    fis_add_field(fis, fi_new(I("tv+offsets un-t"), STORE_NO, INDEX_UNTOKENIZED,
                               TERM_VECTOR_WITH_OFFSETS));
     return fis;
 
@@ -38,7 +31,7 @@ static FieldInfos *prep_book_fis()
 {
     FieldInfos *fis = fis_new(STORE_YES, INDEX_YES,
                               TERM_VECTOR_WITH_POSITIONS_OFFSETS);
-    fis_add_field(fis, fi_new("year", STORE_YES, INDEX_NO, TERM_VECTOR_NO));
+    fis_add_field(fis, fi_new(I("year"), STORE_YES, INDEX_NO, TERM_VECTOR_NO));
     return fis;
 
 }
@@ -470,7 +463,7 @@ Document **prep_ir_test_docs()
     doc_add_field(docs[21], df_add_data(df_new(changing_field), 
             estrdup("word3 word4 word1 word2 word1 word3 word4 word1 word3 "
                     "word3")))->destroy_data = true;
-    doc_add_field(docs[21], df_add_data(df_new("new field"), 
+    doc_add_field(docs[21], df_add_data(df_new(I("new field")), 
             estrdup("zdata znot zto zbe zfound")))->destroy_data = true;
     doc_add_field(docs[21], df_add_data(df_new(title), 
             estrdup("title_too_long_for_max_word_lengthxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")))->destroy_data = true;
@@ -565,7 +558,7 @@ static void test_segment_term_doc_enum(TestCase *tc, void *data)
     tde_reader = stde_new(tir, frq_in, bv, skip_interval);
     tde_skip_to = stde_new(tir, frq_in, bv, skip_interval);
 
-    fi = fis_get_field(fis, "tv");
+    fi = fis_get_field(fis, I("tv"));
     for (i = 0; i < 300; i++) {
         int cnt = 0, ind = 0, doc_nums[3], freqs[3];
         const char *word = test_word_list[rand()%TEST_WORD_LIST_SIZE];
@@ -607,7 +600,7 @@ static void test_segment_term_doc_enum(TestCase *tc, void *data)
     tde = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
     tde_skip_to = stpe_new(tir, frq_in, prx_in, bv, skip_interval);
 
-    fi = fis_get_field(fis, "tv+offsets");
+    fi = fis_get_field(fis, I("tv+offsets"));
     for (i = 0; i < 200; i++) {
         const char *word = test_word_list[rand()%TEST_WORD_LIST_SIZE];
         tde->seek(tde, fi->number, word);
@@ -673,10 +666,10 @@ static void test_segment_tde_deleted_docs(TestCase *tc, void *data)
         if ((rand() % 2) == 0) {
             bv_set(bv, i);
             Aiequal(1, bv_get(bv, i));
-            doc_add_field(doc, df_add_data(df_new("f"), (char *)double_word));
+            doc_add_field(doc, df_add_data(df_new(I("f")), (char *)double_word));
         }
         else {
-            doc_add_field(doc, df_add_data(df_new("f"), (char *)triple_word));
+            doc_add_field(doc, df_add_data(df_new(I("f")), (char *)triple_word));
         }
         dw_add_doc(dw, doc);
         doc_destroy(doc);
@@ -804,7 +797,7 @@ static void test_fld_inverter(TestCase *tc, void *data)
 
     dw = dw_open(iw, sis_new_segment(iw->sis, 0, iw->store));
 
-    df = df_new("no tv");
+    df = df_new(I("no tv"));
     df_add_data(df, "one two three four five two three four five three "
                 "four five four five");
     df_add_data(df, "ichi ni san yon go ni san yon go san yon go yon go go");
@@ -851,7 +844,7 @@ static void test_fld_inverter(TestCase *tc, void *data)
 
     df_destroy(df);
 
-    df = df_new("no tv");
+    df = df_new(I("no tv"));
     df_add_data(df, "seven new words and six old ones");
     df_add_data(df, "ichi ni one two quick dogs");
 
@@ -1180,15 +1173,15 @@ void test_iw_add_empty_tv(TestCase *tc, void *data)
     IndexWriter *iw;
     Document *doc;
     FieldInfos *fis = fis_new(STORE_NO, INDEX_YES, TERM_VECTOR_YES);
-    fis_add_field(fis, fi_new("no_tv", STORE_YES, INDEX_YES, TERM_VECTOR_NO));
+    fis_add_field(fis, fi_new(I("no_tv"), STORE_YES, INDEX_YES, TERM_VECTOR_NO));
     index_create(store, fis);
     fis_deref(fis);
 
     iw = iw_open(store, whitespace_analyzer_new(false), &default_config);
     doc = doc_new();
-    doc_add_field(doc, df_add_data(df_new("tv1"), ""));
-    doc_add_field(doc, df_add_data(df_new("tv2"), ""));
-    doc_add_field(doc, df_add_data(df_new("no_tv"), "one two three"));
+    doc_add_field(doc, df_add_data(df_new(I("tv1")), ""));
+    doc_add_field(doc, df_add_data(df_new(I("tv2")), ""));
+    doc_add_field(doc, df_add_data(df_new(I("no_tv")), "one two three"));
 
     iw_add_doc(iw, doc);
     iw_commit(iw);
@@ -1357,21 +1350,21 @@ static ReaderTestEnvironment *reader_test_env_new(int type)
                 DocField *df = doc->fields[k];
                 fis = iw->fis;
                 if (NULL == fis_get_field(fis, df->name)) {
-                    if (strcmp(author, df->name) == 0) {
+                    if (author == df->name) {
                         fis_add_field(fis, fi_new(author, STORE_YES, INDEX_YES,
                                   TERM_VECTOR_WITH_POSITIONS));
-                    } else if (strcmp(title, df->name) == 0) {
+                    } else if (title == df->name) {
                         fis_add_field(fis, fi_new(title, STORE_YES,
                                                   INDEX_UNTOKENIZED,
                                                   TERM_VECTOR_WITH_OFFSETS));
-                    } else if (strcmp(year, df->name) == 0) {
+                    } else if (year == df->name) {
                         fis_add_field(fis, fi_new(year, STORE_YES,
                                                   INDEX_UNTOKENIZED,
                                                   TERM_VECTOR_NO));
-                    } else if (strcmp(text, df->name) == 0) {
+                    } else if (text == df->name) {
                         fis_add_field(fis, fi_new(text, STORE_NO, INDEX_YES,
                                                   TERM_VECTOR_NO));
-                    } else if (strcmp(compressed_field, df->name) == 0) {
+                    } else if (compressed_field == df->name) {
                         fis_add_field(fis, fi_new(compressed_field,
                                                   STORE_COMPRESS,
                                                   INDEX_YES,
@@ -1691,7 +1684,7 @@ static void test_ir_term_vectors(TestCase *tc, void *data)
 { 
     IndexReader *ir = (IndexReader *)data;
 
-    TermVector *tv = ir->term_vector(ir, 3, "body");
+    TermVector *tv = ir->term_vector(ir, 3, I("body"));
     Hash *tvs;
 
     Asequal("body", tv->field);
@@ -1742,19 +1735,19 @@ static void test_ir_term_vectors(TestCase *tc, void *data)
 
     tvs = ir->term_vectors(ir, 3);
     Aiequal(3, tvs->size);
-    tv = (TermVector *)h_get(tvs, "author");
+    tv = (TermVector *)h_get(tvs, I("author"));
     if (Apnotnull(tv)) {
         Asequal("author", tv->field);
         Aiequal(2, tv->term_cnt);
         Aiequal(0, tv->offset_cnt);
         Apnull(tv->offsets);
     }
-    tv = (TermVector *)h_get(tvs, "body");
+    tv = (TermVector *)h_get(tvs, I("body"));
     if (Apnotnull(tv)) {
         Asequal("body", tv->field);
         Aiequal(4, tv->term_cnt);
     }
-    tv = (TermVector *)h_get(tvs, "title");
+    tv = (TermVector *)h_get(tvs, I("title"));
     if (Apnotnull(tv)) {
         Asequal("title", tv->field);
         Aiequal(1, tv->term_cnt); /* untokenized */
@@ -1827,22 +1820,22 @@ static void test_ir_compression(TestCase *tc, void *data)
     doc_destroy(doc);
 
     lz_doc = ir->get_lazy_doc(ir, 0);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, changing_field);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, changing_field);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     Asequal(lazy_df_get_data(lz_df1, 0), lazy_df_get_data(lz_df2, 0));
     lazy_doc_close(lz_doc);
 
     lz_doc = ir->get_lazy_doc(ir, 2);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, tag);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     for (i = 0; i < 4; i++) {
         Asequal(lazy_df_get_data(lz_df1, i), lazy_df_get_data(lz_df2, i));
     }
     lazy_doc_close(lz_doc);
 
     lz_doc = ir->get_lazy_doc(ir, 2);
-    lz_df1 = (LazyDocField *)h_get(lz_doc->field_dict, tag);
-    lz_df2 = (LazyDocField *)h_get(lz_doc->field_dict, compressed_field);
+    lz_df1 = lazy_doc_get(lz_doc, tag);
+    lz_df2 = lazy_doc_get(lz_doc, compressed_field);
     lazy_df_get_bytes(lz_df1, buf1, 5, 11);
     lazy_df_get_bytes(lz_df2, buf2, 5, 11);
     buf2[11] = buf1[11] = '\0';
@@ -2191,6 +2184,16 @@ TestSuite *ts_index(TestSuite *suite)
     Store *fs_store, *store = open_ram_store();
     ReaderTestEnvironment *rte = NULL;
     /* Store *store = open_fs_store(TEST_DIR); */
+
+    /* initialize Symbols */
+    body             = intern("body");
+    title            = intern("title");
+    text             = intern("text");
+    author           = intern("author");
+    year             = intern("year");
+    changing_field   = intern("changing_field");
+    compressed_field = intern("compressed_field");
+    tag              = intern("tag");
 
     srand(5);
     suite = tst_add_suite(suite, "test_term_doc_enum");

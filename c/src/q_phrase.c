@@ -2,10 +2,18 @@
 #include <limits.h>
 #include "search.h"
 #include "array.h"
+#include "symbol.h"
 #include "internal.h"
 
 #define PhQ(query) ((PhraseQuery *)(query))
 
+/**
+ * Use to sort the phrase positions into positional order. For phrase
+ * positions matching at the same position (a very unusual case) we order by
+ * first terms. The only real reason for the sorting by first terms is to get
+ * consistant order of positions when testing. Functionally it makes no
+ * difference.
+ */
 static int phrase_pos_cmp(const void *p1, const void *p2)
 {
     int pos1 = ((PhrasePosition *)p1)->pos;
@@ -115,16 +123,12 @@ static int pp_pos_cmp(const void *const p1, const void *const p2)
 
 static bool pp_less_than(const PhPos *pp1, const PhPos *pp2)
 {
-    /* docs will all be equal when this method is used */
-    return pp1->position < pp2->position;
-    /*
-    if (PP(p)->doc == PP(p)->doc) {
-        return PP(p)->position < PP(p)->position;
+    if (pp1->position == pp2->position) {
+        return pp1->offset < pp2->offset;
     }
     else {
-        return PP(p)->doc < PP(p)->doc;
+        return pp1->position < pp2->position;
     }
-    */
 }
 
 static void pp_destroy(PhPos *pp)
@@ -166,6 +170,7 @@ typedef struct PhraseScorer
     int     slop;
     bool    first_time : 1;
     bool    more : 1;
+    bool    check_repeats : 1;
 } PhraseScorer;
 
 static void phsc_init(PhraseScorer *phsc)
@@ -233,7 +238,7 @@ static float phsc_score(Scorer *self)
     /* normalize */
     return raw_score * sim_decode_norm(
         self->similarity,
-        phsc->norms[phsc->phrase_pos[phsc->pp_first_idx]->doc]);
+        phsc->norms[self->doc]);
 }
 
 static bool phsc_next(Scorer *self)
@@ -277,7 +282,7 @@ static Explanation *phsc_explain(Scorer *self, int doc_num)
 
     phsc_skip_to(self, doc_num);
 
-    phrase_freq = (self->doc == doc_num) ? phsc->freq : (float)0.0;
+    phrase_freq = (self->doc == doc_num) ? phsc->freq : 0.0f;
     return expl_new(sim_tf(self->similarity, phrase_freq),
                     "tf(phrase_freq=%f)", phrase_freq);
 }
@@ -293,12 +298,17 @@ static void phsc_destroy(Scorer *self)
     scorer_destroy_i(self);
 }
 
-static Scorer *phsc_new(Weight *weight, TermDocEnum **term_pos_enum,
+static Scorer *phsc_new(Weight *weight,
+                        TermDocEnum **term_pos_enum,
                         PhrasePosition *positions, int pos_cnt,
-                        Similarity *similarity, uchar *norms)
+                        Similarity *similarity,
+                        uchar *norms,
+                        int slop)
 {
     int i;
     Scorer *self                = scorer_new(PhraseScorer, similarity);
+    HashSet *term_set           = NULL;
+
 
     PhSc(self)->weight          = weight;
     PhSc(self)->norms           = norms;
@@ -306,12 +316,33 @@ static Scorer *phsc_new(Weight *weight, TermDocEnum **term_pos_enum,
     PhSc(self)->phrase_pos      = ALLOC_N(PhPos *, pos_cnt);
     PhSc(self)->pp_first_idx    = 0;
     PhSc(self)->pp_cnt          = pos_cnt;
-    PhSc(self)->slop            = 0;
+    PhSc(self)->slop            = slop;
     PhSc(self)->first_time      = true;
     PhSc(self)->more            = true;
-
+    PhSc(self)->check_repeats   = false;
+    
+    if (slop) {
+        term_set = hs_new_str((free_ft)NULL);
+    }
     for (i = 0; i < pos_cnt; i++) {
+        /* check for repeats */
+        if (slop && !PhSc(self)->check_repeats) {
+            char **terms = positions[i].terms;
+            const int t_cnt = ary_size(terms);
+            int j;
+            for (j = 0; j < t_cnt; j++) {
+                if (hs_add(term_set, terms[j])) {
+                    PhSc(self)->check_repeats = true;
+                    goto repeat_check_done;
+                }
+            }
+        }
+repeat_check_done:
         PhSc(self)->phrase_pos[i] = pp_new(term_pos_enum[i], positions[i].pos);
+    }
+
+    if (slop) {
+        hs_destroy(term_set);
     }
 
     self->score     = &phsc_score;
@@ -374,8 +405,13 @@ static Scorer *exact_phrase_scorer_new(Weight *weight,
                                        PhrasePosition *positions, int pp_cnt,
                                        Similarity *similarity, uchar *norms)
 {
-    Scorer *self =
-        phsc_new(weight, term_pos_enum, positions, pp_cnt, similarity, norms);
+    Scorer *self = phsc_new(weight,
+                            term_pos_enum,
+                            positions,
+                            pp_cnt,
+                            similarity,
+                            norms,
+                            0);
 
     PhSc(self)->phrase_freq = &ephsc_phrase_freq;
     return self;
@@ -384,6 +420,33 @@ static Scorer *exact_phrase_scorer_new(Weight *weight,
 /***************************************************************************
  * SloppyPhraseScorer
  ***************************************************************************/
+
+static bool sphsc_check_repeats(PhPos *pp,
+                                PhPos **positions,
+                                const int p_cnt)
+{
+    int j;
+    for (j = 0; j < p_cnt; j++) {
+        PhPos *ppj = positions[j];
+        /* If offsets are equal, either we are at the current PhPos +pp+ or
+         * +pp+ and +ppj+ are supposed to match in the same position in which
+         * case we don't need to check. */
+        if (ppj->offset == pp->offset) {
+            continue;
+        }
+        /* the two phrase positions are matching on the same term
+         * which we want to avoid */
+        if ((ppj->position + ppj->offset) == (pp->position + pp->offset)) {
+            if (!pp_next_position(pp)) {
+                /* We have no matches for this document */
+                return false;
+            }
+            /* we changed the position so we need to start check again */
+            j = -1;
+        }
+    }
+    return true;
+}
 
 static float sphsc_phrase_freq(Scorer *self)
 {
@@ -394,11 +457,19 @@ static float sphsc_phrase_freq(Scorer *self)
 
     int last_pos = 0, pos, next_pos, start, match_length, i;
     bool done = false;
+    bool check_repeats = phsc->check_repeats;
     float freq = 0.0;
 
     for (i = 0; i < pp_cnt; i++) {
         pp = phsc->phrase_pos[i];
-        pp_first_position(pp);
+        /* we should always have at least one position or this functions
+         * shouldn't have been called. */
+        assert(pp_first_position(pp));
+        if (check_repeats && i > 0) {
+            if (!sphsc_check_repeats(pp, phsc->phrase_pos, i - 1)) {
+                goto return_freq;
+            }
+        }
         if (pp->position > last_pos) {
             last_pos = pp->position;
         }
@@ -411,8 +482,10 @@ static float sphsc_phrase_freq(Scorer *self)
         next_pos = PP(pq_top(pq))->position;
         while (pos <= next_pos) {
             start = pos;        /* advance pp to min window */
-            if (!pp_next_position(pp)) {
-                done = true;    /* ran out of a positions for a term - done */
+            if (!pp_next_position(pp)
+                || (check_repeats
+                    && !sphsc_check_repeats(pp, phsc->phrase_pos, pp_cnt))) {
+                done = true;
                 break;
             }
             pos = pp->position;
@@ -430,6 +503,8 @@ static float sphsc_phrase_freq(Scorer *self)
         pq_push(pq, pp);        /* restore pq */
     } while (!done);
 
+return_freq:
+
     pq_destroy(pq);
     return freq;
 }
@@ -440,10 +515,14 @@ static Scorer *sloppy_phrase_scorer_new(Weight *weight,
                                         int pp_cnt, Similarity *similarity,
                                         int slop, uchar *norms)
 {
-    Scorer *self =
-        phsc_new(weight, term_pos_enum, positions, pp_cnt, similarity, norms);
+    Scorer *self = phsc_new(weight,
+                            term_pos_enum,
+                            positions,
+                            pp_cnt,
+                            similarity,
+                            norms,
+                            slop);
 
-    PhSc(self)->slop        = slop;
     PhSc(self)->phrase_freq = &sphsc_phrase_freq;
     return self;
 }
@@ -485,15 +564,8 @@ static Scorer *phw_scorer(Weight *self, IndexReader *ir)
         else {
             tps[i] = mtdpe_new(ir, field_num, terms, t_cnt);
         }
-        if (tps[i] == NULL) {
-            /* free everything we just created and return NULL */
-            int j;
-            for (j = 0; j < i; j++) {
-                tps[i]->close(tps[i]);
-            }
-            free(tps);
-            return NULL;
-        }
+        /* neither mtdpe_new nor ir->term_positions should return NULL */
+        assert(NULL != tps[i]);
     }
 
     if (phq->slop == 0) {       /* optimize exact (common) case */
@@ -531,12 +603,13 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     char *doc_freqs = NULL;
     size_t len = 0, pos = 0;
     const int field_num = fis_get_field_num(ir->fis, phq->field);
+    const char *field = S(phq->field);
 
     if (field_num < 0) {
-        return expl_new(0.0, "field \"%s\" does not exist in the index", phq->field);
+        return expl_new(0.0, "field \"%s\" does not exist in the index", field);
     }
 
-    query_str = self->query->to_s(self->query, "");
+    query_str = self->query->to_s(self->query, NULL);
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, doc_num);
 
@@ -562,8 +635,8 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
     pos -= 2; /* remove ", " from the end */
     doc_freqs[pos] = 0;
 
-    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", phq->field, doc_freqs);
-    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", phq->field, doc_freqs);
+    idf_expl1 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
+    idf_expl2 = expl_new(self->idf, "idf(%s:<%s>)", field, doc_freqs);
     free(doc_freqs);
 
     /* explain query weight */
@@ -597,7 +670,7 @@ static Explanation *phw_explain(Weight *self, IndexReader *ir, int doc_num)
         ? sim_decode_norm(self->similarity, field_norms[doc_num])
         : (float)0.0;
     field_norm_expl = expl_new(field_norm, "field_norm(field=%s, doc=%d)",
-                               phq->field, doc_num);
+                               field, doc_num);
 
     expl_add_detail(field_expl, field_norm_expl);
 
@@ -704,13 +777,10 @@ static TVPosEnum *tvpe_new_merge(char **terms, int t_cnt, TermVector *tv,
         TVTerm *tv_term = tv_get_tv_term(tv, terms[i]);
         if (tv_term) {
             TVPosEnum *tvpe = tvpe_new(tv_term->positions, tv_term->freq, 0);
-            if (tvpe_next(tvpe)) {
-                pq_push(tvpe_pq, tvpe);
-                total_positions += tv_term->freq;
-            }
-            else {
-                free(tvpe);
-            }
+            /* got tv_term so tvpe_next should always return true once here */
+            assert(tvpe_next(tvpe));
+            pq_push(tvpe_pq, tvpe);
+            total_positions += tv_term->freq;
         }
     }
     if (tvpe_pq->size == 0) {
@@ -758,7 +828,7 @@ static TVPosEnum *get_tvpe(TermVector *tv, char **terms, int t_cnt, int offset)
 static MatchVector *phq_get_matchv_i(Query *self, MatchVector *mv,
                                      TermVector *tv)
 {
-    if (strcmp(tv->field, PhQ(self)->field) == 0) {
+    if (tv->field == PhQ(self)->field) {
         const int pos_cnt = PhQ(self)->pos_cnt;
         int i;
         int slop = PhQ(self)->slop;
@@ -886,19 +956,21 @@ static void phq_extract_terms(Query *self, HashSet *term_set)
     }
 }
 
-static char *phq_to_s(Query *self, const char *field)
+static char *phq_to_s(Query *self, Symbol default_field)
 {
     PhraseQuery *phq = PhQ(self);
     const int pos_cnt = phq->pos_cnt;
     PhrasePosition *positions = phq->positions;
+    const char *field = S(phq->field);
+    int flen = strlen(field);
 
     int i, j, buf_index = 0, pos, last_pos;
     size_t len = 0;
     char *buffer;
 
     if (phq->pos_cnt == 0) {
-        if (strcmp(field, phq->field) != 0) {
-            return strfmt("%s:\"\"", phq->field);
+        if (default_field != phq->field) {
+            return strfmt("%s:\"\"", field);
         }
         else {
             return estrdup("\"\"");
@@ -908,7 +980,7 @@ static char *phq_to_s(Query *self, const char *field)
     /* sort the phrase positions by position */
     qsort(positions, pos_cnt, sizeof(PhrasePosition), &phrase_pos_cmp);
 
-    len = strlen(phq->field) + 1;
+    len = flen + 1;
 
     for (i = 0; i < pos_cnt; i++) {
         char **terms = phq->positions[i].terms;
@@ -923,11 +995,10 @@ static char *phq_to_s(Query *self, const char *field)
 
     buffer = ALLOC_N(char, len);
 
-    if (strcmp(field, phq->field) != 0) {
-        len = strlen(phq->field);
-        memcpy(buffer, phq->field, len);
-        buffer[len] = ':';
-        buf_index += len + 1;
+    if (default_field != phq->field) {
+        memcpy(buffer, field, flen);
+        buffer[flen] = ':';
+        buf_index += flen + 1;
     }
 
     buffer[buf_index++] = '"';
@@ -982,7 +1053,6 @@ static void phq_destroy(Query *self)
 {
     PhraseQuery *phq = PhQ(self);
     int i;
-    free(phq->field);
     for (i = 0; i < phq->pos_cnt; i++) {
         ary_destroy(phq->positions[i].terms, &free);
     }
@@ -1022,7 +1092,7 @@ static unsigned long phq_hash(Query *self)
 {
     int i, j;
     PhraseQuery *phq = PhQ(self);
-    unsigned long hash = str_hash(phq->field);
+    unsigned long hash = sym_hash(phq->field);
     for (i = 0; i < phq->pos_cnt; i++) {
         char **terms = phq->positions[i].terms;
         for (j = ary_size(terms) - 1; j >= 0; j--) {
@@ -1039,7 +1109,7 @@ static int phq_eq(Query *self, Query *o)
     PhraseQuery *phq1 = PhQ(self);
     PhraseQuery *phq2 = PhQ(o);
     if (phq1->slop != phq2->slop
-        || strcmp(phq1->field, phq2->field) != 0
+        || phq1->field != phq2->field
         || phq1->pos_cnt != phq2->pos_cnt) {
         return false;
     }
@@ -1060,11 +1130,11 @@ static int phq_eq(Query *self, Query *o)
     return true;
 }
 
-Query *phq_new(const char *field)
+Query *phq_new(Symbol field)
 {
     Query *self = q_new(PhraseQuery);
 
-    PhQ(self)->field        = estrdup(field);
+    PhQ(self)->field        = field;
     PhQ(self)->pos_cnt      = 0;
     PhQ(self)->pos_capa     = PhQ_INIT_CAPA;
     PhQ(self)->positions    = ALLOC_N(PhrasePosition, PhQ_INIT_CAPA);
@@ -1121,4 +1191,9 @@ void phq_append_multi_term(Query *self, const char *term)
     else {
         ary_push(phq->positions[index].terms, estrdup(term));
     }
+}
+
+void frt_phq_set_slop(FrtQuery *self, int slop)
+{
+    PhQ(self)->slop = slop;
 }

@@ -7,6 +7,7 @@ extern "C" {
 
 #include "search.h"
 #include "index.h"
+#include "symbol.h"
 
 /***************************************************************************
  *
@@ -25,8 +26,8 @@ typedef struct FrtIndex
     FrtSearcher *sea;
     FrtQParser *qp;
     FrtHashSet *key;
-    char *id_field;
-    char *def_field;
+    FrtSymbol id_field;
+    FrtSymbol def_field;
     /* for FrtIndexWriter */
     bool auto_flush : 1;
     bool has_writes : 1;
@@ -51,15 +52,15 @@ extern FrtQuery *frt_index_get_query(FrtIndex *self, char *qstr);
 extern FrtDocument *frt_index_get_doc(FrtIndex *self, int doc_num);
 extern FrtDocument *frt_index_get_doc_ts(FrtIndex *self, int doc_num);
 extern FrtDocument *frt_index_get_doc_id(FrtIndex *self, const char *id);
-extern FrtDocument *frt_index_get_doc_term(FrtIndex *self, const char *field,
+extern FrtDocument *frt_index_get_doc_term(FrtIndex *self, FrtSymbol field,
                                     const char *term);
 extern void frt_index_delete(FrtIndex *self, int doc_num);
-extern void frt_index_delete_term(FrtIndex *self, const char *field, const char *term);
+extern void frt_index_delete_term(FrtIndex *self, FrtSymbol field, const char *term);
 extern void frt_index_delete_id(FrtIndex *self, const char *id);
 extern void frt_index_delete_query(FrtIndex *self, FrtQuery *q, FrtFilter *f, FrtPostFilter *pf);
 extern void frt_index_delete_query_str(FrtIndex *self, char *qstr,
                                    FrtFilter *f, FrtPostFilter *pf);
-extern int frt_index_term_id(FrtIndex *self, const char *field, const char *term);
+extern int frt_index_term_id(FrtIndex *self, FrtSymbol field, const char *term);
 extern FrtExplanation *frt_index_explain(FrtIndex *self, FrtQuery *q, int doc_num);
 extern void frt_index_auto_flush_ir(FrtIndex *self);
 extern void frt_index_auto_flush_iw(FrtIndex *self);
