@@ -1,5 +1,10 @@
 #ifndef FRT_ARRAY_H
 #define FRT_ARRAY_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 
 #if defined POSH_OS_SOLARIS || defined POSH_OS_SUNOS
@@ -49,5 +54,9 @@ extern void  *frt_ary_shift_i(void **ary);
 extern void  *frt_ary_remove_i(void **ary, int index);
 extern void   frt_ary_delete_i(void **ary, int index, frt_free_ft p);
 extern void   frt_ary_destroy_i(void **ary, frt_free_ft p);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

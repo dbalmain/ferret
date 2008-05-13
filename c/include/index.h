@@ -1,6 +1,10 @@
 #ifndef FRT_INDEX_H
 #define FRT_INDEX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 #include "document.h"
 #include "analysis.h"
@@ -889,7 +893,7 @@ extern FrtIndexWriter *frt_iw_open(FrtStore *store, FrtAnalyzer *analyzer,
                             const FrtConfig *config);
 extern void frt_iw_delete_term(FrtIndexWriter *iw, FrtSymbol field,
                            const char *term);
-extern void frt_iw_delete_terms(FrtIndexWriter *iw, FrtSymbol field, 
+extern void frt_iw_delete_terms(FrtIndexWriter *iw, FrtSymbol field,
                             char **terms, const int term_cnt);
 extern void frt_iw_close(FrtIndexWriter *iw);
 extern void frt_iw_add_doc(FrtIndexWriter *iw, FrtDocument *doc);
@@ -924,5 +928,8 @@ extern FrtCompoundWriter *frt_open_cw(FrtStore *store, char *name);
 extern void frt_cw_add_file(FrtCompoundWriter *cw, char *id);
 extern void frt_cw_close(FrtCompoundWriter *cw);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

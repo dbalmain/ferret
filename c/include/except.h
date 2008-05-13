@@ -70,6 +70,10 @@
 #ifndef FRT_EXCEPT_H
 #define FRT_EXCEPT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <setjmp.h>
 #include "config.h"
 
@@ -164,5 +168,9 @@ extern void frt_xpop_context();
 
 extern char frt_xmsg_buffer[FRT_XMSG_BUFFER_SIZE];
 extern char frt_xmsg_buffer_final[FRT_XMSG_BUFFER_SIZE];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

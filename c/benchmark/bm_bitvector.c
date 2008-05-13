@@ -35,6 +35,47 @@ static void cpp_bs_scan_sparse()
     }
 }
 
+static void cpp_bs_and_sparse()
+{
+    std::bitset<SCAN_SIZE> *_bs = new std::bitset<SCAN_SIZE>(bs);
+    *_bs &= bs;
+    delete _bs;
+}
+static void cpp_bs_or_sparse()
+{
+    std::bitset<SCAN_SIZE> *_bs = new std::bitset<SCAN_SIZE>(bs);
+    *_bs |= bs;
+    delete _bs;
+}
+static void cpp_bs_xor_sparse()
+{
+    std::bitset<SCAN_SIZE> *_bs = new std::bitset<SCAN_SIZE>(bs);
+    *_bs ^= bs;
+    delete _bs;
+}
+static void cpp_bs_not_sparse()
+{
+    std::bitset<SCAN_SIZE> *_bs = new std::bitset<SCAN_SIZE>(bs);
+    _bs->flip();
+    delete _bs;
+}
+static void cpp_bs_and_dense()
+{
+    cpp_bs_and_sparse();
+}
+static void cpp_bs_or_dense()
+{
+    cpp_bs_or_sparse();
+}
+static void cpp_bs_xor_dense()
+{
+    cpp_bs_xor_sparse();
+}
+static void cpp_bs_not_dense()
+{
+    cpp_bs_not_sparse();
+}
+
 static void cpp_bs_set_dense()
 {
     int i;
@@ -69,6 +110,43 @@ static void setup()
 static void teardown()
 {
     bv_destroy(bv);
+}
+
+static void ferret_bv_and_sparse()
+{
+    FrtBitVector * _bv = frt_bv_and(bv, bv);
+    free(_bv);
+}
+static void ferret_bv_or_sparse()
+{
+    FrtBitVector * _bv = frt_bv_or(bv, bv);
+    free(_bv);
+}
+static void ferret_bv_xor_sparse()
+{
+    FrtBitVector * _bv = frt_bv_xor(bv, bv);
+    free(_bv);
+}
+static void ferret_bv_not_sparse()
+{
+    FrtBitVector * _bv = frt_bv_not(bv);
+    free(_bv);
+}
+static void ferret_bv_and_dense()
+{
+    ferret_bv_and_sparse();
+}
+static void ferret_bv_or_dense()
+{
+    ferret_bv_or_sparse();
+}
+static void ferret_bv_xor_dense()
+{
+    ferret_bv_xor_sparse();
+}
+static void ferret_bv_not_dense()
+{
+    ferret_bv_not_sparse();
 }
 
 static void ferret_bv_set_sparse()
@@ -123,12 +201,30 @@ BENCH(bitvector_implementations)
 #ifdef __cplusplus
     BM_ADD(cpp_bs_set_sparse);
     BM_ADD(cpp_bs_scan_sparse);
+    BM_ADD(cpp_bs_and_sparse);
+    BM_ADD(cpp_bs_or_sparse);
+    BM_ADD(cpp_bs_not_sparse);
+    BM_ADD(cpp_bs_xor_sparse);
+
     BM_ADD(cpp_bs_set_dense);
     BM_ADD(cpp_bs_scan_dense);
+    BM_ADD(cpp_bs_and_dense);
+    BM_ADD(cpp_bs_or_dense);
+    BM_ADD(cpp_bs_not_dense);
+    BM_ADD(cpp_bs_xor_dense);
 #endif
     BM_ADD(ferret_bv_set_sparse);
     BM_ADD(ferret_bv_scan_sparse);
+    BM_ADD(ferret_bv_and_sparse);
+    BM_ADD(ferret_bv_or_sparse);
+    BM_ADD(ferret_bv_not_sparse);
+    BM_ADD(ferret_bv_xor_sparse);
+
     BM_ADD(ferret_bv_set_dense);
     BM_ADD(ferret_bv_scan_dense);
+    BM_ADD(ferret_bv_and_dense);
+    BM_ADD(ferret_bv_or_dense);
+    BM_ADD(ferret_bv_not_dense);
+    BM_ADD(ferret_bv_xor_dense);
     BM_TEARDOWN(teardown);
 }

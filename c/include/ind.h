@@ -1,6 +1,10 @@
 #ifndef FRT_IND_H
 #define FRT_IND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "search.h"
 #include "index.h"
 #include "symbol.h"
@@ -64,5 +68,9 @@ extern void frt_index_auto_flush_iw(FrtIndex *self);
 extern FRT_INLINE void frt_ensure_searcher_open(FrtIndex *self);
 extern FRT_INLINE void frt_ensure_reader_open(FrtIndex *self);
 extern FRT_INLINE void frt_ensure_writer_open(FrtIndex *self);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

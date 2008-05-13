@@ -1,6 +1,10 @@
 #ifndef FRT_LANG_H
 #define FRT_LANG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 
 extern void *frt_emalloc(size_t n);
@@ -39,4 +43,9 @@ extern void frt_vexit(const char *file, int line_num, const char *func,
 extern void FRT_XEXIT(const char *err_type, const char *fmt, ...);
 extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args);
 #endif
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

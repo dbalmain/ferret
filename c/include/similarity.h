@@ -1,6 +1,10 @@
 #ifndef FRT_SIMILARITY_H
 #define FRT_SIMILARITY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "symbol.h"
 
 typedef struct FrtSearcher FrtSearcher;
@@ -77,5 +81,9 @@ struct FrtSimilarity
 #define frt_sim_destroy(msim) msim->destroy(msim)
 
 FrtSimilarity *frt_sim_create_default();
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

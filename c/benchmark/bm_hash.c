@@ -3,8 +3,14 @@
 # include <google/sparse_hash_map>
 #endif
 #include <string.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "hash.h"
 #include "benchmark.h"
+#ifdef __cplusplus
+}
+#endif
 
 #define N 20
 
@@ -18,6 +24,8 @@ static void ferret_hash()
         long res;
         for (word = WORD_LIST; *word; word++) {
             h_set(h, *word, (void *)1);
+        }
+        for (word = WORD_LIST; *word; word++) {
             strcpy(buf, *word);
             res = (long)h_get(h, buf);
         }
@@ -30,8 +38,6 @@ static void ferret_hash()
 #include <iostream>
 #include <ext/hash_map>
 
-using std::cout;
-using std::endl;
 using __gnu_cxx::hash_map;
 
 struct eqstr
@@ -50,8 +56,10 @@ static void stdcpp_hash()
         char buf[100];
         long res;
         for (word = WORD_LIST; *word; word++) {
-            strcpy(buf, *word);
             dict[*word] = 1;
+        }
+        for (word = WORD_LIST; *word; word++) {
+            strcpy(buf, *word);
             res = dict[buf];
         }
     }

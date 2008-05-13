@@ -1,8 +1,11 @@
-#include "global.h"
-
 #ifndef FRT_WIN32_H
 #define FRT_WIN32_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "global.h"
 #include <io.h>
 
 struct dirent
@@ -51,4 +54,9 @@ void closedir(DIR *d)
     _findclose(d->handle);
     free(d);
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

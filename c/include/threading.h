@@ -1,6 +1,10 @@
 #ifndef FRT_THREADING_H
 #define FRT_THREADING_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <pthread.h>
 
 typedef pthread_mutex_t frt_mutex_t;
@@ -20,5 +24,9 @@ typedef pthread_once_t frt_thread_once_t;
 #define frt_thread_getspecific(a) pthread_getspecific(a)
 #define frt_thread_exit(a) pthread_exit(a)
 #define frt_thread_once(a, b) pthread_once(a, b)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

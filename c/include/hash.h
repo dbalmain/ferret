@@ -1,6 +1,10 @@
 #ifndef FRT_HASH_H
 #define FRT_HASH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 
 /****************************************************************************
@@ -125,7 +129,7 @@ extern int frt_ptr_eq(const void *q1, const void *q2);
  * @return A newly allocated Hash
  */
 extern FrtHash *frt_h_new(frt_hash_ft hash,
-                          frt_eq_ft eq, 
+                          frt_eq_ft eq,
                           frt_free_ft free_key,
                           frt_free_ft free_value);
 
@@ -503,5 +507,9 @@ extern void frt_h_str_print_keys(FrtHash *ht, FILE *out);
  * when you call +frt_init+.
  */
 extern void frt_hash_finalize();
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -83,6 +83,80 @@ static void test_sighandler(TestCase *tc, void *data)
     x_abort_on_exception = old_abort;
 }
 
+static void test_count_leading_zeros(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal(32, frt_count_leading_zeros(0));
+    Aiequal(31, frt_count_leading_zeros(1));
+    Aiequal(30, frt_count_leading_zeros(2));
+    Aiequal(30, frt_count_leading_zeros(3));
+    Aiequal( 0, frt_count_leading_zeros(0xffffffff));
+}
+
+static void test_count_leading_ones(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal( 0, frt_count_leading_ones(0));
+    Aiequal( 0, frt_count_leading_ones(1));
+    Aiequal( 0, frt_count_leading_ones(2));
+    Aiequal( 0, frt_count_leading_ones(3));
+    Aiequal(32, frt_count_leading_ones(0xffffffff));
+}
+
+static void test_count_trailing_zeros(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal(32, frt_count_trailing_zeros(0));
+    Aiequal( 0, frt_count_trailing_zeros(1));
+    Aiequal( 1, frt_count_trailing_zeros(2));
+    Aiequal( 0, frt_count_trailing_zeros(3));
+    Aiequal( 4, frt_count_trailing_zeros(0xfffffff0));
+    Aiequal( 0, frt_count_trailing_zeros(0xffffffff));
+}
+
+static void test_count_trailing_ones(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal( 0, frt_count_trailing_ones(0));
+    Aiequal( 1, frt_count_trailing_ones(1));
+    Aiequal( 0, frt_count_trailing_ones(2));
+    Aiequal( 2, frt_count_trailing_ones(3));
+    Aiequal( 0, frt_count_trailing_ones(0xfffffff0));
+    Aiequal(32, frt_count_trailing_ones(0xffffffff));
+}
+
+static void test_count_zeros(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal(32, frt_count_zeros(0));
+    Aiequal(31, frt_count_zeros(1));
+    Aiequal(31, frt_count_zeros(2));
+    Aiequal(30, frt_count_zeros(3));
+    Aiequal( 4, frt_count_zeros(0xfffffff0));
+    Aiequal( 0, frt_count_zeros(0xffffffff));
+}
+
+static void test_count_ones(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal( 0, frt_count_ones(0));
+    Aiequal( 1, frt_count_ones(1));
+    Aiequal( 1, frt_count_ones(2));
+    Aiequal( 2, frt_count_ones(3));
+    Aiequal(28, frt_count_ones(0xfffffff0));
+    Aiequal(32, frt_count_ones(0xffffffff));
+}
+
+static void test_round2(TestCase *tc, void *data)
+{
+    (void)data;
+    Aiequal(   1, frt_round2(0));
+    Aiequal(   2, frt_round2(1));
+    Aiequal(   4, frt_round2(2));
+    Aiequal(   4, frt_round2(3));
+    Aiequal(1024, frt_round2(1023));
+    Aiequal(2048, frt_round2(1024));
+}
 
 TestSuite *ts_global(TestSuite *suite)
 {
@@ -91,6 +165,12 @@ TestSuite *ts_global(TestSuite *suite)
     tst_run_test(suite, test_strfmt, NULL);
     tst_run_test(suite, test_stacktrace, NULL);
     tst_run_test(suite, test_sighandler, NULL);
-
+    tst_run_test(suite, test_count_leading_zeros, NULL);
+    tst_run_test(suite, test_count_leading_ones, NULL);
+    tst_run_test(suite, test_count_trailing_zeros, NULL);
+    tst_run_test(suite, test_count_trailing_ones, NULL);
+    tst_run_test(suite, test_count_zeros, NULL);
+    tst_run_test(suite, test_count_ones, NULL);
+    tst_run_test(suite, test_round2, NULL);
     return suite;
 }

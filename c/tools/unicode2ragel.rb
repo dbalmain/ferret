@@ -9,7 +9,10 @@
 #    -e, --encoding [ucs4 | utf8]     Data encoding
 #    -h, --help                       Show this message
 #
-# Rakan El-Khalil <rakan@well.com>
+# This script was originally written as part of the Ferret search
+# engine library.
+#
+# Author: Rakan El-Khalil <rakan@well.com>
 
 require 'optparse'
 require 'open-uri'
