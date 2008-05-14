@@ -278,15 +278,18 @@ int frt_bv_scan_next_from(FrtBitVector *bv, const int bit)
 
     /* Keep only the bits above this position */
     word &= ~0 << (bit & 31);
-    if (word)
+    if (word) {
         goto done;
-
-    for (pos++; pos < (frt_u32)bv->size; ++pos)
-    {
-        if ( (word = bv->bits[pos]) )
-            goto done;
     }
-    return -1;
+    else {
+        frt_u32 word_size = FRT_TO_WORD(bv->size);
+        for (pos++; pos < word_size; ++pos)
+        {
+            if ( (word = bv->bits[pos]) )
+                goto done;
+        }
+    }
+        return -1;
  done:
     return bv->curr_bit = (pos << 5) + frt_count_trailing_zeros(word);
 }
@@ -325,13 +328,16 @@ int frt_bv_scan_next_unset_from(FrtBitVector *bv, const int bit)
 
     /* Set all of the bits below this position */
     word |= (1 << (bit & 31)) - 1;
-    if (~word)
+    if (~word) {
         goto done;
-
-    for (pos++; pos < (frt_u32)bv->size; ++pos)
-    {
-        if ( ~(word = bv->bits[pos]) )
-            goto done;
+    }
+    else {
+        frt_u32 word_size = FRT_TO_WORD(bv->size);
+        for (pos++; pos < word_size; ++pos)
+        {
+            if ( ~(word = bv->bits[pos]) )
+                goto done;
+        }
     }
     return -1;
  done:
@@ -466,6 +472,9 @@ FrtBitVector *frt_bv_not_i(FrtBitVector *bv, FrtBitVector *bv1)
 
     for (i = 0; i < word_size; i++)
         bv->bits[i] = ~(bv1->bits[i]);
+
+    memset(bv->bits + word_size, (bv->extends_as_ones ? 0xFF : 0),
+           sizeof(frt_u32) * (bv->capa - word_size));
 
     frt_bv_recount(bv);
     return bv;

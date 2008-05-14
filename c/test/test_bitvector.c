@@ -146,35 +146,35 @@ static void test_bv_scan(TestCase *tc, void *data)
     bv_destroy(not_bv);
 }
 
-#define test_bveq(_bv1, _bv2)                                       \
-do {                                                                \
-    BitVector *_not_bv1, *_not_bv2;                                 \
-    Assert(bv_eq(_bv1, _bv2), "BitVectors are equal");              \
-    Assert(bv_eq(_bv2, _bv1), "BitVectors are equal");              \
-    Assert(bv_eq(_bv1, _bv1), "bv_eq on self should work");         \
-    Aiequal(bv_hash(_bv1), bv_hash(_bv2));                          \
-    /* test flipped bitvectors */                                   \
-    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);               \
-    bv_set(_not_bv1, 1100); /* should make no difference */         \
-    Assert(bv_eq(_not_bv1, _not_bv2), "BitVectors are equal");      \
-    Assert(bv_eq(_not_bv2, _not_bv1), "BitVectors are equal");      \
-    Assert(bv_eq(_not_bv1, _not_bv1), "bv_eq on self should work"); \
-    Aiequal(bv_hash(_not_bv1), bv_hash(_not_bv2));                  \
-    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                     \
+#define test_bveq(_bv1, _bv2)                                           \
+do {                                                                    \
+    BitVector *_not_bv1, *_not_bv2;                                     \
+    Assert(bv_eq(_bv1, _bv2), "BitVectors are equal ->");               \
+    Assert(bv_eq(_bv2, _bv1), "BitVectors are equal <-");               \
+    Assert(bv_eq(_bv1, _bv1), "bv_eq on self should work");             \
+    Aiequal(bv_hash(_bv1), bv_hash(_bv2));                              \
+    /* test flipped bitvectors */                                       \
+    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);                   \
+    bv_set(_not_bv1, 1100); /* should make no difference */             \
+    Assert(bv_eq(_not_bv1, _not_bv2), "!BitVectors are equal ->");      \
+    Assert(bv_eq(_not_bv2, _not_bv1), "!BitVectors are equal -<");      \
+    Assert(bv_eq(_not_bv1, _not_bv1), "bv_eq on self should work");     \
+    Aiequal(bv_hash(_not_bv1), bv_hash(_not_bv2));                      \
+    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                         \
 } while (0)
 
-#define test_bvneq(_bv1, _bv2)                                      \
-do {                                                                \
-    BitVector *_not_bv1, *_not_bv2;                                 \
-    Assert(!bv_eq(_bv1, _bv2), "BitVectors are not equal");         \
-    Assert(!bv_eq(_bv2, _bv1), "BitVectors are not equal");         \
-    Assert(bv_hash(_bv1) != bv_hash(_bv2), "BitVectors not equal"); \
-    /* test flipped bitvectors */                                   \
-    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);               \
-    Assert(!bv_eq(_not_bv1, _not_bv2), "BitVectors are not equal"); \
-    Assert(!bv_eq(_not_bv2, _not_bv1), "BitVectors are not equal"); \
-    Assert(bv_hash(_not_bv1) != bv_hash(_not_bv2), "Bitvectors !=");\
-    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                     \
+#define test_bvneq(_bv1, _bv2)                                          \
+do {                                                                    \
+    BitVector *_not_bv1, *_not_bv2;                                     \
+    Assert(!bv_eq(_bv1, _bv2), "BitVectors are not equal ->");          \
+    Assert(!bv_eq(_bv2, _bv1), "BitVectors are not equal <-");          \
+    Assert(bv_hash(_bv1) != bv_hash(_bv2), "BitVector hash not equal"); \
+    /* test flipped bitvectors */                                       \
+    _not_bv1 = bv_not(_bv1); _not_bv2 = bv_not(_bv2);                   \
+    Assert(!bv_eq(_not_bv1, _not_bv2), "!BitVectors are not equal ->"); \
+    Assert(!bv_eq(_not_bv2, _not_bv1), "!BitVectors are not equal <-"); \
+    Assert(bv_hash(_not_bv1) != bv_hash(_not_bv2), "Bitvector hash !=");\
+    bv_destroy(_not_bv1); bv_destroy(_not_bv2);                         \
 } while (0)
 
 static void test_bv_eq_hash(TestCase *tc, void *data)
@@ -533,8 +533,8 @@ static void test_bv_scan_stress(TestCase *tc, void *data)
 
     /* test scan_next_from where size is actually greater than the highest set
      * bit */
-    bv->size++;
-    not_bv->size++;
+    bv_unset(bv, bv->size);
+    bv_set(not_bv, not_bv->size);
 
     bv_scan_reset(bv);
     bv_scan_reset(not_bv);

@@ -1,10 +1,6 @@
 #ifndef FRT_INTERNAL_H
 #define FRT_INTERNAL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Constants */
 #define ABS                                FRT_ABS
 #define ALLOC                              FRT_ALLOC
@@ -14,6 +10,10 @@ extern "C" {
 #define ARG_ERROR                          FRT_ARG_ERROR
 #define ARY_INIT_CAPA                      FRT_ARY_INIT_CAPA
 #define ARY_META_CNT                       FRT_ARY_META_CNT
+#define ATTR_ALWAYS_INLINE                 FRT_ATTR_ALWAYS_INLINE
+#define ATTR_CONST                         FRT_ATTR_CONST
+#define ATTR_MALLOC                        FRT_ATTR_MALLOC
+#define ATTR_PURE                          FRT_ATTR_PURE
 #define BC_MUST                            FRT_BC_MUST
 #define BC_MUST_NOT                        FRT_BC_MUST_NOT
 #define BC_SHOULD                          FRT_BC_SHOULD
@@ -22,6 +22,7 @@ extern "C" {
 #define BOOLEAN_QUERY                      FRT_BOOLEAN_QUERY
 #define BUFFER_SIZE                        FRT_BUFFER_SIZE
 #define BV_INIT_CAPA                       FRT_BV_INIT_CAPA
+#define BV_OP                              FRT_BV_OP
 #define BYTE_FIELD_INDEX_CLASS             FRT_BYTE_FIELD_INDEX_CLASS
 #define COMMIT_LOCK_NAME                   FRT_COMMIT_LOCK_NAME
 #define CONSTANT_QUERY                     FRT_CONSTANT_QUERY
@@ -42,6 +43,7 @@ extern "C" {
 #define EXCEPT_H                           FRT_EXCEPT_H
 #define EXPLANATION_DETAILS_START_SIZE     FRT_EXPLANATION_DETAILS_START_SIZE
 #define EXTENDED_ENGLISH_STOP_WORDS        FRT_EXTENDED_ENGLISH_STOP_WORDS
+#define EXTERNC                            FRT_EXTERNC
 #define FERRET_ERROR                       FRT_FERRET_ERROR
 #define FILE_NOT_FOUND_ERROR               FRT_FILE_NOT_FOUND_ERROR
 #define FILTERED_QUERY                     FRT_FILTERED_QUERY
@@ -171,6 +173,7 @@ extern "C" {
 #define TERM_VECTOR_YES                    FRT_TERM_VECTOR_YES
 #define TE_BUCKET_INIT_CAPA                FRT_TE_BUCKET_INIT_CAPA
 #define THREAD_ONCE_INIT                   FRT_THREAD_ONCE_INIT
+#define TO_WORD                            FRT_TO_WORD
 #define TRY                                FRT_TRY
 #define TV_FIELD_INIT_CAPA                 FRT_TV_FIELD_INIT_CAPA
 #define TYPED_RANGE_QUERY                  FRT_TYPED_RANGE_QUERY
@@ -182,7 +185,6 @@ extern "C" {
 #define WILD_CARD_QUERY_MAX_TERMS          FRT_WILD_CARD_QUERY_MAX_TERMS
 #define WILD_CHAR                          FRT_WILD_CHAR
 #define WILD_STRING                        FRT_WILD_STRING
-#define WIN32_H                            FRT_WIN32_H
 #define WRITE_LOCK_NAME                    FRT_WRITE_LOCK_NAME
 #define XCATCHALL                          FRT_XCATCHALL
 #define XENDTRY                            FRT_XENDTRY
@@ -380,7 +382,10 @@ extern "C" {
 #define bq_new                                  frt_bq_new
 #define bq_new_max                              frt_bq_new_max
 #define bv_and                                  frt_bv_and
+#define bv_and_ext                              frt_bv_and_ext
+#define bv_and_i                                frt_bv_and_i
 #define bv_and_x                                frt_bv_and_x
+#define bv_capa                                 frt_bv_capa
 #define bv_clear                                frt_bv_clear
 #define bv_destroy                              frt_bv_destroy
 #define bv_eq                                   frt_bv_eq
@@ -389,8 +394,11 @@ extern "C" {
 #define bv_new                                  frt_bv_new
 #define bv_new_capa                             frt_bv_new_capa
 #define bv_not                                  frt_bv_not
+#define bv_not_i                                frt_bv_not_i
 #define bv_not_x                                frt_bv_not_x
 #define bv_or                                   frt_bv_or
+#define bv_or_ext                               frt_bv_or_ext
+#define bv_or_i                                 frt_bv_or_i
 #define bv_or_x                                 frt_bv_or_x
 #define bv_recount                              frt_bv_recount
 #define bv_scan_next                            frt_bv_scan_next
@@ -400,8 +408,11 @@ extern "C" {
 #define bv_scan_reset                           frt_bv_scan_reset
 #define bv_set                                  frt_bv_set
 #define bv_set_fast                             frt_bv_set_fast
+#define bv_set_value                            frt_bv_set_value
 #define bv_unset                                frt_bv_unset
 #define bv_xor                                  frt_bv_xor
+#define bv_xor_ext                              frt_bv_xor_ext
+#define bv_xor_i                                frt_bv_xor_i
 #define bv_xor_x                                frt_bv_xor_x
 #define byte2float                              frt_byte2float
 #define cache_destroy                           frt_cache_destroy
@@ -409,6 +420,12 @@ extern "C" {
 #define close_lock                              frt_close_lock
 #define co_create                               frt_co_create
 #define co_hash_create                          frt_co_hash_create
+#define count_leading_ones                      frt_count_leading_ones
+#define count_leading_zeros                     frt_count_leading_zeros
+#define count_ones                              frt_count_ones
+#define count_trailing_ones                     frt_count_trailing_ones
+#define count_trailing_zeros                    frt_count_trailing_zeros
+#define count_zeros                             frt_count_zeros
 #define csq_new                                 frt_csq_new
 #define csq_new_nr                              frt_csq_new_nr
 #define cw_add_file                             frt_cw_add_file
@@ -786,6 +803,7 @@ extern "C" {
 #define ramo_write_to                           frt_ramo_write_to
 #define register_for_cleanup                    frt_register_for_cleanup
 #define rfilt_new                               frt_rfilt_new
+#define round2                                  frt_round2
 #define rq_new                                  frt_rq_new
 #define rq_new_less                             frt_rq_new_less
 #define rq_new_more                             frt_rq_new_more
@@ -981,9 +999,5 @@ extern "C" {
 #define xpop_context                            frt_xpop_context
 #define xpush_context                           frt_xpush_context
 #define xraise                                  frt_xraise
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #endif

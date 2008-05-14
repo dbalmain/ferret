@@ -4353,7 +4353,7 @@ static void bv_write(BitVector *bv, Store *store, char *name)
     int i;
     OutStream *os = store->new_output(store, name);
     os_write_vint(os, bv->size);
-    for (i = (bv->size >> 5); i >= 0; i--) {
+    for (i = ((bv->size-1) >> 5); i >= 0; i--) {
         os_write_u32(os, bv->bits[i]);
     }
     os_close(os);
@@ -4370,7 +4370,7 @@ static BitVector *bv_read(Store *store, char *name)
     bv->bits = ALLOC_AND_ZERO_N(u32, bv->capa);
     bv->ref_cnt = 1;
     TRY
-        for (i = (bv->size >> 5); i >= 0; i--) {
+        for (i = ((bv->size-1) >> 5); i >= 0; i--) {
             bv->bits[i] = is_read_u32(is);
         }
         bv_recount(bv);
