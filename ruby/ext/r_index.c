@@ -627,6 +627,7 @@ frb_fis_create_index(VALUE self, VALUE rdir)
 /*
  *  call-seq:
  *     fis.fields -> symbol array
+ *     fis.field_names -> symbol array
  *
  *  Return a list of the field names (as symbols) of all the fields in the
  *  index.
