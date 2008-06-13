@@ -477,14 +477,17 @@ end
 
 
 namespace :show do
+  desc "Show a files dependencies"
   task :dep, :src do |t, args|
     with_src(args.src) {|src| puts get_dep_srcs(src).sort.join("\n")}
   end
 
-  task :'dep-l1', :src do |t, args|
+  desc "Show a files direct dependencies"
+  task :'dirdep', :src do |t, args|
     with_src(args.src) {|src| puts DEP_L1_CACHE[src].sort.join("\n")}
   end
 
+  desc "Show names in the global namespace"
   task :names, :file do |t, args|
     with_file(args.file, 'libferret.a') do |f|
       `nm -s #{f}`.split(/\n/).each do |l|
@@ -495,9 +498,10 @@ namespace :show do
 
   def badname?(l)
     l =~ /[0-9a-f]* +([-ABCDGINRSTVW?]) (.*)/ and
-                  $2 !~ /^(Ferret|frt_|FRT_)/
+                  $2 !~ /^(Frt|frt_|FRT_)/
   end
 
+  desc "Show bad global names (no frt prefix)"
   task :badnames, :file do |t, args|
     with_file(args.file, 'libferret.a') do |f| Rake::Task[f].invoke
       `nm -s #{f}`.split(/\n/).each do |l|
@@ -506,6 +510,7 @@ namespace :show do
     end
   end
 
+  desc "Show all bad global names (no frt prefix)"
   task :'allbadnames' => OBJS do
     SRCS.each do |src|
       next if src =~ /posh\.c/

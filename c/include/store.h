@@ -574,9 +574,9 @@ extern void frt_os_write_vll(FrtOutStream *os, register frt_u64 num);
  * @param len the length of the string to write
  * @raise FRT_IO_ERROR if there is an error writing to the file-system
  */
-extern FRT_INLINE void os_write_string_len(FrtOutStream *os,
-                                           const char *str,
-                                           int len);
+extern FRT_INLINE void frt_os_write_string_len(FrtOutStream *os,
+                                               const char *str,
+                                               int len);
 
 /**
  * Write a string to the FrtOutStream. A string is an integer +length+ in VINT
