@@ -22,9 +22,9 @@ extern "C" {
  */
 typedef enum
 {
-    HASH_KEY_DOES_NOT_EXIST = 0,
-    HASH_KEY_EQUAL = 1,
-    HASH_KEY_SAME = 2
+    FRT_HASH_KEY_DOES_NOT_EXIST = 0,
+    FRT_HASH_KEY_EQUAL = 1,
+    FRT_HASH_KEY_SAME = 2
 } FrtHashKeyStatus;
 
 /**
@@ -293,9 +293,9 @@ extern int frt_h_set_safe(FrtHash *self, const void *key, void *value);
  * value. Be sure to set both the *key* and the *value*
  * @return true if the key was empty, false otherwise
  */
-extern FRT_INLINE bool h_set_ext(FrtHash *self,
-                                 const void *key,
-                                 FrtHashEntry **he);
+extern FRT_INLINE bool frt_h_set_ext(FrtHash *self,
+                                     const void *key,
+                                     FrtHashEntry **he);
 
 /**
  * Check whether key +key+ exists in the Hash.

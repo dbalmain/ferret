@@ -73,6 +73,9 @@
 #define FULL_SWEDISH_STOP_WORDS            FRT_FULL_SWEDISH_STOP_WORDS
 #define FUZZY_QUERY                        FRT_FUZZY_QUERY
 #define HANDLED                            FRT_HANDLED
+#define HASH_KEY_DOES_NOT_EXIST            FRT_HASH_KEY_DOES_NOT_EXIST
+#define HASH_KEY_EQUAL                     FRT_HASH_KEY_EQUAL
+#define HASH_KEY_SAME                      FRT_HASH_KEY_SAME
 #define HASH_MINSIZE                       FRT_HASH_MINSIZE
 #define HAS_GNUC_VARARGS                   FRT_HAS_GNUC_VARARGS
 #define HAS_ISO_VARARGS                    FRT_HAS_ISO_VARARGS
@@ -551,6 +554,7 @@
 #define h_rem                                   frt_h_rem
 #define h_rem_int                               frt_h_rem_int
 #define h_set                                   frt_h_set
+#define h_set_ext                               frt_h_set_ext
 #define h_set_int                               frt_h_set_int
 #define h_set_safe                              frt_h_set_safe
 #define h_set_safe_int                          frt_h_set_safe_int
