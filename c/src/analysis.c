@@ -567,13 +567,19 @@ static Token *std_next(TokenStream *ts)
     int len;
     Token *tk = &(CTS(ts)->token);
 
-    if (std_tz->is_ascii) {
-        frt_std_scan(ts->t, tk->text, sizeof(tk->text) - 1,
-                     &start, &end, &len);
-    }
-    else {
-        frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1,
-                        &start, &end, &len);
+    switch (std_tz->type) {
+        case STT_ASCII:
+            frt_std_scan(ts->t, tk->text, sizeof(tk->text) - 1,
+                         &start, &end, &len);
+            break;
+        case STT_MB:
+            frt_std_scan_mb(ts->t, tk->text, sizeof(tk->text) - 1,
+                            &start, &end, &len);
+            break;
+        case STT_UTF8:
+            frt_std_scan_utf8(ts->t, tk->text, sizeof(tk->text) - 1,
+                              &start, &end, &len);
+            break;
     }
 
     if (len == 0)
@@ -605,14 +611,21 @@ static TokenStream *std_ts_new()
 TokenStream *standard_tokenizer_new()
 {
     TokenStream *ts = std_ts_new();
-    STDTS(ts)->is_ascii = true;
+    STDTS(ts)->type = STT_ASCII;
     return ts;
 }
 
 TokenStream *mb_standard_tokenizer_new()
 {
     TokenStream *ts = std_ts_new();
-    STDTS(ts)->is_ascii = false;
+    STDTS(ts)->type = STT_MB;
+    return ts;
+}
+
+TokenStream *utf8_standard_tokenizer_new()
+{
+    TokenStream *ts = std_ts_new();
+    STDTS(ts)->type = STT_UTF8;
     return ts;
 }
 
@@ -1525,6 +1538,28 @@ Analyzer *mb_standard_analyzer_new_with_words(const char **words,
     return analyzer_new(ts, NULL, NULL);
 }
 
+Analyzer *utf8_standard_analyzer_new_with_words_len(const char **words,
+                                                  int len, bool lowercase)
+{
+    TokenStream *ts = utf8_standard_tokenizer_new();
+    if (lowercase) {
+        ts = mb_lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words_len(ts, words, len));
+    return analyzer_new(ts, NULL, NULL);
+}
+
+Analyzer *utf8_standard_analyzer_new_with_words(const char **words,
+                                              bool lowercase)
+{
+    TokenStream *ts = utf8_standard_tokenizer_new();
+    if (lowercase) {
+        ts = mb_lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words(ts, words));
+    return analyzer_new(ts, NULL, NULL);
+}
+
 Analyzer *standard_analyzer_new(bool lowercase)
 {
     return standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
@@ -1535,6 +1570,12 @@ Analyzer *mb_standard_analyzer_new(bool lowercase)
 {
     return mb_standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
                                                lowercase);
+}
+
+Analyzer *utf8_standard_analyzer_new(bool lowercase)
+{
+    return utf8_standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
+                                                 lowercase);
 }
 
 /****************************************************************************

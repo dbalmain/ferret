@@ -45,13 +45,13 @@ extern int frt_tk_cmp(FrtToken *tk1, FrtToken *tk2);
 typedef struct FrtTokenStream FrtTokenStream;
 struct FrtTokenStream
 {
-    char        *t;             /* ptr used to scan text */
-    char        *text;
-    FrtToken       *(*next)(FrtTokenStream *ts);
-    FrtTokenStream *(*reset)(FrtTokenStream *ts, char *text);
-    FrtTokenStream *(*clone_i)(FrtTokenStream *ts);
-    void         (*destroy_i)(FrtTokenStream *ts);
-    int          ref_cnt;
+    char            *t;             /* ptr used to scan text */
+    char            *text;
+    FrtToken        *(*next)(FrtTokenStream *ts);
+    FrtTokenStream  *(*reset)(FrtTokenStream *ts, char *text);
+    FrtTokenStream  *(*clone_i)(FrtTokenStream *ts);
+    void            (*destroy_i)(FrtTokenStream *ts);
+    int             ref_cnt;
 };
 
 #define frt_ts_new(type) frt_ts_new_i(sizeof(type))
@@ -67,13 +67,20 @@ typedef struct FrtCachedTokenStream
 typedef struct FrtMultiByteTokenStream
 {
     FrtCachedTokenStream super;
-    mbstate_t         state;
+    mbstate_t            state;
 } FrtMultiByteTokenStream;
+
+typedef enum 
+{
+    FRT_STT_ASCII,
+    FRT_STT_MB,
+    FRT_STT_UTF8
+} FrtStandardTokenizerType;
 
 typedef struct FrtStandardTokenizer
 {
-    FrtCachedTokenStream super;
-    bool is_ascii;
+    FrtCachedTokenStream     super;
+    FrtStandardTokenizerType type;
 } FrtStandardTokenizer;
 
 typedef struct FrtLegacyStandardTokenizer
@@ -140,6 +147,7 @@ extern FrtTokenStream *frt_mb_letter_tokenizer_new(bool lowercase);
 
 extern FrtTokenStream *frt_standard_tokenizer_new();
 extern FrtTokenStream *frt_mb_standard_tokenizer_new();
+extern FrtTokenStream *frt_utf8_standard_tokenizer_new();
 
 extern FrtTokenStream *frt_legacy_standard_tokenizer_new();
 extern FrtTokenStream *frt_mb_legacy_standard_tokenizer_new();
@@ -211,6 +219,7 @@ extern FrtAnalyzer *frt_mb_letter_analyzer_new(bool lowercase);
 
 extern FrtAnalyzer *frt_standard_analyzer_new(bool lowercase);
 extern FrtAnalyzer *frt_mb_standard_analyzer_new(bool lowercase);
+extern FrtAnalyzer *frt_utf8_standard_analyzer_new(bool lowercase);
 
 extern FrtAnalyzer *frt_standard_analyzer_new_with_words(
     const char **words, bool lowercase);
@@ -219,6 +228,10 @@ extern FrtAnalyzer *frt_standard_analyzer_new_with_words_len(
 extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words(
     const char **words, bool lowercase);
 extern FrtAnalyzer *frt_mb_standard_analyzer_new_with_words_len(
+    const char **words, int len, bool lowercase);
+extern FrtAnalyzer *frt_utf8_standard_analyzer_new_with_words(
+    const char **words, bool lowercase);
+extern FrtAnalyzer *frt_utf8_standard_analyzer_new_with_words_len(
     const char **words, int len, bool lowercase);
 
 extern FrtAnalyzer *frt_legacy_standard_analyzer_new(bool lowercase);

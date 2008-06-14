@@ -168,6 +168,9 @@
 #define STORE_NO                           FRT_STORE_NO
 #define STORE_YES                          FRT_STORE_YES
 #define STRING_FIELD_INDEX_CLASS           FRT_STRING_FIELD_INDEX_CLASS
+#define STT_ASCII                          FRT_STT_ASCII
+#define STT_MB                             FRT_STT_MB
+#define STT_UTF8                           FRT_STT_UTF8
 #define TERM_QUERY                         FRT_TERM_QUERY
 #define TERM_VECTOR_NO                     FRT_TERM_VECTOR_NO
 #define TERM_VECTOR_WITH_OFFSETS           FRT_TERM_VECTOR_WITH_OFFSETS
@@ -305,6 +308,7 @@
 #define SpanQuery               FrtSpanQuery
 #define SpanTermQuery           FrtSpanTermQuery
 #define StandardTokenizer       FrtStandardTokenizer
+#define StandardTokenizerType   FrtStandardTokenizerType
 #define State                   FrtState
 #define StemFilter              FrtStemFilter
 #define StopFilter              FrtStopFilter
@@ -910,6 +914,7 @@
 #define standard_tokenizer_new                         frt_standard_tokenizer_new
 #define std_scan                                       frt_std_scan
 #define std_scan_mb                                    frt_std_scan_mb
+#define std_scan_utf8                                  frt_std_scan_utf8
 #define stde_new                                       frt_stde_new
 #define ste_clone                                      frt_ste_clone
 #define ste_close                                      frt_ste_close
@@ -984,6 +989,10 @@
 #define u64                                            frt_u64
 #define u64malloc                                      frt_u64malloc
 #define uchar                                          frt_uchar
+#define utf8_standard_analyzer_new                     frt_utf8_standard_analyzer_new
+#define utf8_standard_analyzer_new_with_words          frt_utf8_standard_analyzer_new_with_words
+#define utf8_standard_analyzer_new_with_words_len      frt_utf8_standard_analyzer_new_with_words_len
+#define utf8_standard_tokenizer_new                    frt_utf8_standard_tokenizer_new
 #define vexit                                          frt_vexit
 #define vstrfmt                                        frt_vstrfmt
 #define w_create                                       frt_w_create

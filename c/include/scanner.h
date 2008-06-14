@@ -24,6 +24,11 @@ void frt_std_scan_mb(const char *in,
                      const char **start, const char **end,
                      int *token_length);
 
+void frt_std_scan_utf8(const char *in,
+                       char *out, size_t out_size,
+                       const char **start, const char **end,
+                       int *token_length);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

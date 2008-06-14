@@ -7,7 +7,7 @@
 # and that your input is in utf8.
 
 %%{
-    machine WChar;
+    machine UTF8;
     ualpha = 
         0x41..0x5A              #L&  [26] LATIN CAPITAL LETTER A..LATIN CAPI...
       | 0x61..0x7A              #L&  [26] LATIN SMALL LETTER A..LATIN SMALL ...
