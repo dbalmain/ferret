@@ -713,6 +713,131 @@ static void test_mb_standard_analyzer(TestCase *tc, void *data)
     tk_destroy(tk);
 }
 
+static void test_legacy_standard_analyzer(TestCase *tc, void *data)
+{
+    Token *tk = tk_new();
+    Analyzer *a =
+        legacy_standard_analyzer_new_with_words(ENGLISH_STOP_WORDS, true);
+    char text[200] =
+        "DBalmain@gmail.com is My e-mail and the Address. -23!$ "
+        "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234";
+    TokenStream *ts = a_get_ts(a, I("random"), text);
+    (void)data;
+
+    test_token_pi(ts_next(ts), "dbalmain@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "my", 22, 24, 2);
+    test_token_pi(ts_next(ts), "email", 25, 31, 1);
+    test_token_pi(ts_next(ts), "e", 25, 26, 0);
+    test_token_pi(ts_next(ts), "mail", 27, 31, 1);
+    test_token_pi(ts_next(ts), "address", 40, 47, 3);
+    test_token_pi(ts_next(ts), "-23", 49, 52, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
+    test_token_pi(ts_next(ts), "tnt", 86, 91, 1);
+    test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    tk_destroy(tk);
+    ts_deref(ts);
+    a_deref(a);
+}
+
+static void test_mb_legacy_standard_analyzer(TestCase *tc, void *data)
+{
+    Token *tk = tk_new();
+    Analyzer *a =
+        mb_legacy_standard_analyzer_new_with_words(ENGLISH_STOP_WORDS, false);
+    const char *words[] = { "is", "the", "-23", "tnt", NULL };
+    char text[200] =
+        "DBalmain@gmail.com is My e-mail and the Address. -23!$ "
+        "http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ "
+        "ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ";
+    TokenStream *ts = a_get_ts(a, I("random"), text), *ts2;
+    (void)data;
+
+    test_token_pi(ts_next(ts), "DBalmain@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "My", 22, 24, 2);
+    test_token_pi(ts_next(ts), "email", 25, 31, 1);
+    test_token_pi(ts_next(ts), "e", 25, 26, 0);
+    test_token_pi(ts_next(ts), "mail", 27, 31, 1);
+    test_token_pi(ts_next(ts), "Address", 40, 47, 3);
+    test_token_pi(ts_next(ts), "-23", 49, 52, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
+    test_token_pi(ts_next(ts), "TNT", 86, 91, 1);
+    test_token_pi(ts_next(ts), "123-1235-ASD-1234", 93, 110, 1);
+    test_token_pi(ts_next(ts), "23", 111, 113, 1);
+    test_token_pi(ts_next(ts), "ÁÄGÇ", 117, 124, 1);
+    test_token_pi(ts_next(ts), "ÊËÌ", 126, 132, 1);
+    test_token_pi(ts_next(ts), "ÚØÃ", 134, 140, 1);
+    test_token_pi(ts_next(ts), "ÖÎÍ", 142, 148, 1);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
+    a_deref(a);
+    a = mb_legacy_standard_analyzer_new(true);
+    ts = a_get_ts(a, I("random"), text);
+    test_token_pi(ts_next(ts), "dbalmain@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "email", 25, 31, 3);
+    test_token_pi(ts_next(ts), "e", 25, 26, 0);
+    test_token_pi(ts_next(ts), "mail", 27, 31, 1);
+    test_token_pi(ts_next(ts), "address", 40, 47, 3);
+    test_token_pi(ts_next(ts), "-23", 49, 52, 1);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 1);
+    test_token_pi(ts_next(ts), "tnt", 86, 91, 1);
+    test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 1);
+    test_token_pi(ts_next(ts), "23", 111, 113, 1);
+    test_token_pi(ts_next(ts), "áägç", 117, 124, 1);
+    test_token_pi(ts_next(ts), "êëì", 126, 132, 1);
+    test_token_pi(ts_next(ts), "úøã", 134, 140, 1);
+    test_token_pi(ts_next(ts), "öîí", 142, 148, 1);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
+    a_deref(a);
+    a = mb_legacy_standard_analyzer_new_with_words(words, true);
+    ts = a_get_ts(a, I("random"), text);
+    ts2 = a_get_ts(a, I("random"), text);
+    test_token_pi(ts_next(ts), "dbalmain@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts), "my", 22, 24, 2);
+    test_token_pi(ts_next(ts), "email", 25, 31, 1);
+    test_token_pi(ts_next(ts), "e", 25, 26, 0);
+    test_token_pi(ts_next(ts), "mail", 27, 31, 1);
+    test_token_pi(ts_next(ts), "and", 32, 35, 1);
+    test_token_pi(ts_next(ts), "address", 40, 47, 2);
+    test_token_pi(ts_next(ts), "www.google.com/results", 55, 85, 2);
+    test_token_pi(ts_next(ts), "123-1235-asd-1234", 93, 110, 2);
+    test_token_pi(ts_next(ts), "23", 111, 113, 1);
+    test_token_pi(ts_next(ts), "áägç", 117, 124, 1);
+    test_token_pi(ts_next(ts), "êëì", 126, 132, 1);
+    test_token_pi(ts_next(ts), "úøã", 134, 140, 1);
+    test_token_pi(ts_next(ts), "öîí", 142, 148, 1);
+    Assert(ts_next(ts) == NULL, "Should be no more tokens");
+    ts_deref(ts);
+    test_token_pi(ts_next(ts2), "dbalmain@gmail.com", 0, 18, 1);
+    test_token_pi(ts_next(ts2), "my", 22, 24, 2);
+    test_token_pi(ts_next(ts2), "email", 25, 31, 1);
+    test_token_pi(ts_next(ts2), "e", 25, 26, 0);
+    test_token_pi(ts_next(ts2), "mail", 27, 31, 1);
+    test_token_pi(ts_next(ts2), "and", 32, 35, 1);
+    test_token_pi(ts_next(ts2), "address", 40, 47, 2);
+    test_token_pi(ts_next(ts2), "www.google.com/results", 55, 85, 2);
+    test_token_pi(ts_next(ts2), "123-1235-asd-1234", 93, 110, 2);
+    test_token_pi(ts_next(ts2), "23", 111, 113, 1);
+    test_token_pi(ts_next(ts2), "áägç", 117, 124, 1);
+    test_token_pi(ts_next(ts2), "êëì", 126, 132, 1);
+    test_token_pi(ts_next(ts2), "úøã", 134, 140, 1);
+    test_token_pi(ts_next(ts2), "öîí", 142, 148, 1);
+    Assert(ts_next(ts2) == NULL, "Should be no more tokens");
+    ts2->ref_cnt = 3;
+    ts = ts_clone(ts2);
+    Aiequal(3, ts2->ref_cnt);
+    Aiequal(1, ts->ref_cnt);
+    ts_deref(ts2);
+    Aiequal(2, ts2->ref_cnt);
+    ts_deref(ts2);
+    Aiequal(1, ts2->ref_cnt);
+    ts_deref(ts2);
+    ts_deref(ts);
+    a_deref(a);
+    tk_destroy(tk);
+}
+
 static void test_long_word(TestCase *tc, void *data)
 {
     Token *tk = tk_new();
@@ -1074,6 +1199,10 @@ TestSuite *ts_analysis(TestSuite *suite)
     tst_run_test(suite, test_legacy_standard_tokenizer, NULL);
     if (u) {
         tst_run_test(suite, test_mb_legacy_standard_tokenizer, NULL);
+    }
+    tst_run_test(suite, test_legacy_standard_analyzer, NULL);
+    if (u) {
+        tst_run_test(suite, test_mb_legacy_standard_analyzer, NULL);
     }
 
     tst_run_test(suite, test_long_word, NULL);

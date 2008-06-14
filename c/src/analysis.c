@@ -1538,6 +1538,66 @@ Analyzer *mb_standard_analyzer_new(bool lowercase)
 }
 
 /****************************************************************************
+ * Legacy
+ ****************************************************************************/
+
+Analyzer *legacy_standard_analyzer_new_with_words_len(const char **words, int len,
+                                                      bool lowercase)
+{
+    TokenStream *ts = legacy_standard_tokenizer_new();
+    if (lowercase) {
+        ts = lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words_len(ts, words, len));
+    return analyzer_new(ts, NULL, NULL);
+}
+
+Analyzer *legacy_standard_analyzer_new_with_words(const char **words,
+                                                  bool lowercase)
+{
+    TokenStream *ts = legacy_standard_tokenizer_new();
+    if (lowercase) {
+        ts = lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words(ts, words));
+    return analyzer_new(ts, NULL, NULL);
+}
+
+Analyzer *mb_legacy_standard_analyzer_new_with_words_len(const char **words,
+                                                         int len, bool lowercase)
+{
+    TokenStream *ts = mb_legacy_standard_tokenizer_new();
+    if (lowercase) {
+        ts = mb_lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words_len(ts, words, len));
+    return analyzer_new(ts, NULL, NULL);
+}
+
+Analyzer *mb_legacy_standard_analyzer_new_with_words(const char **words,
+                                                     bool lowercase)
+{
+    TokenStream *ts = mb_legacy_standard_tokenizer_new();
+    if (lowercase) {
+        ts = mb_lowercase_filter_new(ts);
+    }
+    ts = hyphen_filter_new(stop_filter_new_with_words(ts, words));
+    return analyzer_new(ts, NULL, NULL);
+}
+
+Analyzer *legacy_standard_analyzer_new(bool lowercase)
+{
+    return legacy_standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
+                                                   lowercase);
+}
+
+Analyzer *mb_legacy_standard_analyzer_new(bool lowercase)
+{
+    return mb_legacy_standard_analyzer_new_with_words(FULL_ENGLISH_STOP_WORDS,
+                                                      lowercase);
+}
+
+/****************************************************************************
  *
  * PerFieldAnalyzer
  *
