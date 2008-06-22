@@ -490,7 +490,7 @@ module Ferret::Index
         if id.kind_of?(String) or id.kind_of?(Symbol)
           term_doc_enum = @reader.term_docs_for(@id_field, id.to_s)
           if term_doc_enum.next?
-            id = @reader[term_doc_enum.doc]
+            id = term_doc_enum.doc
           else
             return nil
           end

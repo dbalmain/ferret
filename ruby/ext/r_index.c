@@ -1227,7 +1227,7 @@ frb_get_tv_term(TVTerm *tv_term)
         }
         RARRAY(rpositions)->len = freq;
     }
-    return rb_struct_new(cTVTerm, rtext, rpositions, NULL);
+    return rb_struct_new(cTVTerm, rtext, INT2FIX(freq), rpositions, NULL);
 }
 
 /****************************************************************************
@@ -3072,7 +3072,7 @@ Init_TVTerm(void)
     /* rdochack
     cTVTerm = rb_define_class_under(cTermVector, "TVTerm", rb_cObject);
     */
-    cTVTerm = rb_struct_define(tv_term_class, "text", "positions", NULL);
+    cTVTerm = rb_struct_define(tv_term_class, "text", "freq", "positions", NULL);
     rb_set_class_path(cTVTerm, cTermVector, tv_term_class);
     rb_const_set(mIndex, rb_intern(tv_term_class), cTVTerm);
 }

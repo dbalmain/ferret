@@ -191,10 +191,10 @@ module IndexReaderCommon
   def do_test_term_vectors()
     expected_tv = TermVector.new(:body,
       [
-        TVTerm.new("word1", [2, 4, 7]),
-        TVTerm.new("word2", [3]),
-        TVTerm.new("word3", [0, 5, 8, 9]),
-        TVTerm.new("word4", [1, 6])
+        TVTerm.new("word1", 3, [2, 4, 7]),
+        TVTerm.new("word2", 1, [3]),
+        TVTerm.new("word3", 4, [0, 5, 8, 9]),
+        TVTerm.new("word4", 2, [1, 6])
       ],
       [*(0...10)].collect {|i| TVOffsets.new(i*6, (i+1)*6 - 1)})
 
@@ -209,13 +209,13 @@ module IndexReaderCommon
     
     tv = tvs[:author]
     assert_equal(:author, tv.field)
-    assert_equal([TVTerm.new("Leo", [0]), TVTerm.new("Tolstoy", [1])], tv.terms)
+    assert_equal([TVTerm.new("Leo", 1, [0]), TVTerm.new("Tolstoy", 1, [1])], tv.terms)
     assert(tv.offsets.nil?)
 
 
     tv = tvs[:title]
     assert_equal(:title, tv.field)
-    assert_equal([TVTerm.new("War And Peace", nil)], tv.terms)
+    assert_equal([TVTerm.new("War And Peace", 1, nil)], tv.terms)
     assert_equal([TVOffsets.new(0, 13)], tv.offsets)
   end
    
@@ -608,10 +608,10 @@ class IndexReaderTest < Test::Unit::TestCase
   def do_test_term_vectors(ir)
     expected_tv = TermVector.new(:body,
       [
-        TVTerm.new("word1", [2, 4, 7]),
-        TVTerm.new("word2", [3]),
-        TVTerm.new("word3", [0, 5, 8, 9]),
-        TVTerm.new("word4", [1, 6])
+        TVTerm.new("word1", 3, [2, 4, 7]),
+        TVTerm.new("word2", 1, [3]),
+        TVTerm.new("word3", 4, [0, 5, 8, 9]),
+        TVTerm.new("word4", 2, [1, 6])
       ],
       [*(0...10)].collect {|i| TVOffsets.new(i*6, (i+1)*6 - 1)})
 
@@ -626,13 +626,13 @@ class IndexReaderTest < Test::Unit::TestCase
     
     tv = tvs[:author]
     assert_equal(:author, tv.field)
-    assert_equal([TVTerm.new("Leo", [0]), TVTerm.new("Tolstoy", [1])], tv.terms)
+    assert_equal([TVTerm.new("Leo", 1, [0]), TVTerm.new("Tolstoy", 1, [1])], tv.terms)
     assert(tv.offsets.nil?)
 
 
     tv = tvs[:title]
     assert_equal(:title, tv.field)
-    assert_equal([TVTerm.new("War And Peace", nil)], tv.terms)
+    assert_equal([TVTerm.new("War And Peace", 1, nil)], tv.terms)
     assert_equal([TVOffsets.new(0, 13)], tv.offsets)
   end
 
