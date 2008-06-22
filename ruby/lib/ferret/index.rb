@@ -479,6 +479,26 @@ module Ferret::Index
     end
     alias :[] :doc
 
+    # Retrieves the term_vector for a document. The document can be referenced
+    # by either a string id to match the id field or an integer corresponding
+    # to Ferret's document number.
+    #
+    # See Ferret::Index::IndexReader#term_vector
+    def term_vector(id, field)
+      @dir.synchronize do
+        ensure_reader_open()
+        if id.kind_of?(String) or id.kind_of?(Symbol)
+          term_doc_enum = @reader.term_docs_for(@id_field, id.to_s)
+          if term_doc_enum.next?
+            id = @reader[term_doc_enum.doc]
+          else
+            return nil
+          end
+        end
+        return @reader.term_vector(id, field)
+      end
+    end
+
     # iterate through all documents in the index. This method preloads the
     # documents so you don't need to call #load on the document to load all the
     # fields.
