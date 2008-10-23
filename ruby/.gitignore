@@ -55,6 +55,7 @@ ext/document.c
 ext/document.h
 ext/except.c
 ext/except.h
+ext/ferret_ext.bundle
 ext/ferret_ext.so
 ext/field_index.c
 ext/field_index.h
