@@ -359,12 +359,12 @@ namespace :build do
   LIB_FERRET_OBJS = [OBJS, STEMMER_OBJS, BZLIB_OBJS].flatten.compact
   file "libferret.a" => LIB_FERRET_OBJS do |t|
     qsh "Generating library: #{t.name}",
-        "#{AR} -cru #{t.name} #{t.prerequisites}"
+        "#{AR} -cru #{t.name} #{t.prerequisites.join(' ')}"
   end
 
   file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o testall"
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o testall"
   end
 
   desc "Build the test tokenizer"
@@ -376,12 +376,12 @@ namespace :build do
 
   file "tokenize" => [LIB_FERRET_OBJS].flatten do |t|
     qsh "Building tokenize",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o #{t.name}"
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o #{t.name}"
   end
 
   file "bench" => [BENCHMARK_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building bench",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites} -o #{t.name}"
+        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o #{t.name}"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
@@ -435,11 +435,11 @@ namespace :build do
   end
 
   rule '.c' => '.y' do |t|
-    sh "yacc -o #{t.name} -p frt_ #{t.prerequisites}"
+    sh "yacc -o #{t.name} -p frt_ #{t.prerequisites.join(' ')}"
   end
 
   rule '.c' => '.rl' do |t|
-    sh "ragel #{t.prerequisites} -o #{t.name}"
+    sh "ragel #{t.prerequisites.join(' ')} -o #{t.name}"
   end
 
   file 'src/scanner_mb.rl' => 'src/scanner.in' do
@@ -448,7 +448,7 @@ namespace :build do
 
   file '.rake/HAVE_SPARSE_HASH' => '.rake/have_sparse_hash.cpp' do |t|
     begin
-      sh "g++ #{t.prerequisites}"
+      sh "g++ #{t.prerequisites.join(' ')}"
       File.open(t.name, 'w') {|f| f.write(' -DHAVE_SPARSE_HASH')}
     rescue
       File.open(t.name, 'w') {|f|}
