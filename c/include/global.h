@@ -136,7 +136,7 @@ extern void frt_dummy_free(void *p);
 /**
  * Returns the count of leading [MSB] 0 bits in +word+.
  */
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_leading_zeros(frt_u32 word)
 {
 #ifdef __GNUC__
@@ -169,7 +169,7 @@ int frt_count_leading_zeros(frt_u32 word)
 #endif
 }
 
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_leading_ones(frt_u32 word)
 {
     return frt_count_leading_zeros(~word);
@@ -179,7 +179,7 @@ int frt_count_leading_ones(frt_u32 word)
  * Return the count of trailing [LSB] 0 bits in +word+.
  */
 
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_trailing_zeros(frt_u32 word)
 {
 #ifdef __GNUC__
@@ -212,13 +212,13 @@ int frt_count_trailing_zeros(frt_u32 word)
 #endif
 }
 
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_trailing_ones(frt_u32 word)
 {
     return frt_count_trailing_zeros(~word);
 }
 
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_ones(frt_u32 word)
 {
 #ifdef __GNUC__
@@ -249,7 +249,7 @@ int frt_count_ones(frt_u32 word)
 #endif
 }
 
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_count_zeros(frt_u32 word)
 {
     return frt_count_ones(~word);
@@ -258,7 +258,7 @@ int frt_count_zeros(frt_u32 word)
 /**
  * Round up to the next power of 2
  */
-extern FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
+static FRT_ATTR_ALWAYS_INLINE FRT_ATTR_CONST
 int frt_round2(frt_u32 word)
 {
     return 1 << (32 - frt_count_leading_zeros(word));
