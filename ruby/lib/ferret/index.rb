@@ -421,7 +421,7 @@ module Ferret::Index
     # 
     # === Options
     #
-    # :start_doc::    Default: 0. The start document to start the search from.
+    # start_doc::     Default: 0. The start document to start the search from.
     #                 NOTE very carefully that this is not the same as the
     #                 +:offset+ parameter used in the other search methods
     #                 which refers to the offset in the result-set. This is the
@@ -429,7 +429,7 @@ module Ferret::Index
     #                 through the index in increments of 50 documents at a time
     #                 you need to use the last matched doc in the previous
     #                 search to start your next search. See the example below.
-    # :limit::        Default: 50. This is the number of results you want
+    # limit::         Default: 50. This is the number of results you want
     #                 returned, also called the page size. Set +:limit+ to
     #                 +:all+ to return all results.
     # TODO: add option to return loaded documents instead

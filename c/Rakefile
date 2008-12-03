@@ -526,8 +526,8 @@ end
 namespace :publish do
   desc "Publish the gcoverage results"
   task :gcov => :gcov2html do
-    sh "scp .rake/gcov_results.html .rake/gcov_history.jpg " + 
-         "www@davebalmain.com:/var/www/ferret"
+    sh 'scp -P 8900 .rake/gcov_results.html ' +
+         '.rake/gcov_history.jpg davebalmain.com:/var/www/ferret'
   end
 end
 

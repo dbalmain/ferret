@@ -418,7 +418,7 @@ if ENV['FERRET_DEV']
 
     desc "Publish the documentation"
     task :docs => 'doc:rdoc' do
-      sh %{rsync -rzv --delete doc/api/ www@davebalmain.com:/var/www/ferret/api}
+      sh %{rsync -rzv --delete  -e 'ssh -p 8900' doc/api/ davebalmain.com:/var/www/ferret/api}
     end
 
     desc "Publish the documentation and release"
