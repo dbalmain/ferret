@@ -6,7 +6,7 @@ static char *msg2 = "Message Two";
 
 static void raise_exception()
 {
-    RAISE(EXCEPTION, msg1);
+    RAISE(EXCEPTION, "%s", msg1);
 }
 
 static void inner_try(TestCase *tc)
@@ -23,7 +23,7 @@ static void inner_try(TestCase *tc)
         Astrstr(xcontext.msg, msg1);
         exception_handled = true;
         HANDLED();
-        RAISE(IO_ERROR, msg2);
+        RAISE(IO_ERROR, "%s", msg2);
         Assert(false, "Exception should have been raised");
         break;
     case IO_ERROR:
@@ -33,7 +33,7 @@ static void inner_try(TestCase *tc)
         Assert(false, "Exception should have been known");
         break;
     case FINALLY:
-        Assert(exception_handled, "Exception wasn't handled");
+        Assert(exception_handled, "%s", "Exception wasn't handled");
         Assert(ioerror_called, "IO_ERROR wasn't called");
     ENDTRY
 }
@@ -136,7 +136,7 @@ static void try_xfinally1(TestCase *tc)
     TRY
         Assert(true, "No exception raised");
     XFINALLY
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "%s", msg1);
         finally_handled = true;
     XENDTRY
     Assert(finally_handled, "Finally wasn't handled");
@@ -148,10 +148,10 @@ static void try_xfinally2(TestCase *tc)
     bool finally_handled = false;
 
     TRY
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "%s", msg1);
         Assert(false, "Exception should have been raised");
     XFINALLY
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "%s", msg1);
         finally_handled = true;
     XENDTRY
     Assert(finally_handled, "Finally wasn't handled");
@@ -163,11 +163,11 @@ static void try_xcatchall(TestCase *tc)
     bool catchall_handled = false;
 
     TRY
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "%s", msg1);
         Assert(false, "Exception should have been raised");
     XCATCHALL
         HANDLED();
-        RAISE(EXCEPTION, msg1);
+        RAISE(EXCEPTION, "%s", msg1);
         catchall_handled = true;
     XENDTRY
     Assert(catchall_handled, "Finally wasn't handled");

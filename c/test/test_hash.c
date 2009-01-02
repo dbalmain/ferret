@@ -205,7 +205,7 @@ static void test_hash_ptr(TestCase *tc, void *data)
     char buf[100];
     (void)data; /* suppress unused argument warning */
 
-    Aiequal(ptr_hash(word1), intern("one"));
+    Aiequal(ptr_hash(word1), (unsigned long)intern("one"));
     Atrue(ptr_eq(word1, intern("one")));
     h_set(h, word1, estrdup("1"));
     h_set(h, word2, estrdup("2"));

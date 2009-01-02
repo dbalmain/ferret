@@ -303,7 +303,7 @@ static void fsi_seek_i(InStream *is, off_t pos)
 static void fsi_close_i(InStream *is)
 {
     if (close(is->file.fd)) {
-        RAISE(IO_ERROR, strerror(errno));
+        RAISE(IO_ERROR, "%s", strerror(errno));
     }
     free(is->d.path);
 }

@@ -39,7 +39,7 @@ static int cmpd_remove(Store *store, const char *file_name)
 {
     (void)store;
     (void)file_name;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
     return 0;
 }
 
@@ -51,7 +51,7 @@ static void cmpd_rename(Store *store, const char *from, const char *to)
     (void)store;
     (void)from;
     (void)to;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
 }
 
 static int cmpd_count(Store *store)
@@ -79,7 +79,7 @@ static void cmpd_each(Store *store,
 static void cmpd_clear(Store *store)
 {
     (void)store;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
 }
 
 static void cmpd_close_i(Store *store)
@@ -192,7 +192,7 @@ static OutStream *cmpd_new_output(Store *store, const char *file_name)
 {
     (void)store;
     (void)file_name;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
     return NULL;
 }
 
@@ -200,14 +200,14 @@ static Lock *cmpd_open_lock_i(Store *store, const char *lock_name)
 {
     (void)store;
     (void)lock_name;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
     return NULL;
 }
 
 static void cmpd_close_lock_i(Lock *lock)
 {
     (void)lock;
-    RAISE(UNSUPPORTED_ERROR, UNSUPPORTED_ERROR_MSG);
+    RAISE(UNSUPPORTED_ERROR, "%s", UNSUPPORTED_ERROR_MSG);
 }
 
 Store *open_cmpd_store(Store *store, const char *name)

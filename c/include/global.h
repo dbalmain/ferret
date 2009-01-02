@@ -19,7 +19,7 @@ extern "C" {
 #define FRT_BUFFER_SIZE 1024
 
 #if defined(__GNUC__) && !defined(__cplusplus)
-#  define FRT_INLINE __inline__
+#  define FRT_INLINE
 #else
 #  define FRT_INLINE
 #endif

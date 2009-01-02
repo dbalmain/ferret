@@ -2450,7 +2450,7 @@ frb_ir_is_latest(VALUE self)
  *     index_reader.term_vector(doc_id, field) -> TermVector
  *
  *  Return the TermVector for the field +field+ in the document at +doc_id+ in
- *  the index. Return nil of no such term_vector exists. See TermVector.
+ *  the index. Return nil if no such term_vector exists. See TermVector.
  */
 static VALUE
 frb_ir_term_vector(VALUE self, VALUE rdoc_id, VALUE rfield)
@@ -3091,7 +3091,7 @@ Init_TVTerm(void)
  *
  *  == Example
  *
- *    tv = index_reader.term_vector(:content)
+ *    tv = index_reader.term_vector(doc_id, :content)
  *    tv_term = tv.find {|tvt| tvt.term = "fox"}
  *
  *    # get the term frequency

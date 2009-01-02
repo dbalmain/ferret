@@ -114,7 +114,7 @@ static Query *wcq_rewrite(Query *self, IndexReader *ir)
                 const char *term = te->curr_term;
                 const char *pat_term = term + prefix_len;
                 do {
-                    if (prefix && strncmp(term, prefix, prefix_len) != 0) {
+                    if (prefix[0] && strncmp(term, prefix, prefix_len) != 0) {
                         break;
                     }
 

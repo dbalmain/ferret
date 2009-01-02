@@ -229,7 +229,7 @@ static INLINE void index_del_doc_with_key_i(Index *self, Document *doc,
     td = searcher_search(self->sea, q, 0, 1, NULL, NULL, NULL);
     if (td->total_hits > 1) {
         td_destroy(td);
-        RAISE(ARG_ERROR, NON_UNIQUE_KEY_ERROR_MSG);
+        RAISE(ARG_ERROR, "%s", NON_UNIQUE_KEY_ERROR_MSG);
     } else if (td->total_hits == 1) {
         ir_delete_doc(self->ir, td->hits[0]->doc);
     }

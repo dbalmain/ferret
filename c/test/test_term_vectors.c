@@ -374,7 +374,7 @@ static void test_tv_multi_doc(TestCase *tc, void *data)
     }
     for (i = 0; i < NUM_TERMS; i++) {
         char buf[100];
-        int len = sprintf(buf, tv->terms[i].text);
+        int len = sprintf(buf, "%s", tv->terms[i].text);
         assert(strlen(tv->terms[i].text) < 100);
 
         Aiequal(i, tv_get_term_index(tv, buf));
