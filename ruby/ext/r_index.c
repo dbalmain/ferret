@@ -1499,7 +1499,8 @@ frb_get_doc(VALUE rdoc)
             }
             break;
         case T_SYMBOL:
-            df = df_add_data(df_new(fsym_content), rb_id2name(SYM2ID(rdoc)));
+            /* TODO: clean up this ugly cast */
+            df = df_add_data(df_new(fsym_content), (char *)rb_id2name(SYM2ID(rdoc)));
             doc_add_field(doc, df);
             break;
         case T_STRING:

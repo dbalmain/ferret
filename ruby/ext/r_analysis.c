@@ -990,7 +990,8 @@ frb_stop_filter_init(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static INLINE void frb_add_mapping_i(TokenStream *mf, VALUE from, char *to)
+static INLINE void frb_add_mapping_i(TokenStream *mf, VALUE from,
+                                     const char *to)
 {
     switch (TYPE(from)) {
         case T_STRING:
@@ -1013,7 +1014,7 @@ static int frb_add_mappings_i(VALUE key, VALUE value, VALUE arg)
         return ST_CONTINUE;
     } else {
         TokenStream *mf = (TokenStream *)arg;
-        char *to;
+        const char *to;
         switch (TYPE(value)) {
             case T_STRING:
                 to = rs2s(value);

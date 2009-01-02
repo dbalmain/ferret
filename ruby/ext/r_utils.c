@@ -586,7 +586,7 @@ frb_mulmap_alloc(VALUE klass)
 
 /* XXX: Duplication from frb_add_mapping_i in r_analysis.c */
 static INLINE void frb_mulmap_add_mapping_i(MultiMapper *mulmap, VALUE from,
-                                            char *to)
+                                            const char *to)
 {
     switch (TYPE(from)) {
         case T_STRING:
@@ -610,7 +610,7 @@ static int frb_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
         return ST_CONTINUE;
     } else {
         MultiMapper *mulmap = (MultiMapper *)arg;
-        char *to;
+        const char *to;
         switch (TYPE(value)) {
             case T_STRING:
                 to = rs2s(value);
