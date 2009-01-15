@@ -965,7 +965,7 @@ frb_standard_tokenizer_init(VALUE self, VALUE rstr)
 #ifndef POSH_OS_WIN32
     if (!frb_locale) frb_locale = setlocale(LC_CTYPE, "");
 #endif
-    return get_wrapped_ts(self, rstr, mb_standard_tokenizer_new());
+    return get_wrapped_ts(self, rstr, mb_legacy_standard_tokenizer_new());
 }
 
 /****************************************************************************
@@ -1482,10 +1482,10 @@ frb_standard_analyzer_init(int argc, VALUE *argv, VALUE self)
     lower = ((rlower == Qnil) ? true : RTEST(rlower));
     if (rstop_words != Qnil) {
         char **stop_words = get_stopwords(rstop_words);
-        a = mb_standard_analyzer_new_with_words((const char **)stop_words, lower);
+        a = mb_legacy_standard_analyzer_new_with_words((const char **)stop_words, lower);
         free(stop_words);
     } else {
-        a = mb_standard_analyzer_new(lower);
+        a = mb_legacy_standard_analyzer_new(lower);
     }
     Frt_Wrap_Struct(self, NULL, &frb_analyzer_free, a);
     object_add(a, self);
