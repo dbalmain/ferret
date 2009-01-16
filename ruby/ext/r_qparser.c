@@ -189,7 +189,7 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (!analyzer) {
-        analyzer = mb_standard_analyzer_new(true);
+        analyzer = mb_legacy_standard_analyzer_new(true);
     }
 
     qp = qp_new(analyzer);

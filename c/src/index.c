@@ -6508,7 +6508,7 @@ IndexWriter *iw_open(Store *store, Analyzer *volatile analyzer,
 
     iw->similarity = sim_create_default();
     iw->analyzer = analyzer ? (Analyzer *)analyzer
-                            : mb_standard_analyzer_new(true);
+                            : mb_legacy_standard_analyzer_new(true);
 
     iw->deleter = deleter_new(iw->sis, store);
     deleter_delete_deletable_files(iw->deleter);
