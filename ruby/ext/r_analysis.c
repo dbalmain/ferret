@@ -56,8 +56,10 @@ static ID id_token_stream;
 
 static VALUE object_space;
 
-//extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int,
-//                          int, struct re_registers *);
+#ifndef FRT_RUBY_VERSION_1_9
+extern int ruby_re_search(struct re_pattern_buffer *, const char *, int, int,
+                          int, struct re_registers *);
+#endif
 
 int
 frb_rb_hash_size(VALUE hash)
