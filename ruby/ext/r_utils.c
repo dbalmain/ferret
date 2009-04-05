@@ -1,7 +1,11 @@
 #include "ferret.h"
 #include "bitvector.h"
 #include "multimapper.h"
-#include <st.h>
+#ifdef FRT_RUBY_VERSION_1_9
+#  include <ruby/st.h>
+#else
+#  include <st.h>
+#endif
 
 /*****************
  *** BitVector ***
@@ -626,8 +630,8 @@ static int frb_mulmap_add_mappings_i(VALUE key, VALUE value, VALUE arg)
         }
         if (TYPE(key) == T_ARRAY) {
             int i;
-            for (i = RARRAY(key)->len - 1; i >= 0; i--) {
-                frb_mulmap_add_mapping_i(mulmap, RARRAY(key)->ptr[i], to);
+            for (i = RARRAY_LEN(key) - 1; i >= 0; i--) {
+                frb_mulmap_add_mapping_i(mulmap, RARRAY_PTR(key)[i], to);
             }
         }
         else {

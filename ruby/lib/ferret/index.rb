@@ -962,9 +962,9 @@ module Ferret::Index
         terms = []
         docs.each do |doc|
           case doc
-          when String:  terms << doc
-          when Symbol:  terms << doc.to_s
-          when Integer: ids   << doc
+          when String then  terms << doc
+          when Symbol then  terms << doc.to_s
+          when Integer then ids   << doc
           else
             raise ArgumentError, "Cannot delete for arg of type #{id.class}"
           end

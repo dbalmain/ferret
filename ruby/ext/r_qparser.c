@@ -55,8 +55,8 @@ frb_get_fields(VALUE rfields)
     fields = hs_new_ptr(NULL);
     if (TYPE(rfields) == T_ARRAY) {
         int i;
-        for (i = 0; i < RARRAY(rfields)->len; i++) {
-            rval = rb_obj_as_string(RARRAY(rfields)->ptr[i]);
+        for (i = 0; i < RARRAY_LEN(rfields); i++) {
+            rval = rb_obj_as_string(RARRAY_PTR(rfields)[i]);
             hs_add(fields, (char *)rintern(rval));
         }
     } else {

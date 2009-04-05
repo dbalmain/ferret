@@ -47,4 +47,22 @@ extern void FRT_XEXIT(const char *err_type, const char *fmt, ...);
 extern void FRT_VEXIT(const char *err_type, const char *fmt, va_list args);
 #endif
 
+#ifdef RUBY_RUBY_H
+#  define FRT_RUBY_VERSION_1_9
+#endif
+
+// ruby 1.8 compat with 1.9 to avoid ifdefs
+#if !defined RSTRING_LEN
+#define RSTRING_LEN(a) RSTRING(a)->len
+#endif
+#if !defined RSTRING_PTR
+#define RSTRING_PTR(a) RSTRING(a)->ptr
+#endif
+#if !defined RARRAY_LEN
+#define RARRAY_LEN(a) RARRAY(a)->len
+#endif
+#if !defined RARRAY_PTR
+#define RARRAY_PTR(a) RARRAY(a)->ptr
+#endif
+
 #endif

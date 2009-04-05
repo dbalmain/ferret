@@ -145,12 +145,12 @@ class String
   
   def get_lex_format(len)
     case len
-    when  0.. 3: ""
-    when  4.. 5: "%Y"
-    when  6.. 7: "%Y%m"
-    when  8.. 9: "%Y%m%d"
-    when 10..11: "%Y%m%d%H"
-    when 12..13: "%Y%m%d%H%M"
+    when  0.. 3 then ""
+    when  4.. 5 then "%Y"
+    when  6.. 7 then "%Y%m"
+    when  8.. 9 then "%Y%m%d"
+    when 10..11 then "%Y%m%d%H"
+    when 12..13 then "%Y%m%d%H%M"
     else "%Y%m%d%H%M%S"
     end
   end

@@ -16,9 +16,9 @@ def prompt(msg)
   STDERR.print "#{msg} [Yna]: "
   while true
     case STDIN.gets.chomp!
-    when /^(y(es)?)?$/i: return true
-    when /^no?$/i: return false
-    when /^a(bort)?$/i: fail('aborted')
+    when /^(y(es)?)?$/i then return true
+    when /^no?$/i then return false
+    when /^a(bort)?$/i then fail('aborted')
     else
       STDERR.print "Sorry, I don't understand. Please type y, n or a: "
     end

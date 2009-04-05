@@ -165,14 +165,14 @@ void *frb_rb_data_ptr(VALUE val)
 char *
 rs2s(VALUE rstr)
 {
-    return (char *)(RSTRING(rstr)->ptr ? RSTRING(rstr)->ptr : EMPTY_STRING);
+    return (char *)(RSTRING_PTR(rstr) ? RSTRING_PTR(rstr) : EMPTY_STRING);
 }
 
 char *
 rstrdup(VALUE rstr)
 {
     char *old = rs2s(rstr);
-    int len = RSTRING(rstr)->len;
+    int len = RSTRING_LEN(rstr);
     char *new = ALLOC_N(char, len + 1);
     memcpy(new, old, len + 1);
     return new;
@@ -305,7 +305,7 @@ static VALUE frb_term_to_s(VALUE self)
     char *field = StringValuePtr(rfield);
     char *text = StringValuePtr(rtext);
     char *term_str = ALLOC_N(char,
-                             5 + RSTRING(rfield)->len + RSTRING(rtext)->len);
+                             5 + RSTRING_LEN(rfield) + RSTRING_LEN(rtext));
     sprintf(term_str, "%s:%s", field, text);
     rstr = rb_str_new2(term_str);
     free(term_str);

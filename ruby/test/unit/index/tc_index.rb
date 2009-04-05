@@ -353,7 +353,7 @@ class IndexTest < Test::Unit::TestCase
     assert_equal(0, top_docs.hits.size)
 
     iw = IndexWriter.new(:path => fs_path, :analyzer => WhiteSpaceAnalyzer.new)
-    iw << {:f, "content3"}
+    iw << {:f => "content3"}
     iw.close()
 
     top_docs = index.search("content3")
@@ -682,9 +682,9 @@ class IndexTest < Test::Unit::TestCase
 
     # Note: Adding keywords to either field1 or field2 gets rid of the error
 
-    index << {:field1, ''}
-    index << {:field2, ''}
-    index << {:field3, 'foo bar baz'}
+    index << {:field1 => ''}
+    index << {:field2 => ''}
+    index << {:field3 => 'foo bar baz'}
 
     index.flush
     index.close

@@ -1,6 +1,10 @@
 #include "ferret.h"
-#include <st.h>
-#include <rubysig.h>
+#ifdef FRT_RUBY_VERSION_1_9
+#  include <ruby/st.h>
+#else
+#  include <st.h>
+#  include <rubysig.h>
+#endif
 #include <ctype.h>
 #include <array.h>
 #include "search.h"
@@ -167,8 +171,7 @@ frb_get_td(TopDocs *td, VALUE rsearcher)
     VALUE hit_ary = rb_ary_new2(td->size);
 
     for (i = 0; i < td->size; i++) {
-        RARRAY(hit_ary)->ptr[i] = frb_get_hit(td->hits[i]);
-        RARRAY(hit_ary)->len++;
+      rb_ary_store(hit_ary, i, frb_get_hit(td->hits[i]));
     }
 
     rtop_docs = rb_struct_new(cTopDocs,
@@ -193,7 +196,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
     int i;
     VALUE rhits = rb_funcall(self, id_hits, 0);
     Searcher *sea = (Searcher *)DATA_PTR(rb_funcall(self, id_searcher, 0));
-    const int len = RARRAY(rhits)->len;
+    const int len = RARRAY_LEN(rhits);
     int capa = len * 64 + 100;
     int p = 0;
     char *str = ALLOC_N(char, len * 64 + 100);
@@ -210,7 +213,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
     p = (int)strlen(str);
 
     for (i = 0; i < len; i++) {
-        VALUE rhit = RARRAY(rhits)->ptr[i];
+        VALUE rhit = RARRAY_PTR(rhits)[i];
         int doc_id = FIX2INT(rb_funcall(rhit, id_doc, 0));
         char *value = "";
         size_t value_len = 0;
@@ -295,7 +298,7 @@ frb_td_to_json(VALUE self)
 	VALUE rhit;
 	LazyDoc *lzd;
 	Searcher *sea = (Searcher *)DATA_PTR(rb_funcall(self, id_searcher, 0));
-	const int num_hits = RARRAY(rhits)->len;
+	const int num_hits = RARRAY_LEN(rhits);
 	int doc_id;
     int len = 32768;
 	char *str = ALLOC_N(char, len);
@@ -306,7 +309,7 @@ frb_td_to_json(VALUE self)
 	for (i = 0; i < num_hits; i++) {
         if (i) *(s++) = ',';
         *(s++) = '{';
-		rhit = RARRAY(rhits)->ptr[i];
+		rhit = RARRAY_PTR(rhits)[i];
 		doc_id = FIX2INT(rb_funcall(rhit, id_doc, 0));
 		lzd = sea->get_lazy_doc(sea, doc_id);
 		s = frb_lzd_load_to_json(lzd, &str, s, &len);
@@ -645,7 +648,11 @@ frb_mtq_set_dmt(VALUE self, VALUE rnum_terms)
         rb_raise(rb_eArgError,
                  "%d <= 0. @@max_terms must be > 0", max_terms);
     }
+#ifdef FRT_RUBY_VERSION_1_9
+    rb_cvar_set(cMultiTermQuery, id_default_max_terms, rnum_terms);
+#else
     rb_cvar_set(cMultiTermQuery, id_default_max_terms, rnum_terms, Qfalse);
+#endif
     return rnum_terms;
 }
 
@@ -1254,15 +1261,15 @@ frb_phq_add(int argc, VALUE *argv, VALUE self)
             {
                 int i;
                 char *t;
-                if (RARRAY(rterm)->len < 1) {
+                if (RARRAY_LEN(rterm) < 1) {
                     rb_raise(rb_eArgError, "Cannot add empty array to a "
                              "PhraseQuery. You must add either a string or "
                              "an array of strings");
                 }
-                t = StringValuePtr(RARRAY(rterm)->ptr[0]);
+                t = StringValuePtr(RARRAY_PTR(rterm)[0]);
                 phq_add_term(q, t, pos_inc);
-                for (i = 1; i < RARRAY(rterm)->len; i++) {
-                    t = StringValuePtr(RARRAY(rterm)->ptr[i]);
+                for (i = 1; i < RARRAY_LEN(rterm); i++) {
+                    t = StringValuePtr(RARRAY_PTR(rterm)[i]);
                     phq_append_multi_term(q, t);
                 }
                 break;
@@ -1515,7 +1522,11 @@ frb_fq_set_dms(VALUE self, VALUE val)
                  "%f < 0.0. :min_similarity must be > 0.0", min_sim);
     }
     qp_default_fuzzy_min_sim = (float)min_sim;
+#ifdef FRT_RUBY_VERSION_1_9
+    rb_cvar_set(cFuzzyQuery, id_default_min_similarity, val);
+#else
     rb_cvar_set(cFuzzyQuery, id_default_min_similarity, val, Qfalse);
+#endif
     return val;
 }
 
@@ -1547,7 +1558,11 @@ frb_fq_set_dpl(VALUE self, VALUE val)
                  "%d < 0. :prefix_length must be >= 0", pre_len);
     }
     qp_default_fuzzy_pre_len = pre_len;
+#ifdef FRT_RUBY_VERSION_1_9
+    rb_cvar_set(cFuzzyQuery, id_default_prefix_length, val);
+#else
     rb_cvar_set(cFuzzyQuery, id_default_prefix_length, val, Qfalse);
+#endif
     return val;
 }
 
@@ -1680,8 +1695,8 @@ frb_spanmtq_init(VALUE self, VALUE rfield, VALUE rterms)
 {
     Query *q = spanmtq_new(frb_field(rfield));
     int i;
-    for (i = RARRAY(rterms)->len - 1; i >= 0; i--) {
-        spanmtq_add_term(q, StringValuePtr(RARRAY(rterms)->ptr[i]));
+    for (i = RARRAY_LEN(rterms) - 1; i >= 0; i--) {
+        spanmtq_add_term(q, StringValuePtr(RARRAY_PTR(rterms)[i]));
     }
     Frt_Wrap_Struct(self, NULL, &frb_q_free, q);
     object_add(q, self);
@@ -1805,8 +1820,8 @@ frb_spannq_init(int argc, VALUE *argv, VALUE self)
             int i;
             Query *clause;
             Check_Type(v, T_ARRAY);
-            for (i = 0; i < RARRAY(v)->len; i++) {
-                Data_Get_Struct(RARRAY(v)->ptr[i], Query, clause);
+            for (i = 0; i < RARRAY_LEN(v); i++) {
+                Data_Get_Struct(RARRAY_PTR(v)[i], Query, clause);
                 spannq_add_clause(q, clause);
             }
         }
@@ -1871,8 +1886,8 @@ frb_spanoq_init(int argc, VALUE *argv, VALUE self)
         int i;
         Query *clause;
         Check_Type(rclauses, T_ARRAY);
-        for (i = 0; i < RARRAY(rclauses)->len; i++) {
-            Data_Get_Struct(RARRAY(rclauses)->ptr[i], Query, clause);
+        for (i = 0; i < RARRAY_LEN(rclauses); i++) {
+            Data_Get_Struct(RARRAY_PTR(rclauses)[i], Query, clause);
             spanoq_add_clause(q, clause);
         }
     }
@@ -2412,8 +2427,8 @@ frb_sort_init(int argc, VALUE *argv, VALUE self)
         case 1: 
                 if (TYPE(rfields) == T_ARRAY) {
                     int i;
-                    for (i = 0; i < RARRAY(rfields)->len; i++) {
-                        frb_sort_add(sort, RARRAY(rfields)->ptr[i], reverse);
+                    for (i = 0; i < RARRAY_LEN(rfields); i++) {
+                        frb_sort_add(sort, RARRAY_PTR(rfields)[i], reverse);
                     }
                 } else {
                     frb_sort_add(sort, rfields, reverse);
@@ -2799,8 +2814,9 @@ frb_sea_search_each(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", &rquery, &roptions);
 
+#ifndef FRT_RUBY_VERSION_1_9
     rb_thread_critical = Qtrue;
-
+#endif
     Data_Get_Struct(rquery, Query, q);
     td = frb_sea_search_internal(q, roptions, sea);
 
@@ -2815,8 +2831,9 @@ frb_sea_search_each(int argc, VALUE *argv, VALUE self)
     rtotal_hits = INT2FIX(td->total_hits);
     td_destroy(td);
 
+#ifndef FRT_RUBY_VERSION_1_9
     rb_thread_critical = 0;
-
+#endif
     return rtotal_hits;
 }
 
@@ -2899,18 +2916,19 @@ frb_sea_scan(int argc, VALUE *argv, VALUE self)
         }
     }
 
+#ifndef FRT_RUBY_VERSION_1_9
     rb_thread_critical = Qtrue;
-
+#endif
     doc_array = ALLOC_N(int, limit);
     count = searcher_search_unscored(sea, q, doc_array, limit, start_doc);
     rdoc_array = rb_ary_new2(count);
     for (i = 0; i < count; i++) {
-        RARRAY(rdoc_array)->ptr[i] = INT2FIX(doc_array[i]);
-        RARRAY(rdoc_array)->len++;
+      rb_ary_store(rdoc_array, i, INT2FIX(doc_array[i]));
     }
     free(doc_array);
-
+#ifndef FRT_RUBY_VERSION_1_9
     rb_thread_critical = 0;
+#endif
     return rdoc_array;
 }
 
@@ -3014,8 +3032,7 @@ frb_sea_highlight(int argc, VALUE *argv, VALUE self)
         VALUE rexcerpts = rb_ary_new2(size);
 
         for (i = 0; i < size; i++) {
-            RARRAY(rexcerpts)->ptr[i] = rb_str_new2(excerpts[i]);
-            RARRAY(rexcerpts)->len++;
+          rb_ary_store(rexcerpts, i, rb_str_new2(excerpts[i]));
         }
         ary_destroy(excerpts, &free);
         return rexcerpts;
@@ -3131,10 +3148,10 @@ frb_ms_init(int argc, VALUE *argv, VALUE self)
         rsearcher = argv[i];
         switch (TYPE(rsearcher)) {
             case T_ARRAY:
-                capa += RARRAY(rsearcher)->len;
+                capa += RARRAY_LEN(rsearcher);
                 REALLOC_N(searchers, Searcher *, capa);
-                for (j = 0; j < RARRAY(rsearcher)->len; j++) {
-                    VALUE rs = RARRAY(rsearcher)->ptr[j];
+                for (j = 0; j < RARRAY_LEN(rsearcher); j++) {
+                    VALUE rs = RARRAY_PTR(rsearcher)[j];
                     Data_Get_Struct(rs, Searcher, s);
                     searchers[top++] = s;
                 }
@@ -3367,8 +3384,11 @@ Init_MultiTermQuery(void)
 
     cMultiTermQuery = rb_define_class_under(mSearch, "MultiTermQuery", cQuery);
     rb_define_alloc_func(cMultiTermQuery, frb_data_alloc);
-
+#ifdef FRT_RUBY_VERSION_1_9
+    rb_cvar_set(cMultiTermQuery, id_default_max_terms, INT2FIX(512));
+#else
     rb_cvar_set(cMultiTermQuery, id_default_max_terms, INT2FIX(512), Qfalse);
+#endif
     rb_define_singleton_method(cMultiTermQuery, "default_max_terms",
                                frb_mtq_get_dmt, 0);
     rb_define_singleton_method(cMultiTermQuery, "default_max_terms=",
@@ -3731,10 +3751,17 @@ Init_FuzzyQuery(void)
 
     cFuzzyQuery = rb_define_class_under(mSearch, "FuzzyQuery", cQuery);
     rb_define_alloc_func(cFuzzyQuery, frb_data_alloc);
+#ifdef FRT_RUBY_VERSION_1_9
+    rb_cvar_set(cFuzzyQuery, id_default_min_similarity,
+                rb_float_new(0.5));
+    rb_cvar_set(cFuzzyQuery, id_default_prefix_length,
+                INT2FIX(0));
+#else
     rb_cvar_set(cFuzzyQuery, id_default_min_similarity,
                 rb_float_new(0.5), Qfalse);
     rb_cvar_set(cFuzzyQuery, id_default_prefix_length,
                 INT2FIX(0), Qfalse);
+#endif
 
     rb_define_singleton_method(cFuzzyQuery, "default_min_similarity",
                                frb_fq_get_dms, 0);

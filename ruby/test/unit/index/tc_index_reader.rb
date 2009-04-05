@@ -254,19 +254,19 @@ module IndexReaderCommon
 
     norms = @ir.norms(:text)
 
-    assert_equal(202, norms[ 3])
-    assert_equal( 20, norms[25])
-    assert_equal(200, norms[50])
-    assert_equal(155, norms[63])
+    assert_equal(202, norms.bytes.to_a[ 3])
+    assert_equal( 20, norms.bytes.to_a[25])
+    assert_equal(200, norms.bytes.to_a[50])
+    assert_equal(155, norms.bytes.to_a[63])
 
     norms = @ir.norms(:title)
-    assert_equal(1, norms[3])
+    assert_equal(1, norms.bytes.to_a[3])
 
     norms = @ir.norms(:body)
-    assert_equal(12, norms[3])
+    assert_equal(12, norms.bytes.to_a[3])
 
     norms = @ir.norms(:author)
-    assert_equal(145, norms[3])
+    assert_equal(145, norms.bytes.to_a[3])
 
     norms = @ir.norms(:year)
     # TODO: this returns two possible results depending on whether it is 
@@ -277,10 +277,10 @@ module IndexReaderCommon
 
     norms = " " * 164
     @ir.get_norms_into(:text, norms, 100)
-    assert_equal(202, norms[103])
-    assert_equal( 20, norms[125])
-    assert_equal(200, norms[150])
-    assert_equal(155, norms[163])
+    assert_equal(202, norms.bytes.to_a[103])
+    assert_equal( 20, norms.bytes.to_a[125])
+    assert_equal(200, norms.bytes.to_a[150])
+    assert_equal(155, norms.bytes.to_a[163])
 
     @ir.commit()
 
@@ -290,10 +290,10 @@ module IndexReaderCommon
 
     norms = " " * 164
     ir2.get_norms_into(:text, norms, 100)
-    assert_equal(202, norms[103])
-    assert_equal( 20, norms[125])
-    assert_equal(200, norms[150])
-    assert_equal(155, norms[163])
+    assert_equal(202, norms.bytes.to_a[103])
+    assert_equal( 20, norms.bytes.to_a[125])
+    assert_equal(200, norms.bytes.to_a[150])
+    assert_equal(155, norms.bytes.to_a[163])
     ir2.close()
   end
 
