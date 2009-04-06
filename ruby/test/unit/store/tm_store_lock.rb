@@ -46,7 +46,7 @@ module StoreLockTest
     while Switch.counter < 1
     end
     
-    assert(! can_obtain_lock?(lock2))
+    assert(! can_obtain_lock?(lock2), "lock 2 should not be obtainable")
 
     Switch.counter = 2
     while Switch.counter < 3

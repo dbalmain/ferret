@@ -644,7 +644,9 @@ class IndexTest < Test::Unit::TestCase
 
     index.close
   end
-
+  
+  # this test has been corrected to work as intended
+  # it now fails the same way on both 1.8 and 1.9 -- sds
   def test_auto_flush
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
@@ -654,9 +656,11 @@ class IndexTest < Test::Unit::TestCase
     index1 << "zero"
     index2 = Index.new(:path => fs_path, :auto_flush => true)
     begin
-      data.bytes.each do |datum|
-        index1 << {:id => datum, :content => datum.chr}
-        index2 << {:id => datum, :content => datum.chr}
+      n = 1
+      data.split.each do |datum|  
+        index1 << {:id => n, :content => datum} 
+        index2 << {:id => n, :content => datum}
+        n += 1
       end
       5.times do |i|
         index1.delete(i)
@@ -665,7 +669,7 @@ class IndexTest < Test::Unit::TestCase
       index1.optimize
       index2 << "thirteen"
     rescue Exception => e
-      assert(false, "This should not cause an error when auto flush has been set #{e.inspect}")
+      assert(false, "This should not cause an error when auto flush has been set")
     end
     index1.close
     index2.close
