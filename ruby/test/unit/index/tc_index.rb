@@ -654,9 +654,9 @@ class IndexTest < Test::Unit::TestCase
     index1 << "zero"
     index2 = Index.new(:path => fs_path, :auto_flush => true)
     begin
-      data.each do |datum|
-        index1 << {:id => datum[0], :content => datum}
-        index2 << {:id => datum[0], :content => datum}
+      data.bytes.each do |datum|
+        index1 << {:id => datum, :content => datum.chr}
+        index2 << {:id => datum, :content => datum.chr}
       end
       5.times do |i|
         index1.delete(i)
@@ -665,7 +665,7 @@ class IndexTest < Test::Unit::TestCase
       index1.optimize
       index2 << "thirteen"
     rescue Exception => e
-      assert(false, "This should not cause an error when auto flush has been set")
+      assert(false, "This should not cause an error when auto flush has been set #{e.inspect}")
     end
     index1.close
     index2.close
@@ -733,7 +733,7 @@ class IndexTest < Test::Unit::TestCase
   end 
 
   def test_wildcard
-    i = nil
+    j = nil
     Ferret::I.new do |i|
       i << "one"
       assert_equal(1, i.search("*").total_hits)
@@ -743,8 +743,9 @@ class IndexTest < Test::Unit::TestCase
       assert_equal(3, i.search("*").total_hits)
       assert_equal(3, i.search("id:*").total_hits)
       assert_equal(2, i.search('id:?*').total_hits)
+      j = i
     end
-    assert_raise(StandardError) {i.close} 
+    assert_raise(StandardError) {j.close} 
   end
 
   def check_highlight(index, q, excerpt_length, num_excerpts, expected, field = :field)
