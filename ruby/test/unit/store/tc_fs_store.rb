@@ -2,6 +2,8 @@ require File.dirname(__FILE__) + "/../../test_helper"
 require File.dirname(__FILE__) + "/tm_store"
 require File.dirname(__FILE__) + "/tm_store_lock"
 
+require 'fileutils'
+
 class FSStoreTest < Test::Unit::TestCase
   include Ferret::Store
   include StoreTest
@@ -63,6 +65,42 @@ class FSStoreTest < Test::Unit::TestCase
 #    assert(! File.exists?(lock_file_path), "The lock file should have been deleted")
 #  end
 #
+  def test_permissions
+    _S_IRGRP = 0040
+    _S_IWGRP = 0020
+
+    dpath = File.expand_path(File.join(File.dirname(__FILE__),
+                       '../../temp/fsdir_permissions'))
+
+    FileUtils.mkdir_p(dpath)
+    dstat = File.stat(dpath)
+
+    File.chown(nil, `id -G`.split.last.to_i, dpath)
+    File.chmod(dstat.mode | _S_IRGRP | _S_IWGRP, dpath)
+
+    dir = FSDirectory.new(dpath, true)
+
+    file_name = 'test_permissions'
+    file_path = File.join(dpath, file_name)
+
+    dir.touch(file_name)
+
+    mode = File.stat(file_path).mode
+
+    assert(mode & _S_IRGRP == _S_IRGRP, "file should be group-readable")
+    assert(mode & _S_IWGRP == _S_IWGRP, "file should be group-writable")
+  ensure
+    if dstat
+      File.chown(nil, dstat.gid, dpath)
+      File.chmod(dstat.mode, dpath)
+    end
+
+    if dir
+      dir.refresh()
+      dir.close()
+    end
+  end
+
   def make_lock_file_path(name)
     lock_file_path = File.join(@dpath, lfname(name))
     if File.exists?(lock_file_path) then

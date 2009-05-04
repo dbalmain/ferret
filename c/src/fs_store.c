@@ -425,11 +425,26 @@ static Store *fs_store_new(const char *pathname)
 
     new_store->file_mode = S_IRUSR | S_IWUSR;
 #ifndef POSH_OS_WIN32
-    if (!stat(pathname, &stt) && stt.st_gid == getgid()) {
-        if (stt.st_mode & S_IWGRP) {
-            umask(S_IWOTH);
+    if (!stat(pathname, &stt)) {
+        gid_t st_gid = stt.st_gid;
+        bool is_grp = (st_gid == getgid());
+
+        if (!is_grp) {
+            int size = getgroups(0, NULL);
+            gid_t list[size];
+
+            if (getgroups(size, list) != -1) {
+                int i = 0;
+                while (i < size && !(is_grp = (st_gid == list[i]))) i++;
+            }
         }
-        new_store->file_mode |= stt.st_mode & (S_IRGRP | S_IWGRP);
+
+        if (is_grp) {
+            if (stt.st_mode & S_IWGRP) {
+                umask(S_IWOTH);
+            }
+            new_store->file_mode |= stt.st_mode & (S_IRGRP | S_IWGRP);
+        }
     }
 #endif
 
