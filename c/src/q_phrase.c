@@ -66,6 +66,10 @@ static bool pp_next(PhPos *self)
 static bool pp_skip_to(PhPos *self, int doc_num)
 {
     TermDocEnum *tpe = self->tpe;
+    if (!tpe) {
+        return false;
+    }
+
     if (!tpe->skip_to(tpe, doc_num)) {
         tpe->close(tpe);            /* close stream */
         self->tpe = NULL;
