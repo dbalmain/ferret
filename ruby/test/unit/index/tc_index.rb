@@ -651,15 +651,14 @@ class IndexTest < Test::Unit::TestCase
     fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
     Dir[File.join(fs_path, "*")].each {|path| begin File.delete(path) rescue nil end}
 
-    data = %q(one two three four five six seven eight nine ten eleven twelve)
+    data = %w(one two three four five six seven eight nine ten eleven twelve)
     index1 = Index.new(:path => fs_path, :auto_flush => true, :key => :id)
-    index1 << "zero"
+    index1 << {:id => 0, :content => "zero"}
     index2 = Index.new(:path => fs_path, :auto_flush => true)
     begin
       n = 1
-      data.split.each do |datum|  
-        index1 << {:id => n, :content => datum} 
-        index2 << {:id => n, :content => datum}
+      data.each do |datum|
+        index1 << {:id => n, :content => datum}
         n += 1
       end
       5.times do |i|

@@ -292,9 +292,7 @@ module Ferret::Index
           else
             id = doc[@key].to_s
             if id
-              ensure_writer_open()
               @writer.delete(@key, id)
-              @writer.commit
             end
           end
         end
@@ -733,7 +731,8 @@ module Ferret::Index
           end
           @reader.commit
         elsif @writer
-          @writer.commit
+          @writer.close
+          @writer = nil
         end
       end
     end
