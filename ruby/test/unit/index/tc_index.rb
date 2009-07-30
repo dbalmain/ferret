@@ -659,6 +659,7 @@ class IndexTest < Test::Unit::TestCase
       n = 1
       data.each do |datum|
         index1 << {:id => n, :content => datum}
+        index2 << {:id => n, :content => datum}
         n += 1
       end
       5.times do |i|

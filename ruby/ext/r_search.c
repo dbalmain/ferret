@@ -207,7 +207,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
         field = frb_field(argv[0]);
     }
 
-    sprintf(str, "TopDocs: total_hits = %d, max_score = %f [\n",
+    sprintf(str, "TopDocs: total_hits = %ld, max_score = %f [\n",
             FIX2INT(rb_funcall(self, id_total_hits, 0)),
             NUM2DBL(rb_funcall(self, id_max_score, 0)));
     p = (int)strlen(str);

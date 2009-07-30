@@ -773,7 +773,6 @@ rets_next(TokenStream *ts)
 {
     static struct re_registers regs;
     int ret, beg, end;
-    struct RString *rtext = RSTRING(RETS(ts)->rtext);
     long rtext_len = RSTRING_LEN(RETS(ts)->rtext);
     char *rtext_ptr = RSTRING_PTR(RETS(ts)->rtext);
     Check_Type(RETS(ts)->regex, T_REGEXP);
