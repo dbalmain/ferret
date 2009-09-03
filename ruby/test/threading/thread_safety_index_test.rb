@@ -1,3 +1,5 @@
+$:.unshift('.')
+require 'monitor'
 require File.dirname(__FILE__) + "/../test_helper"
 require File.dirname(__FILE__) + "/number_to_spoken.rb"
 require 'thread'
@@ -21,6 +23,7 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
   def indexing_thread()
     index = Index.new(:path => INDEX_DIR,
                       :analyzer => ANALYZER,
+                      :auto_flush => true,
                       :default_field => :content)
 
     ITERATIONS.times do
@@ -37,6 +40,10 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
       end
       index.commit
     end
+  rescue Exception => e
+    puts e
+    puts e.backtrace
+    raise 'hell'
   end 
 
   def do_optimize(index)
@@ -74,6 +81,8 @@ class IndexThreadSafetyTest < Test::Unit::TestCase
       threads << Thread.new { indexing_thread }
     end
 
-    threads.each {|t| t.join}
+    threads.each {|t| 
+      t.join
+    }
   end
 end

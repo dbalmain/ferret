@@ -1,20 +1,6 @@
 require 'monitor'
 
 module Ferret::Index
-  module SynchroLockMixin
-    def synchrolock
-      trys = 5
-      begin
-        synchronize {yield}
-      rescue Ferret::Store::Lock::LockError => e
-        if (trys -= 1) <= 0
-          raise e
-        else
-          retry
-        end
-      end
-    end
-  end
   # This is a simplified interface to the index. See the TUTORIAL for more
   # information on how to use this class.
   class Index
@@ -138,7 +124,7 @@ module Ferret::Index
         @dir = RAMDirectory.new
       end
 
-      @dir.extend(MonitorMixin).extend(SynchroLockMixin)
+      @dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
       options[:dir] = @dir
       options[:lock_retry_time]||= 2
       @options = options
@@ -275,7 +261,7 @@ module Ferret::Index
     # 
     # See FieldInfos for more information on how to set field properties.
     def add_document(doc, analyzer = nil)
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         if doc.is_a?(String) or doc.is_a?(Array)
           doc = {@default_input_field => doc}
@@ -529,7 +515,7 @@ module Ferret::Index
     # term and the documents that contain that term in the +:id_field+ will be
     # deleted.
     def delete(arg)
-      @dir.synchrolock do
+      @dir.synchronize do
         if arg.is_a?(String) or arg.is_a?(Symbol)
           ensure_writer_open()
           @writer.delete(@id_field, arg.to_s)
@@ -552,7 +538,7 @@ module Ferret::Index
     #         string (in which case it is parsed by the standard query parser)
     #         or an actual query object.
     def query_delete(query)
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         ensure_searcher_open()
         query = do_process_query(query)
@@ -581,7 +567,7 @@ module Ferret::Index
     #           the :key attribute.
     # new_doc:: The document to replace the old document with
     def update(id, new_doc)
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         delete(id)
         if id.is_a?(String) or id.is_a?(Symbol)
@@ -638,7 +624,7 @@ module Ferret::Index
     #
     # docs:: A Hash of id/document pairs. The set of documents to be updated
     def batch_update(docs)
-      @dir.synchrolock do
+      @dir.synchronize do
         ids = values = nil
         case docs
         when Array
@@ -686,7 +672,7 @@ module Ferret::Index
     #     #=> {:id => "28", :title => "My Oh My", :artist => "David Gray"}
     #
     def query_update(query, new_val)
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         ensure_searcher_open()
         docs_to_add = []
@@ -741,7 +727,7 @@ module Ferret::Index
     # optimizes the index. This should only be called when the index will no
     # longer be updated very often, but will be read a lot.
     def optimize()
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         @writer.optimize()
         @writer.close()
@@ -769,7 +755,7 @@ module Ferret::Index
     #
     # After this completes, the index is optimized.
     def add_indexes(indexes)
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         indexes = [indexes].flatten   # make sure we have an array
         return if indexes.size == 0 # nothing to do
@@ -812,7 +798,7 @@ module Ferret::Index
         elsif directory.is_a?(Ferret::Store::Directory)
           @dir = directory
         end
-        @dir.extend(MonitorMixin).extend(SynchroLockMixin)
+        @dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
         @options[:dir] = @dir
         @options[:create_if_missing] = true
         add_indexes([old_dir])
@@ -854,7 +840,7 @@ module Ferret::Index
     # Returns the field_infos object so that you can add new fields to the
     # index.
     def field_infos
-      @dir.synchrolock do
+      @dir.synchronize do
         ensure_writer_open()
         return @writer.field_infos
       end

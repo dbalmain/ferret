@@ -1,20 +1,19 @@
 require File.dirname(__FILE__) + "/../test_helper"
-require File.dirname(__FILE__) + "/../utils/number_to_spoken.rb"
+require File.dirname(__FILE__) + "/number_to_spoken.rb"
 require 'thread'
 
 class IndexThreadSafetyReadWriteTest < Test::Unit::TestCase
   include Ferret::Index
-  include Ferret::Document
 
   INDEX_DIR = File.expand_path(File.join(File.dirname(__FILE__), "index"))
   ITERATIONS = 10000
   ANALYZER = Ferret::Analysis::Analyzer.new()
 
   def setup
-    @index = Index.new(:path => 'index2',
+    @index = Index.new(:path => INDEX_DIR,
                        :create => true,
                        :analyzer => ANALYZER,
-                       :default_field => 'contents')
+                       :default_field => :content)
   end
 
   def search_thread()
@@ -42,10 +41,8 @@ class IndexThreadSafetyReadWriteTest < Test::Unit::TestCase
   end 
 
   def do_add_doc
-    d = Document.new()
     n = rand(0xFFFFFFFF)
-    d << Field.new("id", n.to_s, Field::Store::YES, Field::Index::UNTOKENIZED)
-    d << Field.new("contents", n.to_spoken, Field::Store::NO, Field::Index::TOKENIZED)
+    d = {:id => n.to_s, :content => n.to_spoken}
     puts("Adding #{n}")
     begin
       @index << d
