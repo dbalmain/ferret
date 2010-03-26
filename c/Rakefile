@@ -362,7 +362,7 @@ namespace :build do
         "#{AR} -cru #{t.name} #{t.prerequisites.join(' ')}"
   end
 
-  file "testall" => [TEST_OBJS, 'libferret.a'].flatten do |t|
+  file "testall" => ['test/all_tests.h', TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
         "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o testall"
   end
@@ -387,7 +387,7 @@ namespace :build do
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|
     File.open(t.name, 'w') do |f|
       tests = t.prerequisites.map{|fn|
-        File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z]+)/)
+        File.read(fn).scan(/TestSuite \*(ts_[_A-Za-z0-9]+)/)
       }.flatten
       f.write(ERB.new(File.read('test/all_tests.erb')).result(binding))
     end
