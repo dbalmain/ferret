@@ -86,7 +86,7 @@ void
 //object_del(void *key)
 object_del2(void *key, const char *file, int line)
 {
-    if (object_get(key) == Qnil) 
+    if (object_get(key) == Qnil)
         printf("failed deleting %ld. %s:%d\n", (long)key, file, line);
     //printf("deleting %ld. now contains %ld, %s:%d\n", (long)key, --hash_cnt, file, line);
     h_del(object_map, key);
@@ -140,7 +140,6 @@ void *frb_thread_getspecific(thread_key_t key)
 void frb_create_dir(VALUE rpath)
 {
     VALUE mFileUtils;
-    rb_require("fileutils");
     mFileUtils = rb_define_module("FileUtils");
     rb_funcall(mFileUtils, id_mkdir_p, 1, rpath);
 }
@@ -300,8 +299,8 @@ VALUE frb_get_term(Symbol field, const char *text)
 static VALUE frb_term_to_s(VALUE self)
 {
     VALUE rstr;
-    VALUE rfield = rb_funcall(self, id_field, 0); 
-    VALUE rtext = rb_funcall(self, id_text, 0); 
+    VALUE rfield = rb_funcall(self, id_field, 0);
+    VALUE rtext = rb_funcall(self, id_text, 0);
     char *field = StringValuePtr(rfield);
     char *text = StringValuePtr(rtext);
     char *term_str = ALLOC_N(char,
@@ -338,6 +337,7 @@ void Init_Ferret(void)
 {
     mFerret = rb_define_module("Ferret");
     Init_Term();
+    rb_require("fileutils");
 }
 
 void Init_ferret_ext(void)
