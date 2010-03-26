@@ -52,6 +52,8 @@ typedef struct PhPos
 static bool pp_next(PhPos *self)
 {
     TermDocEnum *tpe = self->tpe;
+    assert(tpe);
+
     if (!tpe->next(tpe)) {
         tpe->close(tpe);            /* close stream */
         self->tpe = NULL;
@@ -66,9 +68,7 @@ static bool pp_next(PhPos *self)
 static bool pp_skip_to(PhPos *self, int doc_num)
 {
     TermDocEnum *tpe = self->tpe;
-    if (!tpe) {
-        return false;
-    }
+    assert(tpe);
 
     if (!tpe->skip_to(tpe, doc_num)) {
         tpe->close(tpe);            /* close stream */
@@ -337,11 +337,10 @@ static Scorer *phsc_new(Weight *weight,
             for (j = 0; j < t_cnt; j++) {
                 if (hs_add(term_set, terms[j])) {
                     PhSc(self)->check_repeats = true;
-                    goto repeat_check_done;
+                    break;
                 }
             }
         }
-repeat_check_done:
         PhSc(self)->phrase_pos[i] = pp_new(term_pos_enum[i], positions[i].pos);
     }
 
@@ -1104,7 +1103,7 @@ static unsigned long phq_hash(Query *self)
         char **terms = phq->positions[i].terms;
         for (j = ary_size(terms) - 1; j >= 0; j--) {
             hash = (hash << 1) ^ (str_hash(terms[j])
-                                  ^ phq->positions[i].pos);
+                               ^ phq->positions[i].pos);
         }
     }
     return (hash ^ phq->slop);

@@ -18,6 +18,8 @@ extern "C" {
 #define FRT_MAX_FILE_PATH 1024
 #define FRT_BUFFER_SIZE 1024
 
+#define FRT_DBL2S "%#.7g"
+
 #if defined(__GNUC__) && !defined(__cplusplus)
 #  define FRT_INLINE
 #else

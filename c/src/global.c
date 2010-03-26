@@ -147,7 +147,7 @@ char *dbl_to_s(char *buf, double num)
     }
 #endif
 
-    sprintf(buf, "%#.7g", num);
+    sprintf(buf, DBL2S, num);
     if (!(e = strchr(buf, 'e'))) {
         e = buf + strlen(buf);
     }
