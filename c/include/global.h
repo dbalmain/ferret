@@ -301,4 +301,15 @@ extern void frt_clean_up();
 } // extern "C"
 #endif
 
+
+/**
+ * For general use during testing. Switch this on and off for print statements
+ * to only print when p_on is called and not after p_off is called
+ */
+extern void p(const char *format, ...);
+extern void p_on();
+extern void p_off();
+extern void p_pause();
+extern void p_resume();
+
 #endif

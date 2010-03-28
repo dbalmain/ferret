@@ -456,3 +456,46 @@ void init(int argc, const char *const argv[])
 
     atexit(&hash_finalize);
 }
+
+/**
+ * For general use when testing
+ *
+ * TODO wrap in #ifdef
+ */
+
+static bool p_switch = false;
+static bool p_switch_tmp = false;
+
+void p(const char *format, ...)
+{
+    va_list args;
+
+    if (!p_switch) return;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
+void p_on()
+{
+    fprintf(stderr, "> > > > > STARTING PRINT\n");
+    p_switch = true;
+}
+
+void p_off()
+{
+    fprintf(stderr, "< < < < < STOPPING PRINT\n");
+    p_switch = false;
+}
+
+void p_pause()
+{
+    p_switch_tmp = p_switch;
+    p_switch = false;
+}
+
+void p_resume()
+{
+    p_switch = p_switch_tmp;
+}
