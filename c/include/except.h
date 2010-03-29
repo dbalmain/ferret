@@ -143,7 +143,7 @@ typedef struct frt_xcontext_t
 # define FRT_RAISE(excode, ...) do {\
   snprintf(frt_xmsg_buffer, FRT_XMSG_BUFFER_SIZE, __VA_ARGS__);\
   snprintf(frt_xmsg_buffer_final, FRT_XMSG_BUFFER_SIZE,\
-          "Error occured in %s:%d - %s\n\t%s\n",\
+          "Error occured in %s:%d - %s\n\t%s",\
           __FILE__, __LINE__, __func__, frt_xmsg_buffer);\
   frt_xraise(excode, frt_xmsg_buffer_final);\
 } while (0)
