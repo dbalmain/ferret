@@ -154,9 +154,7 @@ char *dbl_to_s(char *buf, double num)
     if (!isdigit(e[-1])) {
         /* reformat if ended with decimal point (ex 111111111111111.) */
         sprintf(buf, "%#.6e", num);
-        if (!(e = strchr(buf, 'e'))) {
-            e = buf + strlen(buf);
-        }
+        if (!(e = strchr(buf, 'e'))) { e = buf + strlen(buf); }
     }
     p = e;
     while (p[-1] == '0' && isdigit(p[-2])) {
@@ -275,8 +273,7 @@ static char *build_gdb_commandfile()
     const char *commands = "bt\nquit\n";
     char *filename = ALLOC_N(char, FILENAME_MAX);
     int fd = build_tempfile(filename, FILENAME_MAX);
-    if (fd < 0)
-        return NULL;
+    if (fd < 0) { return NULL; }
     write(fd, commands, strlen(commands));
     close(fd);
     return filename;
