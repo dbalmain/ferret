@@ -3,6 +3,11 @@
  *
  * Exception Handling looks something like this;
  *
+ * ### NOTE ###
+ * You must use a FINALLY block if you use "default:" block. Otherwise the
+ * default: block will get called in place of the FINALLY block.
+ *
+ *
  * <pre>
  *   FRT_TRY
  *       FRT_RAISE(FRT_EXCEPTION, msg1);

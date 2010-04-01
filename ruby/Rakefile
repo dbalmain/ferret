@@ -142,7 +142,7 @@ namespace :build do
 
   file "ext/Makefile" => SRC do
     cd "ext"
-    `ruby extconf.rb`
+    ruby "extconf.rb"
     cd ".."
   end
 end

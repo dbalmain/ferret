@@ -144,3 +144,4 @@ ext/win32.h
 test/temp
 pkg
 doc
+tmp

@@ -11,7 +11,7 @@
 void with_lock(Lock *lock, void (*func)(void *arg), void *arg)
 {
     if (!lock->obtain(lock)) {
-        RAISE(IO_ERROR, "couldn't obtain lock \"%s\"", lock->name);
+        RAISE(LOCK_ERROR, "couldn't obtain lock \"%s\"", lock->name);
     }
     func(arg);
     lock->release(lock);

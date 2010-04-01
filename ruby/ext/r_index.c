@@ -811,7 +811,7 @@ frb_te_set_field(VALUE self, VALUE rfield)
     } else {
         Check_Type(rfield, T_SYMBOL);
         rb_raise(rb_eArgError, "field %s doesn't exist in the index",
-                 frb_field(rfield));
+                 (char *)frb_field(rfield));
     }
     te->set_field(te, field_num);
 
@@ -940,7 +940,7 @@ frb_tde_seek(VALUE self, VALUE rfield, VALUE rterm)
         field_num = FIX2INT(rfnum);
     } else {
         rb_raise(rb_eArgError, "field %s doesn't exist in the index",
-                 frb_field(rfield));
+                 (char *)frb_field(rfield));
     }
     tde->seek(tde, field_num, term);
     return self;
@@ -2219,7 +2219,7 @@ frb_ir_get_norms_into(VALUE self, VALUE rfield, VALUE rnorms, VALUE roffset)
     offset = FIX2INT(roffset);
     Check_Type(rnorms, T_STRING);
     if (RSTRING_LEN(rnorms) < offset + ir->max_doc(ir)) {
-        rb_raise(rb_eArgError, "supplied a string of length:%d to "
+        rb_raise(rb_eArgError, "supplied a string of length:%ld to "
                  "IndexReader#get_norms_into but needed a string of length "
                  "offset:%d + maxdoc:%d",
                  RSTRING_LEN(rnorms), offset, ir->max_doc(ir));
@@ -2392,8 +2392,8 @@ frb_ir_get_doc(int argc, VALUE *argv, VALUE self)
             pos = FIX2INT(arg1);
             pos = (pos < 0) ? (max + pos) : pos;
             if (pos < 0 || pos >= max) {
-                rb_raise(rb_eArgError, "index %d is out of range [%d..%d] for "
-                         "IndexReader#[]", pos, 0, max, -1);
+                rb_raise(rb_eArgError, "index %ld is out of range [%d..%ld] for "
+                         "IndexReader#[]", pos, 0, max);
             }
             return frb_get_lazy_doc(ir->get_lazy_doc(ir, pos));
         }
