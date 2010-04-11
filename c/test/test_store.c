@@ -353,7 +353,7 @@ static void test_rw_vlls(TestCase *tc, void *data)
 {
     int i;
     Store *store = (Store *)data;
-    unsigned int vlls[4] = { ULLONG_MAX, 0, 10000, 1 };
+    unsigned long vlls[4] = { ULLONG_MAX, 0, 10000, 1 };
     OutStream *ostream = store->new_output(store, "_rw_vll.cfs");
     InStream *istream;
 

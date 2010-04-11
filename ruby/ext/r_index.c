@@ -1,6 +1,10 @@
 #include "ferret.h"
 #include "index.h"
-#include <st.h>
+#ifdef FRT_RUBY_VERSION_1_9
+#  include <ruby/st.h>
+#else
+#  include <st.h>
+#endif
 
 VALUE mIndex;
 

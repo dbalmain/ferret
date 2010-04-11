@@ -153,6 +153,20 @@ static void fs_clear_locks(Store *store)
     closedir(d);
 }
 
+static void remove_if_index_file(const char *base_path, const char *file_name)
+{
+    char path[MAX_FILE_PATH];
+    char *basename;
+    join_path(path, base_path, file_name);
+    /* get basename of path */
+    basename = strrchr(path, DIR_SEPARATOR_CHAR);
+    basename = (basename ? basename + 1 : path);
+    /* we don't want to delete non-index files here */
+    if (file_name_filter_is_index_file(basename, true)) {
+        remove(path);
+    }
+}
+
 static void fs_clear(Store *store)
 {
     struct dirent *de;
@@ -166,13 +180,16 @@ static void fs_clear(Store *store)
     while ((de = readdir(d)) != NULL) {
         if (de->d_name[0] > '/' /* skip ., .., / and '\0'*/
                 && !file_is_lock(de->d_name)) {
-            char path[MAX_FILE_PATH];
-            remove(join_path(path, store->dir.path, de->d_name));
+            remove_if_index_file(store->dir.path, de->d_name);
         }
     }
     closedir(d);
 }
 
+/**
+ * Clear all files which belong to the index. Use fs_clear to clear the
+ * directory regardless of the files origin.
+ */
 static void fs_clear_all(Store *store)
 {
     struct dirent *de;
@@ -185,16 +202,7 @@ static void fs_clear_all(Store *store)
 
     while ((de = readdir(d)) != NULL) {
         if (de->d_name[0] > '/') { /* skip ., .., / and '\0'*/
-            char path[MAX_FILE_PATH];
-            char *basename;
-            join_path(path, store->dir.path, de->d_name);
-            /* get basename of path */
-            basename = strrchr(path, DIR_SEPARATOR_CHAR);
-            basename = (basename ? basename + 1 : path);
-            /* we don't want to delete no index files here */
-            if (file_name_filter_is_index_file(basename, true)) {
-                remove(path);
-            }
+            remove_if_index_file(store->dir.path, de->d_name);
         }
     }
     closedir(d);

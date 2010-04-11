@@ -260,7 +260,7 @@ void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
     }
 
     snprintf(buf + so_far, FRT_BUF_SIZ - so_far, "\n");
-    rb_raise(frb_get_error(err_type), buf);
+    rb_raise(frb_get_error(err_type), "%s", buf);
 }
 
 #ifdef FRT_HAS_VARARGS

@@ -266,7 +266,7 @@ frb_qp_parse(VALUE self, VALUE rstr)
     XENDTRY
 
     if (msg) {
-        rb_raise(cQueryParseException, msg);
+        rb_raise(cQueryParseException, "%s", msg);
     }
 
     return rq;

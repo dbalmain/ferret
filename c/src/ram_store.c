@@ -379,8 +379,9 @@ static InStream *ram_open_input(Store *store, const char *filename)
 static int ram_lock_obtain(Lock *lock)
 {
     int ret = true;
-    if (ram_exists(lock->store, lock->name))
+    if (ram_exists(lock->store, lock->name)) {
         ret = false;
+    }
     ram_touch(lock->store, lock->name);
     return ret;
 }

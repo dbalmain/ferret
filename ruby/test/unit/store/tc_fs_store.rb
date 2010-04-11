@@ -15,8 +15,8 @@ class FSStoreTest < Test::Unit::TestCase
   end
 
   def teardown
-    @dir.refresh()
     @dir.close()
+    Dir[File.join(@dpath, "*")].each {|path| begin File.delete(path) rescue nil end}
   end
 
   def test_fslock
