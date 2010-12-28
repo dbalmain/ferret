@@ -167,7 +167,7 @@ CINCS    = INC_DIRS.map{|d| "-I#{d}"}.join(' ')
 LDFLAGS  = "-lm -lpthread"
 DEP_DIR  = ".deps"
 GCOV_DIR = ".gcov"
-CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS}"
+CFLAGS   = "-pedantic -Wall -Wextra #{CINCS} -g -fno-common -std=c99 #{DEFS} -funsigned-char"
 
 if (File.exists?(`which gdb 2> /dev/null`.chomp))
   CFLAGS << " -DHAVE_GDB"

@@ -265,7 +265,7 @@ void check_to_s(TestCase *tc, Query *query, Symbol field, char *q_str)
 }
 
 void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                char *expected_hits, char top)
+                char *expected_hits, int top)
 {
     static int num_array[ARRAY_SIZE];
     static int num_array2[ARRAY_SIZE];
