@@ -68,7 +68,7 @@ static void test_icmp(TestCase *tc, void *data)
 static void test_alloc(TestCase *tc, void *data)
 {
     data = lmalloc(100);
-    Aiequal(100, *(int *)data);
+    Aiequal(100, *(unsigned long *)data);
     free(data);
 
     data = u32malloc(100);
