@@ -14,7 +14,7 @@ static void add_doc(char *text, IndexWriter *iw)
 }
 
 void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                char *expected_hits, char top);
+                char *expected_hits, int top);
 void check_to_s(TestCase *tc, Query *query, Symbol field, char *q_str);
 
 static void do_prefix_test(TestCase *tc, Searcher *searcher, char *qstr,

@@ -6,7 +6,7 @@ static Symbol num;
 extern void prepare_filter_index(Store *store);
 
 extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                       char *expected_hits, char top);
+                       char *expected_hits, int top);
 
 static void test_const_score_query(TestCase *tc, void *data)
 {

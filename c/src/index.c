@@ -401,7 +401,7 @@ FieldInfo *fis_by_number(FieldInfos *fis, int num)
 
 FieldInfos *fis_read(InStream *is)
 {
-    FieldInfos *volatile fis;
+    FieldInfos *volatile fis = NULL;
     TRY
         do {
             StoreValue store_val;

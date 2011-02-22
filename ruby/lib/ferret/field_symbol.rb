@@ -5,7 +5,7 @@ module Ferret
   # __id__. It is useful for creating proxy classes. It is currently used by
   # the FieldSymbol class which is a proxy to the Symbol class 
   class BlankSlate
-    instance_methods.each { |m| undef_method m unless m =~ /^__/ }
+    instance_methods.each { |m| undef_method m unless m =~ /^__|object_id/ }
   end
 
   # The FieldSymbolMethods module contains the methods that are added to both

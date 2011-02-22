@@ -3,6 +3,11 @@
  *
  * Exception Handling looks something like this;
  *
+ * ### NOTE ###
+ * You must use a FINALLY block if you use "default:" block. Otherwise the
+ * default: block will get called in place of the FINALLY block.
+ *
+ *
  * <pre>
  *   FRT_TRY
  *       FRT_RAISE(FRT_EXCEPTION, msg1);
@@ -143,7 +148,7 @@ typedef struct frt_xcontext_t
 # define FRT_RAISE(excode, ...) do {\
   snprintf(frt_xmsg_buffer, FRT_XMSG_BUFFER_SIZE, __VA_ARGS__);\
   snprintf(frt_xmsg_buffer_final, FRT_XMSG_BUFFER_SIZE,\
-          "Error occured in %s:%d - %s\n\t%s\n",\
+          "Error occured in %s:%d - %s\n\t%s",\
           __FILE__, __LINE__, __func__, frt_xmsg_buffer);\
   frt_xraise(excode, frt_xmsg_buffer_final);\
 } while (0)

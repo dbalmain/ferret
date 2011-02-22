@@ -207,8 +207,8 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
         field = frb_field(argv[0]);
     }
 
-    sprintf(str, "TopDocs: total_hits = %ld, max_score = %f [\n",
-            FIX2INT(rb_funcall(self, id_total_hits, 0)),
+    sprintf(str, "TopDocs: total_hits = %ld, max_score = %lf [\n",
+            FIX2LONG(rb_funcall(self, id_total_hits, 0)),
             NUM2DBL(rb_funcall(self, id_max_score, 0)));
     p = (int)strlen(str);
 
@@ -2676,7 +2676,7 @@ frb_sea_search_internal(Query *query, VALUE roptions, Searcher *sea)
             else {
                 rb_raise(rb_eArgError, "%s is not a sensible :limit value "
                          "Please use a positive integer or :all",
-                         rb_obj_as_string(rval));
+                         rs2s(rb_obj_as_string(rval)));
             }
         }
         if (Qnil != (rval = rb_hash_aref(roptions, sym_filter))) {
@@ -2911,7 +2911,7 @@ frb_sea_scan(int argc, VALUE *argv, VALUE self)
             else {
                 rb_raise(rb_eArgError, "%s is not a sensible :limit value "
                          "Please use a positive integer or :all",
-                         rb_obj_as_string(rval));
+                         rs2s(rb_obj_as_string(rval)));
             }
         }
     }

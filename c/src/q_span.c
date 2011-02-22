@@ -828,7 +828,8 @@ static bool spanoe_skip_to(SpanEnum *self, int target)
     }
     else {
         while ((soe->queue->size != 0) &&
-               ((se = (SpanEnum *)pq_top(soe->queue))->doc(se) < target)) {
+               ((se = (SpanEnum *)pq_top(soe->queue)) != NULL) &&
+               (se->doc(se) < target)) {
             if (se->skip_to(se, target)) {
                 pq_down(soe->queue);
             }

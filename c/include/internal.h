@@ -27,6 +27,7 @@
 #define COMMIT_LOCK_NAME                   FRT_COMMIT_LOCK_NAME
 #define CONSTANT_QUERY                     FRT_CONSTANT_QUERY
 #define CW_INIT_CAPA                       FRT_CW_INIT_CAPA
+#define DBL2S                              FRT_DBL2S
 #define DEFAULT_MAX_CLAUSE_COUNT           FRT_DEFAULT_MAX_CLAUSE_COUNT
 #define DEF_MAX_TERMS                      FRT_DEF_MAX_TERMS
 #define DEF_MIN_SIM                        FRT_DEF_MIN_SIM

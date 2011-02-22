@@ -221,7 +221,7 @@ static void test_uncaught_except(TestCase *tc, void *data)
 
     /* Unhandled exception outside of try block */
     x_has_aborted = false;
-    raise_exception();
+    RAISE(EXCEPTION, "%s:", msg1);
     Assert(x_has_aborted, "Unhandled exception didn't cause an abort");
 
     x_abort_on_exception = old_abort_setting;

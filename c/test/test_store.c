@@ -5,13 +5,43 @@
 
 #define TEST_LOCK_NAME "test"
 
+typedef struct WithLockTestArg {
+    Lock *lock;
+    TestCase *tc;
+} WithLockTestArg;
+
+typedef struct WithLockNameTestArg {
+    char *lock_name;
+    Store *store;
+    TestCase *tc;
+} WithLockNameTestArg;
+
+static void with_lock_test(void *p)
+{
+    WithLockTestArg *l = (WithLockTestArg *)p;
+    TestCase *tc = l->tc;
+    Assert(l->lock->is_locked(l->lock), "lock should be locked");
+}
+
+static void with_lock_name_test(void *p)
+{
+    WithLockNameTestArg *l = (WithLockNameTestArg *)p;
+    TestCase *tc = l->tc;
+    Lock *lock = open_lock(l->store, l->lock_name);
+    Assert(lock->is_locked(lock), "lock should be locked");
+    close_lock(lock);
+}
+
 /**
  * Test that the lock is created and deleted correctly
  */
 static void test_lock(TestCase *tc, void *data)
 {
     Store *store = (Store *)data;
-    Lock *lock1, *lock2;
+    Lock *lock, *lock1, *lock2;
+    bool handled = false;
+    WithLockTestArg wlta;
+    WithLockNameTestArg wlnta;
 
     lock1 = open_lock(store, TEST_LOCK_NAME);
     Aiequal(false, lock1->is_locked(lock1));
@@ -21,11 +51,63 @@ static void test_lock(TestCase *tc, void *data)
     Aiequal(false, lock1->is_locked(lock1));
     Aiequal(true, lock1->obtain(lock1));
     lock2 = open_lock(store, TEST_LOCK_NAME);
-    Aiequal(true, lock2->is_locked(lock1));
+    Aiequal(true, lock2->is_locked(lock2));
     lock1->release(lock1);
-    Aiequal(false, lock2->is_locked(lock1));
+    Aiequal(false, lock2->is_locked(lock2));
     close_lock(lock1);
     close_lock(lock2);
+
+    /* test with_lock */
+    lock = open_lock(store, TEST_LOCK_NAME);
+    Assert(!lock->is_locked(lock), "lock shouldn't be locked yet");
+    wlta.lock = lock; wlta.tc = tc;
+    with_lock(lock, &with_lock_test, &wlta);
+    Assert(!lock->is_locked(lock), "lock should be unlocked again");
+    Assert(lock->obtain(lock), "lock should be obtainable");
+    handled = false;
+    TRY
+        with_lock(lock, &with_lock_test, &wlta);
+        Assert(false, "A locking exception should have been raised");
+        break;
+    case LOCK_ERROR:
+        handled = true;
+        HANDLED();
+        break;
+    default:
+        Assert(false, "This exception shouldn't have been raised");
+        break;
+    case FINALLY:
+        break;
+    XENDTRY
+    Assert(handled, "A LOCK_ERROR should have been raised");
+    lock->release(lock);
+    close_lock(lock);
+
+    /* test with_lock_name */
+    lock = open_lock(store, TEST_LOCK_NAME);
+    Assert(!lock->is_locked(lock), "lock shouldn't be locked yet");
+    wlnta.lock_name = TEST_LOCK_NAME; wlnta.tc = tc; wlnta.store = store;
+    with_lock_name(store, TEST_LOCK_NAME, &with_lock_name_test, &wlnta);
+    Assert(!lock->is_locked(lock), "lock should be unlocked again");
+    Assert(lock->obtain(lock), "lock should be obtainable");
+    handled = false;
+    TRY
+        with_lock_name(store, TEST_LOCK_NAME, &with_lock_name_test, &wlnta);
+        Assert(false, "A locking exception should have been raised");
+        break;
+    case LOCK_ERROR:
+        handled = true;
+        HANDLED();
+        break;
+    default:
+        Assert(false, "This exception shouldn't have been raised");
+        break;
+    case FINALLY:
+        break;
+    XENDTRY
+    Assert(handled, "A LOCK_ERROR should have been raised");
+    lock->release(lock);
+    close_lock(lock);
 }
 
 /**
@@ -265,6 +347,29 @@ static void test_rw_vints(TestCase *tc, void *data)
 }
 
 /**
+ * Test reading and writing of variable size integers
+ */
+static void test_rw_vlls(TestCase *tc, void *data)
+{
+    int i;
+    Store *store = (Store *)data;
+    unsigned long vlls[4] = { ULLONG_MAX, 0, 10000, 1 };
+    OutStream *ostream = store->new_output(store, "_rw_vll.cfs");
+    InStream *istream;
+
+    for (i = 0; i < 4; i++) {
+        os_write_vll(ostream, vlls[i]);
+    }
+    os_close(ostream);
+
+    istream = store->open_input(store, "_rw_vll.cfs");
+    for (i = 0; i < 4; i++) {
+        Aiequal(vlls[i], is_read_vll(istream));
+    }
+    is_close(istream);
+}
+
+/**
  * Test reading and writing of variable size 64-bit integers
  */
 static void test_rw_voff_ts(TestCase *tc, void *data)
@@ -473,6 +578,7 @@ void create_test_store_suite(TestSuite *suite, Store *store)
     tst_run_test(suite, test_rw_u32, store);
     tst_run_test(suite, test_rw_u64, store);
     tst_run_test(suite, test_rw_vints, store);
+    tst_run_test(suite, test_rw_vlls, store);
     tst_run_test(suite, test_rw_voff_ts, store);
     tst_run_test(suite, test_rw_strings, store);
     tst_run_test(suite, test_rw_funny_strings, store);

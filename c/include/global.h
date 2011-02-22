@@ -18,6 +18,8 @@ extern "C" {
 #define FRT_MAX_FILE_PATH 1024
 #define FRT_BUFFER_SIZE 1024
 
+#define FRT_DBL2S "%#.7g"
+
 #if defined(__GNUC__) && !defined(__cplusplus)
 #  define FRT_INLINE
 #else
@@ -298,5 +300,16 @@ extern void frt_clean_up();
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+
+/**
+ * For general use during testing. Switch this on and off for print statements
+ * to only print when p_on is called and not after p_off is called
+ */
+extern void p(const char *format, ...);
+extern void p_on();
+extern void p_off();
+extern void p_pause();
+extern void p_resume();
 
 #endif

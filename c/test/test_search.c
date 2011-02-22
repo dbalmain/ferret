@@ -265,7 +265,7 @@ void check_to_s(TestCase *tc, Query *query, Symbol field, char *q_str)
 }
 
 void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                char *expected_hits, char top)
+                char *expected_hits, int top)
 {
     static int num_array[ARRAY_SIZE];
     static int num_array2[ARRAY_SIZE];
@@ -273,6 +273,7 @@ void check_hits(TestCase *tc, Searcher *searcher, Query *query,
     int total_hits = s2l(expected_hits, num_array);
     TopDocs *top_docs
         = searcher_search(searcher, query, 0, total_hits + 1, NULL, NULL, NULL);
+    p_pause();
     if (!tc->failed && !Aiequal(total_hits, top_docs->total_hits)) {
         int i;
         Tmsg_nf("\texpected;\n\t    ");
@@ -333,6 +334,7 @@ free(t);
                                          num_array2, ARRAY_SIZE, num_array2[3]);
         Aaiequal(num_array + 3, num_array2, count);
     }
+    p_resume();
 }
 
 void check_match_vector(TestCase *tc, Searcher *searcher, Query *query,
@@ -366,13 +368,13 @@ static void test_term_query(TestCase *tc, void *data)
     check_to_s(tc, tq, field, "word2^100.0");
     check_to_s(tc, tq, NULL, "field:word2^100.0");
 
-    /* test PhraseWeight.to_s */
+    /* test TermWeight.to_s */
     w = searcher->create_weight(searcher, tq);
-    sprintf(e, "TermWeight(%f)", w->value);
-    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    sprintf(e, "TermWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
     tq->boost = 10.5f;
-    sprintf(e, "TermWeight(%f)", w->value);
-    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    sprintf(e, "TermWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
     w->destroy(w);
 
     q_deref(tq);
@@ -587,11 +589,11 @@ static void test_phrase_query(TestCase *tc, void *data)
 
     /* test PhraseWeight.to_s */
     w = searcher->create_weight(searcher, phq);
-    sprintf(e, "PhraseWeight(%f)", w->value);
-    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    sprintf(e, "PhraseWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
     phq->boost = 10.5f;
-    sprintf(e, "PhraseWeight(%f)", w->value);
-    t = w->to_s(w); Asnequal(e, t, 17); free(t);
+    sprintf(e, "PhraseWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
     w->destroy(w);
 
     q_deref(phq);
@@ -620,8 +622,10 @@ static void test_phrase_query(TestCase *tc, void *data)
     check_hits(tc, searcher, phq, "11", 11);
     phq_add_term(phq, "green", 0);
     phq_add_term(phq, "yellow", 0);
+    phq_add_term(phq, "sentinel", 1);
     check_to_s(tc, phq, NULL,
-               "field:\"quick QUICK&red&red RED&fox&green&yellow\"~4");
+               "field:\"quick QUICK&red&red RED&fox&green&yellow sentinel\"~4");
+    check_hits(tc, searcher, phq, "", -1);
     q_deref(phq);
 
     phq = phq_new(field);
@@ -750,6 +754,7 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     Searcher *searcher = (Searcher *)data;
     Query *phq, *q;
 
+
     phq = phq_new(field);
     /* ok to use append_multi_term to start */
     phq_append_multi_term(phq, "quick");
@@ -781,6 +786,7 @@ static void test_multi_phrase_query(TestCase *tc, void *data)
     check_hits(tc, searcher, phq, "1, 8, 11, 14", -1);
     check_to_s(tc, phq, NULL, "field:\"WORD3|WORD2 quick|fast "
                "QUICK|FAST&brown|red|hairy fox\"~4");
+
     q_deref(phq);
 
     /* test repeating terms check */
@@ -899,10 +905,20 @@ static void test_multi_phrase_query_hash(TestCase *tc, void *data)
     q_deref(q1);
 }
 
+static void mtq_zero_max_terms(void *p)
+{ (void)p; multi_tq_new_conf(field, 0, 0.5); }
+
 static void test_multi_term_query(TestCase *tc, void *data)
 {
+    Weight *w;
+    char *t, e[100];
     Searcher *searcher = (Searcher *)data;
-    Query *mtq = multi_tq_new_conf(field, 4, 0.5);
+    Query *mtq, *bq;
+    Explanation *exp;
+   
+    Araise(ARG_ERROR, &mtq_zero_max_terms, NULL);
+
+    mtq = multi_tq_new_conf(field, 4, 0.5);
     check_hits(tc, searcher, mtq, "", -1);
     check_to_s(tc, mtq, field, "\"\"");
     check_to_s(tc, mtq, NULL, "field:\"\"");
@@ -912,11 +928,14 @@ static void test_multi_term_query(TestCase *tc, void *data)
     check_to_s(tc, mtq, field, "\"brown\"");
     check_to_s(tc, mtq, NULL, "field:\"brown\"");
 
-    multi_tq_add_term_boost(mtq, "fox", 0.1f);
+
+    /* 0.4f boost is below the 0.5 threshold so term is ignored */
+    multi_tq_add_term_boost(mtq, "fox", 0.4f);
     check_hits(tc, searcher, mtq, "1, 8, 16, 17", -1);
     check_to_s(tc, mtq, field, "\"brown\"");
     check_to_s(tc, mtq, NULL, "field:\"brown\"");
 
+    /* 0.6f boost is above the 0.5 threshold so term is included */
     multi_tq_add_term_boost(mtq, "fox", 0.6f);
     check_hits(tc, searcher, mtq, "1, 8, 11, 14, 16, 17", -1);
     check_to_s(tc, mtq, field, "\"fox^0.6|brown\"");
@@ -936,12 +955,40 @@ static void test_multi_term_query(TestCase *tc, void *data)
     check_to_s(tc, mtq, NULL, "field:\"brown|word1|word2|fast^50.0\"^80.1");
     multi_tq_add_term(mtq, "word3");
     check_to_s(tc, mtq, NULL, "field:\"brown|word1|word2|fast^50.0\"^80.1");
-/*
-char *t;
-Explanation *e = searcher_explain(searcher, mtq, 8);
-printf("\n\"\"\"\n%s\n\"\"\"\n", t = expl_to_s(e));
-free(t);
-*/
+
+    /* test MultiTermWeight.to_s */
+    w = searcher->create_weight(searcher, mtq);
+    sprintf(e, "MultiTermWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
+    mtq->boost = 10.5f;
+    sprintf(e, "MultiTermWeight("DBL2S")", w->value);
+    t = w->to_s(w); Asequal(e, t); free(t);
+    w->destroy(w);
+
+    q_deref(mtq);
+
+    /* exercise tdew_skip_to */
+    mtq = multi_tq_new_conf(field, 4, 0.5);
+    multi_tq_add_term(mtq, "brown");
+    multi_tq_add_term_boost(mtq, "fox", 0.6f);
+    multi_tq_add_term(mtq, "word1");
+    bq = bq_new(false);
+    bq_add_query_nr(bq, tq_new(field, "quick"), BC_MUST);
+    bq_add_query(bq, mtq, BC_MUST);
+    check_hits(tc, searcher, bq, "1, 11, 14, 16, 17", -1);
+    check_to_s(tc, bq, field, "+quick +\"fox^0.6|brown|word1\"");
+    check_to_s(tc, bq, NULL, "+field:quick +field:\"fox^0.6|brown|word1\"");
+    q_deref(bq);
+    q_deref(mtq);
+
+    /* test incorrect field explanation */
+    mtq = multi_tq_new_conf(intern("hello"), 4, 0.5);
+    multi_tq_add_term(mtq, "brown");
+    multi_tq_add_term(mtq, "quick");
+    exp = searcher_explain(searcher, mtq, 0);
+    Afequal(0.0, exp->value);
+    Asequal("field \"hello\" does not exist in the index", exp->description);
+
     q_deref(mtq);
 }
 

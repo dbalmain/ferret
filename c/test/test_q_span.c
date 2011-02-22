@@ -72,7 +72,7 @@ static void span_test_setup(Store *store)
 }
 
 extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                       char *expected_hits, char top);
+                       char *expected_hits, int top);
 
 static void test_span_term(TestCase *tc, void *data)
 {

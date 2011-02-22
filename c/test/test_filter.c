@@ -55,7 +55,7 @@ void prepare_filter_index(Store *store)
 
 static void check_filtered_hits(TestCase *tc, Searcher *searcher, Query *query,
                                 Filter *f, PostFilter *post_filter,
-                                char *expected_hits, char top)
+                                char *expected_hits, int top)
 {
     static int num_array[ARRAY_SIZE];
     int i;
@@ -93,7 +93,7 @@ static void check_filtered_hits(TestCase *tc, Searcher *searcher, Query *query,
 }
 
 extern void check_hits(TestCase *tc, Searcher *searcher, Query *query,
-                       char *expected_hits, char top);
+                       char *expected_hits, int top);
 
 #define TEST_TO_S(mstr, mfilt) \
     do {\

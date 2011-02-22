@@ -147,16 +147,14 @@ char *dbl_to_s(char *buf, double num)
     }
 #endif
 
-    sprintf(buf, "%#.7g", num);
+    sprintf(buf, DBL2S, num);
     if (!(e = strchr(buf, 'e'))) {
         e = buf + strlen(buf);
     }
     if (!isdigit(e[-1])) {
         /* reformat if ended with decimal point (ex 111111111111111.) */
         sprintf(buf, "%#.6e", num);
-        if (!(e = strchr(buf, 'e'))) {
-            e = buf + strlen(buf);
-        }
+        if (!(e = strchr(buf, 'e'))) { e = buf + strlen(buf); }
     }
     p = e;
     while (p[-1] == '0' && isdigit(p[-2])) {
@@ -275,8 +273,7 @@ static char *build_gdb_commandfile()
     const char *commands = "bt\nquit\n";
     char *filename = ALLOC_N(char, FILENAME_MAX);
     int fd = build_tempfile(filename, FILENAME_MAX);
-    if (fd < 0)
-        return NULL;
+    if (fd < 0) { return NULL; }
     write(fd, commands, strlen(commands));
     close(fd);
     return filename;
@@ -455,4 +452,47 @@ void init(int argc, const char *const argv[])
     symbol_init();
 
     atexit(&hash_finalize);
+}
+
+/**
+ * For general use when testing
+ *
+ * TODO wrap in #ifdef
+ */
+
+static bool p_switch = false;
+static bool p_switch_tmp = false;
+
+void p(const char *format, ...)
+{
+    va_list args;
+
+    if (!p_switch) return;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
+void p_on()
+{
+    fprintf(stderr, "> > > > > STARTING PRINT\n");
+    p_switch = true;
+}
+
+void p_off()
+{
+    fprintf(stderr, "< < < < < STOPPING PRINT\n");
+    p_switch = false;
+}
+
+void p_pause()
+{
+    p_switch_tmp = p_switch;
+    p_switch = false;
+}
+
+void p_resume()
+{
+    p_switch = p_switch_tmp;
 }

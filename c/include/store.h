@@ -124,7 +124,7 @@ struct FrtInStream
     } file;
     union
     {
-        off_t pointer;           /* only used by RAMIn */
+        off_t pointer;          /* only used by RAMIn */
         char *path;             /* only used by FSIn */
         FrtCompoundInStream *cis;
     } d;
@@ -163,13 +163,13 @@ typedef struct FrtCompoundStore
 struct FrtStore
 {
     int ref_cnt;                /* for fs_store only */
-    frt_mutex_t mutex_i;            /* for internal use only */
-    frt_mutex_t mutex;              /* external mutex for use outside */
+    frt_mutex_t mutex_i;        /* for internal use only */
+    frt_mutex_t mutex;          /* external mutex for use outside */
     union
     {
         char *path;             /* for fs_store only */
-        FrtHash *ht;    /* for ram_store only */
-        FrtCompoundStore *cmpd;    /* for compound_store only */
+        FrtHash *ht;            /* for ram_store only */
+        FrtCompoundStore *cmpd; /* for compound_store only */
     } dir;
 
 #ifdef POSH_OS_WIN32
