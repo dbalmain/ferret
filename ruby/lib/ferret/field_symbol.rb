@@ -1,11 +1,18 @@
 module Ferret
   FIELD_TYPES = %w(integer float string byte).map{|t| t.to_sym}
 
-  # BlankSlate is a class with no instance methods except for __send__ and
-  # __id__. It is useful for creating proxy classes. It is currently used by
-  # the FieldSymbol class which is a proxy to the Symbol class 
-  class BlankSlate
-    instance_methods.each { |m| undef_method m unless m =~ /^__|object_id/ }
+  if defined?(BasicObject)
+    # Ruby 1.9.x
+    class BlankSlate < BasicObject
+    end
+  else
+    # Ruby 1.8.x
+    # BlankSlate is a class with no instance methods except for __send__ and
+    # __id__. It is useful for creating proxy classes. It is currently used by
+    # the FieldSymbol class which is a proxy to the Symbol class 
+    class BlankSlate
+      instance_methods.each { |m| undef_method m unless m =~ /^__|object_id/ }
+    end
   end
 
   # The FieldSymbolMethods module contains the methods that are added to both
