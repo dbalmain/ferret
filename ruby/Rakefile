@@ -220,10 +220,10 @@ end
 PKG_FILES = FileList[
   'setup.rb',
   '[-A-Z]*',
-  'lib/**/*.rb', 
-  'lib/**/*.rhtml', 
-  'lib/**/*.css', 
-  'lib/**/*.js', 
+  'lib/**/*.rb',
+  'lib/**/*.rhtml',
+  'lib/**/*.css',
+  'lib/**/*.js',
   'test/**/*.rb',
   'test/**/wordfile',
   'rake_utils/**/*.rb',
@@ -232,9 +232,9 @@ PKG_FILES = FileList[
 ]
 
 spec = Gem::Specification.new do |s|
-  
+
   #### Basic information.
-  s.name = 'jk-ferret'
+  s.name = 'ferret'
   s.version = Ferret::VERSION
   s.summary = "Ruby indexing library."
   s.description = "Ferret is a super fast, highly configurable search library."
@@ -330,12 +330,12 @@ if ENV['FERRET_DEV']
   task :release => 'release:release'
   namespace :release do
     task :release => [:status_check, 'test:all', :package, :tag] do
-      say 
+      say
       say "**************************************************************"
       say "* Release #{Ferret::VERSION} Complete."
       say "* Packages ready to upload."
       say "**************************************************************"
-      say 
+      say
       reversion("lib/ferret/version.rb")
     end
 
@@ -345,7 +345,7 @@ if ENV['FERRET_DEV']
       unless `svn -q --ignore-externals status` =~ /^$/
         fail "'svn -q status' is not clean ... do you have unchecked-in files?"
       end
-      
+
       say "No outstanding checkins found ... OK"
     end
 
@@ -355,7 +355,7 @@ if ENV['FERRET_DEV']
         print "Ferret is currently at #{Ferret::VERSION}. What version now? "
         new_version = STDIN.gets.chomp!
       end until prompt("Change to version #{new_version}?")
-      
+
       if ENV['RELTEST']
         say "Would change the version in lib/ferret/version.rb from"
         say "    #{Ferret::VERSION} => #{new_version}"
@@ -426,7 +426,7 @@ if ENV['FERRET_DEV']
     task :all => [:doc, :release]
   end
 end
-   
+
 
 
 
@@ -434,10 +434,10 @@ end
 # In case I ever need to add another racc parser, here's how
 #
 # # Make Parsers ---------------------------------------------------------------
-# 
+#
 # RACC_SRC = FileList["lib/**/*.y"]
-# 
+#
 # task :parsers => RACC_OUT
 # rule(/\.tab\.rb$/ => [proc {|tn| tn.sub(/\.tab\.rb$/, '.y')}]) do |t|
-#   sh "racc #{t.source}" 
+#   sh "racc #{t.source}"
 # end
