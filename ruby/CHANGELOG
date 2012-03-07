@@ -1,3 +1,7 @@
+Thu Mar 08 00:18:44 +0100 2012
+  * Ruby 1.9 compatibility
+  * This release is basically the same as the now obsolete jk-ferret 0.11.8.3
+
 Fri Oct 20 22:25:37 JST 2006
   * Added Filter#bits method to built-in Filters.
   * Added MappingFilter < TokenFilter that can be used to map strings to other
@@ -12,13 +16,13 @@ Fri Oct 13 09:18:31 JST 2006
     ENGLISH_STOP_WORDS is a subset of FULL_ENGLISH_STOP_WORDS.
 
 Thu Oct 12 23:04:19 JST 2006
-  * Fixed adding SortField to Sort object in Ruby. Garbage collection wasn't 
+  * Fixed adding SortField to Sort object in Ruby. Garbage collection wasn't
     working.
   * Can now set :sort => SortField#new
 
 Tue Oct 10 14:42:17 JST 2006
   * Fixed MultiTermDocEnum bug introduced in version 0.10.10 during
-    performance enhancements. 
+    performance enhancements.
   * Added Filter#bits(index_reader) method to C implemented filters so that
     they can be used in Ruby.
 
