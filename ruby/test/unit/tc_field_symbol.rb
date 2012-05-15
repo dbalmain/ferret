@@ -21,6 +21,6 @@ class FieldSymbolTest < Test::Unit::TestCase
       assert_equal(field_type, :sym.__send__(field_type).type)
     end
 
-    assert(:string, :sym.integer.byte.float.string.type)
+    assert(:string, :sym.integer.byte.float.string.type.to_s)
   end
 end
