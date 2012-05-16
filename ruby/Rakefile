@@ -240,7 +240,7 @@ spec = Gem::Specification.new do |s|
   s.description = "Ferret is a super fast, highly configurable search library."
 
   #### Dependencies and requirements.
-  s.add_dependency('rake')
+  s.add_development_dependency('rake')
   s.files = PKG_FILES.to_a
   s.extensions << "ext/extconf.rb"
   s.require_path = 'lib'
