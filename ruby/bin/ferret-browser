@@ -16,9 +16,9 @@ opts = OptionParser.new do |opts|
   opts.separator "Specific Options:"
 
   opts.on("-h", "--host HOSTNAME",
-          "Host for web server to bind to (default is all IPs)") { |conf.host| }
+          "Host for web server to bind to (default is all IPs)") { |host| conf.host = host }
   opts.on("-p", "--port NUM",
-          "Port for web server (defaults to #{conf.port})") { |conf.port| }
+          "Port for web server (defaults to #{conf.port})") { |port| conf.port = port }
   opts.on("-s", "--server NAME",
           "Server to force (#{SERVER_OPTIONS.join(', ')}).") { |s| conf.server = s.to_sym }
 
