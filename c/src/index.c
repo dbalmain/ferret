@@ -1649,7 +1649,7 @@ LazyDoc *fr_get_lazy_doc(FieldsReader *fr, int doc_num)
     for (i = 0; i < stored_cnt; i++) {
         LazyDocField *lazy_df = lazy_doc->fields[i];
         const int data_cnt = lazy_df->size;
-        const int start = is_pos(fdt_in);
+        const off_t start = is_pos(fdt_in);
         for (j = 0; j < data_cnt; j++) {
             lazy_df->data[j].start += start;
         }
