@@ -1,7 +1,7 @@
 require 'rake'
 require 'rake/clean'
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rubygems/package_task'
+require 'rdoc/task'
 require 'rake/testtask'
 
 $:. << 'lib'
@@ -280,7 +280,7 @@ spec = Gem::Specification.new do |s|
   end
 end
 
-package_task = Rake::GemPackageTask.new(spec) do |pkg|
+package_task = Gem::PackageTask.new(spec) do |pkg|
   unless windows
     pkg.need_zip = true
     pkg.need_tar = true
