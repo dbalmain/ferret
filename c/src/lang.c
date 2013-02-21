@@ -72,10 +72,10 @@ void FRT_VEXIT(const char *err_type, const char *fmt, va_list args)
     fprintf(EXCEPTION_STREAM, "\n%s: ", progname());
 
 # ifdef FRT_HAS_VARARGS
-    fprintf(EXCEPTION_STREAM, "%s occured at <%s>:%d in %s\n",
+    fprintf(EXCEPTION_STREAM, "%s occurred at <%s>:%d in %s\n",
             err_type, file, line_num, func);
 # else
-    fprintf(EXCEPTION_STREAM, "%s occured:\n", err_type);
+    fprintf(EXCEPTION_STREAM, "%s occurred:\n", err_type);
 # endif
     vfprintf(EXCEPTION_STREAM, fmt, args);
 

@@ -2937,7 +2937,7 @@ Init_FieldInfos(void)
  *    te = index_reader.terms(:content)
  *
  *    while te.next?
- *      puts "#{te.term} occured in #{te.doc_freq} documents in the index"
+ *      puts "#{te.term} occurred in #{te.doc_freq} documents in the index"
  *    end
  */
 static void
