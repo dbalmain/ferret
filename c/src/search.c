@@ -1605,7 +1605,7 @@ static int msea_search_unscored_w(Searcher *self,
             const int index_offset = msea->starts[i];
             int current_limit = limit - count;
             /* if offset_docnum occurs in the current index then adjust,
-             * otherwise set it to zero as it occured in a previous index */
+             * otherwise set it to zero as it occurred in a previous index */
             int current_offset_docnum = offset_docnum > index_offset
                 ? offset_docnum - index_offset
                 : 0;

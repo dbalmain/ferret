@@ -245,10 +245,10 @@ void V_FRT_EXIT(const char *err_type, const char *fmt, va_list args)
     char buf[FRT_BUF_SIZ];
     size_t so_far = 0;
 #ifdef FRT_HAS_VARARGS
-    snprintf(buf, FRT_BUF_SIZ, "%s occured at <%s>:%d in %s\n",
+    snprintf(buf, FRT_BUF_SIZ, "%s occurred at <%s>:%d in %s\n",
             err_type, file, line_num, func);
 #else
-    snprintf(buf, FRT_BUF_SIZ, "%s occured:\n", err_type);
+    snprintf(buf, FRT_BUF_SIZ, "%s occurred:\n", err_type);
 #endif
     so_far = strlen(buf);
     vsnprintf(buf + so_far, FRT_BUF_SIZ - so_far, fmt, args);

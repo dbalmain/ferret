@@ -419,7 +419,7 @@ static const char *signal_to_string(int signum)
 static void sighandler_crash(int signum)
 {
     print_stacktrace();
-    XEXIT("Exiting on signal %s (%d)",
+    XEXIT("Signal", "Exiting on signal %s (%d)",
              signal_to_string(signum), signum);
 }
 
