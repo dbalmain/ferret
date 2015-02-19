@@ -65,7 +65,11 @@ int
 frb_rb_hash_size(VALUE hash)
 {
 #ifdef FRT_RUBY_VERSION_1_9
+#ifdef RHASH_SIZE
+    return RHASH_SIZE(hash);
+#else
     return RHASH(hash)->ntbl->num_entries;
+#endif
 #else
     return RHASH(hash)->tbl->num_entries;
 #endif
