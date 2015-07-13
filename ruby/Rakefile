@@ -187,9 +187,9 @@ end
 desc "Generate API documentation"
 task :doc => 'doc:rdoc'
 namespace :doc do
-  if allison = Gem.cache.find_name('allison').last
-    allison_template = File.join(allison.full_gem_path, 'lib/allison.rb')
-  end
+#  if allison = Gem.cache.find_name('allison').last
+#    allison_template = File.join(allison.full_gem_path, 'lib/allison.rb')
+#  end
   desc "Generate documentation for the application"
   $rd = Rake::RDocTask.new do |rdoc|
     rdoc.rdoc_dir = 'doc/api'
@@ -197,7 +197,7 @@ namespace :doc do
     rdoc.options << '--line-numbers'
     rdoc.options << '--inline-source'
     rdoc.options << '--charset=utf-8'
-    rdoc.template = allison_template if allison_template
+#    rdoc.template = allison_template if allison_template
     rdoc.rdoc_files.include('README')
     rdoc.rdoc_files.include('TODO')
     rdoc.rdoc_files.include('TUTORIAL')
