@@ -12,7 +12,7 @@ void test_write_to(TestCase *tc, void *data)
     char *tmp;
     Store *ram_store = open_ram_store();
     Store *fs_store = open_fs_store("./test/testdir/store");
-    char str[12] = "³³ øãíøäÄ";
+    char str[12] = "Â³Â³ Ã¸Ã£Ã­Ã¸Ã¤Ã„";
     char buf[12000] = "";
     OutStream *ostream, *fs_ostream;
     InStream *istream;

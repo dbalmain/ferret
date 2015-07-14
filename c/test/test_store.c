@@ -443,7 +443,7 @@ static void test_rw_funny_strings(TestCase *tc, void *data)
     int i;
     char *tmp;
     Store *store = (Store *)data;
-    char str[12] = "³³ ëêðïéÄ";
+    char str[12] = "Â³Â³ Ã«ÃªÃ°Ã¯Ã©Ã„";
     char buf[12000] = "";
     OutStream *ostream;
     InStream *istream;
