@@ -105,7 +105,10 @@ static u64 str36_to_u64(char *p)
  * @param ext extension of the filename (including .)
  * @param gen generation
  */
-char *fn_for_generation(char *buf, char *base, char *ext, i64 gen)
+char *fn_for_generation(char *buf,
+                        const char *base,
+                        const char *ext,
+                        i64 gen)
 {
     if (-1 == gen) {
         return NULL;
@@ -872,7 +875,7 @@ static void sis_find_segments_file(Store *store, FindSegmentsFile *fsf,
                 XENDTRY
 
                 if (NULL != gen_is) {
-                    i64 gen0 = -1, gen1 = -1;
+                    volatile i64 gen0 = -1, gen1 = -1;
 
                     TRY
                         gen0 = is_read_u64(gen_is);
@@ -1080,7 +1083,7 @@ static void sis_read_i(Store *store, FindSegmentsFile *fsf)
 {
     int seg_cnt;
     int i;
-    bool success = false;
+    volatile bool success = false;
     char seg_file_name[SEGMENT_NAME_MAX_LENGTH];
     InStream *volatile is = NULL;
     SegmentInfos *volatile sis = ALLOC_AND_ZERO(SegmentInfos);
@@ -1166,7 +1169,6 @@ void sis_write(SegmentInfos *sis, Store *store, Deleter *deleter)
 static void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
 {
     InStream *is;
-    u32 format = 0;
     u64 version = 0;
     char seg_file_name[SEGMENT_NAME_MAX_LENGTH];
 
@@ -1174,7 +1176,7 @@ static void sis_read_ver_i(Store *store, FindSegmentsFile *fsf)
     is = store->open_input(store, seg_file_name);
 
     TRY
-        format = is_read_u32(is);
+        is_read_u32(is); // format
         version = is_read_u64(is);
     XFINALLY
         is_close(is);
@@ -4362,7 +4364,7 @@ static void bv_write(BitVector *bv, Store *store, char *name)
 static BitVector *bv_read(Store *store, char *name)
 {
     int i;
-    bool success = false;
+    volatile bool success = false;
     InStream *volatile is = store->open_input(store, name);
     BitVector *volatile bv = ALLOC_AND_ZERO(BitVector);
     bv->size = (int)is_read_vint(is);

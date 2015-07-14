@@ -215,7 +215,7 @@ Store *open_cmpd_store(Store *store, const char *name)
     int count, i;
     off_t offset;
     char *fname;
-    FileEntry *entry = NULL;
+    FileEntry *volatile entry = NULL;
     Store *new_store = NULL;
     CompoundStore *volatile cmpd = NULL;
     InStream *volatile is = NULL;

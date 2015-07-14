@@ -930,6 +930,7 @@
 #define store_to_s                                     frt_store_to_s
 #define stpe_new                                       frt_stpe_new
 #define str_hash                                       frt_str_hash
+#define strapp                                         frt_strapp
 #define strfmt                                         frt_strfmt
 #define strsort                                        frt_strsort
 #define sym_hash                                       frt_sym_hash

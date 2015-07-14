@@ -443,8 +443,8 @@ static void test_rw_funny_strings(TestCase *tc, void *data)
     int i;
     char *tmp;
     Store *store = (Store *)data;
-    char str[12] = "³³ ëêðïéÄ";
-    char buf[12000] = "";
+    char str[18] = "³³ ëêðïéÄ";
+    char buf[18000] = "";
     OutStream *ostream;
     InStream *istream;
 
@@ -465,7 +465,7 @@ static void test_rw_funny_strings(TestCase *tc, void *data)
     Asequal(buf, tmp);
     free(tmp);
     is_close(istream);
-    Aiequal(9012, store->length(store, "_funny_string.cfs"));
+    Aiequal(17021, store->length(store, "_funny_string.cfs"));
 }
 
 /**

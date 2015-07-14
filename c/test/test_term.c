@@ -156,14 +156,12 @@ void test_segment_term_enum(TestCase *tc, void *data)
     int i;
     Store *store = (Store *)data;
     SegmentFieldIndex *sfi;
-    SegmentTermEnum *ste;
     TermEnum *te;
     TermEnum *te_clone;
     add_multi_field_terms(store);
 
     sfi = sfi_open(store, "_0");
     te = ste_new(store->open_input(store, "_0.tis"), sfi);
-    ste = (SegmentTermEnum *)te;
     te->set_field(te, 0);
     for (i = 0; i < 40; i++) {
         int doc_count = i % 20 + 1;

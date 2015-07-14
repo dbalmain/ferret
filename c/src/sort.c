@@ -68,7 +68,7 @@ void sort_field_destroy(void *p)
 char *sort_field_to_s(SortField *self)
 {
     char *str;
-    char *type = NULL;
+    const char *type = NULL;
     switch (self->type) {
         case SORT_TYPE_SCORE:
             type = "<SCORE>";
@@ -767,11 +767,8 @@ char *sort_to_s(Sort *self)
     }
 
     str = ALLOC_N(char, len);
-    s = "Sort[";
-    len = (int)strlen(s);
-    memcpy(str, s, len);
+    s = strapp(str, "Sort[");
 
-    s = str + len;
     for (i = 0; i < self->size; i++) {
         s += sprintf(s, "%s, ", sf_strs[i]);
         free(sf_strs[i]);

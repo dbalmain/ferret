@@ -43,6 +43,8 @@ void bv_scan_reset(BitVector *bv)
 
 int bv_eq(BitVector *bv1, BitVector *bv2)
 {
+    u32 *bits, *bits2;
+    int min_size, word_size, ext_word_size = 0, i;
     if (bv1 == bv2) {
         return true;
     }
@@ -51,12 +53,10 @@ int bv_eq(BitVector *bv1, BitVector *bv2)
         return false;
     }
 
-    u32 *bits = bv1->bits;
-    u32 *bits2 = bv2->bits;
-    int min_size = min2(bv1->size, bv2->size);
-    int word_size = TO_WORD(min_size);
-    int ext_word_size = 0;
-    int i;
+    bits = bv1->bits;
+    bits2 = bv2->bits;
+    min_size = min2(bv1->size, bv2->size);
+    word_size = TO_WORD(min_size);
 
     for (i = 0; i < word_size; i++) {
         if (bits[i] != bits2[i]) {

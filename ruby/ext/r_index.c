@@ -212,7 +212,7 @@ static VALUE
 frb_fi_name(VALUE self)
 {
     FieldInfo *fi = (FieldInfo *)DATA_PTR(self);
-    return ID2SYM(fi->name);
+    return FSYM2SYM(fi->name);
 }
 
 /*
@@ -1094,7 +1094,7 @@ frb_tde_to_json(int argc, VALUE *argv, VALUE self)
     VALUE rjson;
     char *json, *jp;
     int capa = 65536;
-    char *format;
+    const char *format;
     char close = (argc > 0) ? ']' : '}';
     bool do_positions = tde->next_position != NULL;
     jp = json = ALLOC_N(char, capa);

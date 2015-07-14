@@ -1430,7 +1430,7 @@ static Explanation *spanw_explain(Weight *self, IndexReader *ir, int target)
         doc_freqs[df_i] = '\0';
     }
     else {
-        doc_freqs = "";
+        doc_freqs = estrdup("");
     }
 
     expl = expl_new(0.0, "weight(%s in %d), product of:", query_str, target);

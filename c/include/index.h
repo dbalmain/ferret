@@ -211,7 +211,10 @@ typedef struct FrtSegmentInfos
     int capa;
 } FrtSegmentInfos;
 
-extern char *frt_fn_for_generation(char *buf, char *base, char *ext, frt_i64 gen);
+extern char *frt_fn_for_generation(char *buf,
+                                   const char *base,
+                                   const char *ext,
+                                   frt_i64 gen);
 
 extern FrtSegmentInfos *frt_sis_new(FrtFieldInfos *fis);
 extern FrtSegmentInfo *frt_sis_new_segment(FrtSegmentInfos *sis, int dcnt, FrtStore *store);

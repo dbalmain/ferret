@@ -1,3 +1,4 @@
+
 #line 1 "src/scanner.rl"
 /* scanner.rl -*-C-*- */
 #include <ctype.h>
@@ -15,11 +16,12 @@
     goto ret;         \
 } while(0)
 
+
 #line 28 "src/scanner.rl"
 
 
 
-#line 23 "src/scanner.c"
+#line 25 "src/scanner.c"
 static const char _StdTok_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
 	3, 1, 4, 1, 5, 1, 17, 1, 
@@ -529,6 +531,7 @@ static const int StdTok_error = 0;
 static const int StdTok_en_frt_tokenizer = 35;
 static const int StdTok_en_main = 1;
 
+
 #line 31 "src/scanner.rl"
 
 void frt_std_scan(const char *in,
@@ -542,7 +545,7 @@ void frt_std_scan(const char *in,
     char *ts = 0, *te = 0;
 
     
-#line 546 "src/scanner.c"
+#line 549 "src/scanner.c"
 	{
 	cs = StdTok_start;
 	top = 0;
@@ -550,6 +553,7 @@ void frt_std_scan(const char *in,
 	te = 0;
 	act = 0;
 	}
+
 #line 43 "src/scanner.rl"
 
     char *p = (char *)in, *pe = 0, *eof = pe;
@@ -562,7 +566,7 @@ void frt_std_scan(const char *in,
     *token_size = 0;
 
     
-#line 566 "src/scanner.c"
+#line 570 "src/scanner.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -580,10 +584,10 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 4:
-#line 1 "src/scanner.rl"
+#line 1 "NONE"
 	{ts = p;}
 	break;
-#line 587 "src/scanner.c"
+#line 591 "src/scanner.c"
 		}
 	}
 
@@ -605,7 +609,7 @@ _resume:
 			else if ( (*p) > *_mid )
 				_lower = _mid + 1;
 			else {
-				_trans += (_mid - _keys);
+				_trans += (unsigned int)(_mid - _keys);
 				goto _match;
 			}
 		}
@@ -628,7 +632,7 @@ _resume:
 			else if ( (*p) > _mid[1] )
 				_lower = _mid + 2;
 			else {
-				_trans += ((_mid - _keys)>>1);
+				_trans += (unsigned int)((_mid - _keys)>>1);
 				goto _match;
 			}
 		}
@@ -650,11 +654,11 @@ _eof_trans:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 14 "src/scanner.rl"
+#line 14 "src/url.rl"
 	{ skip = p - ts; }
 	break;
 	case 1:
-#line 26 "src/scanner.rl"
+#line 26 "src/url.rl"
 	{ trunc = 1; }
 	break;
 	case 2:
@@ -662,135 +666,135 @@ _eof_trans:
 	{ p--; {stack[top++] = cs; cs = 35; goto _again;} }
 	break;
 	case 5:
-#line 1 "src/scanner.rl"
+#line 1 "NONE"
 	{te = p+1;}
 	break;
 	case 6:
-#line 15 "src/scanner.rl"
+#line 15 "src/scanner.in"
 	{act = 2;}
 	break;
 	case 7:
-#line 16 "src/scanner.rl"
+#line 16 "src/scanner.in"
 	{act = 3;}
 	break;
 	case 8:
-#line 17 "src/scanner.rl"
+#line 17 "src/scanner.in"
 	{act = 4;}
 	break;
 	case 9:
-#line 20 "src/scanner.rl"
+#line 20 "src/scanner.in"
 	{act = 5;}
 	break;
 	case 10:
-#line 23 "src/scanner.rl"
+#line 23 "src/scanner.in"
 	{act = 6;}
 	break;
 	case 11:
-#line 26 "src/scanner.rl"
+#line 26 "src/scanner.in"
 	{act = 7;}
 	break;
 	case 12:
-#line 29 "src/scanner.rl"
+#line 29 "src/scanner.in"
 	{act = 8;}
 	break;
 	case 13:
-#line 32 "src/scanner.rl"
+#line 32 "src/scanner.in"
 	{act = 9;}
 	break;
 	case 14:
-#line 35 "src/scanner.rl"
+#line 35 "src/scanner.in"
 	{act = 10;}
 	break;
 	case 15:
-#line 36 "src/scanner.rl"
+#line 36 "src/scanner.in"
 	{act = 11;}
 	break;
 	case 16:
-#line 40 "src/scanner.rl"
+#line 40 "src/scanner.in"
 	{act = 13;}
 	break;
 	case 17:
-#line 12 "src/scanner.rl"
+#line 12 "src/scanner.in"
 	{te = p+1;{ RET; }}
 	break;
 	case 18:
-#line 29 "src/scanner.rl"
+#line 29 "src/scanner.in"
 	{te = p+1;{ RET; }}
 	break;
 	case 19:
-#line 39 "src/scanner.rl"
+#line 39 "src/scanner.in"
 	{te = p+1;{ return; }}
 	break;
 	case 20:
-#line 40 "src/scanner.rl"
+#line 40 "src/scanner.in"
 	{te = p+1;}
 	break;
 	case 21:
-#line 12 "src/scanner.rl"
+#line 12 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 22:
-#line 15 "src/scanner.rl"
+#line 15 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 23:
-#line 16 "src/scanner.rl"
+#line 16 "src/scanner.in"
 	{te = p;p--;{ trunc = 1; RET; }}
 	break;
 	case 24:
-#line 23 "src/scanner.rl"
+#line 23 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 25:
-#line 26 "src/scanner.rl"
+#line 26 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 26:
-#line 29 "src/scanner.rl"
+#line 29 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 27:
-#line 32 "src/scanner.rl"
+#line 32 "src/scanner.in"
 	{te = p;p--;{ STRIP('.'); }}
 	break;
 	case 28:
-#line 35 "src/scanner.rl"
+#line 35 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 29:
-#line 36 "src/scanner.rl"
+#line 36 "src/scanner.in"
 	{te = p;p--;{ RET; }}
 	break;
 	case 30:
-#line 40 "src/scanner.rl"
+#line 40 "src/scanner.in"
 	{te = p;p--;}
 	break;
 	case 31:
-#line 12 "src/scanner.rl"
+#line 12 "src/scanner.in"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 32:
-#line 15 "src/scanner.rl"
+#line 15 "src/scanner.in"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 33:
-#line 23 "src/scanner.rl"
+#line 23 "src/scanner.in"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 34:
-#line 29 "src/scanner.rl"
+#line 29 "src/scanner.in"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 35:
-#line 35 "src/scanner.rl"
+#line 35 "src/scanner.in"
 	{{p = ((te))-1;}{ RET; }}
 	break;
 	case 36:
-#line 40 "src/scanner.rl"
+#line 40 "src/scanner.in"
 	{{p = ((te))-1;}}
 	break;
 	case 37:
-#line 1 "src/scanner.rl"
+#line 1 "NONE"
 	{	switch( act ) {
 	case 2:
 	{{p = ((te))-1;} RET; }
@@ -828,7 +832,7 @@ _eof_trans:
 	}
 	}
 	break;
-#line 832 "src/scanner.c"
+#line 836 "src/scanner.c"
 		}
 	}
 
@@ -838,10 +842,10 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 3:
-#line 1 "src/scanner.rl"
+#line 1 "NONE"
 	{ts = 0;}
 	break;
-#line 845 "src/scanner.c"
+#line 849 "src/scanner.c"
 		}
 	}
 
@@ -860,6 +864,7 @@ _again:
 
 	_out: {}
 	}
+
 #line 54 "src/scanner.rl"
 
     if ( cs == StdTok_error )

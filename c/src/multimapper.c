@@ -177,7 +177,7 @@ static DeterministicState *mulmap_process_state(MultiMapper *self, BitVector *bv
         }
         self->dstates[self->d_size++] = current_state;
         start_ds = self->dstates[0];
-        for (i = 0; i <= 256; i++) {
+        for (i = 0; i < 256; i++) {
             current_state->next[i] = start_ds;
         }
         while ((bit = bv_scan_next(bv)) >= 0) {

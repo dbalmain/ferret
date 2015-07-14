@@ -464,9 +464,9 @@ class IndexTest < Test::Unit::TestCase
 
   def test_index_key_batch0
     data = {
-      "0" => {:id => "0", :val => "one"},
+      #"0" => {:id => "0", :val => "one"},
       "0" => {:id => "0", :val => "two"},
-      "1" =>{:id => "1", :val => "three"},
+      #"1" =>{:id => "1", :val => "three"},
       "1" => {:id => "1", :val => "four"},
     }
 
@@ -479,7 +479,7 @@ class IndexTest < Test::Unit::TestCase
 
   def test_index_key_batch1
     data0 = {
-      "0" => {:id => "0", :val => "one"},
+      #"0" => {:id => "0", :val => "one"},
       "0" => {:id => "0", :val => "two"},
       "1" =>{:id => "1", :val => "three"},
       "2" => {:id => "1", :val => "four"},
@@ -504,7 +504,7 @@ class IndexTest < Test::Unit::TestCase
 
   def test_index_key_delete_batch0
     data0 = {
-      "0" => {:id => "0", :val => "one"},
+      #"0" => {:id => "0", :val => "one"},
       "0" => {:id => "0", :val => "two"},
       "1" =>{:id => "1", :val => "three"},
       "2" => {:id => "2", :val => "four"},
@@ -528,7 +528,7 @@ class IndexTest < Test::Unit::TestCase
     index.close
   end
 
-  def test_index_key_delete_batch0
+  def test_index_key_delete_batch1
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
     1000.times {|i| index << {:id => "#{i}", :content => "content #{i}"}}
     assert_equal(1000, index.size)

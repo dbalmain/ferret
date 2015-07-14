@@ -1149,8 +1149,9 @@ static void isea_search_each_w(Searcher *self, Weight *weight, Filter *filter,
     }
 
     while (scorer->next(scorer)) {
+        float score;
         if (bits && !bv_get(bits, scorer->doc)) continue;
-        float score = scorer->score(scorer);
+        score = scorer->score(scorer);
         if (post_filter &&
             !(filter_factor = post_filter->filter_func(scorer->doc,
                                                        score,

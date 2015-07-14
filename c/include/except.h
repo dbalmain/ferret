@@ -98,8 +98,8 @@ extern "C" {
 #define FRT_INDEX_ERROR 11
 #define FRT_LOCK_ERROR 12
 
-extern char *const FRT_UNSUPPORTED_ERROR_MSG;
-extern char *const FRT_EOF_ERROR_MSG;
+extern const char *const FRT_UNSUPPORTED_ERROR_MSG;
+extern const char *const FRT_EOF_ERROR_MSG;
 
 typedef struct frt_xcontext_t
 {

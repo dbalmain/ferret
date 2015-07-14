@@ -110,14 +110,14 @@ static void test_hs_add_safe(TestCase *tc, void *data)
     int idx = 0;
     for (; to_add >= 0; --to_add)
     {
-        snprintf(str, sizeof(str), "%d", idx);
+        snprintf(str, sizeof(str)/sizeof(str[0]), "%d", idx);
         Atrue(hs_add_safe(hs, estrdup(str)));
         ++idx;
     }
 
     for (idx = 0; idx <= to_add; ++idx)
     {
-        snprintf(str, sizeof(str), "%d", idx);
+        snprintf(str, sizeof(str)/sizeof(str[0]), "%d", idx);
         Aiequal(HASH_KEY_EQUAL, hs_exists(hs, str));
     }
 

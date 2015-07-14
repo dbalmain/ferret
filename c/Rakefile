@@ -364,7 +364,7 @@ namespace :build do
 
   file "testall" => ['test/all_tests.h', TEST_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building tests",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o testall"
+        "#{CC} #{CFLAGS} #{t.prerequisites.join(' ')} #{LDFLAGS} -o testall"
   end
 
   desc "Build the test tokenizer"
@@ -376,12 +376,12 @@ namespace :build do
 
   file "tokenize" => [LIB_FERRET_OBJS].flatten do |t|
     qsh "Building tokenize",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o #{t.name}"
+        "#{CC} #{CFLAGS} #{t.prerequisites.join(' ')} #{LDFLAGS} -o #{t.name}"
   end
 
   file "bench" => [BENCHMARK_OBJS, 'libferret.a'].flatten do |t|
     qsh "Building bench",
-        "#{CC} #{CFLAGS} #{LDFLAGS} #{t.prerequisites.join(' ')} -o #{t.name}"
+        "#{CC} #{CFLAGS} #{t.prerequisites.join(' ')} #{LDFLAGS} -o #{t.name}"
   end
 
   file 'test/all_tests.h' => FileList['test/test_*.c'] do |t|

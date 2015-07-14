@@ -104,6 +104,8 @@ extern char *frt_estrcat(char *str, char *str_cat);
 extern void frt_weprintf(const char *fmt, ...);
 extern char *frt_epstrdup(const char *fmt, int len, ...);
 
+extern char *frt_strapp(char *dst, const char *src);
+
 extern const char *FRT_EMPTY_STRING;
 
 extern int frt_scmp(const void *p1, const void *p2);

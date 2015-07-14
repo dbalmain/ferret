@@ -12,8 +12,8 @@ void test_write_to(TestCase *tc, void *data)
     char *tmp;
     Store *ram_store = open_ram_store();
     Store *fs_store = open_fs_store("./test/testdir/store");
-    char str[12] = "³³ øãíøäÄ";
-    char buf[12000] = "";
+    char str[18] = "³³ øãíøäÄ";
+    char buf[18000] = "";
     OutStream *ostream, *fs_ostream;
     InStream *istream;
     (void)data;/* suppress unused parameter warning */
@@ -41,7 +41,7 @@ void test_write_to(TestCase *tc, void *data)
     free(tmp);
     is_close(istream);
 
-    Aiequal(9012, fs_store->length(fs_store, "_rw_funny_string.cfs"));
+    Aiequal(17021, fs_store->length(fs_store, "_rw_funny_string.cfs"));
     store_deref(ram_store);
     ram_store = open_ram_store_and_copy(fs_store, false);
 
@@ -51,7 +51,7 @@ void test_write_to(TestCase *tc, void *data)
     Asequal(buf, tmp = is_read_string(istream));
     free(tmp);
     is_close(istream);
-    Aiequal(9012, ram_store->length(ram_store, "_rw_funny_string.cfs"));
+    Aiequal(17021, ram_store->length(ram_store, "_rw_funny_string.cfs"));
 
     fs_store->clear_all(fs_store);
     store_deref(fs_store);

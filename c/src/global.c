@@ -3,6 +3,7 @@
 #include "hash.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
@@ -45,7 +46,7 @@ int scmp(const void *p1, const void *p2)
     return strcmp(*(char **) p1, *(char **) p2);
 }
 
-void frt_strsort(char **str_array, int size)
+void strsort(char **str_array, int size)
 {
     qsort(str_array, size, sizeof(char *), &scmp);
 }
@@ -165,6 +166,20 @@ char *dbl_to_s(char *buf, double num)
     return buf;
 }
 
+/**
+ * strapp: appends a string up to, but not including the \0 character to the
+ * end of a string returning a pointer to the next unassigned character in the
+ * string.
+ */
+char *strapp(char *dst, const char *src) {
+    while (*src != '\0') {
+        *dst = *src;
+        ++dst;
+        ++src;
+    }
+    return dst;
+}
+
 /* strfmt: like sprintf except that it allocates memory for the string */
 char *vstrfmt(const char *fmt, va_list args)
 {
@@ -172,7 +187,7 @@ char *vstrfmt(const char *fmt, va_list args)
     char *p = (char *) fmt, *q;
     int len = (int) strlen(fmt) + 1;
     int slen, curlen;
-    char *s;
+    const char *s;
     long l;
     double d;
 
@@ -248,36 +263,17 @@ void dummy_free(void *p)
 #define CMD_BUF_SIZE (128 + FILENAME_MAX)
 /* need to declare this as it is masked by default in linux */
 
-static char *build_shell_command(const char *gdb_filename)
+static char *build_shell_command()
 {
     int   pid = getpid();
     char *buf = ALLOC_N(char, CMD_BUF_SIZE);
     char *command =
-        "gdb -quiet -command=%s %s %d 2>/dev/null | grep '^[ #]'";
+        "gdb -quiet -ex='bt' -ex='quit' %s %d 2>/dev/null | grep '^[ #]'";
 
-    snprintf(buf, CMD_BUF_SIZE, command, gdb_filename, progname(), pid);
+    snprintf(buf, CMD_BUF_SIZE, command, progname(), pid);
     return buf;
 }
 
-/* Returns the fd to the tempfile */
-static int build_tempfile(char *name, size_t max_size)
-{
-    char *tmpdir = getenv("TMPDIR");
-
-    snprintf(name, max_size, "%s/frt.XXXXXXXXXX", tmpdir ? tmpdir : "/tmp");
-    return mkstemp(name);
-}
-
-static char *build_gdb_commandfile()
-{
-    const char *commands = "bt\nquit\n";
-    char *filename = ALLOC_N(char, FILENAME_MAX);
-    int fd = build_tempfile(filename, FILENAME_MAX);
-    if (fd < 0) { return NULL; }
-    write(fd, commands, strlen(commands));
-    close(fd);
-    return filename;
-}
 #endif
 
 /**
@@ -290,12 +286,7 @@ char *get_stacktrace()
     char *gdb_filename = NULL, *buf = NULL, *stack = NULL;
     int   offset = -BUFFER_SIZE;
 
-    if ( !(gdb_filename = build_gdb_commandfile()) ) {
-        fprintf(EXCEPTION_STREAM,
-                "Unable to build gdb command file\n");
-        goto cleanup;
-    }
-    if ( !(buf = build_shell_command(gdb_filename)) ) {
+    if ( !(buf = build_shell_command()) ) {
         fprintf(EXCEPTION_STREAM,
                 "Unable to build stacktrace shell command\n");
         goto cleanup;

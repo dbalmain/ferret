@@ -1186,7 +1186,7 @@ static VALUE
 frb_stem_filter_init(int argc, VALUE *argv, VALUE self) 
 {
     VALUE rsub_ts, ralgorithm, rcharenc;
-    char *algorithm = "english";
+    const char *algorithm = "english";
     char *charenc = NULL;
     TokenStream *ts;
     rb_scan_args(argc, argv, "12", &rsub_ts, &ralgorithm, &rcharenc);

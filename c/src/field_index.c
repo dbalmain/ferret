@@ -234,7 +234,7 @@ static void string_handle_term(void *index_ptr,
     StringIndex *index = (StringIndex *)index_ptr;
     if (index->v_size >= index->v_capa) {
         index->v_capa *= 2;
-        index->values = REALLOC_N(index->values, char *, index->v_capa);
+        REALLOC_N(index->values, char *, index->v_capa);
     }
     index->values[index->v_size] = estrdup(text);
     while (tde->next(tde)) {

@@ -154,7 +154,6 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
     VALUE roptions = Qnil;
     VALUE rval;
     Analyzer *analyzer = NULL;
-    bool has_options = false;
 
     HashSet *all_fields = NULL;
     HashSet *tkz_fields = NULL;
@@ -163,7 +162,6 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
 
     if (rb_scan_args(argc, argv, "01", &roptions) > 0) {
         if (TYPE(roptions) == T_HASH) {
-            has_options = true;
             if (Qnil != (rval = rb_hash_aref(roptions, sym_default_field))) {
                 def_fields = frb_get_fields(rval);
             }
@@ -253,7 +251,7 @@ frb_qp_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 frb_qp_parse(VALUE self, VALUE rstr)
 {
-    const char *msg = NULL;
+    const char *volatile msg = NULL;
     volatile VALUE rq;
     GET_QP;
     rstr = rb_obj_as_string(rstr);

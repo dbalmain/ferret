@@ -197,7 +197,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
     VALUE rhits = rb_funcall(self, id_hits, 0);
     Searcher *sea = (Searcher *)DATA_PTR(rb_funcall(self, id_searcher, 0));
     const int len = RARRAY_LEN(rhits);
-    int capa = len * 64 + 100;
+    unsigned int capa = len * 64 + 100;
     int p = 0;
     char *str = ALLOC_N(char, len * 64 + 100);
     Symbol field = fsym_id;
@@ -215,7 +215,7 @@ frb_td_to_s(int argc, VALUE *argv, VALUE self)
     for (i = 0; i < len; i++) {
         VALUE rhit = RARRAY_PTR(rhits)[i];
         int doc_id = FIX2INT(rb_funcall(rhit, id_doc, 0));
-        char *value = "";
+        const char *value = "";
         size_t value_len = 0;
         LazyDoc *lzd = sea->get_lazy_doc(sea, doc_id);
         LazyDocField *lzdf = lazy_doc_get(lzd, field);
@@ -923,7 +923,8 @@ static VALUE
 frb_bc_to_s(VALUE self)
 {
     VALUE rstr;
-    char *qstr, *ostr = "", *str;
+    char *qstr, *str;
+    const char *ostr = "";
     int len;
     GET_BC();
     qstr = bc->query->to_s(bc->query, NULL);
@@ -2984,9 +2985,9 @@ frb_sea_highlight(int argc, VALUE *argv, VALUE self)
     Query *query;
     int excerpt_length = 150;
     int num_excerpts = 2;
-    char *pre_tag = "<b>";
-    char *post_tag = "</b>";
-    char *ellipsis = "...";
+    const char *pre_tag = "<b>";
+    const char *post_tag = "</b>";
+    const char *ellipsis = "...";
     char **excerpts;
 
     rb_scan_args(argc, argv, "31", &rquery, &rdoc_id, &rfield, &roptions);

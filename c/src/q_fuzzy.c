@@ -208,7 +208,7 @@ static Query *fuzq_rewrite(Query *self, IndexReader *ir)
     fuzq->scale_factor = (float)(1.0 / (1.0 - fuzq->min_sim));
     fuzq->text = term + pre_len;
     fuzq->text_len = (int)strlen(fuzq->text);
-    fuzq->da = REALLOC_N(fuzq->da, int, fuzq->text_len * 2 + 2);
+    REALLOC_N(fuzq->da, int, fuzq->text_len * 2 + 2);
     fuzq_initialize_max_distances(fuzq);
 
     do {
@@ -261,6 +261,7 @@ Query *fuzq_new_conf(Symbol field, const char *term,
     FzQ(self)->term       = estrdup(term);
     FzQ(self)->pre_len    = pre_len ? pre_len : DEF_PRE_LEN;
     FzQ(self)->min_sim    = min_sim ? min_sim : DEF_MIN_SIM;
+    FzQ(self)->da         = NULL;
     MTQMaxTerms(self)     = max_terms ? max_terms : DEF_MAX_TERMS;
 
     self->type            = FUZZY_QUERY;

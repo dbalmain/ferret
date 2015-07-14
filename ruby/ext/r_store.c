@@ -75,6 +75,7 @@ frb_lock_obtain(int argc, VALUE *argv, VALUE self)
         timeout = FIX2INT(rtimeout);
     }
     /* TODO: use the lock timeout */
+    (void)timeout;
     if (!lock->obtain(lock)) {
         rb_raise(cLockError, "could not obtain lock: #%s", lock->name);
     }
@@ -105,6 +106,7 @@ frb_lock_while_locked(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &rtimeout) > 0) {
         timeout = FIX2INT(rtimeout);
     }
+    (void)timeout;
     if (!lock->obtain(lock)) {
         rb_raise(cLockError, "could not obtain lock: #%s", lock->name);
     }

@@ -59,9 +59,6 @@ void df_destroy(DocField *df)
  */
 char *df_to_s(DocField *df)
 {
-#define APPEND(dst, src) ((dst)[0] = (src)[0], 1)
-#define APPEND2(dst, src) (APPEND(dst, src), APPEND(dst+1, src+1), 2)
-
     int i, len = 0, namelen = sym_len(df->name);
     char *str, *s;
     for (i = 0; i < df->size; i++) {
@@ -70,23 +67,23 @@ char *df_to_s(DocField *df)
     s = str = ALLOC_N(char, namelen + len + 5);
     memcpy(s, df->name, namelen);
     s += namelen;
-    s += APPEND2(s, ": ");
+    s = strapp(s, ": ");
 
     if (df->size > 1) {
-        s += APPEND(s, "[");
+              s = strapp(s, "[");
     }
     for (i = 0; i < df->size; i++) {
         if (i != 0) {
-            s += APPEND2(s, ", ");
+                        s = strapp(s, ", ");
         }
-        s += APPEND(s, "\"");
+                s = strapp(s, "\"");
         memcpy(s, df->data[i], df->lengths[i]);
         s += df->lengths[i];
-        s += APPEND(s, "\"");
+                s = strapp(s, "\"");
     }
 
     if (df->size > 1) {
-        s += APPEND(s, "]");
+              s = strapp(s, "]");
     }
     *s = 0;
     return str;
