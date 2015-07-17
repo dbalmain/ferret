@@ -70,20 +70,20 @@ char *df_to_s(DocField *df)
     s = strapp(s, ": ");
 
     if (df->size > 1) {
-              s = strapp(s, "[");
+        s = strapp(s, "[");
     }
     for (i = 0; i < df->size; i++) {
         if (i != 0) {
-                        s = strapp(s, ", ");
+            s = strapp(s, ", ");
         }
-                s = strapp(s, "\"");
+        s = strapp(s, "\"");
         memcpy(s, df->data[i], df->lengths[i]);
         s += df->lengths[i];
-                s = strapp(s, "\"");
+        s = strapp(s, "\"");
     }
 
     if (df->size > 1) {
-              s = strapp(s, "]");
+        s = strapp(s, "]");
     }
     *s = 0;
     return str;

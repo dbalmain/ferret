@@ -198,9 +198,9 @@ namespace :doc do
     rdoc.options << '--inline-source'
     rdoc.options << '--charset=utf-8'
 #    rdoc.template = allison_template if allison_template
-    rdoc.rdoc_files.include('README')
+    rdoc.rdoc_files.include('README.md')
     rdoc.rdoc_files.include('TODO')
-    rdoc.rdoc_files.include('TUTORIAL')
+    rdoc.rdoc_files.include('TUTORIAL.md')
     rdoc.rdoc_files.include('MIT-LICENSE')
     rdoc.rdoc_files.include('lib/**/*.rb')
     rdoc.rdoc_files.include('ext/r_*.c')
@@ -218,7 +218,6 @@ end
 ##############################################################################
 
 PKG_FILES = FileList[
-  'setup.rb',
   '[-A-Z]*',
   'lib/**/*.rb',
   'lib/**/*.rhtml',
@@ -297,7 +296,7 @@ task :uninstall => :clobber do
   sh "#{SUDO}gem uninstall ferret"
 end
 
-desc "Same as :install but you must be rootgem"
+desc "Same as :install but you must be root"
 task :root_install => :gem do
   sh "gem install pkg/ferret-#{Ferret::VERSION}.gem --no-rdoc --no-ri -l"
 end

@@ -504,8 +504,6 @@ class IndexTest < Test::Unit::TestCase
 
   def test_index_key_delete_batch0
     data0 = {
-      #"0" => {:id => "0", :val => "one"},
-      "0" => {:id => "0", :val => "two"},
       "1" =>{:id => "1", :val => "three"},
       "2" => {:id => "2", :val => "four"},
       "0" => {:id => "0", :val => "four"},
