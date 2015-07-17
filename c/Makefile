@@ -90,11 +90,11 @@ test: testall
 
 testall: $(TEST_OBJS) libferret.a
 	@echo Building task: $@ ...
-	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 benchall: $(BENCH_OBJS) libferret.a
 	@echo Building task: $@ ...
-	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 bench: benchall
 	@./benchall
