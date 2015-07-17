@@ -17,14 +17,6 @@ ruby/
     This directory contains the Ruby bindings and tests. See ruby/README.md for
     information on installing Ferret's Ruby bindings
 
-smoke_test.rb
-    If you would like to ensure that ferret keeps working on your system, add
-    this method to a cron daemon to run as often as you like. Every time I
-    check in a new version of Ferret, this script will pull down the changes
-    from the repository and run all of the unit tests (C and Ruby), notifying
-    me if anything is broken. The more people running this script the more
-    stable ruby will be.
-
 Contributions
 =============
 
