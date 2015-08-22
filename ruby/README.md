@@ -15,13 +15,10 @@ search for things in them later.
 
   $ sudo gem install ferret
 
-If you don't have rubygems installed you can still install Ferret. Just
-download one of the zipped up versions of Ferret, unzip it and change into the
-unzipped directory. Then run the following set of commands;
+Or to build it from this git repository:
 
-  $ ruby setup.rb config
-  $ ruby setup.rb setup
-  $ sudo ruby setup.rb install
+  $ cd ruby
+  $ rake install
 
 == Usage
 
