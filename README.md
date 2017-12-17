@@ -37,6 +37,11 @@ to record them on the Ferret website.
 
 [Jens Krämer][3] for keeping this project alive.
 
+Code Status
+===========
+
+[![Build Status](https://travis-ci.org/dbalmain/ferret.svg?branch=master)](https://travis-ci.org/dbalmain/ferret)
+
 License
 ========
 
