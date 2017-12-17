@@ -62,7 +62,7 @@ module StoreLockTest
     begin
       lock.obtain(lock_time_out)
       return true
-    rescue Exception=>e
+    rescue Exception
     end
     return false
   end

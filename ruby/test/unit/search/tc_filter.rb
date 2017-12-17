@@ -69,9 +69,9 @@ class FilterTest < Test::Unit::TestCase
   end
 
   def test_range_filter_errors
-    assert_raise(ArgumentError) {f = RangeFilter.new(:f, :> => "b", :< => "a")}
-    assert_raise(ArgumentError) {f = RangeFilter.new(:f, :include_lower => true)}
-    assert_raise(ArgumentError) {f = RangeFilter.new(:f, :include_upper => true)}
+    assert_raise(ArgumentError) {RangeFilter.new(:f, :> => "b", :< => "a")}
+    assert_raise(ArgumentError) {RangeFilter.new(:f, :include_lower => true)}
+    assert_raise(ArgumentError) {RangeFilter.new(:f, :include_upper => true)}
   end
 
   def test_query_filter()
@@ -127,10 +127,10 @@ class FilterTest < Test::Unit::TestCase
   def test_filter_proc
     searcher = Searcher.new(@dir)
     q = MatchAllQuery.new()
-    filter_proc = lambda {|doc, score, s| (s[doc][:int] % 2) == 0}
+    filter_proc = lambda {|doc, score, s| (s[doc][:int].to_i % 2) == 0}
     top_docs = searcher.search(q, :filter_proc => filter_proc)
     top_docs.hits.each do |hit|
-      assert_equal(0, searcher[hit.doc][:int] % 2)
+      assert_equal(0, searcher[hit.doc][:int].to_i % 2)
     end
   end
 

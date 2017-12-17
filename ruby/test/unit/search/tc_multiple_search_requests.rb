@@ -33,7 +33,7 @@ class MultipleSearchRequestsTest < Test::Unit::TestCase
       tq2 = TermQuery.new(:another_id, 1)
       bq.add_query(tq1, :must) 
       bq.add_query(tq2, :must) 
-      top_docs = @ix.search(bq) 
+      @ix.search(bq) 
     end 
   end 
 
@@ -52,7 +52,7 @@ class MultipleSearchRequestsTest < Test::Unit::TestCase
       bq.add_query(tq4, :must) 
       bq.add_query(tq5, :must) 
       bq.add_query(tq6, :must) 
-      top_docs = @ix.search(bq) 
+      @ix.search(bq) 
     end 
   end 
 end 

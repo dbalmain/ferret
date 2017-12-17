@@ -112,7 +112,7 @@ module Ferret::Index
         @close_dir = true
         begin
           @dir = FSDirectory.new(options[:path], options[:create])
-        rescue IOError => io
+        rescue IOError
           @dir = FSDirectory.new(options[:path],
                                  options[:create_if_missing] != false)
         end
@@ -521,7 +521,7 @@ module Ferret::Index
           @writer.delete(@id_field, arg.to_s)
         elsif arg.is_a?(Integer)
           ensure_reader_open()
-          cnt = @reader.delete(arg)
+          _cnt = @reader.delete(arg)
         elsif arg.is_a?(Hash) or arg.is_a?(Array)
           batch_delete(arg)
         else
@@ -625,7 +625,7 @@ module Ferret::Index
     # docs:: A Hash of id/document pairs. The set of documents to be updated
     def batch_update(docs)
       @dir.synchronize do
-        ids = values = nil
+        ids = nil
         case docs
         when Array
           ids = docs.collect{|doc| doc[@id_field].to_s}
@@ -868,7 +868,7 @@ module Ferret::Index
             latest = false
             begin
               latest = @reader.latest?
-            rescue Lock::LockError => le
+            rescue Lock::LockError
               sleep(@options[:lock_retry_time]) # sleep for 2 seconds and try again
               latest = @reader.latest?
             end

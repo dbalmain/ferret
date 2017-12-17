@@ -16,8 +16,8 @@ module Ferret
   end
 
   # The FieldSymbolMethods module contains the methods that are added to both
-  # the Symbol class and the FieldSymbol class. These methods allow you to set
-  # the type easily set the type of a field by calling a method on a symbol.
+  # the Symbol class and the FieldSymbol class. These methods allow you to
+  # easily set the type of a field by calling a method on a symbol.
   #
   # Right now this is only useful for Sorting and grouping, but some day Ferret
   # may have typed fields, in which case these this methods will come in handy.
@@ -57,18 +57,18 @@ module Ferret
     # specifications.
     def desc
       fsym = FieldSymbol.new(self, respond_to?(:desc?) ? !desc? : true)
-      fsym.type = type if respond_to? :type
+      fsym.type = respond_to?(:type) ? type : nil
       fsym
     end
 
     # Return whether or not this field should be a descending field
     def desc?
-      @desc == true
+      self.class == FieldSymbol and @desc == true
     end
 
     # Return the type of this field
     def type
-      @type || nil
+      self.class == FieldSymbol ? @type : nil
     end
   end
 
@@ -82,6 +82,10 @@ module Ferret
 
     def method_missing(method, *args)
       @symbol.__send__(method, *args)
+    end
+
+    def class
+      FieldSymbol
     end
 
     attr_writer :type, :desc

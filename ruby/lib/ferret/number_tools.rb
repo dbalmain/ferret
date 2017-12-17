@@ -1,18 +1,6 @@
 require 'date'
 require 'time'
 
-class Float
-  # Return true if the float is within +precision+ of the other value +o+. This
-  # is used to accommodate for floating point errors.
-  #
-  # o::         value to compare with
-  # precision:: the precision to use in the comparison.
-  # return::    true if the match is within +precision+
-  def =~(o, precision = 0.0000000001)
-    return (1 - self/o).abs < precision
-  end
-end
-
 # Provides support for converting integers to Strings, and back again. The
 # strings are structured so that lexicographic sorting order is preserved.
 # 

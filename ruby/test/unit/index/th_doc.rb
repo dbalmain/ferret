@@ -52,7 +52,7 @@ module IndexTestHelper
   end
 
   def IndexTestHelper.prepare_book_list
-    books = [
+    [
       {"author" => "P.H. Newby",
         "title" => "Something To Answer For",
          "year" => "1969"},

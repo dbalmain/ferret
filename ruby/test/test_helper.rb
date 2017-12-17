@@ -1,5 +1,5 @@
 $:.unshift File.dirname(__FILE__)
-if $test_installed_gem
+if defined? $test_installed_gem
   require 'rubygems'
   require 'ferret'
 else

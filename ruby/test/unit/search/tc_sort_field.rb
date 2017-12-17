@@ -21,7 +21,7 @@ class SortFieldTest < Test::Unit::TestCase
 
   def test_error_raised()
     assert_raise(ArgumentError) {
-      fs = SortField.new(nil, :type => :integer)
+      SortField.new(nil, :type => :integer)
     }
   end
 end

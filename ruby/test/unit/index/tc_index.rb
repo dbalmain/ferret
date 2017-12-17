@@ -197,7 +197,7 @@ class IndexTest < Test::Unit::TestCase
   end
 
   def test_key_used_for_id_field
-    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'))
+    fs_path = File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir2'))
 
     index = Index.new(:path => fs_path, :key => :my_id, :create => true)
     [
@@ -366,7 +366,7 @@ class IndexTest < Test::Unit::TestCase
 
   def test_delete
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
-    data = [
+    [
       {:id => 0, :cat => "/cat1/subcat1"},
       {:id => 1, :cat => "/cat1/subcat2"},
       {:id => 2, :cat => "/cat1/subcat2"},
@@ -398,7 +398,7 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
                       :default_input_field => :content,
                       :id_field => :id)
-    data = [
+    [
       {:id => 0, :cat => "/cat1/subcat1", :content => "content0"},
       {:id => 1, :cat => "/cat1/subcat2", :content => "content1"},
       {:id => 2, :cat => "/cat1/subcat2", :content => "content2"},
@@ -552,7 +552,7 @@ class IndexTest < Test::Unit::TestCase
   def test_index_multi_key
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new,
                       :key => [:id, :table])
-    data = [
+    [
       {:id => 0, :table => "product", :product => "tent"},
       {:id => 0, :table => "location", :location => "first floor"},
       {:id => 0, :table => "product", :product => "super tent"},
@@ -580,7 +580,7 @@ class IndexTest < Test::Unit::TestCase
     index = Index.new(:analyzer => Analyzer.new,
                       :key => [:id, :table],
                       :field_infos => field_infos)
-    data = [
+    [
       {:id => 0, :table => "Product", :product => "tent"},
       {:id => 0, :table => "location", :location => "first floor"},
       {:id => 0, :table => "Product", :product => "super tent"},
@@ -604,7 +604,7 @@ class IndexTest < Test::Unit::TestCase
   def test_sortby_date
     index = Index.new(:analyzer => WhiteSpaceAnalyzer.new)
 
-    data = [
+    [
       {:content => "one", :date => "20051023"},
       {:content => "two", :date => "19530315"},
       {:content => "three four", :date => "19390912"},
@@ -666,7 +666,7 @@ class IndexTest < Test::Unit::TestCase
       end
       index1.optimize
       index2 << "thirteen"
-    rescue Exception => e
+    rescue Exception
       assert(false, "This should not cause an error when auto flush has been set")
     end
     index1.close
@@ -715,7 +715,6 @@ class IndexTest < Test::Unit::TestCase
     index = Ferret::Index::Index.new(:path => path, :create => true)
 
     100.times do |i|
-      buf = ''
       doc = {}
       doc[:id] = i
       doc[:foo] = "foo #{i}"
@@ -725,8 +724,8 @@ class IndexTest < Test::Unit::TestCase
     threads = []
 
     4.times do
-      threads << Thread.new(index) do |index|
-        result = index.search('id:42')
+      threads << Thread.new(index) do |idx|
+        result = idx.search('id:42')
         assert_equal(1, result.total_hits)
       end
     end

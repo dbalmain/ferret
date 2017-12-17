@@ -91,4 +91,4 @@ extern Symbol rintern(VALUE rstr);
 #endif
 
 #define frb_mark_cclass(klass) rb_ivar_set(klass, id_cclass, Qtrue)
-#define frb_is_cclass(obj) (rb_ivar_get(CLASS_OF(obj), id_cclass) == Qtrue)
+#define frb_is_cclass(obj) (rb_ivar_defined(CLASS_OF(obj), id_cclass))
