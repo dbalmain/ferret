@@ -512,6 +512,11 @@ Metrowerks:
 #  define POSH_CPU_STRING "PA-RISC"
 #endif
 
+#if defined __loongarch__
+#  define POSH_CPU_LOONGARCH 1
+#  define POSH_CPU_STRING "Loongson LoongArch"
+#endif
+
 #if !defined POSH_CPU_STRING
 #  error POSH cannot determine target CPU
 #  define POSH_CPU_STRING "Unknown" /* this is here for Doxygen's benefit */
