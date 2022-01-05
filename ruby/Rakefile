@@ -83,8 +83,10 @@ namespace :build do
     dest_fn = EXT_SRC_MAP[fn]
     # prepend lib files to avoid conflicts
     file dest_fn => fn do |t|
-      ln_sf File.expand_path(fn), File.expand_path(dest_fn)
-
+      dest_path = File.expand_path(dest_fn)
+      rm_f dest_path
+      cp File.expand_path(fn), dest_path
+      
       if fn =~ /stemmer/
         # flatten the directory structure for lib_stemmer
         open(dest_fn) do |in_f|
