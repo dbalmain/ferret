@@ -2254,7 +2254,7 @@ static int spanxq_eq(Query *self, Query *o)
 Query *spanxq_new_nr(Query *inc, Query *exc)
 {
     Query *self;
-    if (SpQ(inc)->field != SpQ(inc)->field) {
+    if (SpQ(inc)->field != SpQ(exc)->field) {
         RAISE(ARG_ERROR, "All clauses in a SpanQuery must have the same field. "
               "Attempted to add a SpanQuery with field \"%s\" along with a "
               "SpanQuery with field \"%s\" to an SpanNotQuery",

@@ -17,7 +17,9 @@ extern "C" {
 #endif
 
 #ifndef __cplusplus
+#ifndef bool
 typedef unsigned int        bool;
+#endif
 #endif
 typedef unsigned char       frt_uchar;
 
