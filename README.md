@@ -10,12 +10,21 @@ Contents
 =========
 
 c/
+
     Ferret is written in C for speed. The actual C code should be fairly easy
     to use in an application or create bindings to a language other than Ruby.
 
 ruby/
+
     This directory contains the Ruby bindings and tests. See ruby/README.md for
     information on installing Ferret's Ruby bindings
+
+Instructions
+============
+
+* Build the gem: `cd ruby && rake gem`
+* Publish the gem on github: see [RubyGems registry docs](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-rubygems-registry)
+* Use in Gemfile: `gem "ferret", "0.11.9.0", source: "https://rubygems.pkg.github.com/acavalin"`
 
 Contributions
 =============
