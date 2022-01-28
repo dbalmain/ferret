@@ -1528,7 +1528,7 @@ static int  bq_eq(Query *self, Query *o)
     BooleanQuery *bq1 = BQ(self);
     BooleanQuery *bq2 = BQ(o);
     if ((bq1->coord_disabled != bq2->coord_disabled)
-        || (bq1->max_clause_cnt != bq1->max_clause_cnt)
+        || (bq1->max_clause_cnt != bq2->max_clause_cnt)
         || (bq1->clause_cnt != bq2->clause_cnt)) {
         return false;
     }

@@ -72,7 +72,7 @@ extern char *rs2s(VALUE rstr);
 extern char *rstrdup(VALUE rstr);
 extern Symbol rintern(VALUE rstr);
 #define Frt_Make_Struct(klass)\
-  rb_data_object_alloc(klass,NULL,(RUBY_DATA_FUNC)NULL,(RUBY_DATA_FUNC)NULL)
+  rb_data_object_wrap(klass,NULL,(RUBY_DATA_FUNC)NULL,(RUBY_DATA_FUNC)NULL)
 
 #define Frt_Wrap_Struct(self,mmark,mfree,mdata)\
   do {\
